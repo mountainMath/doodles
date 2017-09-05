@@ -8,7 +8,6 @@ categories:
 slug: interactive-isochrones
 author: Jens von Bergmann
 tags: []
-draft: true
 description: 'Exploring Isochrones.'
 featured: 'isochrone.png'
 featuredalt: ""

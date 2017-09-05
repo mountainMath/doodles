@@ -56,7 +56,7 @@ If transit services in your city are already part of the [TransitLand feed regis
 If not, this visualization won't do you much good right now. If you are keen to use it to explore transit in your city,
 just help TransitLand [add your local transit agency to their feed registry](https://transit.land/news/2016/02/19/get-started-add-feeds.html).
 
-###Details
+## Details
 I used settings that assume we have some happy walkers that are willing to walk quite a bit to get to and from transit, as
 well as walking between stations. It seemed to me that the visualization is already overloaded with options that I did not want
 to throw in another leaver.
@@ -67,7 +67,7 @@ complex "what if" type simulations.
 And the service does not include bike share, which really is another piece in the whole mobility puzzle that can
 significantly shorten travel time (or increase travel distance).
 
-###Issues and Caveats
+## Issues and Caveats
 Times after midnight may run into some issues, in some places, like e.g. Vancouver or Toronto, the early morning hour
 isochrones won't work properly using this visualization. The technical reason seems to be that some GTFS used times past
 24 hours, so 25:01 for one minute past 1AM the next day. And that breaks things somewhere. The good news is it's just a matter
@@ -76,7 +76,7 @@ of time for this to get fixed one way or another. But for now it's broken. :-(
 Also, the tools this is built on are quite fresh. So there might be some glitches and opportunities to improve. Exciting times
 when services like the isochrone API by Mapzen become publicly, and freely, available.
 
-###5pm transit sheds around the world
+## 5pm transit sheds around the world
 
 <img src="/images/transit_vancouver.png" style="display:inline-block; width:30%; padding:1%">
 <img src="/images/transit_toronto.png" style="display:inline-block; width:30%; padding:1%">
