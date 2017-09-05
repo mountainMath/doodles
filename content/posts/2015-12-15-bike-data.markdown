@@ -42,7 +42,7 @@ through all the different taggings in OSM to make sure I pull out all the correc
 So to make more sense out of the network I made a new map, added some more categories for optionally fading them out when
 displayed. And on hover I display the tags, just for interest.
 
-##Improving data
+## Improving data
 This gets us to task number two. The folks at Mapzen gave me some friendly pointers to allow easy editing of features.
 So I pasted a couple of lines of code in so if you hold down the shift key and
 click on a feature, it will take you automatically to OSM to edit the feature. You may have to sign in the first time
@@ -56,7 +56,7 @@ Go for it and fix some problems that you see, either by shift-clicking on the em
 [taking the map full-screen first](/html/bike_map2.html). Remember that some of the issues may be fixed already, the bike map will not reflect
 updates until a week later or so.
 
-##Where to go from here?
+## Where to go from here?
 It looks like making a decent bike map with OSM data is feasible. The hard work will be to collaboratively do all the
 OSM edits required to get the data into good shape.
  

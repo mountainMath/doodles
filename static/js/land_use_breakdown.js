@@ -734,9 +734,10 @@ var radviz = radvizComponent()
 
 
 
-//horBarGraph('#land_use_breakdown');
-//horBarGraph('#land_use_breakdown2',Object.keys(keyMap));
-if (false) d3.json('/data/land_use_breakdown.json', function(error, jsonData){
+horBarGraph('#land_use_breakdown');
+horBarGraph('#land_use_breakdown2',Object.keys(keyMap));
+if (true) d3.json('/data/land_use_breakdown.json', function(error, jsonData){
+  if (error) throw error;
   try{
     var keys=Object.keys(jsonData);
     var allMuniData=keys.map(function(key){
