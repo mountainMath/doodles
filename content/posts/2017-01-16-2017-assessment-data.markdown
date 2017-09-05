@@ -17,8 +17,8 @@ type: "post"
 
 The friendly folks at
 [Vancouver Open Data](http://vancouver.ca/your-government/open-data-catalogue.aspx) just
-[updated their property assessment data](https://twitter.com/VanOpenData/status/688060388190097408) with the fresh 2017
-property tax assessments. Time to run the script to update the [Vancouver Assessment Map](https://mountainmath.ca/map/assessment)
+[updated their property assessment data](https://twitter.com/VanOpenData/status/688060388190097408) with the fresh 2017 property tax assessments. Time to run the script to update the
+[Vancouver Assessment Map](https://mountainmath.ca/map/assessment)
 with the new data, just [like we did last year](http://doodles.mountainmath.ca/blog/2016/01/17/updated-vancouver-assessment-data/).
 
 For now we just updated our standard visuals and computed some overall statistics. We will take a closer look at the data over the coming days.
