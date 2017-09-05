@@ -2,41 +2,41 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Teardowns on Mountain Doodles</title>
-    <link>/categories/teardowns/</link>
+    <link>http://doodles.mountainmath.ca/categories/teardowns/</link>
     <description>Recent content in Teardowns on Mountain Doodles</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Tue, 21 Feb 2017 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="/categories/teardowns/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="http://doodles.mountainmath.ca/categories/teardowns/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>More on Teardowns</title>
-      <link>/blog/2017/02/21/more-on-teardowns/</link>
+      <link>http://doodles.mountainmath.ca/blog/2017/02/21/more-on-teardowns/</link>
       <pubDate>Tue, 21 Feb 2017 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2017/02/21/more-on-teardowns/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2017/02/21/more-on-teardowns/</guid>
       <description>A little over a year ago we ran some analysis on teardowns of single family homes in the City of Vancouver. We used the City of Vancouver open data to understand why some single family homes got torn down and other&amp;rsquo;s don&amp;rsquo;t.
 Relying entirely on open data, there were some important questions that could not be answered. So together with Joe Dahmen at UBC&amp;rsquo;s School Of Architecture And Landscape Architecture we came back to the question and folded in transaction data from BC Assessment to add some more details and rigor.</description>
     </item>
     
     <item>
       <title>On Teardowns</title>
-      <link>/blog/2016/01/18/redevelopment/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/01/18/redevelopment/</link>
       <pubDate>Mon, 18 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/01/18/redevelopment/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/01/18/redevelopment/</guid>
       <description>On the heels of the new assessment data we can start to slice the data in different ways to understand various aspects of the real estate landscape in Vancouver. The fact that Vancouver Open Data makes historic data available gives the ability to look for changes over time.
 Our maps explore this by visualizing some aspects of these changes for all properties, but it might also be useful to filter the properties we show to focus in on specific criteria.</description>
     </item>
     
     <item>
       <title>Vancouver Teardown Map</title>
-      <link>/blog/2014/09/05/vancouver-teardown-map/</link>
+      <link>http://doodles.mountainmath.ca/blog/2014/09/05/vancouver-teardown-map/</link>
       <pubDate>Fri, 05 Sep 2014 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2014/09/05/vancouver-teardown-map/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2014/09/05/vancouver-teardown-map/</guid>
       <description>There has been lots of talk about old homes being torn down and replaced in Vancouver. The likeliest targets are houses of relatively low value sitting on expensive land. So how many teardown candidates are there in Vancouver, and where in Vancouver are they located?
 To answer this we use data from Vancouver&amp;rsquo;s open data catalogue to build an interactive map to explore the low end of the building stock. More specifically, we set a somewhat arbitrary ratio of (assessed) house value to total (assessed) property value (house + land) of 5% and label everything below that a &amp;ldquo;teardown candidate&amp;rdquo;.</description>
     </item>

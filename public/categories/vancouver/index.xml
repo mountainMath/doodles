@@ -2,40 +2,40 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Vancouver on Mountain Doodles</title>
-    <link>/categories/vancouver/</link>
+    <link>http://doodles.mountainmath.ca/categories/vancouver/</link>
     <description>Recent content in Vancouver on Mountain Doodles</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Mon, 03 Apr 2017 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="/categories/vancouver/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="http://doodles.mountainmath.ca/categories/vancouver/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Marine Gateway and Joyce-Collingwood</title>
-      <link>/blog/2017/04/03/joyce-collingwood/</link>
+      <link>http://doodles.mountainmath.ca/blog/2017/04/03/joyce-collingwood/</link>
       <pubDate>Mon, 03 Apr 2017 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2017/04/03/joyce-collingwood/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2017/04/03/joyce-collingwood/</guid>
       <description>There has been some recent confusion that got confounded further about transit-oriented development in Vancouver harbouring a large number of non-primary residence homes. Good data is important in moving forward in Vancouver&amp;rsquo;s crazy housing market. Without proper context, a couple of data points can serve to paint a very misleading picture of what is happening. So I decided to fill in some gaps on the very narrow question of understanding the CT level numbers that get tossed around.</description>
     </item>
     
     <item>
       <title>RS Population Change</title>
-      <link>/blog/2017/03/06/rs-population-change/</link>
+      <link>http://doodles.mountainmath.ca/blog/2017/03/06/rs-population-change/</link>
       <pubDate>Mon, 06 Mar 2017 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2017/03/06/rs-population-change/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2017/03/06/rs-population-change/</guid>
       <description>With reporting on the new census numbers gaining traction, and now Mayor Robertson picking up on single family neighbourhoods losing population we thought it is time to crunch some numbers.
 Why does it need number crunching? All the reporting so far is based on looking at CT (Census Tract) aggregates, like e.g. in the map shown and linked to the right. But there is actually no single CT in the City of Vancouver that only contains RS zoning.</description>
     </item>
     
     <item>
       <title>Transit Explorer</title>
-      <link>/blog/2017/03/01/transit-explorer/</link>
+      <link>http://doodles.mountainmath.ca/blog/2017/03/01/transit-explorer/</link>
       <pubDate>Wed, 01 Mar 2017 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2017/03/01/transit-explorer/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2017/03/01/transit-explorer/</guid>
       <description>I have played with Mapzen&amp;rsquo;s Isochrone serivce in the past with a simple visualization of walksheds.
 Recently Mazen updated the isochrone API to allow for a more fine-grained selection of exactly what transit services to include or exclude in transit routing, and they created an amazing mobility explorer based on that.
 Partially motivated by chatting with two TransLink planners I decided to riff off of that and take a look at how well TransLink serves different parts of Vancouver.</description>
@@ -43,50 +43,50 @@ Partially motivated by chatting with two TransLink planners I decided to riff of
     
     <item>
       <title>More on Teardowns</title>
-      <link>/blog/2017/02/21/more-on-teardowns/</link>
+      <link>http://doodles.mountainmath.ca/blog/2017/02/21/more-on-teardowns/</link>
       <pubDate>Tue, 21 Feb 2017 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2017/02/21/more-on-teardowns/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2017/02/21/more-on-teardowns/</guid>
       <description>A little over a year ago we ran some analysis on teardowns of single family homes in the City of Vancouver. We used the City of Vancouver open data to understand why some single family homes got torn down and other&amp;rsquo;s don&amp;rsquo;t.
 Relying entirely on open data, there were some important questions that could not be answered. So together with Joe Dahmen at UBC&amp;rsquo;s School Of Architecture And Landscape Architecture we came back to the question and folded in transaction data from BC Assessment to add some more details and rigor.</description>
     </item>
     
     <item>
       <title>Jane Jacobs&#39; Vancouver</title>
-      <link>/blog/2017/01/25/jane-jacobs-vancouver/</link>
+      <link>http://doodles.mountainmath.ca/blog/2017/01/25/jane-jacobs-vancouver/</link>
       <pubDate>Wed, 25 Jan 2017 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2017/01/25/jane-jacobs-vancouver/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2017/01/25/jane-jacobs-vancouver/</guid>
       <description>Some time ago I saw Geoff Boeing&amp;rsquo;s excellent package to generate Jane Jacobs style street grid images. It&amp;rsquo;s lots of fun to compare different cities that way.
 It can be hard to represent one city by one square mile, so I thought it would be neat to use this to compare different parts of Vancouver. Some common themes emerge for the central parts, the more outlying areas display very differnet patterns.</description>
     </item>
     
     <item>
       <title>Bumper Year for Thumb Twiddlers</title>
-      <link>/blog/2017/01/18/bumper-year-for-thumb-twiddlers/</link>
+      <link>http://doodles.mountainmath.ca/blog/2017/01/18/bumper-year-for-thumb-twiddlers/</link>
       <pubDate>Wed, 18 Jan 2017 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2017/01/18/bumper-year-for-thumb-twiddlers/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2017/01/18/bumper-year-for-thumb-twiddlers/</guid>
       <description>Almost a year has passed since we first noticed how sitting on single family homes and twiddling thumbs generates more income than working. And not just at the level of individual single family households. In the City of Vancouver, the cumulative land value gains of just the single family homes eclipsed the cumulative taxable earnings reported to the CRA for the entire population.
 With the new assessment data available now, it is time to run the numbers and see how our thumb-twiddlers fared vs workers this year.</description>
     </item>
     
     <item>
       <title>The Coveted $1.2m - $1.6m Vote</title>
-      <link>/blog/2017/01/17/the-coveted-2m-6m-vote/</link>
+      <link>http://doodles.mountainmath.ca/blog/2017/01/17/the-coveted-2m-6m-vote/</link>
       <pubDate>Tue, 17 Jan 2017 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2017/01/17/the-coveted-2m-6m-vote/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2017/01/17/the-coveted-2m-6m-vote/</guid>
       <description>Earlier this month the province increased the threshold for the homeowner grant from $1.2 million to $1.6 million dollars. It&amp;rsquo;s an election year, and with the BC Assessment data for the City of Vancouver now being available via their open data catalogue we can ask who exactly this move was targeting.
 Restricted to the City of Vancouver, the answer is quite simple. There are about 24,000 single family homes, 1,200 duplex units and 4,000 condo units in that bracket.</description>
     </item>
     
     <item>
       <title>2017 Vancouver Assessment Data</title>
-      <link>/blog/2017/01/16/2017-assessment-data/</link>
+      <link>http://doodles.mountainmath.ca/blog/2017/01/16/2017-assessment-data/</link>
       <pubDate>Mon, 16 Jan 2017 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2017/01/16/2017-assessment-data/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2017/01/16/2017-assessment-data/</guid>
       <description>The friendly folks at Vancouver Open Data just updated their property assessment data with the fresh 2017 property tax assessments. Time to run the script to update the Vancouver Assessment Map with the new data, just like we did last year.
 For now we just updated our standard visuals and computed some overall statistics. We will take a closer look at the data over the coming days.
 Maps  By now we have a variety of maps that highlight different aspects of Vancouver real estate, and after running the import scripts they automatically serve the newest data.</description>
@@ -94,109 +94,98 @@ Maps  By now we have a variety of maps that highlight different aspects of Vanco
     
     <item>
       <title>Updated Property Tax Data</title>
-      <link>/blog/2016/12/13/updated-property-tax-data/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/12/13/updated-property-tax-data/</link>
       <pubDate>Tue, 13 Dec 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/12/13/updated-property-tax-data/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/12/13/updated-property-tax-data/</guid>
       <description>The property tax data for the City of Vancouver has been available for a while now, and with new assessment data becoming available soon everyone&amp;rsquo;s worried about what their property taxes will look like. The City just passed a 3.9% increase in their budget, so on average everyone will pay 3.9% more taxes than they did last year.
 The exact change in property taxes varies from property to property. There is a nice overview on how this works in general, for the City of Vancouver there is an added complication of land value averaging meant to soften sudden land value increases, that effectively serves to lower taxes for single family homeowners in a rising market.</description>
     </item>
     
     <item>
       <title>Character Retention</title>
-      <link>/blog/2016/11/26/character-retention/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/11/26/character-retention/</link>
       <pubDate>Sat, 26 Nov 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/11/26/character-retention/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/11/26/character-retention/</guid>
       <description>Today I went to the City of Vancouver Character Retention open house. It was quite informative, city staff were helpful and knowledgeable, and the display board and feedback form asked many good questions. But I came away with a couple of points that I think need to be addressed further:
 Faux character retention vs character design guidelines.  Understanding economic drivers of teardown decisions. Evaluation of RT character retention policies.</description>
     </item>
     
     <item>
-      <title>Zoned Capacity</title>
-      <link>/blog/2016/10/12/zoned-capacity/</link>
-      <pubDate>Wed, 12 Oct 2016 00:00:00 +0000</pubDate>
-      
-      <guid>/blog/2016/10/12/zoned-capacity/</guid>
-      <description>The term has recently been making the rounds in Vancouver. A typical statement is that Vancouver has enough zoned capacity until 2041. These kind of claims are usually attributed to the Coriolis report on CACs.
-We took a look at the report to see what exactly it says and how the term is used there.
-TL;DR Takeaways  Zoned capacity &amp;ne; Development capacity. Much of the zoned capacity referred to in the Coriolis report is not outright zoned but relies on conditional up-zoning the development permit board may (or may not) grant.</description>
-    </item>
-    
-    <item>
       <title>Secondary Suites and Taxes</title>
-      <link>/blog/2016/10/04/secondary-suites-and-taxes/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/10/04/secondary-suites-and-taxes/</link>
       <pubDate>Tue, 04 Oct 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/10/04/secondary-suites-and-taxes/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/10/04/secondary-suites-and-taxes/</guid>
       <description>A couple of weeks ago I started thinking about secondary suites, laneway houses and taxes in the City of Vancouver. The number of secondary suites and laneway houses has been continuously growing. Rental income is probably one of the main reasons people choose to activate a secondary suite. What are the tax implications?
 Secondary Suites How many secondary suites are out there? Nobody really knows, but we have some estimates.</description>
     </item>
     
     <item>
       <title>Measuring Housing Affordability</title>
-      <link>/blog/2016/09/14/measuring-housing-affordability/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/09/14/measuring-housing-affordability/</link>
       <pubDate>Wed, 14 Sep 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/09/14/measuring-housing-affordability/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/09/14/measuring-housing-affordability/</guid>
       <description>Housing affordability is a serious issue that deserves attention. Affordability is generally defined comparing incomes to housing costs. And ideally also factoring in transportation cost, although that&amp;rsquo;s seldom done and we will not attempt today.
 Recently we took a detailed look at income data. Using what we learned, together with our detailed data on the development of prices of single family properties in Vancouver, we turn to the never dying question of affordability of single family homes.</description>
     </item>
     
     <item>
       <title>Quick Guide to Income Data</title>
-      <link>/blog/2016/08/31/incomes/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/08/31/incomes/</link>
       <pubDate>Wed, 31 Aug 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/08/31/incomes/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/08/31/incomes/</guid>
       <description>The news media has an extraordinarily difficult time with income data. And that&amp;rsquo;s only partially the media&amp;rsquo;s fault. In general, income data is a funny beast. So I decided to give a quick overview over income data that&amp;rsquo;s available through Statistics Canada. To make things a little more concrete I focused on Vancouver as an example, but everything applies equally well to any other area in Canada.
 Most journalists I talked to care about accurate and relevant statements.</description>
     </item>
     
     <item>
       <title>What&#39;s up with RT?</title>
-      <link>/blog/2016/08/04/rt/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/08/04/rt/</link>
       <pubDate>Thu, 04 Aug 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/08/04/rt/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/08/04/rt/</guid>
       <description>RT is Vancouver&amp;rsquo;s zoning for duplexes. Over time, various areas have been zoned to allow duplexes. Examples are Kits Point, much of Point Grey Road reaching up to Broadway, much of Granview-Woodlands, parts of Mount Pleasant and many other areas.
 Recently I have had some interesting conversations on Twitter regarding RM-6 and over BBQ dinner about RT-7. Then the Granview-Woodland plan passed by council, and it contains a curious provision of reducing the outright FSR for the RT-zoned properties from 0.</description>
     </item>
     
     <item>
       <title>Mixing Data</title>
-      <link>/blog/2016/07/06/mixing-data/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/07/06/mixing-data/</link>
       <pubDate>Wed, 06 Jul 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/07/06/mixing-data/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/07/06/mixing-data/</guid>
       <description>Census data is very rich and with CensusMapper we now have about 1 billion data points right at our fingertips. And we have managed to open up some of our interfaces for everyone to explore data and make their own maps and freely share them.
 Things really get interesting when one mixes custom data with census data. While, at this point, these are not part of the freely available CensusMapper functionality we still wanted to share what can be done.</description>
     </item>
     
     <item>
       <title>SDH Zoning and Land Use</title>
-      <link>/blog/2016/06/17/sdh-zoning-and-land-use/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/06/17/sdh-zoning-and-land-use/</link>
       <pubDate>Fri, 17 Jun 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/06/17/sdh-zoning-and-land-use/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/06/17/sdh-zoning-and-land-use/</guid>
       <description>Recently the question around the amount of space taken up (exclusively) by single detached houses has show up on my Twitter feed citing that SFH take up 70%, 66%, and 57%, 56% (timestamp 3:50). I personally have thrown in 34% as a contender. And, just for the fun of it, by the end of this post I will have thrown 33% and 28% and my favorite, 81%, into the mix.</description>
     </item>
     
     <item>
       <title>FSR</title>
-      <link>/blog/2016/05/20/density/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/05/20/density/</link>
       <pubDate>Fri, 20 May 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/05/20/density/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/05/20/density/</guid>
       <description>Ever since I played with the LIDAR-generated building height data I thought that I should use that to map gross floor area (GFA) and floor space ratio (FSR). Gross floor area is the total floor area inside the building envelope. So for a three storey building, it is the area of the footprint times three. Floor space ratio is the GFA divided by the area of the parcel it sits on.</description>
     </item>
     
     <item>
       <title>TOD Mode Share</title>
-      <link>/blog/2016/04/20/tod-mode-share/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/04/20/tod-mode-share/</link>
       <pubDate>Wed, 20 Apr 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/04/20/tod-mode-share/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/04/20/tod-mode-share/</guid>
       <description>Just saw a comment on the Pricetags blog pointing to a nice master&amp;rsquo;s thesis investigating various TOD metrics around skytrain stations. I got curious how the 2011 transit mode share compares to the earlier census years listed in the thesis. And how the mode share varies spatially.
 With CensusMapper at my finger tips and building on the visuals from the previous post this is an easy exercise.
 We again simply map our concentric circles around the stations, but this time we turn them into pie charts to show the commute to work mode share.</description>
@@ -204,49 +193,49 @@ We again simply map our concentric circles around the stations, but this time we
     
     <item>
       <title>TOD</title>
-      <link>/blog/2016/04/06/tod/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/04/06/tod/</link>
       <pubDate>Wed, 06 Apr 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/04/06/tod/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/04/06/tod/</guid>
       <description>Just saw this excellent post looking at density around transit stations today and though I should pull out some numbers to go with the pretty visuals. And with CensusMapper&amp;rsquo;s new capabilities of populating custom geometries with census data estimates it&amp;rsquo;s super-easy to do.
 Population density is only one measure of interest here, job density or amenities density would be others. But for now let&amp;rsquo;s focus on population, so how many people live near the rapid transit stations.</description>
     </item>
     
     <item>
       <title>On Houses and Dirt</title>
-      <link>/blog/2016/04/01/on-dirt-and-houses/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/04/01/on-dirt-and-houses/</link>
       <pubDate>Fri, 01 Apr 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/04/01/on-dirt-and-houses/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/04/01/on-dirt-and-houses/</guid>
       <description>The story of Vancouver real estate is mostly a story of dirt. After spending a bit of time to collect relevant data I am now wondering how to make better visualizations to make that data more accessible.
  Looking at my old maps based around assessment data, there are a couple of things that bother me. They are not very good at showing changes over time. And they are not very good at highlighting the different role of dirt and the houses on top.</description>
     </item>
     
     <item>
       <title>On Mixed Use</title>
-      <link>/blog/2016/03/28/on-mixed-use/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/03/28/on-mixed-use/</link>
       <pubDate>Mon, 28 Mar 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/03/28/on-mixed-use/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/03/28/on-mixed-use/</guid>
       <description>Redeveloping single storey commercial properties into mixed use is taking off in Vancouver right now. It&amp;rsquo;s a little frustrating to see how pretty much every story I have seen on this get the effect this has on property taxes wrong, including one on the generally quite good Price Tags blog. People claim that converting single story commercial to mixed use pushes up the property taxes for the commercial tenants. Property taxes are an important piece of the puzzle in Vancouver, so I decided to go into a little detail on this.</description>
     </item>
     
     <item>
       <title>Unoccupied Dwellings</title>
-      <link>/blog/2016/03/08/unoccupied-dwellings/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/03/08/unoccupied-dwellings/</link>
       <pubDate>Tue, 08 Mar 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/03/08/unoccupied-dwellings/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/03/08/unoccupied-dwellings/</guid>
       <description>Today the City of Vancouver released their report on unoccupied dwelling units in the city. I watched part of the presentation and read through the report, and from all that I can see the methodology used is very solid.
 I have seen some confusion and even some incorrect reporting on this, so I thought it would be worthwhile to look into the report in detail. The Data Smart meter data can be used to determine very accurately which units are occupied and which ones are not.</description>
     </item>
     
     <item>
       <title>Physical SFH Form Over Time</title>
-      <link>/blog/2016/03/05/physical-sfh-form-over-time/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/03/05/physical-sfh-form-over-time/</link>
       <pubDate>Sat, 05 Mar 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/03/05/physical-sfh-form-over-time/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/03/05/physical-sfh-form-over-time/</guid>
       <description>I was curious how the physical parameters of Single Family Houses changed over time.
 Using the assessment dataset merged with the land use dataset allows to fairly accurately pick out single family houses, and also holds the age of most properies. Together with the City of Vancouver LIDAR-generated building dataset that I have played with before we can look at physical building parameters.
 The city dataset is a little coarse, it only contains the main building and does not map things like garages.</description>
@@ -254,127 +243,127 @@ The city dataset is a little coarse, it only contains the main building and does
     
     <item>
       <title>Property Taxes and Land Use</title>
-      <link>/blog/2016/03/02/property-taxes-and-land-use/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/03/02/property-taxes-and-land-use/</link>
       <pubDate>Wed, 02 Mar 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/03/02/property-taxes-and-land-use/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/03/02/property-taxes-and-land-use/</guid>
       <description>Since I started thinking about tax density, the amount of property taxes collected per area, I always felt that the data presentation in the map fell short.
 Property taxes are somewhat insulated from the ups and downs of the real estate market as they are need-based and the mill rate changes to flatten out the crazyness of the market. But what they lack in interesting patterns over time they more than makes up for in interesting patterns in space.</description>
     </item>
     
     <item>
       <title>Land Use, Roads (and Parking)</title>
-      <link>/blog/2016/02/29/land-use/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/02/29/land-use/</link>
       <pubDate>Mon, 29 Feb 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/02/29/land-use/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/02/29/land-use/</guid>
       <description>The other day at the SFU&amp;rsquo;s City Conversations someone asked a question about space dedicated to roads, and how that could be unlocked to aid housing. He mentioned what percentage of space is currently dedicated to roads. I forgot the number, but I thought to myself that I should look that up for all Metro Vancouver communities. So here we go. Actually, it would be interesting to compare how land is allocated to all kinds of land uses across Metro Vancouver, not just roads.</description>
     </item>
     
     <item>
       <title>On Condos</title>
-      <link>/blog/2016/02/10/on-condos/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/02/10/on-condos/</link>
       <pubDate>Wed, 10 Feb 2016 11:01:47 -0800</pubDate>
       
-      <guid>/blog/2016/02/10/on-condos/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/02/10/on-condos/</guid>
       <description>Lots has been said about the upper end of owned dwellings. The movement of the &amp;ldquo;million dollar line&amp;rdquo;, the emergence of the &amp;ldquo;two million dollar line&amp;rdquo; and &amp;ldquo;multi-million dollar lines&amp;rdquo;. Most of that discussion is focused on single detached homes or on proxies for &amp;ldquo;single detached&amp;rdquo; like RS zoned properties.
 But all of these maps have a clear bias toward the more expensive homes. Everyone knows by now where the most expensive properties are.</description>
     </item>
     
     <item>
       <title>Loss of Character</title>
-      <link>/blog/2016/02/01/loss-of-character/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/02/01/loss-of-character/</link>
       <pubDate>Mon, 01 Feb 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/02/01/loss-of-character/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/02/01/loss-of-character/</guid>
       <description>At the heart of the Vancouver affordability crisis is a phrase that comes up again and again. Loss of Character. To effectively move forward I think it is important to look closely what it means and how it is used.
 And what the data can tell us about loss of character. Loss of Character Very broadly interpreted, change of character is how people describe the process when the environment around them is changing in profound ways.</description>
     </item>
     
     <item>
       <title>Land Use Data</title>
-      <link>/blog/2016/01/31/land-use/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/01/31/land-use/</link>
       <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/01/31/land-use/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/01/31/land-use/</guid>
       <description>Metro Vancouver has a fairly good land use dataset that I imported quite some time ago so that I could take a good look at it. But then I forgot about it until @HealthyCityMaps reminded me just at the time when the discussions about assessmened values in Vancouver were flaring up again.
 So finally I decided to mark up the City of Vancouver assessment dataset with the land use from the Metro Vancouver land use dataset.</description>
     </item>
     
     <item>
       <title>Work vs Twiddling Thumbs</title>
-      <link>/blog/2016/01/24/work-vs-twiddling-thumbs/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/01/24/work-vs-twiddling-thumbs/</link>
       <pubDate>Sun, 24 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/01/24/work-vs-twiddling-thumbs/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/01/24/work-vs-twiddling-thumbs/</guid>
       <description>In the ongoing debate on affordability of housing in the City of Vancouver we regularly hear voices expressing concern for &amp;ldquo;elderly folks of modest means who had been counting on using their home as a pension&amp;rdquo; to argue against doing anything to ease the housing affordability problems many (younger) people are facing. In these arguments the concern for &amp;ldquo;elderly folks of modest means&amp;rdquo; seems curiously focused to those who own property as opposed to, for example, the 20% of the elderly people in Vancouver that live in poverty (15k total).</description>
     </item>
     
     <item>
       <title>On Teardowns</title>
-      <link>/blog/2016/01/18/redevelopment/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/01/18/redevelopment/</link>
       <pubDate>Mon, 18 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/01/18/redevelopment/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/01/18/redevelopment/</guid>
       <description>On the heels of the new assessment data we can start to slice the data in different ways to understand various aspects of the real estate landscape in Vancouver. The fact that Vancouver Open Data makes historic data available gives the ability to look for changes over time.
 Our maps explore this by visualizing some aspects of these changes for all properties, but it might also be useful to filter the properties we show to focus in on specific criteria.</description>
     </item>
     
     <item>
       <title>Updated Vancouver Assessment Data</title>
-      <link>/blog/2016/01/17/updated-vancouver-assessment-data/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/01/17/updated-vancouver-assessment-data/</link>
       <pubDate>Sun, 17 Jan 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/01/17/updated-vancouver-assessment-data/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/01/17/updated-vancouver-assessment-data/</guid>
       <description>The friendly folks at Vancouver Open Data just updated their property assessment data with the fresh 2016 property tax assessments. Time to run the script to update the Vancouver Assessment Map with the new data. And for good measure I pasted over some of the thematic map engine from CensusMapper to improve the mapping performance.
 Maps The interactive assessment map offers several views. In the panel on the top right we can select how to view the data.</description>
     </item>
     
     <item>
       <title>Vancouver 2011 Census Data on Housing</title>
-      <link>/blog/2015/06/23/vancouver-2011-census-data-on-housing/</link>
+      <link>http://doodles.mountainmath.ca/blog/2015/06/23/vancouver-2011-census-data-on-housing/</link>
       <pubDate>Tue, 23 Jun 2015 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2015/06/23/vancouver-2011-census-data-on-housing/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2015/06/23/vancouver-2011-census-data-on-housing/</guid>
       <description>Last week my friend Alejandro emailed me some census data. After sitting on it for a couple of days I decided one evening to take a look and map the dissemination areas. The dataset contained 125 fields around housing and income. So I started plucking some of the fields off the table and mapping them.
 It did not take long and colorful maps started showing up. Another evening and lots of map layers later I put the Vancouver Census Map online for people interested to look through the census graphs.</description>
     </item>
     
     <item>
       <title>Tax Density in Vancouver</title>
-      <link>/blog/2015/05/31/density-in-vancouver/</link>
+      <link>http://doodles.mountainmath.ca/blog/2015/05/31/density-in-vancouver/</link>
       <pubDate>Sun, 31 May 2015 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2015/05/31/density-in-vancouver/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2015/05/31/density-in-vancouver/</guid>
       <description>The other day I saw that Downtown brings in 23% of CoV tax revenue but only makes up 5% of the city area. Intrigued by that I decided to add a &amp;lsquo;Tax Density&amp;rsquo; layer to my Vancouver Assessment Map. The idea was to try and understand the tax revenue generated by different areas in Vancouver. The data is already available in the CoV open data property dataset so it would only take half an hour to ad it to my map.</description>
     </item>
     
     <item>
       <title>Vancouver Bike Paths</title>
-      <link>/blog/2015/04/01/bike-paths/</link>
+      <link>http://doodles.mountainmath.ca/blog/2015/04/01/bike-paths/</link>
       <pubDate>Wed, 01 Apr 2015 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2015/04/01/bike-paths/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2015/04/01/bike-paths/</guid>
       <description>Motivated by the excellent Washington Post Wonkblog I mapped Vancouver&amp;rsquo;s bike infrastructure. Looks good at first, but when you take out the &amp;lsquo;fake&amp;rsquo; &amp;ldquo;Local Street&amp;rdquo; bikeways more in line with Wonkblog&amp;rsquo;s methodology it&amp;rsquo;s looking pretty bleak in large portions of the city.
 Of course the devil is in the details and infrastructure cannot just be judged by how it&amp;rsquo;s labeled. If one were to look for 8-80 infrastructure, then the separated lanes would make the cut.</description>
     </item>
     
     <item>
       <title>Vancouver Assessment Data</title>
-      <link>/blog/2015/03/23/vancouver-assessment-data/</link>
+      <link>http://doodles.mountainmath.ca/blog/2015/03/23/vancouver-assessment-data/</link>
       <pubDate>Mon, 23 Mar 2015 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2015/03/23/vancouver-assessment-data/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2015/03/23/vancouver-assessment-data/</guid>
       <description>The City of Vancouver has recently updated their open data catalogue with historic tax data. We figured that would be a good time to take our previous rather clumsy attempts to map tax data and polish that up a bit.
 This time we put in a couple of evenings to build a more responsive map with multiple options of what to map. Head straight for &amp;lsquo;the map&amp;rsquo; or read on for some background information, including some methodology on data cleaning and interpolation.</description>
     </item>
     
     <item>
       <title>Mapping CACs</title>
-      <link>/blog/2014/11/05/mapping-cacs/</link>
+      <link>http://doodles.mountainmath.ca/blog/2014/11/05/mapping-cacs/</link>
       <pubDate>Wed, 05 Nov 2014 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2014/11/05/mapping-cacs/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2014/11/05/mapping-cacs/</guid>
       <description>After reading the post on Price Tags, originally from Karen Sawatzky&amp;rsquo;s blog, I got curious about getting a geographic overview over the CACs in Vancouver in 2010, 2011 and 2012.
 As opposed to the teardown map the dataset is quite small, so there should be no problems viewing this on a mobile device. As always, map is below the fold.
 Some of the property addresses did not match any address in the CoV open data property database, probably because the developments are quite new and new addresses got assigned.</description>
@@ -382,19 +371,19 @@ Some of the property addresses did not match any address in the CoV open data pr
     
     <item>
       <title>Vancouver High Value Improvements Map</title>
-      <link>/blog/2014/09/07/vancouver-high-value-improvements-map/</link>
+      <link>http://doodles.mountainmath.ca/blog/2014/09/07/vancouver-high-value-improvements-map/</link>
       <pubDate>Sun, 07 Sep 2014 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2014/09/07/vancouver-high-value-improvements-map/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2014/09/07/vancouver-high-value-improvements-map/</guid>
       <description>After the teardown map that looked at the low end of Vancouver&amp;rsquo;s building stock, a natural question is to look at the high end. Just as before, we are focusing on the (assessed) value of the building relative to the total (assessed) value of land and improvements. We defined &amp;ldquo;highly improved&amp;rdquo; properties to be properties where the ratio is at least 50%, so the building is worth at least as much as the land it is built on.</description>
     </item>
     
     <item>
       <title>Vancouver Teardown Map</title>
-      <link>/blog/2014/09/05/vancouver-teardown-map/</link>
+      <link>http://doodles.mountainmath.ca/blog/2014/09/05/vancouver-teardown-map/</link>
       <pubDate>Fri, 05 Sep 2014 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2014/09/05/vancouver-teardown-map/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2014/09/05/vancouver-teardown-map/</guid>
       <description>There has been lots of talk about old homes being torn down and replaced in Vancouver. The likeliest targets are houses of relatively low value sitting on expensive land. So how many teardown candidates are there in Vancouver, and where in Vancouver are they located?
 To answer this we use data from Vancouver&amp;rsquo;s open data catalogue to build an interactive map to explore the low end of the building stock. More specifically, we set a somewhat arbitrary ratio of (assessed) house value to total (assessed) property value (house + land) of 5% and label everything below that a &amp;ldquo;teardown candidate&amp;rdquo;.</description>
     </item>

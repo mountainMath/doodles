@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Surrey on Mountain Doodles</title>
-    <link>/categories/surrey/</link>
+    <link>http://doodles.mountainmath.ca/categories/surrey/</link>
     <description>Recent content in Surrey on Mountain Doodles</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Sun, 27 Mar 2016 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="/categories/surrey/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="http://doodles.mountainmath.ca/categories/surrey/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Surrey Traffic Loop Counts</title>
-      <link>/blog/2016/03/27/surrey-traffic-loop-counts/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/03/27/surrey-traffic-loop-counts/</link>
       <pubDate>Sun, 27 Mar 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/03/27/surrey-traffic-loop-counts/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/03/27/surrey-traffic-loop-counts/</guid>
       <description>Surrey published a beta version of their traffic loop counts, which is pretty awesome. Real life traffic data is very exciting, and there are lots of fun things one could do with that. So last night I decided to take a look and make a quick map. Nothing exciting yet, just to feel may way around what&amp;rsquo;s there. To keep things simple I again took advantage of the awesome Tangram mapping enginge and turned it onto the traffic loop data.</description>
     </item>
     

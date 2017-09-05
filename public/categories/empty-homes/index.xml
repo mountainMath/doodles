@@ -2,30 +2,30 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Empty Homes on Mountain Doodles</title>
-    <link>/categories/empty-homes/</link>
+    <link>http://doodles.mountainmath.ca/categories/empty-homes/</link>
     <description>Recent content in Empty Homes on Mountain Doodles</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Mon, 03 Apr 2017 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="/categories/empty-homes/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="http://doodles.mountainmath.ca/categories/empty-homes/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Marine Gateway and Joyce-Collingwood</title>
-      <link>/blog/2017/04/03/joyce-collingwood/</link>
+      <link>http://doodles.mountainmath.ca/blog/2017/04/03/joyce-collingwood/</link>
       <pubDate>Mon, 03 Apr 2017 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2017/04/03/joyce-collingwood/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2017/04/03/joyce-collingwood/</guid>
       <description>There has been some recent confusion that got confounded further about transit-oriented development in Vancouver harbouring a large number of non-primary residence homes. Good data is important in moving forward in Vancouver&amp;rsquo;s crazy housing market. Without proper context, a couple of data points can serve to paint a very misleading picture of what is happening. So I decided to fill in some gaps on the very narrow question of understanding the CT level numbers that get tossed around.</description>
     </item>
     
     <item>
       <title>Unoccupied Dwellings</title>
-      <link>/blog/2016/03/08/unoccupied-dwellings/</link>
+      <link>http://doodles.mountainmath.ca/blog/2016/03/08/unoccupied-dwellings/</link>
       <pubDate>Tue, 08 Mar 2016 00:00:00 +0000</pubDate>
       
-      <guid>/blog/2016/03/08/unoccupied-dwellings/</guid>
+      <guid>http://doodles.mountainmath.ca/blog/2016/03/08/unoccupied-dwellings/</guid>
       <description>Today the City of Vancouver released their report on unoccupied dwelling units in the city. I watched part of the presentation and read through the report, and from all that I can see the methodology used is very solid.
 I have seen some confusion and even some incorrect reporting on this, so I thought it would be worthwhile to look into the report in detail. The Data Smart meter data can be used to determine very accurately which units are occupied and which ones are not.</description>
     </item>
