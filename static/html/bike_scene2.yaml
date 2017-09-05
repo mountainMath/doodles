@@ -11,7 +11,7 @@ sources:
         url:  //vector.mapzen.com/osm/all/{z}/{x}/{y}.topojson?api_key=vector-tiles-o7hC53g
     local:
         type: TopoJSON
-        url: data/van3.topojson
+        url: /data/van3.topojson
         #url: data/ubc-cycleways.geojson
 camera:
     type: isometric
