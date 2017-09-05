@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Geeky on Mountain Doodles</title>
+    <link>/categories/geeky/</link>
+    <description>Recent content in Geeky on Mountain Doodles</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Thu, 24 Aug 2017 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/categories/geeky/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>dot-density</title>
+      <link>/blog/2017/08/24/dot-density/</link>
+      <pubDate>Thu, 24 Aug 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2017/08/24/dot-density/</guid>
+      <description>I started writing this blog post in December 2015, when CensusMapper quite a bit younger and I hacked together some basic dot-density maps. I never much liked the results and have been slowly improving and thinking about them. I am still not entirely happy with the current implementation, but it is slowly getting there. The final impulse to finsish this post was the work on cancensus, and R wrapper for the CensusMapper API my explorations in multi-category dot density maps in R, now tied up into the new dotdensity package.</description>
+    </item>
+    
+    <item>
+      <title>Surprise Maps</title>
+      <link>/blog/2017/04/10/surprise/</link>
+      <pubDate>Mon, 10 Apr 2017 08:43:58 -0700</pubDate>
+      
+      <guid>/blog/2017/04/10/surprise/</guid>
+      <description>At CensusMapper we like building models based on census data. We now have a common tiling for 2011 and 2016 geographies that allows us to easily model changes over time. After building a model we often want to see how well the model performs. An easy way to do this is to simply map the difference of observations and model predictions.
+Those maps are great and it is easy to understand what is mapped.</description>
+    </item>
+    
+    <item>
+      <title>Comparing Censuses</title>
+      <link>/blog/2017/03/22/comparing-censuses/</link>
+      <pubDate>Wed, 22 Mar 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2017/03/22/comparing-censuses/</guid>
+      <description>It&amp;rsquo;s great to have fresh census data to play with. Right now we only have three variables, population, dwellings and households. There is still lots of interesting information that can be extracted.
+So we started exploring in our last post, things get really interesting when looking at change between censuses. But as we noted, there are several technical difficulties that need to be overcome.
+So we at CensusMapper took that as and invitation to do what we love most: breaking down barriers.</description>
+    </item>
+    
+    <item>
+      <title>On Condos</title>
+      <link>/blog/2016/02/10/on-condos/</link>
+      <pubDate>Wed, 10 Feb 2016 11:01:47 -0800</pubDate>
+      
+      <guid>/blog/2016/02/10/on-condos/</guid>
+      <description>Lots has been said about the upper end of owned dwellings. The movement of the &amp;ldquo;million dollar line&amp;rdquo;, the emergence of the &amp;ldquo;two million dollar line&amp;rdquo; and &amp;ldquo;multi-million dollar lines&amp;rdquo;. Most of that discussion is focused on single detached homes or on proxies for &amp;ldquo;single detached&amp;rdquo; like RS zoned properties.
+But all of these maps have a clear bias toward the more expensive homes. Everyone knows by now where the most expensive properties are.</description>
+    </item>
+    
+    <item>
+      <title>On Teardowns</title>
+      <link>/blog/2016/01/18/redevelopment/</link>
+      <pubDate>Mon, 18 Jan 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2016/01/18/redevelopment/</guid>
+      <description>On the heels of the new assessment data we can start to slice the data in different ways to understand various aspects of the real estate landscape in Vancouver. The fact that Vancouver Open Data makes historic data available gives the ability to look for changes over time.
+Our maps explore this by visualizing some aspects of these changes for all properties, but it might also be useful to filter the properties we show to focus in on specific criteria.</description>
+    </item>
+    
+    <item>
+      <title>Canvas vs SVG</title>
+      <link>/blog/2015/12/27/canvas-vs-svg/</link>
+      <pubDate>Sun, 27 Dec 2015 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2015/12/27/canvas-vs-svg/</guid>
+      <description>CensusMapper Behind the Scenes The idea behind CensusMapper is that it takes away all the technical barriers to dealing with census data. So how does CensusMapper work behind the scenes?
+CensusMapper Data Workflow The general setup is quite simple. We use the lean javascript open mapping platform leaflet as the base for mapping information. Leaflet handles the logic of dealing with zoom and pan and keeping track of the geographic boundaries that should be mapped.</description>
+    </item>
+    
+  </channel>
+</rss>

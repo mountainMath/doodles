@@ -1,0 +1,1155 @@
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        
+            
+                <title>Canvas vs SVG</title>
+            
+        
+
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="generator" content="Hugo 0.26" />
+        
+    
+        
+    
+
+    
+
+    <link rel="apple-touch-icon-precomposed"
+        href='/favicon/apple-touch-icon-precomposed.png'>
+    <link rel="icon" href='/favicon/favicon.png'>
+    
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="msapplication-TileImage"
+        content='/favicon/mstile.png'>
+
+
+
+        
+            <meta name="author" content="Jens von Bergmann">
+        
+        
+            <meta name="description" content="Web performance tuning">
+        
+
+        <meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Canvas vs SVG"/>
+<meta name="twitter:description" content="Web performance tuning"/>
+<meta name="twitter:site" content="@vb_jens"/>
+
+        <meta property="og:title" content="Canvas vs SVG" />
+<meta property="og:description" content="Web performance tuning" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/posts/2015-12-27-canvas-vs-svg/" />
+
+
+
+<meta property="article:published_time" content="2015-12-27T00:00:00&#43;00:00"/>
+<meta property="article:modified_time" content="2015-12-27T00:00:00&#43;00:00"/>
+
+
+
+
+
+
+
+
+
+
+
+        
+<meta itemprop="name" content="Canvas vs SVG">
+<meta itemprop="description" content="Web performance tuning">
+
+
+<meta itemprop="dateModified" content="2015-12-27T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="1158">
+
+
+
+<meta itemprop="keywords" content="" />
+
+        
+
+        
+
+        
+        
+            
+        
+
+        
+        
+            <link rel="stylesheet" href="/css/google-font.css" />
+            <link rel="stylesheet" href="/css/font-awesome.min.css" />
+            <link rel="stylesheet" href="/css/main.css" />
+            <link rel="stylesheet" href="/css/add-on.css" />
+            <link rel="stylesheet" href="/css/monokai-sublime.css">
+        
+
+        
+
+        
+        
+        
+            
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-54516567-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+        
+    </head>
+    <body>
+
+        
+        <div id="wrapper">
+
+    
+    
+<header id="header">
+    
+        <h2><a href="/">Mountain Doodles</i></a></h2>
+    
+
+    <nav class="links">
+        <ul>
+            
+                <li>
+                    <a href="/blog">
+                        
+                            <i class="fa fa-newspaper-o">&nbsp;</i>Blog
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/blog/archives">
+                        Archives
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/categories">
+                        Categories
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/about">
+                        About
+                    </a>
+                </li>
+            
+        </ul>
+    </nav>
+    <nav class="main">
+        <ul>
+            
+            <li id="share-nav" class="share-menu" style="display:none;">
+                <a class="fa-share-alt" href="#share-menu">Share</a>
+            </li>
+            
+            <li class="search">
+                <a class="fa-search" href="#search">Search</a>
+                <form id="search" method="get" action="//google.com/search">
+                    <input type="text" name="q" placeholder="Search" />
+                    <input type="hidden" name="q" value="site:/">
+                </form>
+            </li>
+            <li class="menu">
+                <a class="fa-bars" href="#menu">Menu</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+
+<section id="menu">
+
+    
+        <section>
+            <form class="search" method="get" action="//google.com/search">
+                <input type="text" name="q" placeholder="Search" />
+                <input type="hidden" name="q" value="site:/">
+            </form>
+        </section>
+
+    
+        <section>
+            <ul class="links">
+                
+                    <li>
+                        <a href="/blog">
+                            <h3>
+                                
+                                    <i class="fa fa-newspaper-o">&nbsp;</i>
+                                
+                                Blog
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/archives">
+                            <h3>
+                                
+                                Archives
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/categories">
+                            <h3>
+                                
+                                Categories
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/about">
+                            <h3>
+                                
+                                About
+                            </h3>
+                        </a>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+        <section>
+            <ul class="links">
+                <header>
+                    <h3>Recent Posts</h3>
+                </header>
+                
+                    
+                
+
+                
+                    <li>
+                        <a href="/posts/content/posts/2017-08-25-dot-density/"><p>dot-density</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/posts/density/"><p>Density</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/posts/content/posts/2017-08-06-millennials-redux/"><p>Millennials Redux</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/posts/content/posts/2017-05-16-lifeblood/"><p>Lifeblood</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/posts/content/posts/2017-04-10-surprise/"><p>Surprise Maps</p></a>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+        
+</section>
+
+    <section id="share-menu">
+    <section id="social-share-nav">
+        <ul class="links">
+            <header>
+                <h3>Share this post <i class="fa fa-smile-o"></i></h3>
+            </header>
+            
+
+
+<li><a href="//twitter.com/share?url=%2fposts%2f2015-12-27-canvas-vs-svg%2f&text=Canvas%20vs%20SVG&via=vb_jens" target="_blank" class="share-btn twitter">
+    <i class="fa fa-twitter"></i>
+    <p>Twitter</p>
+</a></li>
+
+
+<li><a href="//plus.google.com/share?url=%2fposts%2f2015-12-27-canvas-vs-svg%2f" target="_blank" class="share-btn google-plus">
+    <i class="fa fa-google-plus"></i>
+    <p>Google+</p>
+</a></li>
+
+
+<li><a href="//www.facebook.com/sharer/sharer.php?u=%2fposts%2f2015-12-27-canvas-vs-svg%2f" target="_blank" class="share-btn facebook">
+    <i class="fa fa-facebook"></i>
+    <p>Facebook</p>
+</a></li>
+
+
+<li><a href="//reddit.com/submit?url=%2fposts%2f2015-12-27-canvas-vs-svg%2f&title=Canvas%20vs%20SVG" target="_blank" class="share-btn reddit">
+    <i class="fa fa-reddit-alien"></i>
+    <p>Reddit</p>
+</a></li>
+
+
+<li><a href="//www.linkedin.com/shareArticle?url=%2fposts%2f2015-12-27-canvas-vs-svg%2f&title=Canvas%20vs%20SVG" target="_blank" class="share-btn linkedin">
+    <i class="fa fa-linkedin"></i>
+    <p>LinkedIn</p>
+</a></li>
+
+
+<li><a href="//www.stumbleupon.com/submit?url=%2fposts%2f2015-12-27-canvas-vs-svg%2f&title=Canvas%20vs%20SVG" target="_blank" class="share-btn stumbleupon">
+    <i class="fa fa-stumbleupon"></i>
+    <p>StumbleUpon</p>
+</a></li>
+
+
+<li><a href="mailto:?subject=Check out this post by Jens%20von%20Bergmann&body=%2fposts%2f2015-12-27-canvas-vs-svg%2f" target="_blank" class="share-btn email">
+    <i class="fa fa-envelope"></i>
+    <p>Email</p>
+</a></li>
+
+        </ul>
+    </section>
+</section>
+
+    
+    <div id="main">
+        
+        
+        <article class="post">
+    <header>
+    <div class="title">
+        
+            <h1><a href="/posts/2015-12-27-canvas-vs-svg/">Canvas vs SVG</a></h1>
+            
+        
+        
+            <p>Web performance tuning</p>
+        
+    </div>
+    <div class="meta">
+        
+            
+        
+
+        <time class="published"
+            datetime='2015-12-27'>
+            December 27, 2015</time>
+        <span class="author">Jens von Bergmann</span>
+        
+            <p>6 minute read</p>
+        
+        
+    </div>
+</header>
+
+
+    <section id="social-share">
+        <ul class="icons">
+            
+
+
+<li><a href="//twitter.com/share?url=%2fposts%2f2015-12-27-canvas-vs-svg%2f&text=Canvas%20vs%20SVG&via=vb_jens" target="_blank" class="share-btn twitter">
+    <i class="fa fa-twitter"></i>
+    <p>Twitter</p>
+</a></li>
+
+
+<li><a href="//plus.google.com/share?url=%2fposts%2f2015-12-27-canvas-vs-svg%2f" target="_blank" class="share-btn google-plus">
+    <i class="fa fa-google-plus"></i>
+    <p>Google+</p>
+</a></li>
+
+
+<li><a href="//www.facebook.com/sharer/sharer.php?u=%2fposts%2f2015-12-27-canvas-vs-svg%2f" target="_blank" class="share-btn facebook">
+    <i class="fa fa-facebook"></i>
+    <p>Facebook</p>
+</a></li>
+
+
+<li><a href="//reddit.com/submit?url=%2fposts%2f2015-12-27-canvas-vs-svg%2f&title=Canvas%20vs%20SVG" target="_blank" class="share-btn reddit">
+    <i class="fa fa-reddit-alien"></i>
+    <p>Reddit</p>
+</a></li>
+
+
+<li><a href="//www.linkedin.com/shareArticle?url=%2fposts%2f2015-12-27-canvas-vs-svg%2f&title=Canvas%20vs%20SVG" target="_blank" class="share-btn linkedin">
+    <i class="fa fa-linkedin"></i>
+    <p>LinkedIn</p>
+</a></li>
+
+
+<li><a href="//www.stumbleupon.com/submit?url=%2fposts%2f2015-12-27-canvas-vs-svg%2f&title=Canvas%20vs%20SVG" target="_blank" class="share-btn stumbleupon">
+    <i class="fa fa-stumbleupon"></i>
+    <p>StumbleUpon</p>
+</a></li>
+
+
+<li><a href="mailto:?subject=Check out this post by Jens%20von%20Bergmann&body=%2fposts%2f2015-12-27-canvas-vs-svg%2f" target="_blank" class="share-btn email">
+    <i class="fa fa-envelope"></i>
+    <p>Email</p>
+</a></li>
+
+        </ul>
+    </section>
+    
+    
+
+    
+        
+        
+
+
+
+
+    
+
+
+        
+
+        <a href="/posts/2015-12-27-canvas-vs-svg/" class="image featured">
+            <img src="/images/chrome.png" alt="" />
+        </a>
+    
+
+
+    <div id="content">
+        
+
+<h2 id="censusmapper-behind-the-scenes">CensusMapper Behind the Scenes</h2>
+
+<p>The idea behind <a href="https://censusmapper.ca">CensusMapper</a> is that it takes away all the technical barriers to dealing with census data. So how does
+CensusMapper work behind the scenes?</p>
+
+<h2 id="censusmapper-data-workflow">CensusMapper Data Workflow</h2>
+
+<!-- more -->
+
+<p>The general setup is quite simple. We use the lean javascript open mapping platform <a href="http://leafletjs.com">leaflet</a>
+as the base for mapping information. Leaflet handles the logic of dealing with zoom and pan and keeping track of the
+geographic boundaries that should be mapped. That information gets then passed on to the CensusMapper servers.</p>
+
+<p>CensusMapper will then send the appropriate census geographic polygons to the browser for leaflet to display. Once the
+geographic data is available for mapping, some custom code checks what kind of information the user wants to display and
+requests the census data required to make the map. The census information is then assembled on the server, sent down
+and attached to the polygons and drawn
+on the browser window within leaflet. This two-tier process allows the highly dynamic mapping in CensusMapper where the
+data-heavy geographic polygons are kept separately thus can be cached and re-used.</p>
+
+<h2 id="drawing-census-data">Drawing Census Data</h2>
+
+<p>There are a number of ways how we can display census data in the browser. At CensusMapper we have played with three
+different technologies to map data that vary in performance and browser support. They all have in common that they
+won&rsquo;t run on Internet Explorer 8 or earlier, but we have just about reached the point in time where it is acceptable to
+ignore IE8- in products meant for the &ldquo;general internet audience&rdquo;.</p>
+
+<h3 id="svg">SVG</h3>
+
+<p><a href="https://en.wikipedia.org/wiki/Scalable_Vector_Graphics">SVG</a> is what our maps have been using so far. SVGs are fairly high level, which means it&rsquo;s very little work
+to implement and map information. One simply passes a polygon to the browser, tells it how to color it, and the browser
+takes care of the rest. SVG elements can easily be styled via CSS, so there is essentially no work involved to deal with
+highlight on hover, scaling for retina displays, patterns for census data quality flags, etc. We use
+<a href="https://github.com/mbostock/d3">d3.js</a> to attach the geographic and census data right to the SVG elements for easy
+manipulation.</p>
+
+<p>While mapping data this way is very easy, for CensusMapper there are two problems.</p>
+
+<ol>
+<li>We are restricted in how we can display information by the capabilities of SVG.</li>
+<li>SVG rendering is done by the browser, and not all browsers are equal. Most importantly, SVG rendering in Internet
+Explorer is excruciatingly slow. So slow, that CensusMapper becomes essentially useless within Internet Explorer. We
+felt compelled to add a warning messeage that displayed when people opened CensusMapper with Internet Explorer. And
+when you do that, that&rsquo;s a sure sign that your app has a serious problem.
+<img src="/images/chrome.png" alt="Browser Warning" />
+So how to get around those issues? Enter Canvas.<br /></li>
+</ol>
+
+<h3 id="canvas">Canvas</h3>
+
+<p><a href="https://en.wikipedia.org/wiki/Canvas_element">Canvas</a> offers a way to draw images in a browser. Unlike SVG, the drawing has to be done &ldquo;by hand&rdquo;. And the result is just
+an image, with no clear way to tell where it came from. There is no way to attach any information to individual
+structures drawn on a canvas. All the logic for highlight on hover, figuring out what data is associated with the mouse
+position, dealing with retina displays, etc. needs to be added by hand.</p>
+
+<p>On the upside, a good canvas implementation is a lot faster than SVG. And it opens the door to changes in how the data
+is handled that bring additional performance improvements. In particular, we can now chop up census polygons and render
+the pieces separately, greatly cutting down on the size of the downloaded data, as well as the complexity of the
+polygons that get rendered. And the performance improvements are noticeable across all browsers and platforms.</p>
+
+<p>At the end of the day it is actually not that much work and we flipped the switch on this just before the Christmas
+break. CensusMapper is now running using canvas instead SVG for
+the main maps. We
+kept the look and feel the same, so unless you dig into the code you won&rsquo;t notice the difference.
+Some parts of CensusMapper still utilized SVGs, like the d3-based
+<a href="http://doodles.mountainmath.ca/blog/2015/10/24/census-drilldown/">Census Wheel</a>.</p>
+
+<h3 id="webgl">WebGL</h3>
+
+<p><a href="https://en.wikipedia.org/wiki/WebGL">WebGL</a> also draws on a canvas element, but the work is offloaded onto the GPU (graphics processor) giving enormous
+speed improvements. Regular canvas rendering is fast enough for our purposes, but with WebGL we can do more complex
+renderings that previously we could not even dream of: <a href="https://en.wikipedia.org/wiki/OpenGL_Shading_Language">Shaders</a>
+and Interactive 3D data maps. We had previously
+<a href="https://mountainmath.ca/census3">toyed with 3D data visualization</a> to explore Vancouver&rsquo;s household density in 3D using Three.js,
+but did not pursue this further because of the complexities of writing code for navigating a Canada-wide map. Then we came
+across the super-customizable 3D open mapping platform built by <a href="https://mapzen.com/projects/tangram/">Mapzen</a>, and that
+suddenly made it extremely easy to do interactive 3D data mapping live in the browser. A quick test
+<a href="https://mountainmath.ca/vancouver_lidar/map">using Vancouver&rsquo;s open LIDAR generated building height data</a> showed how easy Mapzen&rsquo;s
+tangram engine is to use.</p>
+
+<p>After digging deeper into tangram, and with help from the friendly people at Mapzen, we figured out a way to fit
+CensusMapper&rsquo;s two-stage data workflow into tangram&rsquo;s mapping engine. The result are real-time 3D maps where height
+and color of each geographic area can be independently (and dynamically) controlled. Here is an example where mouseover
+trigged the area west of Coal Harbor to &lsquo;pop up&rsquo;.
+<img src="/images/webGL.jpg" alt="webGL" /></p>
+
+<p>At the same time we gain the ability to easily pull in all kinds of other data and map it. On our canvas or svg maps we
+added regular image tiles, either a road and label&rsquo;s overlay or a base map (which then requires opacity to be added to
+the census data that is mapped on top of that) as orientation aid. Short of baking our own image tiles we have very
+little control over the look and feel of this. With Mapzen&rsquo;s tangram we can very easily pick and style individual
+geographic objects from Mapzen&rsquo;s OSM vector tile server, resulting in crisp and clear maps. In the above example we
+decide dynamically what level of roads to render, how to style them, what labels to display and we also added bodies of
+water, where we filter by size depending on the zoom level.</p>
+
+<p>At this stage it is still an ongoing project to get this production-ready. One obvious obstacle is that WebGL browser
+support is still lagging. And on top of that it also requires updated graphics card drivers, which is a big problem on
+windows machines that are already a couple of years old. So for now we still need to have a plain canvas or svg fallback.</p>
+
+<p>And then there are the details that need to get worked out. 3D maps sounds great, but it will take us some time to figure
+out how to best utilize this in thematic maps. But even without utilizing 3D capabilities, the dynamic shaders and increased
+rendering performance are already pushing the boundary of what&rsquo;s possible in web maps.</p>
+
+    </div>
+
+    <footer>
+        <ul class="stats">
+    
+        
+
+        
+        
+            <li>
+                
+                
+                    
+
+                    
+
+                    
+
+                    
+                        Category
+                    
+                
+            </li>
+        
+    
+
+    
+    
+        <li><a href='/categoriescensusmapper'>CensusMapper</a></li>
+    
+</ul>
+
+    </footer>
+</article>
+<ul class="actions pagination">
+    
+        <li><a href="/posts/content/posts/2015-12-15-bike-data/"
+                class="button big previous">Bike Data</a></li>
+    
+
+    
+        <li><a href="/posts/content/posts/2016-01-17-updated-vancouver-assessment-data/"
+                class="button big next">Updated Vancouver Assessment Data</a></li>
+    
+</ul>
+
+
+
+    
+        <article class="post">
+            <div id="disqus_thread"></div>
+<script>
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "doodlesmountainmathca" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+        </article>
+    
+
+
+    </div>
+    
+<section id="sidebar">
+
+    
+        <section id="intro">
+            
+            
+                
+                    <img src="/img/main/jens_square_small.jpeg" width="150" alt="Mountain Doodles" />
+                
+            
+            
+                <header>
+                    <h2>Mountain Doodles</h2>
+                    <p>Too much data, too little time.</p>
+                </header>
+            
+            <ul class="icons">
+                
+                
+                    
+<li><a href="//github.com/mountainmath" target="_blank" title="GitHub" class="fa fa-github"></a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li><a href="//twitter.com/vb_jens" target="_blank" title="Twitter" class="fa fa-twitter"></a></li>
+
+
+
+<li><a href="mailto:jens@mountainmath.ca" title="Email" class="fa fa-envelope"></a></li>
+
+
+                
+            </ul>
+        </section>
+
+    
+        <section id="recent-posts">
+            <ul class="posts">
+                <header>
+                    <h3>Recent Posts</h3>
+                </header>
+                
+                    
+                
+
+                
+                    
+                
+
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/content/posts/2017-08-25-dot-density/">dot-density</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-25'>
+                                    August 25, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/density/">Density</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-23'>
+                                    August 23, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/content/posts/2017-08-06-millennials-redux/">Millennials Redux</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-06'>
+                                    August 6, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/content/posts/2017-05-16-lifeblood/">Lifeblood</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-05-16'>
+                                    May 16, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/content/posts/2017-04-10-surprise/">Surprise Maps</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-04-10'>
+                                    April 10, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+
+                
+                    <li>
+                        <ul class="actions">
+                            <li><a href=
+                            
+                                /blog/
+                            
+                            class="button">View more posts</a></li>
+                        </ul>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+    
+    
+    
+        <section id="categories">
+            <ul class="posts">
+                <header>
+                    <h3><a href="/categories/">Categories</a></h3>
+                </header>
+
+                
+                    
+                
+
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/vancouver/">Vancouver</a>
+                                <span style="float:right;">39</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/censusmapper/">CensusMapper</a>
+                                <span style="float:right;">20</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/mapzen/">Mapzen</a>
+                                <span style="float:right;">11</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/assessment/">Assessment</a>
+                                <span style="float:right;">9</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/osm/">OSM</a>
+                                <span style="float:right;">8</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/open-data/">Open Data</a>
+                                <span style="float:right;">8</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/bikes/">bikes</a>
+                                <span style="float:right;">7</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/census/">Census</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/d3/">D3</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/taxes/">Taxes</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/transit/">Transit</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/zoning/">Zoning</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/newsfail/">newsfail</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/canada/">Canada</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/isochrones/">Isochrones</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/opendata/">OpenData</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/bcassessment/">BCAssessment</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/density/">Density</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/empty-homes/">Empty Homes</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/fsr/">FSR</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/land-use/">Land Use</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/stats/">Stats</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/surrey/">Surrey</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/traffic/">Traffic</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/cansensus/">cansensus</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/dotdensity/">dotdensity</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/taxes/">taxes</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+            </ul>
+        </section>
+    
+
+    
+        
+        <section class="blurb">
+            <h2>About</h2>
+            <p>Mountain Doodles is an insomnia driven MountainMath side project, born out of random questions, trying to give partial answers through data.</p>
+
+            <ul class="actions">
+                <li><a href="/about/" class="button">Learn More</a></li>
+            </ul>
+        </section>
+        
+
+    
+        <section id="footer">
+            <ul class="icons">
+                
+                
+                    
+<li><a href="//github.com/mountainmath" target="_blank" title="GitHub" class="fa fa-github"></a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li><a href="//twitter.com/vb_jens" target="_blank" title="Twitter" class="fa fa-twitter"></a></li>
+
+
+
+<li><a href="mailto:jens@mountainmath.ca" title="Email" class="fa fa-envelope"></a></li>
+
+
+                
+            </ul>
+
+            <p class="copyright">&copy; Mountain Doodles. Design: <a href="http://html5up.net" target="_blank">HTML5 UP</a>. Ported by <a href="//github.com/jpescador" target="_blank">Julio Pescador</a>. Powered by <a href="//gohugo.io" target="_blank">Hugo</a></p>
+        </section>
+
+</section>
+
+            </div>
+        <a id="back-to-top" href="#" class="fa fa-arrow-up fa-border fa-2x"></a>
+        
+
+        
+        
+            
+        
+
+        
+        
+            <script src="/js/jquery.min.js"></script>
+            <script src="/js/skel.min.js"></script>
+            <script src="/js/util.js"></script>
+            <script src="/js/main.js"></script>
+            <script src="/js/backToTop.js"></script>
+            <script src="/js/highlight.pack.js"></script>
+        
+
+        
+
+            
+            <script>hljs.initHighlightingOnLoad();</script>
+            
+    </body>
+</html>
+

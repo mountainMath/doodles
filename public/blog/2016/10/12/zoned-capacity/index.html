@@ -1,0 +1,1173 @@
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        
+            
+                <title>Zoned Capacity</title>
+            
+        
+
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="generator" content="Hugo 0.26" />
+        
+    
+        
+    
+
+    
+
+    <link rel="apple-touch-icon-precomposed"
+        href='/favicon/apple-touch-icon-precomposed.png'>
+    <link rel="icon" href='/favicon/favicon.png'>
+    
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="msapplication-TileImage"
+        content='/favicon/mstile.png'>
+
+
+
+        
+            <meta name="author" content="Jens von Bergmann">
+        
+        
+            <meta name="description" content="The myths of zoning.">
+        
+
+        <meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Zoned Capacity"/>
+<meta name="twitter:description" content="The myths of zoning."/>
+<meta name="twitter:site" content="@vb_jens"/>
+
+        <meta property="og:title" content="Zoned Capacity" />
+<meta property="og:description" content="The myths of zoning." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/blog/2016/10/12/zoned-capacity/" />
+
+
+
+<meta property="article:published_time" content="2016-10-12T00:00:00&#43;00:00"/>
+<meta property="article:modified_time" content="2016-10-12T00:00:00&#43;00:00"/>
+
+
+
+
+
+
+
+
+
+
+
+        
+<meta itemprop="name" content="Zoned Capacity">
+<meta itemprop="description" content="The myths of zoning.">
+
+
+<meta itemprop="dateModified" content="2016-10-12T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="1599">
+
+
+
+<meta itemprop="keywords" content="" />
+
+        
+
+        
+
+        
+        
+            
+        
+
+        
+        
+            <link rel="stylesheet" href="/css/google-font.css" />
+            <link rel="stylesheet" href="/css/font-awesome.min.css" />
+            <link rel="stylesheet" href="/css/main.css" />
+            <link rel="stylesheet" href="/css/add-on.css" />
+            <link rel="stylesheet" href="/css/monokai-sublime.css">
+        
+
+        
+
+        
+        
+        
+            
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-54516567-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+        
+    </head>
+    <body>
+
+        
+        <div id="wrapper">
+
+    
+    
+<header id="header">
+    
+        <h2><a href="/">Mountain Doodles</i></a></h2>
+    
+
+    <nav class="links">
+        <ul>
+            
+                <li>
+                    <a href="/blog">
+                        
+                            <i class="fa fa-newspaper-o">&nbsp;</i>Blog
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/blog/archives">
+                        Archives
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/categories">
+                        Categories
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/about">
+                        About
+                    </a>
+                </li>
+            
+        </ul>
+    </nav>
+    <nav class="main">
+        <ul>
+            
+            <li id="share-nav" class="share-menu" style="display:none;">
+                <a class="fa-share-alt" href="#share-menu">Share</a>
+            </li>
+            
+            <li class="search">
+                <a class="fa-search" href="#search">Search</a>
+                <form id="search" method="get" action="//google.com/search">
+                    <input type="text" name="q" placeholder="Search" />
+                    <input type="hidden" name="q" value="site:/">
+                </form>
+            </li>
+            <li class="menu">
+                <a class="fa-bars" href="#menu">Menu</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+
+<section id="menu">
+
+    
+        <section>
+            <form class="search" method="get" action="//google.com/search">
+                <input type="text" name="q" placeholder="Search" />
+                <input type="hidden" name="q" value="site:/">
+            </form>
+        </section>
+
+    
+        <section>
+            <ul class="links">
+                
+                    <li>
+                        <a href="/blog">
+                            <h3>
+                                
+                                    <i class="fa fa-newspaper-o">&nbsp;</i>
+                                
+                                Blog
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/archives">
+                            <h3>
+                                
+                                Archives
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/categories">
+                            <h3>
+                                
+                                Categories
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/about">
+                            <h3>
+                                
+                                About
+                            </h3>
+                        </a>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+        <section>
+            <ul class="links">
+                <header>
+                    <h3>Recent Posts</h3>
+                </header>
+                
+                    
+                
+
+                
+                    <li>
+                        <a href="/blog/2017/08/24/dot-density/"><p>dot-density</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/08/23/density/"><p>Density</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/08/06/millennials-redux/"><p>Millennials Redux</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/05/16/lifeblood/"><p>Lifeblood</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/04/10/surprise/"><p>Surprise Maps</p></a>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+        
+</section>
+
+    <section id="share-menu">
+    <section id="social-share-nav">
+        <ul class="links">
+            <header>
+                <h3>Share this post <i class="fa fa-smile-o"></i></h3>
+            </header>
+            
+
+
+<li><a href="//twitter.com/share?url=%2fblog%2f2016%2f10%2f12%2fzoned-capacity%2f&text=Zoned%20Capacity&via=vb_jens" target="_blank" class="share-btn twitter">
+    <i class="fa fa-twitter"></i>
+    <p>Twitter</p>
+</a></li>
+
+
+<li><a href="//plus.google.com/share?url=%2fblog%2f2016%2f10%2f12%2fzoned-capacity%2f" target="_blank" class="share-btn google-plus">
+    <i class="fa fa-google-plus"></i>
+    <p>Google+</p>
+</a></li>
+
+
+<li><a href="//www.facebook.com/sharer/sharer.php?u=%2fblog%2f2016%2f10%2f12%2fzoned-capacity%2f" target="_blank" class="share-btn facebook">
+    <i class="fa fa-facebook"></i>
+    <p>Facebook</p>
+</a></li>
+
+
+<li><a href="//reddit.com/submit?url=%2fblog%2f2016%2f10%2f12%2fzoned-capacity%2f&title=Zoned%20Capacity" target="_blank" class="share-btn reddit">
+    <i class="fa fa-reddit-alien"></i>
+    <p>Reddit</p>
+</a></li>
+
+
+<li><a href="//www.linkedin.com/shareArticle?url=%2fblog%2f2016%2f10%2f12%2fzoned-capacity%2f&title=Zoned%20Capacity" target="_blank" class="share-btn linkedin">
+    <i class="fa fa-linkedin"></i>
+    <p>LinkedIn</p>
+</a></li>
+
+
+<li><a href="//www.stumbleupon.com/submit?url=%2fblog%2f2016%2f10%2f12%2fzoned-capacity%2f&title=Zoned%20Capacity" target="_blank" class="share-btn stumbleupon">
+    <i class="fa fa-stumbleupon"></i>
+    <p>StumbleUpon</p>
+</a></li>
+
+
+<li><a href="mailto:?subject=Check out this post by Jens%20von%20Bergmann&body=%2fblog%2f2016%2f10%2f12%2fzoned-capacity%2f" target="_blank" class="share-btn email">
+    <i class="fa fa-envelope"></i>
+    <p>Email</p>
+</a></li>
+
+        </ul>
+    </section>
+</section>
+
+    
+    <div id="main">
+        
+        
+        <article class="post">
+    <header>
+    <div class="title">
+        
+            <h1><a href="/blog/2016/10/12/zoned-capacity/">Zoned Capacity</a></h1>
+            
+        
+        
+            <p>The myths of zoning.</p>
+        
+    </div>
+    <div class="meta">
+        
+            
+        
+
+        <time class="published"
+            datetime='2016-10-12'>
+            October 12, 2016</time>
+        <span class="author">Jens von Bergmann</span>
+        
+            <p>8 minute read</p>
+        
+        
+    </div>
+</header>
+
+
+    <section id="social-share">
+        <ul class="icons">
+            
+
+
+<li><a href="//twitter.com/share?url=%2fblog%2f2016%2f10%2f12%2fzoned-capacity%2f&text=Zoned%20Capacity&via=vb_jens" target="_blank" class="share-btn twitter">
+    <i class="fa fa-twitter"></i>
+    <p>Twitter</p>
+</a></li>
+
+
+<li><a href="//plus.google.com/share?url=%2fblog%2f2016%2f10%2f12%2fzoned-capacity%2f" target="_blank" class="share-btn google-plus">
+    <i class="fa fa-google-plus"></i>
+    <p>Google+</p>
+</a></li>
+
+
+<li><a href="//www.facebook.com/sharer/sharer.php?u=%2fblog%2f2016%2f10%2f12%2fzoned-capacity%2f" target="_blank" class="share-btn facebook">
+    <i class="fa fa-facebook"></i>
+    <p>Facebook</p>
+</a></li>
+
+
+<li><a href="//reddit.com/submit?url=%2fblog%2f2016%2f10%2f12%2fzoned-capacity%2f&title=Zoned%20Capacity" target="_blank" class="share-btn reddit">
+    <i class="fa fa-reddit-alien"></i>
+    <p>Reddit</p>
+</a></li>
+
+
+<li><a href="//www.linkedin.com/shareArticle?url=%2fblog%2f2016%2f10%2f12%2fzoned-capacity%2f&title=Zoned%20Capacity" target="_blank" class="share-btn linkedin">
+    <i class="fa fa-linkedin"></i>
+    <p>LinkedIn</p>
+</a></li>
+
+
+<li><a href="//www.stumbleupon.com/submit?url=%2fblog%2f2016%2f10%2f12%2fzoned-capacity%2f&title=Zoned%20Capacity" target="_blank" class="share-btn stumbleupon">
+    <i class="fa fa-stumbleupon"></i>
+    <p>StumbleUpon</p>
+</a></li>
+
+
+<li><a href="mailto:?subject=Check out this post by Jens%20von%20Bergmann&body=%2fblog%2f2016%2f10%2f12%2fzoned-capacity%2f" target="_blank" class="share-btn email">
+    <i class="fa fa-envelope"></i>
+    <p>Email</p>
+</a></li>
+
+        </ul>
+    </section>
+    
+    
+
+    
+        
+        
+
+
+
+
+    
+
+
+        
+
+        <a href="/blog/2016/10/12/zoned-capacity/" class="image featured">
+            <img src="/images/zoning_van_pdf.png" alt="" />
+        </a>
+    
+
+
+    <div id="content">
+        
+
+<p>The term has recently been making the rounds in Vancouver. A typical statement is that Vancouver has enough zoned
+capacity until 2041. These kind of claims are usually attributed to the <a href="http://vancouver.ca/files/cov/CAC-coriolis-consultancy-final-report-december-2014.pdf">Coriolis report on CACs</a>.</p>
+
+<p>We took a look at the report to see what exactly it says and how the term is used there.</p>
+
+<h2 id="tl-dr-takeaways">TL;DR Takeaways</h2>
+
+<ul>
+<li>Zoned capacity &ne; Development capacity.</li>
+<li>Much of the zoned capacity referred to in the Coriolis report is not outright zoned but relies on conditional up-zoning
+the development permit board may (or may not) grant.</li>
+<li>Relying on &ldquo;zoned capacity&rdquo; in Vancouver involves (in most cases) tearing down an older building that is below zoned
+capacity and replacing it with a bigger one maximizing the zoning. In some cases, this will involve</li>
+</ul>
+
+<!-- more -->
+
+<p>The Coriolis report is primarily concerned with understanding if CACs constrict supply. In the report term &ldquo;rezoning&rdquo;
+is used almost exclusively to denote CD-1 spot zoning.</p>
+
+<h2 id="past-development">Past Development</h2>
+
+<p>In section 6.3 the report examines the 2004 - 2013 development history, and it distinguishes development in
+&ldquo;already zoned land&rdquo; vs &ldquo;development that has required rezoning&rdquo;. It does not state explicitly how rezoning is defined,
+but from the context it becomes clear that it refers only to CD-1 spot-zoning.
+<img  src="/images/multi_completions.png" style="width:50%;float:left;margin-right:10px;">
+Some statements in the report are head-scratchers. It states that</p>
+
+<p>During 2009 to 2013, rezonings added capacity for over 15,000 units, but only 8,200 units were built on rezoned land.
+From which it concludes that
+    The pace of rezoning is not constraining the pace of development.</p>
+
+<p>Which is an ambitions claim, given the shortness timeframe they looked at and the long time it takes for larger
+multi-family projects to go from rezoning to completion. However, there may be other reasons that could lend credence to
+this claim. In particular, in a rising property market there is an incentive for developers to stall projects as they are
+expecting to be able to sell at a higher rate as they wait out price increases. If this is indeed the concern, one would
+hope that the city is implementing tools to deal with this, like tying CACs to timelines or not granting new development
+approvals to developers with a significant backlog.</p>
+
+<p>###Future Development
+In section 6.4 the report pivots to look at capacity for future development. This is where some of the often quoted
+statements come from, like</p>
+
+<pre><code>At the recent pace of development of say 3,500 units per year, this zoned capacity represents about 11+ years worth of new development.
+</code></pre>
+
+<p>Where &ldquo;this zoned capacity&rdquo; refers to a capacity of 25k units in existing multi-family zones and 15k in already approved
+but not yet completed &ldquo;rezonings&rdquo;, i.e. CD-1 spot zoning. The CD-1 units are easy to count by
+<a href="http://vancouver.ca/home-property-development/cd-1-policies-guidelines.aspx">looking at the rezonig policies</a>. It is
+unclear to me how the estimates for the existing multi-family zones were derived and what it takes to activate these
+&ldquo;zoned units&rdquo;. But it does spell out in a little more detail where this zoned capacity is located.</p>
+
+<p>The report further locates capacity for 35k units in Official Plans and Community Plans. It states that some of these
+may need (CD-1) rezoning, but estimates that there is &ldquo;little rezoning approval risk associated with this capacity&rdquo;.</p>
+
+<h2 id="current-capacity-in-multi-family">Current capacity in multi-family</h2>
+
+<p>To understand better where the current zoned capacity is located we can consult a slightly more detailed breakdown given in the report.
+<img  src="/images/development_potential.png" style="width:50%;float:right;margin-left:10px;">
+In the table we see that most of the potential is in
+<a href="https://mountainmath.ca/map/assessment?filter=[zone_C-]&amp;zoom=13&amp;lat=49.2517&amp;lng=-123.1232&amp;layer=14&amp;mapBase=2">current Commercial zoning</a>,
+probably a good portion of which is in mixed-use conversions, which are happening organically along many commercial corridors.
+It also sees potential in the <a href="https://mountainmath.ca/map/assessment?filter=[zone_HA]&amp;zoom=15&amp;lat=49.2767&amp;lng=-123.1137&amp;layer=14&amp;mapBase=2">Historic area zoning</a>
+and some in <a href="https://mountainmath.ca/map/assessment?filter=[zone_RM]&amp;zoom=13&amp;lat=49.2615&amp;lng=-123.1264&amp;layer=14&amp;mapBase=2">existing RM</a>.</p>
+
+<p>Looking at the zoning areas broken out in the &ldquo;other&rdquo; category it is less clear how residential units can be accommodated.</p>
+
+<h3 id="ic-3">IC-3</h3>
+
+<p><a href="https://mountainmath.ca/map/assessment?filter=[zone_IC-3]&amp;zoom=16&amp;lat=49.2675&amp;lng=-123.098&amp;layer=14&amp;mapBase=2">IC-3 zoning</a>
+is a bit of a head-scratcher. The <a href="http://former.vancouver.ca/commsvcs/BYLAWS/zoning/ic-3.pdf">zoning document</a> does not
+allow for significant residential use. Despite that some larger residential developments have been build there recently.</p>
+
+<h3 id="mc-2">MC-2</h3>
+
+<p><a href="https://mountainmath.ca/map/assessment?filter=[zone_MC-2]&amp;zoom=16&amp;lat=49.2815&amp;lng=-123.0703&amp;layer=16&amp;mapBase=2">MC-2 zoning</a>
+along East Hastings Street comes with an outright FSR of 0.75 that can be conditionally increased to a maximum of 1.80 FSR for
+residential uses. One should note however that there is no outright residential use in MC-2 (except for single units attached
+to artist studios). All residential zoned capacity is conditional use at the mercy of the development permit board, which
+qualifies as &ldquo;zoned capacity&rdquo; only in the sense that the conditional up-zoning does not have to go through council but
+is handled by the development permit board.</p>
+
+<p>Assuming the maximum conditional residential use were to be approved for all sites and soall buildings were torn down
+and fully built out to maximize residential use, that would yield an
+additional floor area of a little over 50,000m&amp;sup2, resulting in a little under 600 units at an average size of 85m&sup2;,
+including common areas. As there are competing land uses, a lower estimate of 400 units is more realistic.</p>
+
+<p>The current land use along there is (almost) entirely non-residential, so tearing down these building to max out residential
+zoned capacity would not result in (significant) loss of existing residential units.</p>
+
+<h3 id="fc-1">FC-1</h3>
+
+<p><a href="https://mountainmath.ca/map/assessment?filter=[zone_FC-1]&amp;zoom=14&amp;lat=49.2738&amp;lng=-123.0876&amp;layer=14&amp;mapBase=2">FC-1 zoning</a>
+in East False Creek
+allows for up to 4 FSR of residential use, only very little of which is currently built out. There are competing land uses
+allowed that will not allow maximum of 4 FSR residential use to be activated across the zoning, and the zoning document
+notes that the conversion of industrial to mixed use will take significant time. If maxed out there is a potential for
+almost 300,000 m&sup2; of residential use. Taking the average unit size at around 85m&sup2;, including common areas, that
+could yield about 3,500 units. Given competing land uses, maybe 2,500 is more realistic as zoned capacity in FC-1.</p>
+
+<p>Again, (almost) all of buildings that will have to be torn down to make space for these developments
+are currently commercial or industrial land use.</p>
+
+<h3 id="fm-1">FM-1</h3>
+
+<p><a href="https://mountainmath.ca/map/assessment?filter=[zone_FM-1]&amp;zoom=15&amp;lat=49.2665&amp;lng=-123.1271&amp;layer=14&amp;mapBase=2">FM-1</a> is
+already fairly built out with residential and mixed use, and it is difficult to add more residential use without tearing
+down older stock that may not be built out to maximum current zoning. It&rsquo;s outright zoning is for 0.6 FSR, and there are
+<a href="https://mountainmath.ca/map/assessment?filter=[zone_FM-1,fsr__0.5]&amp;zoom=16&amp;lat=49.2659&amp;lng=-123.1274&amp;layer=16&amp;mapBase=2">only a few sites that may be below that</a>. This
+should taken with caution as the FSR estimates become unreliable for small buildigns.</p>
+
+<p>Purely residential buildings built in 1973 or earlier can increase their FSR by 20%, up to a maximum of 1 FSR, but there
+<a href="https://mountainmath.ca/map/assessment?filter=[zone_FM-1,years__1973,pres,fsr__1]&amp;zoom=16&amp;lat=49.2659&amp;lng=-123.1274&amp;layer=16&amp;mapBase=2">aren&rsquo;t many around</a>
+and this process won&rsquo;t yield more than a handful of units.</p>
+
+<p>Which leaves us with another conditional use clause that allows up to 1.5 FSR but explicitly asks for &ldquo;provision of amenities
+which would result in community benefits&rdquo;
+in return. That&rsquo;s spot-zoning in spirit, with the difference that the application is handled at the development permit office
+instead of having to go to council. There are a lot of properties
+<a href="https://mountainmath.ca/map/assessment?filter=[zone_FM-1,fsr__1.5]&amp;zoom=16&amp;lat=49.2659&amp;lng=-123.1274&amp;layer=16&amp;mapBase=2">below the 1.5 FSR cutoff</a>
+many if which are <a href="https://mountainmath.ca/map/assessment?filter=[zone_FM-1,fsr_1.3_1.5]&amp;zoom=16&amp;lat=49.2659&amp;lng=-123.1274&amp;layer=16&amp;mapBase=2">quite close to the maximum FSR</a>.</p>
+
+<p><img  src="/images/fm_th_dev.png" style="width:25%;float:left;margin-right:10px;">
+A prime example for maximizing zoned capacity would be the townhouse development at Birch between 7th and 8th. With around
+<img  src="/images/fm_apt_dev.png" style="width:25%;float:right;margin-left:10px;">
+0.8 FSR it&rsquo;s 78 units sit below zoned capacity, almost another 70 units could be added if it were to be torn down and replaced
+with a complex like the one across the street that comes in at around 1.5 FSR.</p>
+
+<h3 id="dd">DD</h3>
+
+<p>The last zone explicitly mentioned in the Coriolis report is
+<a href="https://mountainmath.ca/map/assessment?filter=[zone_DD]&amp;zoom=15&amp;lat=49.2816&amp;lng=-123.1224&amp;layer=14&amp;mapBase=2">DD zoning</a>
+downtown, which probably has the largest potential to tear down older buildings and rebuild to increase dwelling units to the
+maximum allowable under current zoning.</p>
+
+<h2 id="pace-of-development">Pace of Development</h2>
+
+<p>The argument about the timeframe, 11 years based on the multi-family and existing CD-1 rezoned areas, or 20 years when
+Official Plans and Community Plans are included, hinges on the pace of development. The report assumes that the recent
+pace of 3500 units per year will continue. Completions have crept up a bit recently, but we have also continued to
+spot-zone. More detailed ananlysis is needed to figure out where we are at at this point.</p>
+
+<h2 id="relying-on-zoned-capacity">Relying on Zoned Capacity</h2>
+
+<p>Development under traditional zoning and development under spot-zoning (&ldquo;rezoning in the language of the report) are
+quite different in nature. Development under existing zoning may or may not be attractive. A nicely kept up smaller
+house may be below the maximum allowable zoning. But it&rsquo;s probably not a prime target to be redeveloped up to the
+maximum allowable.
+Spot zoning on the other hand typically already has a developer willing to re-develop at the negotiation table. Once the
+re-zoning negotiations are successfully concluded, the development will go forward in almost all cases.</p>
+
+<p>It is important in this context to remember that there are almost no, if any, vacant sites left in current multi-family
+zones. So any increase in dwelling units but tapping into current zoned capacity is very likely to trigger the tearing
+down of a building that does not maximize the current zoning, typically an older building.</p>
+
+<p><a href="http://www.sightline.org/2016/09/12/no-seattle-does-not-already-have-plenty-of-land-zoned-for-new-housing/">Sightline</a>
+recently put out a great overview about &ldquo;zoned capacity&rdquo; in the Seattle context, that equally well applies here in Vancouver.
+It states pointedly</p>
+
+<pre><code>Zoned capacity is an estimate of how much new development could occur theoretically over an unlimited time period
+under current zoning. Zoned capacity is not a forecast of how much or when development will occur.
+</code></pre>
+
+<p><a href="https://pricetags.wordpress.com/2016/10/19/viewpoint-issues-with-the-zoned-capacity-argument">Bryn Davidson explains on Pricetags</a>
+how zoned capacity relates to <em>development capacity</em></p>
+
+<pre><code>zoned capacity for lane houses is ~150 times the annual throughput.
+</code></pre>
+
+<p>The City of Vancouver does a good job explaining the differnece between &ldquo;zoned capacity&rdquo; and &ldquo;development capacity&rdquo; in
+<a href="http://vancouver.ca/files/cov/westend-development-capacity.pdf">this overview looking at the West End</a>.</p>
+
+    </div>
+
+    <footer>
+        <ul class="stats">
+    
+        
+
+        
+        
+            <li>
+                
+                
+                    
+
+                    
+
+                    
+
+                    
+                        Categories
+                    
+                
+            </li>
+        
+    
+
+    
+    
+        <li><a href='/categorieszoning'>Zoning</a></li>
+    
+        <li><a href='/categoriesvancouver'>Vancouver</a></li>
+    
+</ul>
+
+    </footer>
+</article>
+<ul class="actions pagination">
+    
+        <li><a href="/blog/2016/10/04/secondary-suites-and-taxes/"
+                class="button big previous">Secondary Suites and Taxes</a></li>
+    
+
+    
+        <li><a href="/blog/2016/10/21/trick-or-treat-2016/"
+                class="button big next">Trick-or-Treat 2016</a></li>
+    
+</ul>
+
+
+
+    
+        <article class="post">
+            <div id="disqus_thread"></div>
+<script>
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "doodlesmountainmathca" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+        </article>
+    
+
+
+    </div>
+    
+<section id="sidebar">
+
+    
+        <section id="intro">
+            
+            
+                
+                    <img src="/img/main/jens_square_small.jpeg" width="150" alt="Mountain Doodles" />
+                
+            
+            
+                <header>
+                    <h2>Mountain Doodles</h2>
+                    <p>Too much data, too little time.</p>
+                </header>
+            
+            <ul class="icons">
+                
+                
+                    
+<li><a href="//github.com/mountainmath" target="_blank" title="GitHub" class="fa fa-github"></a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li><a href="//twitter.com/vb_jens" target="_blank" title="Twitter" class="fa fa-twitter"></a></li>
+
+
+
+<li><a href="mailto:jens@mountainmath.ca" title="Email" class="fa fa-envelope"></a></li>
+
+
+                
+            </ul>
+        </section>
+
+    
+        <section id="recent-posts">
+            <ul class="posts">
+                <header>
+                    <h3>Recent Posts</h3>
+                </header>
+                
+                    
+                
+
+                
+                    
+                
+
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/08/24/dot-density/">dot-density</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-24'>
+                                    August 24, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/08/23/density/">Density</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-23'>
+                                    August 23, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/08/06/millennials-redux/">Millennials Redux</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-06'>
+                                    August 6, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/05/16/lifeblood/">Lifeblood</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-05-16'>
+                                    May 16, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/04/10/surprise/">Surprise Maps</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-04-10'>
+                                    April 10, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+
+                
+                    <li>
+                        <ul class="actions">
+                            <li><a href=
+                            
+                                /blog/
+                            
+                            class="button">View more posts</a></li>
+                        </ul>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+    
+    
+    
+        <section id="categories">
+            <ul class="posts">
+                <header>
+                    <h3><a href="/categories/">Categories</a></h3>
+                </header>
+
+                
+                    
+                
+
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/vancouver/">Vancouver</a>
+                                <span style="float:right;">39</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/censusmapper/">CensusMapper</a>
+                                <span style="float:right;">21</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/assessment-data/">Assessment Data</a>
+                                <span style="float:right;">14</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/mapzen/">Mapzen</a>
+                                <span style="float:right;">10</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/osm/">OSM</a>
+                                <span style="float:right;">10</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/bikes/">bikes</a>
+                                <span style="float:right;">8</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/zoning/">zoning</a>
+                                <span style="float:right;">7</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/geeky/">geeky</a>
+                                <span style="float:right;">6</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/transportation/">Transportation</a>
+                                <span style="float:right;">5</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/density/">density</a>
+                                <span style="float:right;">5</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/taxes/">taxes</a>
+                                <span style="float:right;">5</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/land-use/">land use</a>
+                                <span style="float:right;">4</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/newsfail/">newsfail</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/teardowns/">teardowns</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/empty-homes/">Empty Homes</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/cancensus/">cancensus</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/isochrones/">Isochrones</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/surrey/">Surrey</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/transporation/">Transporation</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/zoning/">Zoning</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/dotdensity/">dotdensity</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+            </ul>
+        </section>
+    
+
+    
+        
+        <section class="blurb">
+            <h2>About</h2>
+            <p>Mountain Doodles is an insomnia driven MountainMath side project, born out of random questions, trying to give partial answers through data.</p>
+
+            <ul class="actions">
+                <li><a href="/about/" class="button">Learn More</a></li>
+            </ul>
+        </section>
+        
+
+    
+        <section id="footer">
+            <ul class="icons">
+                
+                
+                    
+<li><a href="//github.com/mountainmath" target="_blank" title="GitHub" class="fa fa-github"></a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li><a href="//twitter.com/vb_jens" target="_blank" title="Twitter" class="fa fa-twitter"></a></li>
+
+
+
+<li><a href="mailto:jens@mountainmath.ca" title="Email" class="fa fa-envelope"></a></li>
+
+
+                
+            </ul>
+
+            <p class="copyright">&copy; Mountain Doodles. Design: <a href="http://html5up.net" target="_blank">HTML5 UP</a>. Ported by <a href="//github.com/jpescador" target="_blank">Julio Pescador</a>. Powered by <a href="//gohugo.io" target="_blank">Hugo</a></p>
+        </section>
+
+</section>
+
+            </div>
+        <a id="back-to-top" href="#" class="fa fa-arrow-up fa-border fa-2x"></a>
+        
+
+        
+        
+            
+        
+
+        
+        
+            <script src="/js/jquery.min.js"></script>
+            <script src="/js/skel.min.js"></script>
+            <script src="/js/util.js"></script>
+            <script src="/js/main.js"></script>
+            <script src="/js/backToTop.js"></script>
+            <script src="/js/highlight.pack.js"></script>
+        
+
+        
+
+            
+            <script>hljs.initHighlightingOnLoad();</script>
+            
+    </body>
+</html>
+

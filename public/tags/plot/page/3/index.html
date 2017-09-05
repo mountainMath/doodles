@@ -1,0 +1,1313 @@
+
+
+
+    
+
+
+
+
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        
+            <title>Plot - Mountain Doodles</title>
+        
+
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="generator" content="Hugo 0.26" />
+        
+
+
+        
+        
+            
+                <meta name="description" content="spare time data, analysis, visualization">
+            
+        
+
+        <meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Plot"/>
+<meta name="twitter:description" content="spare time data, analysis, visualization"/>
+<meta name="twitter:site" content="@vb_jens"/>
+
+        <meta property="og:title" content="Plot" />
+<meta property="og:description" content="spare time data, analysis, visualization" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="/tags/plot/" />
+
+
+
+<meta property="og:updated_time" content="2017-02-10T00:00:00&#43;00:00"/>
+
+
+
+
+
+
+
+
+
+
+        
+<meta itemprop="name" content="Plot">
+<meta itemprop="description" content="spare time data, analysis, visualization">
+
+
+        
+
+        
+
+        
+        
+            
+        
+
+        
+        
+            <link rel="stylesheet" href="/css/google-font.css" />
+            <link rel="stylesheet" href="/css/font-awesome.min.css" />
+            <link rel="stylesheet" href="/css/main.css" />
+            <link rel="stylesheet" href="/css/add-on.css" />
+            <link rel="stylesheet" href="/css/monokai-sublime.css">
+        
+
+        
+
+        
+        
+        
+            
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-54516567-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+        
+    </head>
+    <body>
+
+        
+        <div id="wrapper">
+
+    
+<header id="header">
+    
+        <h2><a href="/">Mountain Doodles</i></a></h2>
+    
+
+    <nav class="links">
+        <ul>
+            
+                <li>
+                    <a href="/blog">
+                        
+                            <i class="fa fa-newspaper-o">&nbsp;</i>Blog
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/blog/archives">
+                        Archives
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/categories">
+                        Categories
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/about">
+                        About
+                    </a>
+                </li>
+            
+        </ul>
+    </nav>
+    <nav class="main">
+        <ul>
+            
+            <li class="search">
+                <a class="fa-search" href="#search">Search</a>
+                <form id="search" method="get" action="//google.com/search">
+                    <input type="text" name="q" placeholder="Search" />
+                    <input type="hidden" name="q" value="site:/">
+                </form>
+            </li>
+            <li class="menu">
+                <a class="fa-bars" href="#menu">Menu</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+
+<section id="menu">
+
+    
+        <section>
+            <form class="search" method="get" action="//google.com/search">
+                <input type="text" name="q" placeholder="Search" />
+                <input type="hidden" name="q" value="site:/">
+            </form>
+        </section>
+
+    
+        <section>
+            <ul class="links">
+                
+                    <li>
+                        <a href="/blog">
+                            <h3>
+                                
+                                    <i class="fa fa-newspaper-o">&nbsp;</i>
+                                
+                                Blog
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/archives">
+                            <h3>
+                                
+                                Archives
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/categories">
+                            <h3>
+                                
+                                Categories
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/about">
+                            <h3>
+                                
+                                About
+                            </h3>
+                        </a>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+        <section>
+            <ul class="links">
+                <header>
+                    <h3>Recent Posts</h3>
+                </header>
+                
+                    
+                
+
+                
+                    <li>
+                        <a href="/posts/content/posts/2017-08-25-dot-density/"><p>dot-density</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/posts/density/"><p>Density</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/posts/content/posts/2017-08-06-millennials-redux/"><p>Millennials Redux</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/posts/content/posts/2017-05-16-lifeblood/"><p>Lifeblood</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/posts/content/posts/2017-04-10-surprise/"><p>Surprise Maps</p></a>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+        
+</section>
+
+    
+    <div id="main">
+        
+        
+            
+        
+
+        
+            <article class="post">
+    <header>
+    <div class="title">
+        
+            <h2><a href="/posts/content/posts/2017-02-10-2016-census-data/">2016 Census Data - Part 1</a></h2>
+        
+        
+            <p>A first look at the 2016 census.</p>
+        
+    </div>
+    <div class="meta">
+        
+            
+        
+
+        <time class="published"
+            datetime='2017-02-10'>
+            February 10, 2017</time>
+        <span class="author">Jens von Bergmann</span>
+        
+            <p>6 minute read</p>
+        
+        
+    </div>
+</header>
+
+    
+    
+
+    
+        
+        
+
+
+
+
+    
+
+
+        
+
+        <a href="/posts/content/posts/2017-02-10-2016-census-data/" class="image featured">
+            <img src="/images/van_pop_change.png" alt="" />
+        </a>
+    
+
+
+    <p>Finally the first batch of 2016 census data has arrived on Tuesday AM and CensusMapper was updated with the new census numbers by mid-morning.
+Dissemination Block data was a little harder to find, but with the help of some friendly StatCan people I finally managed to locate the data and add that too this afternoon.
+Time for writing up some observations. I am hoping to find time to do this regularly as more data gets released.</p>
+
+    <footer>
+        <ul class="actions">
+            <li><a href="/posts/content/posts/2017-02-10-2016-census-data/" class="button big">Continue Reading</a></li>
+        </ul>
+        <ul class="stats">
+    
+        
+
+        
+        
+            <li>
+                
+                
+                    
+
+                    
+
+                    
+
+                    
+                        Categories
+                    
+                
+            </li>
+        
+    
+
+    
+    
+        <li><a href='/categoriescanada'>Canada</a></li>
+    
+        <li><a href='/categoriescensus'>Census</a></li>
+    
+        <li><a href='/categoriescensusmapper'>CensusMapper</a></li>
+    
+</ul>
+
+    </footer>
+</article>
+
+        
+            <article class="post">
+    <header>
+    <div class="title">
+        
+            <h2><a href="/posts/content/posts/2017-01-25-jane-jacobs-vancouver/">Jane Jacobs&#39; Vancouver</a></h2>
+        
+        
+            <p>Neigbourhood typologies within Metro Vancouver.</p>
+        
+    </div>
+    <div class="meta">
+        
+            
+        
+
+        <time class="published"
+            datetime='2017-01-25'>
+            January 25, 2017</time>
+        <span class="author">Jens von Bergmann</span>
+        
+            <p>1 minute read</p>
+        
+        
+    </div>
+</header>
+
+    
+
+    <p>Some time ago I saw Geoff Boeing&rsquo;s excellent package to generate Jane Jacobs style street grid images. It&rsquo;s lots of fun to compare different cities that way.
+It can be hard to represent one city by one square mile, so I thought it would be neat to use this to compare different parts of Vancouver. Some common themes emerge for the central parts, the more outlying areas display very differnet patterns.</p>
+
+    <footer>
+        <ul class="actions">
+            <li><a href="/posts/content/posts/2017-01-25-jane-jacobs-vancouver/" class="button big">Continue Reading</a></li>
+        </ul>
+        <ul class="stats">
+    
+        
+
+        
+        
+            <li>
+                
+                
+                    
+
+                    
+
+                    
+
+                    
+                        Categories
+                    
+                
+            </li>
+        
+    
+
+    
+    
+        <li><a href='/categoriesvancouver'>Vancouver</a></li>
+    
+        <li><a href='/categoriesosm'>OSM</a></li>
+    
+</ul>
+
+    </footer>
+</article>
+
+        
+            <article class="post">
+    <header>
+    <div class="title">
+        
+            <h2><a href="/posts/content/posts/2017-01-18-bumper-year-for-thumb-twiddlers/">Bumper Year for Thumb Twiddlers</a></h2>
+        
+        
+            <p>Vancouver land working harder than ever.</p>
+        
+    </div>
+    <div class="meta">
+        
+            
+        
+
+        <time class="published"
+            datetime='2017-01-18'>
+            January 18, 2017</time>
+        <span class="author">Jens von Bergmann</span>
+        
+            <p>5 minute read</p>
+        
+        
+    </div>
+</header>
+
+    
+    
+
+    
+        
+        
+
+
+
+
+    
+
+
+        
+
+        <a href="/posts/content/posts/2017-01-18-bumper-year-for-thumb-twiddlers/" class="image featured">
+            <img src="/images/twiddling_thumbs_2006_2017.png" alt="" />
+        </a>
+    
+
+
+    <p>Almost a year has passed since we first noticed how sitting on single family homes and twiddling thumbs generates more income than working. And not just at the level of individual single family households. In the City of Vancouver, the cumulative land value gains of just the single family homes eclipsed the cumulative taxable earnings reported to the CRA for the entire population.
+With the new assessment data available now, it is time to run the numbers and see how our thumb-twiddlers fared vs workers this year.</p>
+
+    <footer>
+        <ul class="actions">
+            <li><a href="/posts/content/posts/2017-01-18-bumper-year-for-thumb-twiddlers/" class="button big">Continue Reading</a></li>
+        </ul>
+        <ul class="stats">
+    
+        
+
+        
+        
+            <li>
+                
+                
+                    
+
+                    
+
+                    
+
+                    
+                        Categories
+                    
+                
+            </li>
+        
+    
+
+    
+    
+        <li><a href='/categoriesvancouver'>Vancouver</a></li>
+    
+        <li><a href='/categoriesassessment'>Assessment</a></li>
+    
+</ul>
+
+    </footer>
+</article>
+
+        
+            <article class="post">
+    <header>
+    <div class="title">
+        
+            <h2><a href="/posts/content/posts/2017-01-17-the-coveted-2m-6m-vote/">The Coveted $1.2m - $1.6m Vote</a></h2>
+        
+        
+            <p>Vancouver land working harder than ever.</p>
+        
+    </div>
+    <div class="meta">
+        
+            
+        
+
+        <time class="published"
+            datetime='2017-01-17'>
+            January 17, 2017</time>
+        <span class="author">Jens von Bergmann</span>
+        
+            <p>2 minute read</p>
+        
+        
+    </div>
+</header>
+
+    
+    
+
+    
+        
+        
+
+
+
+
+    
+
+
+        
+
+        <a href="/posts/content/posts/2017-01-17-the-coveted-2m-6m-vote/" class="image featured">
+            <img src="/images/coveted_vote.png" alt="" />
+        </a>
+    
+
+
+    <p>Earlier this month the province increased the threshold for the homeowner grant from $1.2 million to $1.6 million dollars. It&rsquo;s an election year, and with the BC Assessment data for the City of Vancouver now being available via their open data catalogue we can ask who exactly this move was targeting.
+Restricted to the City of Vancouver, the answer is quite simple. There are about 24,000 single family homes, 1,200 duplex units and 4,000 condo units in that bracket.</p>
+
+    <footer>
+        <ul class="actions">
+            <li><a href="/posts/content/posts/2017-01-17-the-coveted-2m-6m-vote/" class="button big">Continue Reading</a></li>
+        </ul>
+        <ul class="stats">
+    
+        
+
+        
+        
+            <li>
+                
+                
+                    
+
+                    
+
+                    
+
+                    
+                        Categories
+                    
+                
+            </li>
+        
+    
+
+    
+    
+        <li><a href='/categoriesvancouver'>Vancouver</a></li>
+    
+        <li><a href='/categoriesopen-data'>Open Data</a></li>
+    
+        <li><a href='/categoriesd3'>D3</a></li>
+    
+</ul>
+
+    </footer>
+</article>
+
+        
+            <article class="post">
+    <header>
+    <div class="title">
+        
+            <h2><a href="/posts/content/posts/2017-01-16-2017-assessment-data/">2017 Vancouver Assessment Data</a></h2>
+        
+        
+            <p>Visualizing the latest land value gains.</p>
+        
+    </div>
+    <div class="meta">
+        
+            
+        
+
+        <time class="published"
+            datetime='2017-01-16'>
+            January 16, 2017</time>
+        <span class="author">Jens von Bergmann</span>
+        
+            <p>7 minute read</p>
+        
+        
+    </div>
+</header>
+
+    
+    
+
+    
+        
+        
+
+
+
+
+    
+
+
+        
+
+        <a href="/posts/content/posts/2017-01-16-2017-assessment-data/" class="image featured">
+            <img src="/images/value_animated.gif" alt="" />
+        </a>
+    
+
+
+    <p>The friendly folks at Vancouver Open Data just updated their property assessment data with the fresh 2017 property tax assessments. Time to run the script to update the Vancouver Assessment Map with the new data, just like we did last year.
+For now we just updated our standard visuals and computed some overall statistics. We will take a closer look at the data over the coming days.
+Maps  By now we have a variety of maps that highlight different aspects of Vancouver real estate, and after running the import scripts they automatically serve the newest data.</p>
+
+    <footer>
+        <ul class="actions">
+            <li><a href="/posts/content/posts/2017-01-16-2017-assessment-data/" class="button big">Continue Reading</a></li>
+        </ul>
+        <ul class="stats">
+    
+        
+
+        
+        
+            <li>
+                
+                
+                    
+
+                    
+
+                    
+
+                    
+                        Categories
+                    
+                
+            </li>
+        
+    
+
+    
+    
+        <li><a href='/categoriesvancouver'>Vancouver</a></li>
+    
+        <li><a href='/categoriesassessment'>Assessment</a></li>
+    
+</ul>
+
+    </footer>
+</article>
+
+        
+
+        
+<ul class="actions pagination">
+    
+        <li><a href="/tags/plot/page/2/"
+                class="button big previous">Previous Page</a></li>
+    
+
+    
+        <li><a href="/tags/plot/page/4/"
+                class="button big next">Next Page</a></li>
+    
+</ul>
+
+    </div>
+    
+<section id="sidebar">
+
+    
+        <section id="intro">
+            
+            
+                
+                    <img src="/img/main/jens_square_small.jpeg" width="150" alt="Mountain Doodles" />
+                
+            
+            
+                <header>
+                    <h2>Mountain Doodles</h2>
+                    <p>Too much data, too little time.</p>
+                </header>
+            
+            <ul class="icons">
+                
+                    <li><a href="/tags/plot/index.xml" type="application/rss+xml"
+                        target="_blank" title="RSS" class="fa fa-rss"></a></li>
+                
+                
+                    
+<li><a href="//github.com/mountainmath" target="_blank" title="GitHub" class="fa fa-github"></a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li><a href="//twitter.com/vb_jens" target="_blank" title="Twitter" class="fa fa-twitter"></a></li>
+
+
+
+<li><a href="mailto:jens@mountainmath.ca" title="Email" class="fa fa-envelope"></a></li>
+
+
+                
+            </ul>
+        </section>
+
+    
+        <section id="recent-posts">
+            <ul class="posts">
+                <header>
+                    <h3>Recent Posts</h3>
+                </header>
+                
+                    
+                
+
+                
+                    
+                
+
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/content/posts/2017-08-25-dot-density/">dot-density</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-25'>
+                                    August 25, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/density/">Density</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-23'>
+                                    August 23, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/content/posts/2017-08-06-millennials-redux/">Millennials Redux</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-06'>
+                                    August 6, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/content/posts/2017-05-16-lifeblood/">Lifeblood</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-05-16'>
+                                    May 16, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/content/posts/2017-04-10-surprise/">Surprise Maps</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-04-10'>
+                                    April 10, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+
+                
+                    <li>
+                        <ul class="actions">
+                            <li><a href=
+                            
+                                /blog/
+                            
+                            class="button">View more posts</a></li>
+                        </ul>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+    
+    
+    
+        <section id="categories">
+            <ul class="posts">
+                <header>
+                    <h3><a href="/categories/">Categories</a></h3>
+                </header>
+
+                
+                    
+                
+
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/vancouver/">Vancouver</a>
+                                <span style="float:right;">40</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/censusmapper/">CensusMapper</a>
+                                <span style="float:right;">20</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/mapzen/">Mapzen</a>
+                                <span style="float:right;">11</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/assessment/">Assessment</a>
+                                <span style="float:right;">9</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/osm/">OSM</a>
+                                <span style="float:right;">8</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/open-data/">Open Data</a>
+                                <span style="float:right;">8</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/bikes/">bikes</a>
+                                <span style="float:right;">7</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/census/">Census</a>
+                                <span style="float:right;">4</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/d3/">D3</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/hugo/">Hugo</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/taxes/">Taxes</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/transit/">Transit</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/zoning/">Zoning</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/newsfail/">newsfail</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/canada/">Canada</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/isochrones/">Isochrones</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/opendata/">OpenData</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/bcassessment/">BCAssessment</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/cansim/">CANSIM</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/density/">Density</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/empty-homes/">Empty Homes</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/fsr/">FSR</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/go/">Go</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/jekyll/">Jekyll</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/land-use/">Land Use</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/r/">R</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/stats/">Stats</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/surrey/">Surrey</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/traffic/">Traffic</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/cansensus/">cansensus</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/dotdensity/">dotdensity</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/housing/">housing</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/taxes/">taxes</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+            </ul>
+        </section>
+    
+
+    
+        
+        <section class="blurb">
+            <h2>About</h2>
+            <p>Mountain Doodles is an insomnia driven MountainMath side project, born out of random questions, trying to give partial answers through data.</p>
+
+            <ul class="actions">
+                <li><a href="/about/" class="button">Learn More</a></li>
+            </ul>
+        </section>
+        
+
+    
+        <section id="footer">
+            <ul class="icons">
+                
+                    <li><a href="/tags/plot/index.xml" type="application/rss+xml"
+                        target="_blank" title="RSS" class="fa fa-rss"></a></li>
+                
+                
+                    
+<li><a href="//github.com/mountainmath" target="_blank" title="GitHub" class="fa fa-github"></a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li><a href="//twitter.com/vb_jens" target="_blank" title="Twitter" class="fa fa-twitter"></a></li>
+
+
+
+<li><a href="mailto:jens@mountainmath.ca" title="Email" class="fa fa-envelope"></a></li>
+
+
+                
+            </ul>
+
+            <p class="copyright">&copy; Mountain Doodles. Design: <a href="http://html5up.net" target="_blank">HTML5 UP</a>. Ported by <a href="//github.com/jpescador" target="_blank">Julio Pescador</a>. Powered by <a href="//gohugo.io" target="_blank">Hugo</a></p>
+        </section>
+
+</section>
+
+            </div>
+        <a id="back-to-top" href="#" class="fa fa-arrow-up fa-border fa-2x"></a>
+        
+
+        
+        
+            
+        
+
+        
+        
+            <script src="/js/jquery.min.js"></script>
+            <script src="/js/skel.min.js"></script>
+            <script src="/js/util.js"></script>
+            <script src="/js/main.js"></script>
+            <script src="/js/backToTop.js"></script>
+            <script src="/js/highlight.pack.js"></script>
+        
+
+        
+
+            
+            <script>hljs.initHighlightingOnLoad();</script>
+            
+    </body>
+</html>
+

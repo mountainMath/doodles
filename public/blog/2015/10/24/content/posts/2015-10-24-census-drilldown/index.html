@@ -1,0 +1,1160 @@
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        
+            
+                <title>Census Drilldown</title>
+            
+        
+
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="generator" content="Hugo 0.26" />
+        
+    
+        
+    
+
+    
+
+    <link rel="apple-touch-icon-precomposed"
+        href='/favicon/apple-touch-icon-precomposed.png'>
+    <link rel="icon" href='/favicon/favicon.png'>
+    
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="msapplication-TileImage"
+        content='/favicon/mstile.png'>
+
+
+
+        
+            <meta name="author" content="Jens von Bergmann">
+        
+        
+            <meta name="description" content="Drilling into census regions">
+        
+
+        <meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Census Drilldown"/>
+<meta name="twitter:description" content="Drilling into census regions"/>
+<meta name="twitter:site" content="@vb_jens"/>
+
+        <meta property="og:title" content="Census Drilldown" />
+<meta property="og:description" content="Drilling into census regions" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/blog/2015/10/24/content/posts/2015-10-24-census-drilldown/" />
+
+
+
+<meta property="article:published_time" content="2015-10-24T00:00:00&#43;00:00"/>
+<meta property="article:modified_time" content="2015-10-24T00:00:00&#43;00:00"/>
+
+
+
+
+
+
+
+
+
+
+
+        
+<meta itemprop="name" content="Census Drilldown">
+<meta itemprop="description" content="Drilling into census regions">
+
+
+<meta itemprop="dateModified" content="2015-10-24T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="1360">
+
+
+
+<meta itemprop="keywords" content="" />
+
+        
+
+        
+
+        
+        
+            
+        
+
+        
+        
+            <link rel="stylesheet" href="/css/google-font.css" />
+            <link rel="stylesheet" href="/css/font-awesome.min.css" />
+            <link rel="stylesheet" href="/css/main.css" />
+            <link rel="stylesheet" href="/css/add-on.css" />
+            <link rel="stylesheet" href="/css/monokai-sublime.css">
+        
+
+        
+
+        
+        
+        
+            
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-54516567-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+        
+    </head>
+    <body>
+
+        
+        <div id="wrapper">
+
+    
+    
+<header id="header">
+    
+        <h2><a href="/">Mountain Doodles</i></a></h2>
+    
+
+    <nav class="links">
+        <ul>
+            
+                <li>
+                    <a href="/blog">
+                        
+                            <i class="fa fa-newspaper-o">&nbsp;</i>Blog
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/blog/archives">
+                        Archives
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/categories">
+                        Categories
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/about">
+                        About
+                    </a>
+                </li>
+            
+        </ul>
+    </nav>
+    <nav class="main">
+        <ul>
+            
+            <li id="share-nav" class="share-menu" style="display:none;">
+                <a class="fa-share-alt" href="#share-menu">Share</a>
+            </li>
+            
+            <li class="search">
+                <a class="fa-search" href="#search">Search</a>
+                <form id="search" method="get" action="//google.com/search">
+                    <input type="text" name="q" placeholder="Search" />
+                    <input type="hidden" name="q" value="site:/">
+                </form>
+            </li>
+            <li class="menu">
+                <a class="fa-bars" href="#menu">Menu</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+
+<section id="menu">
+
+    
+        <section>
+            <form class="search" method="get" action="//google.com/search">
+                <input type="text" name="q" placeholder="Search" />
+                <input type="hidden" name="q" value="site:/">
+            </form>
+        </section>
+
+    
+        <section>
+            <ul class="links">
+                
+                    <li>
+                        <a href="/blog">
+                            <h3>
+                                
+                                    <i class="fa fa-newspaper-o">&nbsp;</i>
+                                
+                                Blog
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/archives">
+                            <h3>
+                                
+                                Archives
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/categories">
+                            <h3>
+                                
+                                Categories
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/about">
+                            <h3>
+                                
+                                About
+                            </h3>
+                        </a>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+        <section>
+            <ul class="links">
+                <header>
+                    <h3>Recent Posts</h3>
+                </header>
+                
+                    
+                
+
+                
+                    <li>
+                        <a href="/blog/2017/08/24/dot-density/"><p>dot-density</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/08/23/density/"><p>Density</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/08/06/millennials-redux/"><p>Millennials Redux</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/05/16/lifeblood/"><p>Lifeblood</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/04/10/surprise/"><p>Surprise Maps</p></a>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+        
+</section>
+
+    <section id="share-menu">
+    <section id="social-share-nav">
+        <ul class="links">
+            <header>
+                <h3>Share this post <i class="fa fa-smile-o"></i></h3>
+            </header>
+            
+
+
+<li><a href="//twitter.com/share?url=%2fblog%2f2015%2f10%2f24%2fcontent%2fposts%2f2015-10-24-census-drilldown%2f&text=Census%20Drilldown&via=vb_jens" target="_blank" class="share-btn twitter">
+    <i class="fa fa-twitter"></i>
+    <p>Twitter</p>
+</a></li>
+
+
+<li><a href="//plus.google.com/share?url=%2fblog%2f2015%2f10%2f24%2fcontent%2fposts%2f2015-10-24-census-drilldown%2f" target="_blank" class="share-btn google-plus">
+    <i class="fa fa-google-plus"></i>
+    <p>Google+</p>
+</a></li>
+
+
+<li><a href="//www.facebook.com/sharer/sharer.php?u=%2fblog%2f2015%2f10%2f24%2fcontent%2fposts%2f2015-10-24-census-drilldown%2f" target="_blank" class="share-btn facebook">
+    <i class="fa fa-facebook"></i>
+    <p>Facebook</p>
+</a></li>
+
+
+<li><a href="//reddit.com/submit?url=%2fblog%2f2015%2f10%2f24%2fcontent%2fposts%2f2015-10-24-census-drilldown%2f&title=Census%20Drilldown" target="_blank" class="share-btn reddit">
+    <i class="fa fa-reddit-alien"></i>
+    <p>Reddit</p>
+</a></li>
+
+
+<li><a href="//www.linkedin.com/shareArticle?url=%2fblog%2f2015%2f10%2f24%2fcontent%2fposts%2f2015-10-24-census-drilldown%2f&title=Census%20Drilldown" target="_blank" class="share-btn linkedin">
+    <i class="fa fa-linkedin"></i>
+    <p>LinkedIn</p>
+</a></li>
+
+
+<li><a href="//www.stumbleupon.com/submit?url=%2fblog%2f2015%2f10%2f24%2fcontent%2fposts%2f2015-10-24-census-drilldown%2f&title=Census%20Drilldown" target="_blank" class="share-btn stumbleupon">
+    <i class="fa fa-stumbleupon"></i>
+    <p>StumbleUpon</p>
+</a></li>
+
+
+<li><a href="mailto:?subject=Check out this post by Jens%20von%20Bergmann&body=%2fblog%2f2015%2f10%2f24%2fcontent%2fposts%2f2015-10-24-census-drilldown%2f" target="_blank" class="share-btn email">
+    <i class="fa fa-envelope"></i>
+    <p>Email</p>
+</a></li>
+
+        </ul>
+    </section>
+</section>
+
+    
+    <div id="main">
+        
+        
+        <article class="post">
+    <header>
+    <div class="title">
+        
+            <h1><a href="/blog/2015/10/24/content/posts/2015-10-24-census-drilldown/">Census Drilldown</a></h1>
+            
+        
+        
+            <p>Drilling into census regions</p>
+        
+    </div>
+    <div class="meta">
+        
+            
+        
+
+        <time class="published"
+            datetime='2015-10-24'>
+            October 24, 2015</time>
+        <span class="author">Jens von Bergmann</span>
+        
+            <p>7 minute read</p>
+        
+        
+    </div>
+</header>
+
+
+    <section id="social-share">
+        <ul class="icons">
+            
+
+
+<li><a href="//twitter.com/share?url=%2fblog%2f2015%2f10%2f24%2fcontent%2fposts%2f2015-10-24-census-drilldown%2f&text=Census%20Drilldown&via=vb_jens" target="_blank" class="share-btn twitter">
+    <i class="fa fa-twitter"></i>
+    <p>Twitter</p>
+</a></li>
+
+
+<li><a href="//plus.google.com/share?url=%2fblog%2f2015%2f10%2f24%2fcontent%2fposts%2f2015-10-24-census-drilldown%2f" target="_blank" class="share-btn google-plus">
+    <i class="fa fa-google-plus"></i>
+    <p>Google+</p>
+</a></li>
+
+
+<li><a href="//www.facebook.com/sharer/sharer.php?u=%2fblog%2f2015%2f10%2f24%2fcontent%2fposts%2f2015-10-24-census-drilldown%2f" target="_blank" class="share-btn facebook">
+    <i class="fa fa-facebook"></i>
+    <p>Facebook</p>
+</a></li>
+
+
+<li><a href="//reddit.com/submit?url=%2fblog%2f2015%2f10%2f24%2fcontent%2fposts%2f2015-10-24-census-drilldown%2f&title=Census%20Drilldown" target="_blank" class="share-btn reddit">
+    <i class="fa fa-reddit-alien"></i>
+    <p>Reddit</p>
+</a></li>
+
+
+<li><a href="//www.linkedin.com/shareArticle?url=%2fblog%2f2015%2f10%2f24%2fcontent%2fposts%2f2015-10-24-census-drilldown%2f&title=Census%20Drilldown" target="_blank" class="share-btn linkedin">
+    <i class="fa fa-linkedin"></i>
+    <p>LinkedIn</p>
+</a></li>
+
+
+<li><a href="//www.stumbleupon.com/submit?url=%2fblog%2f2015%2f10%2f24%2fcontent%2fposts%2f2015-10-24-census-drilldown%2f&title=Census%20Drilldown" target="_blank" class="share-btn stumbleupon">
+    <i class="fa fa-stumbleupon"></i>
+    <p>StumbleUpon</p>
+</a></li>
+
+
+<li><a href="mailto:?subject=Check out this post by Jens%20von%20Bergmann&body=%2fblog%2f2015%2f10%2f24%2fcontent%2fposts%2f2015-10-24-census-drilldown%2f" target="_blank" class="share-btn email">
+    <i class="fa fa-envelope"></i>
+    <p>Email</p>
+</a></li>
+
+        </ul>
+    </section>
+    
+    
+
+    
+        
+        
+
+
+
+
+    
+
+
+        
+
+        <a href="/blog/2015/10/24/content/posts/2015-10-24-census-drilldown/" class="image featured">
+            <img src="/images/wheel.png" alt="" />
+        </a>
+    
+
+
+    <div id="content">
+        
+
+<h2 id="next-steps-in-censusmapper">Next steps in CensusMapper</h2>
+
+<p>The <a href="http://censusmapper.ca">Census Mapper Project</a> is moving along slowly, public beta unearthed some bugs and we gathered
+feedback (thanks to everyone reporting back!). There are still a couple of steps that need to be taken care of before
+we can unleash the full map making power to all users. We feel that the complexity of census data requires more guidance
+than the current map making system is providing. Anyone who does not mind getting there hands dirty and having to look
+up census variable definitions by themselves when making maps is welcome to contact us and we will hook you up with a
+beta mapmaking account.</p>
+
+<p>In the meantime we added one important feature to the CensusMapper.</p>
+
+<h3 id="content-drilldown">Content Drilldown</h3>
+
+<p>CensusMapper is a great way to explore single census variables (or a single function built out of census variables)
+across many geographic regions and aggregation levels. But sometimes we would like to do the opposite: Drill down into
+a specific census region and explore other census variables. We have now added an easy way to do this. To access it
+simply select the &ldquo;more&rdquo; button in the basic popup when you select a census region. This brings up the <em>census wheel</em>,
+which is our way to navigate through census data.
+<img src="/images/wheel.png" alt="Census Wheel" style="max-width:400px;margin-left:15px;margin-top:10px;" align="right"/></p>
+
+<p>Try it out right away on <a href="http://censusmapper.ca">CensusMapper</a> or read on for details on how this works.</p>
+
+<!-- more -->
+
+<p>There are almost 4,000 census variables available, right now we do not offer to split up by gender, which reduces the
+available variables to 1,429. To further simplify things we throw out all variables with zero values for the give
+geographic area, still leaving a
+sizeable number of variables to browse through.
+<img src="/images/mother_tounge.png" alt="Mother Tounge" style="max-width:400px;margin-right:15px;margin-top:10px;" align="left"/>
+Each arc in the census wheel represents a variable, or a category of
+variables. Selecting an arc will zoom into that arc and turn it into the &ldquo;center&rdquo; of the wheel, collapsing all other
+components. That&rsquo;s the content <em>drilldown</em> process. Once it makes sense to display data as proportions, we switch to the
+<em>proportional view</em> which shows the data as hierarchical pie chart.</p>
+
+<p>This gives a visual representation of the proportions of each of the variables. Hovering (or touching) an arc will
+display more detailed information, selecting one will drill down further. To reverse that process either select the
+center or us the <em>content breadcrumbs</em> at the top that were created during the drilldown process.</p>
+
+<h2 id="data-problems">#Data Problems</h2>
+
+<p>Census data is messy. Now that all census data for each region is generally accessible in CensusMapper we need to
+explain some of the inherent data problems.</p>
+
+<h2 id="rounding">##Rounding</h2>
+
+<p>Census Canada will <a href="http://www12.statcan.gc.ca/census-recensement/2011/dp-pd/prof/help-aide/N2.cfm?Lang=E">round</a>
+(almost) all data to preserve anonymity and don&rsquo;t create false impressions of accuracy that
+the data does not achieve. Data is generally reported in increments of 5, rounding includes randomness to preserve
+anonymity. The value of the measured value
+is <a href="https://www12.statcan.gc.ca/census-recensement/2011/ref/DQ-QD/conf-eng.cfm">within 4</a> of the reported one. And
+remember that even the measured variable is only an estimate of the actual value of the variable.
+Rounding may lead to situations where, for example, the sum of all people listed
+by age bracket will not add up to the total number of people. Generally, this difference will be small and we ignore it
+in our visualization.</p>
+
+<h2 id="omitted-data">##Omitted Data</h2>
+
+<p>Census Canada will at times not report data. This could be due to very low return rates or other problems that make data
+so unreliable that it is better not reported at all. Or it could be that releasing the information could compromize
+the anonymity of the census data for some people in that area. The latter can take
+the form of Census Canada not reporting any data for the region, or Census Canada zeroing out specific variables that
+&ldquo;are too low to be reported&rdquo;.
+<img src="/images/unaccounted.png" alt="Unaccounted" style="max-width:400px;margin-left:15px;margin-top:10px;" align="right"/>
+We have not been able to find clear guidelines how the &ldquo;zeroing&rdquo; works, but often this will leave
+detectable traces in the data. Looking at the example in the image, looking at &ldquo;Mode of Transport&rdquo; to work only
+&ldquo;Driving&rdquo; has non-zero values, the
+other options &ldquo;Passenger&rdquo;, &ldquo;Transit&rdquo;, &ldquo;Bike&rdquo;, &ldquo;Walk&rdquo; and &ldquo;Other&rdquo; are all zero. There were 160 people getting to work,
+115 are listed as &ldquo;Driver&rdquo;, leaving 45 unaccounted for. This is outside of the range that could be explained by the
+rounding of variables. We alert the user by adding in
+a grey area for the missing 45. This also ensures that the visual representation remains accurate.</p>
+
+<h2 id="multiple-responses">##Multiple Responses</h2>
+
+<p>Some census questions allow for multiple responses. For exaple &ldquo;Language Spoken Most Often At Home&rdquo;. In this particular
+case the census variable breaks out single responses and multiple responses and is very transparent to the user. In
+other cases, for example &ldquo;Ethnicity&rdquo;, single and multiple responses are not reported separately but responses are all
+added up. This leads to the sum of lower level variables being higher than the base variable. We alert the user to this
+by overlaying small white dots on the base variable.
+<img src="/images/multiple_responses.png" alt="Multiple Responses" style="max-width:400px;margin-right:15px;margin-top:10px;" align="left"/>
+In this particular case the total for for &ldquo;Ethnic Origin&rdquo; was 12,140 people. But there were 1,430 more responses at the
+next level, so up to 1,430 people had given multiple responses to this question listing more than one of the aggregate
+(mostly continent level) origins, some possibly listing more than two. The same patter repeats at different ethnic
+origin aggregation
+levels, for example 2,565 people claimed at least one of the &ldquo;British Island origins&rdquo;, but many listed more than one
+resulting in the sum of the individual regions with the British Islands exceeding the British Island count by 1,445.
+Again, we alert the user by overlaying dots over the &ldquo;British Island origins&rdquo; arc. Hovering over the arg will display
+the exact numbers of the &ldquo;overcounting&rdquo; due to multiple responses.</p>
+
+<p>In these cases where mulitple repsonses are not broken out the dots will aler the user that the proportional
+representation in the hierarchical pie chart does not represent proportions out of a total given by the value of the
+variable at the centre (or lower level), but as a proportion of all responses which exceeds the value of the
+lower level variable.</p>
+
+<h2 id="basic-census">##Basic Census</h2>
+
+<p>The Basic Census is generally speaking quite reliable, every single person is required to fill it
+out and return rates are generally above 95%. Serious problems will only occur if response rates are very low. We alert
+the user by shading geographic regions is this has been the case.</p>
+
+<h2 id="nhs">##NHS</h2>
+
+<p>The National Household Survey is quite different in nature, it was only
+sent out to a smaller portion (~30%) of society and return rates were much lower (~69%). Even with 100% return rates
+there are likely to be geographic regions where the results severely misrepresent reality in that region due to sampling
+bias. For each region that bias is small, but the probability for bias grows as the number of people in the geographic
+region declines. So this is mostly a problem for Dissemination Areas. But even there, the probability of severe sampling
+bias in each region is small, but there are many regions and the probability that some of these regions suffer from
+sever sampling bias is quite large.</p>
+
+<p>On top of this basic statistical sampling bias, we also have self selection bias due to some deomgraphics being more
+likely to return the survey than others. This bias is a product of the decision of scrapping the madatory
+&lsquo;long form census&rsquo; and replacing it with the voluntary NHS. The return rates can give some indication of the
+likelyhood of self-selection
+bias, we shade regions with a non-return rate lower than 50%, the cutoff Census Canada set for reliability of the NHS.
+It is especially problematic when trying to detect change in variables (for example poverty) from one census to another
+as the differences in the variable over time are often small and similar in magnitude to possible self-selection bias.</p>
+
+<p>The 50% cutoff we highlight in CensusMapper is just a guideline, the exact return rates are displayed on hover or when
+selecting regions and should always to be taken into
+account when interpreting results,
+especially at the Dissemination Area level.</p>
+
+<p>If all this information did not turn you off, head over to <a href="http://censusmapper.ca">CensusMapper</a> and drill down into
+some geographic areas.</p>
+
+    </div>
+
+    <footer>
+        <ul class="stats">
+    
+        
+
+        
+        
+            <li>
+                
+                
+                    
+
+                    
+
+                    
+
+                    
+                        Category
+                    
+                
+            </li>
+        
+    
+
+    
+    
+        <li><a href='/categoriescensusmapper'>CensusMapper</a></li>
+    
+</ul>
+
+    </footer>
+</article>
+<ul class="actions pagination">
+    
+        <li><a href="/blog/2015/09/28/content/posts/2015-09-28-census-mapper/"
+                class="button big previous">Census Mapper</a></li>
+    
+
+    
+        <li><a href="/blog/2015/12/13/how-to-make-a-bike-map/"
+                class="button big next">How to make a bike map</a></li>
+    
+</ul>
+
+
+
+    
+        <article class="post">
+            <div id="disqus_thread"></div>
+<script>
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "doodlesmountainmathca" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+        </article>
+    
+
+
+    </div>
+    
+<section id="sidebar">
+
+    
+        <section id="intro">
+            
+            
+                
+                    <img src="/img/main/jens_square_small.jpeg" width="150" alt="Mountain Doodles" />
+                
+            
+            
+                <header>
+                    <h2>Mountain Doodles</h2>
+                    <p>Too much data, too little time.</p>
+                </header>
+            
+            <ul class="icons">
+                
+                
+                    
+<li><a href="//github.com/mountainmath" target="_blank" title="GitHub" class="fa fa-github"></a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li><a href="//twitter.com/vb_jens" target="_blank" title="Twitter" class="fa fa-twitter"></a></li>
+
+
+
+<li><a href="mailto:jens@mountainmath.ca" title="Email" class="fa fa-envelope"></a></li>
+
+
+                
+            </ul>
+        </section>
+
+    
+        <section id="recent-posts">
+            <ul class="posts">
+                <header>
+                    <h3>Recent Posts</h3>
+                </header>
+                
+                    
+                
+
+                
+                    
+                
+
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/08/24/dot-density/">dot-density</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-24'>
+                                    August 24, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/08/23/density/">Density</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-23'>
+                                    August 23, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/08/06/millennials-redux/">Millennials Redux</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-06'>
+                                    August 6, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/05/16/lifeblood/">Lifeblood</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-05-16'>
+                                    May 16, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/04/10/surprise/">Surprise Maps</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-04-10'>
+                                    April 10, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+
+                
+                    <li>
+                        <ul class="actions">
+                            <li><a href=
+                            
+                                /blog/
+                            
+                            class="button">View more posts</a></li>
+                        </ul>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+    
+    
+    
+        <section id="categories">
+            <ul class="posts">
+                <header>
+                    <h3><a href="/categories/">Categories</a></h3>
+                </header>
+
+                
+                    
+                
+
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/vancouver/">Vancouver</a>
+                                <span style="float:right;">39</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/censusmapper/">CensusMapper</a>
+                                <span style="float:right;">21</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/assessment-data/">Assessment Data</a>
+                                <span style="float:right;">10</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/mapzen/">Mapzen</a>
+                                <span style="float:right;">10</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/osm/">OSM</a>
+                                <span style="float:right;">10</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/bikes/">bikes</a>
+                                <span style="float:right;">8</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/zoning/">zoning</a>
+                                <span style="float:right;">7</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/transportation/">Transportation</a>
+                                <span style="float:right;">4</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/density/">density</a>
+                                <span style="float:right;">4</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/geeky/">geeky</a>
+                                <span style="float:right;">4</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/land-use/">land use</a>
+                                <span style="float:right;">4</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/taxes/">taxes</a>
+                                <span style="float:right;">4</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/newsfail/">newsfail</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/assessment/">Assessment</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/empty-homes/">Empty Homes</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/d3/">D3</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/isochrones/">Isochrones</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/open-data/">Open Data</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/surrey/">Surrey</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/taxes/">Taxes</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/transporation/">Transporation</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/zoning/">Zoning</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/cansensus/">cansensus</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/dotdensity/">dotdensity</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/teardowns/">teardowns</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+            </ul>
+        </section>
+    
+
+    
+        
+        <section class="blurb">
+            <h2>About</h2>
+            <p>Mountain Doodles is an insomnia driven MountainMath side project, born out of random questions, trying to give partial answers through data.</p>
+
+            <ul class="actions">
+                <li><a href="/about/" class="button">Learn More</a></li>
+            </ul>
+        </section>
+        
+
+    
+        <section id="footer">
+            <ul class="icons">
+                
+                
+                    
+<li><a href="//github.com/mountainmath" target="_blank" title="GitHub" class="fa fa-github"></a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li><a href="//twitter.com/vb_jens" target="_blank" title="Twitter" class="fa fa-twitter"></a></li>
+
+
+
+<li><a href="mailto:jens@mountainmath.ca" title="Email" class="fa fa-envelope"></a></li>
+
+
+                
+            </ul>
+
+            <p class="copyright">&copy; Mountain Doodles. Design: <a href="http://html5up.net" target="_blank">HTML5 UP</a>. Ported by <a href="//github.com/jpescador" target="_blank">Julio Pescador</a>. Powered by <a href="//gohugo.io" target="_blank">Hugo</a></p>
+        </section>
+
+</section>
+
+            </div>
+        <a id="back-to-top" href="#" class="fa fa-arrow-up fa-border fa-2x"></a>
+        
+
+        
+        
+            
+        
+
+        
+        
+            <script src="/js/jquery.min.js"></script>
+            <script src="/js/skel.min.js"></script>
+            <script src="/js/util.js"></script>
+            <script src="/js/main.js"></script>
+            <script src="/js/backToTop.js"></script>
+            <script src="/js/highlight.pack.js"></script>
+        
+
+        
+
+            
+            <script>hljs.initHighlightingOnLoad();</script>
+            
+    </body>
+</html>
+

@@ -1,0 +1,216 @@
+.legend {
+  line-height: 18px;
+  color: #555;
+}
+.legend p {
+  margin:0;
+}
+.legend .legend-title{
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.legend i{
+  width: 18px;
+  height: 18px;
+  float: left;
+  margin-right: 8px;
+  opacity: 0.7;
+}
+
+.axis {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.bar {
+  fill: steelblue;
+}
+
+.bar:hover {
+  fill: brown;
+}
+
+.color-bar:hover {
+  fill: grey;
+}
+
+.land_use .bar:hover {
+    fill: brown;
+  }
+.land_use .axis {
+    font: 10px sans-serif;
+  }
+
+.land_use .axis path  {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
+.land_use .axis path {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+.land_use  .legend2 {
+    height:30px;
+  }
+.land_use  .legend2 .info {
+    float: right;
+  }
+
+.land_use  .x.axis path {
+    display: inherit;
+  }
+
+}
+
+a.btn {
+  background:lightgray;
+  padding:3px;
+  border: 1px solid darkgrey;
+  border-radius: 2px;
+  text-decoration: none;
+}
+
+.radviz {
+  float: left;
+}
+.radviz  .panel {
+    stroke: black;
+    fill: white;
+  }
+.radviz  .bg {
+    fill: none;
+  }
+.radviz  .link {
+    stroke: silver;
+    stroke-opacity: 0.05
+  }
+.radviz  .dot {
+    fill-opacity: 0.5;
+  }
+.radviz  .label-node {
+    fill: silver;
+  }
+.radviz  .active {
+    stroke: black;
+  }
+.radviz  .label {
+    fill: gray;
+    pointer-events: none;
+  }
+.radviz  #radviz-tooltip {
+    font-size: 12px;
+    margin-top: 22px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 4px;
+  }
+.radviz  #radviz-tooltip h1 {
+    font-size: 14px;
+    margin: 0;
+  }
+
+.radviz-list-container{
+  float: left;
+  //padding-top: 20px;
+  width:200px;
+}
+.radviz-list-container  .item {
+    border: 1px solid grey;
+    background-color: skyblue;
+    opacity: 0.8;
+    overflow: visible;
+    //padding: 2px 0;
+    white-space: nowrap;
+  }
+
+.radviz-list-container  .muni {
+    font-weight: bold;
+    font-size: 1.2em;
+    height:3em;
+  }
+
+
+.whiskers {
+  .box {
+    font: 10px sans-serif;
+  }
+
+  .box line,
+  .box rect,
+  .box circle {
+    fill: #fff;
+    stroke: #000;
+    stroke-width: 1.5px;
+  }
+
+  .box .center {
+    stroke-dasharray: 3,3;
+  }
+
+  .box .outlier {
+    fill: none;
+    stroke: #ccc;
+  }
+}
+
+.income-generator{
+  border: 1px black solid;
+  border-radius: 2px;
+  width: 100%;
+  div.income-choices{
+    display: none;
+    div{
+      display: inline-block;
+      //border: 1px darkgray solid;
+      //border-radius: 2px;
+    }
+  }
+  .btn{
+    cursor: pointer;
+    display: block;
+    text-align: center;
+  }
+}
+.income-generator.active{
+  div.income-choices{
+    display: block;
+  }
+}
+
+ul.indented li {
+  margin-left:25px;
+}
+ul.bordered {
+  padding:10px;
+  width:80%;
+  border:1px darkgrey solid;
+  border-radius:5px;
+}
+
+.jacobs{
+  width:30%;
+  margin:5px;
+  display:inline-block;
+  text-align:center;
+  font-weight:bold;
+}
+
+.half-image{
+  width:48%;
+  margin:5px;
+  display:inline-block;
+  text-align:center;
+  font-weight:bold;
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Census Data on Mountain Doodles</title>
+    <link>/categories/census-data/</link>
+    <description>Recent content in Census Data on Mountain Doodles</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 25 Aug 2017 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/categories/census-data/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>dot-density</title>
+      <link>/posts/content/posts/2017-08-25-dot-density/</link>
+      <pubDate>Fri, 25 Aug 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/content/posts/2017-08-25-dot-density/</guid>
+      <description>I started writing this blog post in December 2015, when CensusMapper quite a bit younger and I hacked together some basic dot-density maps. I never much liked the results and have been slowly improving and thinking about them. I am still not entirely happy with the current implementation, but it is slowly getting there. The final impulse to finsish this post was the work on cancensus, and R wrapper for the CensusMapper API my explorations in multi-category dot density maps in R, now tied up into the new dotdensity package.</description>
+    </item>
+    
+  </channel>
+</rss>

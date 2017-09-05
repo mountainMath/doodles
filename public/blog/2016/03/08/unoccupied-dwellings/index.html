@@ -1,0 +1,1155 @@
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        
+            
+                <title>Unoccupied Dwellings</title>
+            
+        
+
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="generator" content="Hugo 0.26" />
+        
+    
+        
+    
+
+    
+
+    <link rel="apple-touch-icon-precomposed"
+        href='/favicon/apple-touch-icon-precomposed.png'>
+    <link rel="icon" href='/favicon/favicon.png'>
+    
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="msapplication-TileImage"
+        content='/favicon/mstile.png'>
+
+
+
+        
+            <meta name="author" content="Jens von Bergmann">
+        
+        
+            <meta name="description" content="Making sense of the new city data.">
+        
+
+        <meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Unoccupied Dwellings"/>
+<meta name="twitter:description" content="Making sense of the new city data."/>
+<meta name="twitter:site" content="@vb_jens"/>
+
+        <meta property="og:title" content="Unoccupied Dwellings" />
+<meta property="og:description" content="Making sense of the new city data." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/blog/2016/03/08/unoccupied-dwellings/" />
+
+
+
+<meta property="article:published_time" content="2016-03-08T00:00:00&#43;00:00"/>
+<meta property="article:modified_time" content="2016-03-08T00:00:00&#43;00:00"/>
+
+
+
+
+
+
+
+
+
+
+
+        
+<meta itemprop="name" content="Unoccupied Dwellings">
+<meta itemprop="description" content="Making sense of the new city data.">
+
+
+<meta itemprop="dateModified" content="2016-03-08T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="1764">
+
+
+
+<meta itemprop="keywords" content="" />
+
+        
+
+        
+
+        
+        
+            
+        
+
+        
+        
+            <link rel="stylesheet" href="/css/google-font.css" />
+            <link rel="stylesheet" href="/css/font-awesome.min.css" />
+            <link rel="stylesheet" href="/css/main.css" />
+            <link rel="stylesheet" href="/css/add-on.css" />
+            <link rel="stylesheet" href="/css/monokai-sublime.css">
+        
+
+        
+
+        
+        
+        
+            
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-54516567-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+        
+    </head>
+    <body>
+
+        
+        <div id="wrapper">
+
+    
+    
+<header id="header">
+    
+        <h2><a href="/">Mountain Doodles</i></a></h2>
+    
+
+    <nav class="links">
+        <ul>
+            
+                <li>
+                    <a href="/blog">
+                        
+                            <i class="fa fa-newspaper-o">&nbsp;</i>Blog
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/blog/archives">
+                        Archives
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/categories">
+                        Categories
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/about">
+                        About
+                    </a>
+                </li>
+            
+        </ul>
+    </nav>
+    <nav class="main">
+        <ul>
+            
+            <li id="share-nav" class="share-menu" style="display:none;">
+                <a class="fa-share-alt" href="#share-menu">Share</a>
+            </li>
+            
+            <li class="search">
+                <a class="fa-search" href="#search">Search</a>
+                <form id="search" method="get" action="//google.com/search">
+                    <input type="text" name="q" placeholder="Search" />
+                    <input type="hidden" name="q" value="site:/">
+                </form>
+            </li>
+            <li class="menu">
+                <a class="fa-bars" href="#menu">Menu</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+
+<section id="menu">
+
+    
+        <section>
+            <form class="search" method="get" action="//google.com/search">
+                <input type="text" name="q" placeholder="Search" />
+                <input type="hidden" name="q" value="site:/">
+            </form>
+        </section>
+
+    
+        <section>
+            <ul class="links">
+                
+                    <li>
+                        <a href="/blog">
+                            <h3>
+                                
+                                    <i class="fa fa-newspaper-o">&nbsp;</i>
+                                
+                                Blog
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/archives">
+                            <h3>
+                                
+                                Archives
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/categories">
+                            <h3>
+                                
+                                Categories
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/about">
+                            <h3>
+                                
+                                About
+                            </h3>
+                        </a>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+        <section>
+            <ul class="links">
+                <header>
+                    <h3>Recent Posts</h3>
+                </header>
+                
+                    
+                
+
+                
+                    <li>
+                        <a href="/blog/2017/08/24/dot-density/"><p>dot-density</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/08/23/density/"><p>Density</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/08/06/millennials-redux/"><p>Millennials Redux</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/05/16/lifeblood/"><p>Lifeblood</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/04/10/surprise/"><p>Surprise Maps</p></a>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+        
+</section>
+
+    <section id="share-menu">
+    <section id="social-share-nav">
+        <ul class="links">
+            <header>
+                <h3>Share this post <i class="fa fa-smile-o"></i></h3>
+            </header>
+            
+
+
+<li><a href="//twitter.com/share?url=%2fblog%2f2016%2f03%2f08%2funoccupied-dwellings%2f&text=Unoccupied%20Dwellings&via=vb_jens" target="_blank" class="share-btn twitter">
+    <i class="fa fa-twitter"></i>
+    <p>Twitter</p>
+</a></li>
+
+
+<li><a href="//plus.google.com/share?url=%2fblog%2f2016%2f03%2f08%2funoccupied-dwellings%2f" target="_blank" class="share-btn google-plus">
+    <i class="fa fa-google-plus"></i>
+    <p>Google+</p>
+</a></li>
+
+
+<li><a href="//www.facebook.com/sharer/sharer.php?u=%2fblog%2f2016%2f03%2f08%2funoccupied-dwellings%2f" target="_blank" class="share-btn facebook">
+    <i class="fa fa-facebook"></i>
+    <p>Facebook</p>
+</a></li>
+
+
+<li><a href="//reddit.com/submit?url=%2fblog%2f2016%2f03%2f08%2funoccupied-dwellings%2f&title=Unoccupied%20Dwellings" target="_blank" class="share-btn reddit">
+    <i class="fa fa-reddit-alien"></i>
+    <p>Reddit</p>
+</a></li>
+
+
+<li><a href="//www.linkedin.com/shareArticle?url=%2fblog%2f2016%2f03%2f08%2funoccupied-dwellings%2f&title=Unoccupied%20Dwellings" target="_blank" class="share-btn linkedin">
+    <i class="fa fa-linkedin"></i>
+    <p>LinkedIn</p>
+</a></li>
+
+
+<li><a href="//www.stumbleupon.com/submit?url=%2fblog%2f2016%2f03%2f08%2funoccupied-dwellings%2f&title=Unoccupied%20Dwellings" target="_blank" class="share-btn stumbleupon">
+    <i class="fa fa-stumbleupon"></i>
+    <p>StumbleUpon</p>
+</a></li>
+
+
+<li><a href="mailto:?subject=Check out this post by Jens%20von%20Bergmann&body=%2fblog%2f2016%2f03%2f08%2funoccupied-dwellings%2f" target="_blank" class="share-btn email">
+    <i class="fa fa-envelope"></i>
+    <p>Email</p>
+</a></li>
+
+        </ul>
+    </section>
+</section>
+
+    
+    <div id="main">
+        
+        
+        <article class="post">
+    <header>
+    <div class="title">
+        
+            <h1><a href="/blog/2016/03/08/unoccupied-dwellings/">Unoccupied Dwellings</a></h1>
+            
+        
+        
+            <p>Making sense of the new city data.</p>
+        
+    </div>
+    <div class="meta">
+        
+            
+        
+
+        <time class="published"
+            datetime='2016-03-08'>
+            March 8, 2016</time>
+        <span class="author">Jens von Bergmann</span>
+        
+            <p>9 minute read</p>
+        
+        
+    </div>
+</header>
+
+
+    <section id="social-share">
+        <ul class="icons">
+            
+
+
+<li><a href="//twitter.com/share?url=%2fblog%2f2016%2f03%2f08%2funoccupied-dwellings%2f&text=Unoccupied%20Dwellings&via=vb_jens" target="_blank" class="share-btn twitter">
+    <i class="fa fa-twitter"></i>
+    <p>Twitter</p>
+</a></li>
+
+
+<li><a href="//plus.google.com/share?url=%2fblog%2f2016%2f03%2f08%2funoccupied-dwellings%2f" target="_blank" class="share-btn google-plus">
+    <i class="fa fa-google-plus"></i>
+    <p>Google+</p>
+</a></li>
+
+
+<li><a href="//www.facebook.com/sharer/sharer.php?u=%2fblog%2f2016%2f03%2f08%2funoccupied-dwellings%2f" target="_blank" class="share-btn facebook">
+    <i class="fa fa-facebook"></i>
+    <p>Facebook</p>
+</a></li>
+
+
+<li><a href="//reddit.com/submit?url=%2fblog%2f2016%2f03%2f08%2funoccupied-dwellings%2f&title=Unoccupied%20Dwellings" target="_blank" class="share-btn reddit">
+    <i class="fa fa-reddit-alien"></i>
+    <p>Reddit</p>
+</a></li>
+
+
+<li><a href="//www.linkedin.com/shareArticle?url=%2fblog%2f2016%2f03%2f08%2funoccupied-dwellings%2f&title=Unoccupied%20Dwellings" target="_blank" class="share-btn linkedin">
+    <i class="fa fa-linkedin"></i>
+    <p>LinkedIn</p>
+</a></li>
+
+
+<li><a href="//www.stumbleupon.com/submit?url=%2fblog%2f2016%2f03%2f08%2funoccupied-dwellings%2f&title=Unoccupied%20Dwellings" target="_blank" class="share-btn stumbleupon">
+    <i class="fa fa-stumbleupon"></i>
+    <p>StumbleUpon</p>
+</a></li>
+
+
+<li><a href="mailto:?subject=Check out this post by Jens%20von%20Bergmann&body=%2fblog%2f2016%2f03%2f08%2funoccupied-dwellings%2f" target="_blank" class="share-btn email">
+    <i class="fa fa-envelope"></i>
+    <p>Email</p>
+</a></li>
+
+        </ul>
+    </section>
+    
+    
+
+    
+        
+        
+
+
+
+
+    
+
+
+        
+
+        <a href="/blog/2016/03/08/unoccupied-dwellings/" class="image featured">
+            <img src="/images/unoccupied-trends.png" alt="" />
+        </a>
+    
+
+
+    <div id="content">
+        
+
+<p>Today the City of Vancouver <a href="http://council.vancouver.ca/20160308/documents/rr1presentation.pdf">released their report</a>
+on unoccupied dwelling units in the city. I watched part of the presentation and read through the report, and from all
+that I can see the methodology used is very solid.</p>
+
+<p>I have seen some confusion and even some incorrect reporting on this, so I thought it would be worthwhile to look into
+the report in detail.
+<!-- more --></p>
+
+<h2 id="the-data">The Data</h2>
+
+<p>Smart meter data can be used to determine very accurately which units
+are occupied and which ones are not. In theory at least, in practice this is quite difficult because of the sheer magnitude
+of the data. That&rsquo;s why this is best left to companies who specialize in this kind of analysis, which is exactly what the
+city has done.</p>
+
+<p>The only problem is that not all units have smart meters. I don&rsquo;t know how far BCHydro has come with their rollout, but
+most condo units should have smart meters by now, as do newer single family units. So what to do about the housing that
+does not have smart meters? That&rsquo;s where things get tricky. Some studies I have seen use cutoffs for monthly electricity
+consumption to determine which are unoccupied. The problem is to find the right cutoff. Typically these studies report
+rates computed using several cutoffs to address that uncertainty. The problem is that different cutoffs give very different
+results. For example, <a href="http://www.btaworks.com/wp-content/uploads/2009/12/btaworks_condo_study_report_final2.pdf">this study</a>
+looked at 75kWh and 100kWh as monthly consumption cutoffs and reported 5.5% and 8.5% unoccupancy rate, respectively. I checked my condo unit
+when it was unoccupied for two months one summer, my two fridges pushed me well above the 100kWh threshold. So my unoccupied
+unit would have been counted as occupied in this study.</p>
+
+<p>So how did the new study deal with this problem. We did not hear technical details, but during the presentation it was
+explained that smart meter data was used to &ldquo;train&rdquo; a model to use dumb meter data. That&rsquo;s exactly the right approach. Going
+by the fact that everything was done right I am reasonably comfortable to assume that this part was also done in a way to
+give accurate aggregate numbers.</p>
+
+<p>I am hoping that the technical report will still come out so we can be confident that the details were taken care of
+properly. In particular I would like to know how the model dealt with different housing types, and how the housing type
+was tied to the electricity bill. What ratio of dwellings of each housing type had smart meter data available? And most
+importantly, what are the uncertainty estimates on the numbers presented?</p>
+
+<p>Bottom line on data: Solid.</p>
+
+<h2 id="results">Results</h2>
+
+<p>The big takeaway is this one graph:</p>
+
+<p><img  src="/images/unoccupied-trends.png" style="width:50%;float:left;margin-right:10px;">
+It shows that no matter what timeframe is used to define &ldquo;unoccupied&rdquo;, the rate stayed flat over time. In context of
+the current affordability discussion this means that this is unlikely a driving factor of Vancouver&rsquo;s skyrocketing
+real estate prices. But the absolute numbers are still quite large and there is a lot of untapped potential. While some people
+have argued that supply has not been the main part of the cause of the price hike in Vancouver, it is clear that it must
+be a big part of any solution. Finding effective ways to get this untapped supply online should be a priority, it is easier
+and more efficient than building new housing in NIMBY-zoned Vancouver.</p>
+
+<p>The other takeaway is that unoccupied units are dominated by condos.</p>
+
+<p><img  src="/images/unoccupied-apartment.png" style="width:50%;float:right;margin-left:10px;">
+The graph shows the rate for apartments, which also includes purpose built rentals. As the report points out, if we
+take out the purpose-built rentals, which have vacancy rates well below 1% at any given time and are extremely unlikely
+to stay vacant for two or more months, we arrive at a rate of about 12.5% of condos that are unoccupied in the City of
+Vancouver. As should be expected, that&rsquo;s significantly higher than what the non-smart meter studies picked up.</p>
+
+<h2 id="are-rates-in-vancouver-higher-than-elsewhere">Are rates in Vancouver higher than elsewhere?</h2>
+
+<p>That depends exactly on what the question asks. And this is where, in my opinion, the city report fails to give a good
+answer.</p>
+
+<p><img  src="/images/unoccupied-apartment-comparison.png" style="width:50%;float:left;margin-right:10px;">
+The City implied, <a href="http://www.theglobeandmail.com/news/british-columbia/vancouvers-vacant-homes-in-line-with-other-cities-but-condos-most-likely-empty/article29072573/">and newspapers now report</a>
+that Vancouver numbers are &ldquo;in line&rdquo; with other comparable cities. That claim is based on this graphic,
+which is included in the report and stems from a <a href="http://www.urbanfutures.com/foreign-unoccupied/">study by Urban Futures</a>.
+The study shows that the Metro Vancouver&rsquo;s rate of unoccupied <em>apartments</em> is not much different from other Metro regions.</p>
+
+<p>The problem is that this study is read as giving the <em>overall</em> occupancy rates are similar across metro regions, which is not
+the case. This is a fine point and a little technical, let&rsquo;s take a look at the actual rates of unoccupied dwellings in
+the larges metro areas.</p>
+
+<div id="unoccupied_cma" class="land_use" style="width:300px;float:right"></div>
+
+<p>We took these numbers from a <a href="http://www.cmhc-schl.gc.ca/odpub/pdf/68323.pdf?lang=en">CMHC report</a> that looked into this
+question and used the same data and methodology as Urban Futures, except they based it on all dwelling units instead of
+just apartments. This difference is quite stunning, and it can be explained by the fact that e.g. Metro Vancouver&rsquo;s
+housing units are to 41% apartments, vs 20% for Metro Calgary. And that various reports showed that the
+rate of unoccupied units is much higher in condos, so we can&rsquo;t substitute comparisons for unoccupied apartments for comparisons
+of unoccupied dwellings overall.</p>
+
+<p>So what do the numbers look like when comparing the City of Vancouver to other cities in the region and across Canada.
+In short, I do not know. Without going into too much details, the number of unoccupied dwelling units is derived by taking the number of
+units that are &ldquo;not occupied by usual residents&rdquo;, which is part of the standard release of the census data, and subtracting
+the &ldquo;unusual residents&rdquo;, that is foreign or temporary residents. So residents that have a permanent address abroad or
+elsewhere in Canada and on Census day occupied in a dwelling unit that is not their primary residents. Think students
+in a dorm room. Or someone in his vacation home. Or someone that works far from home and has a second unit close to work.</p>
+
+<p>And to get the number of foreign or temporary residents requires a custom tabulation, which costs some time and money. But
+overall not that much compared to the scope of the study the city just undertook, so it is not clear why they did not do this
+and settle this question properly.</p>
+
+<h2 id="why-do-i-see-so-many-different-unoccupancy-rates">Why do I see so many different unoccupancy rates?</h2>
+
+<p>Again, that depends exactly on the question asked. The report offers a variety of different rates, using the definition
+of unoccupied for 2 months, 6 months or 12 months. Each one gives a different rate. Then there is also the definitions
+used by Stats Canada, the building being unoccupied on census day (and the questionnaire was not returned).
+Again resulting in a differnt number. Then we can throw in the &ldquo;unusual residents&rdquo;, getting yet another number. Confused?
+You should be! Difficult questions often don&rsquo;t have an easy answer.</p>
+
+<p>The most important thing is to be consistent when comparing these numbers. Has the problem gotten worse? Use numbers that
+were derived using the same methodology at different times. Is is worse here than elsewhere? Use numbers derived using
+the same methodology across geographies.</p>
+
+<h2 id="geographic-distribution">Geographic distribution</h2>
+
+<p><a href="https://censusmapper.ca/maps/104" target="_blank"><img  src="/images/unoccupied.png" style="width:50%;float:left;margin-right:10px;"></a>
+In absence of the data on the foreign and temporary residents, we can take a closer look at the publicly released census
+data on &ldquo;dwellings not occupied by usual residents&rdquo;. The percentage of dwellings occupied by foreign or temporary residents
+are quite low, in the 0.4% to 0.2% range for these metro areas we looked at above. They tend to cluster around universities,
+but may also accumulate in some other areas. Keeping that in mind we can <a href="http://censusmapper.ca/maps/104">head over to CensusMapper</a>
+and zoom, pan around and use the search bar to explore the geographic distribution. The city data has shown that there
+was not much change in the number of unoccupied dwellings over time, no matter how the data was sliced. That gives us
+some confidence that the geographic distribution has also been somewhat stable over that time frame.</p>
+
+<p>At CensusMapper we are working on adding previous censuses, so this will be a good test case to see how the 2006 and 2001
+geographic distribution of unoccupied dwellings stacks up. For City of Vancouver the corresponding numbers are 7.5% and
+5.1%, respectively. The 2006 number is nicely in line with Vancouver&rsquo;s 2011 rate of 7.7%. <strike>It is not immediately clear how the significantly
+lower 2001 rate squares with the city report showing a flat trendline, but could well be due to shifting definitions from
+one census to another.</strike> The 2001 Census used slightly different definitions, it requires more
+work to compare these numbers. The devil is in the details.</p>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<p>The city study settles an important questions. The rates of unoccupied homes have not gone up. Perceptions often don&rsquo;t
+match facts. And there are lots of little things to poke at of course. What about people having a cleaning person stop
+by every other week? How about homes awaiting renovation or demolition permits? How about AirBnB?</p>
+
+<p>Now all these are valid questions. But before using this to discount the study do some estimates to see how large of an effect
+your porposed hole actually has. How does it compare to the number of units that were found unoccupied and how would it
+change that rate? In all these cases it is quite small. Then ask yourself how likely it is that the problem would be growing.</p>
+
+<p>Then you find that AirBnB probably needs more scrutiny. Best current estimates that I have seen
+<a href="https://twitter.com/karensawa/status/707288630444699650">peg entire units rented fulltime at AirBnB at 1200 in Vancouver</a>.
+Counting those would bring the rates of units taken out of the rental market by being unoccupied for a year or rented out
+full time via AirBnB from 4.8% to 5.3%. Noticeable, but doesn&rsquo;t make that much of a difference. Yet. That number is
+very likely to grow if left unchecked and should probably be taken seriously and regulated properly right now.</p>
+
+<h2 id="update">Update</h2>
+
+<p>A <a href="http://vancouver.ca/files/cov/stability-in-vancouver-housing-unit-occupancy-empty-homes-report.pdf">more detailed report</a>
+is now available to give more insight into the methodology. Nothing unexpected there, although the claim that the 12.5%
+rate of unoccupied condos is consistent with earlier claims of 5.5% to 8.5% is hard to follow.</p>
+
+<p>Still waiting for the technical report to get an idea of the error estimates (by housing type). Seeing the graphs for
+the 2-month and 4-month cutoffs by housing type would be nice too, as well as the respective ones using the 15 day
+criterion.</p>
+
+<script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="/lib/jquery.min.js" charset="utf-8"></script>
+<script src="/js/unoccupied-graph.js"></script>
+
+    </div>
+
+    <footer>
+        <ul class="stats">
+    
+        
+
+        
+        
+            <li>
+                
+                
+                    
+
+                    
+
+                    
+
+                    
+                        Categories
+                    
+                
+            </li>
+        
+    
+
+    
+    
+        <li><a href='/categoriesvancouver'>Vancouver</a></li>
+    
+        <li><a href='/categoriescensusmapper'>CensusMapper</a></li>
+    
+        <li><a href='/categoriesempty-homes'>Empty Homes</a></li>
+    
+</ul>
+
+    </footer>
+</article>
+<ul class="actions pagination">
+    
+        <li><a href="/blog/2016/03/05/physical-sfh-form-over-time/"
+                class="button big previous">Physical SFH Form Over Time</a></li>
+    
+
+    
+        <li><a href="/blog/2016/03/27/surrey-traffic-loop-counts/"
+                class="button big next">Surrey Traffic Loop Counts</a></li>
+    
+</ul>
+
+
+
+    
+        <article class="post">
+            <div id="disqus_thread"></div>
+<script>
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "doodlesmountainmathca" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+        </article>
+    
+
+
+    </div>
+    
+<section id="sidebar">
+
+    
+        <section id="intro">
+            
+            
+                
+                    <img src="/img/main/jens_square_small.jpeg" width="150" alt="Mountain Doodles" />
+                
+            
+            
+                <header>
+                    <h2>Mountain Doodles</h2>
+                    <p>Too much data, too little time.</p>
+                </header>
+            
+            <ul class="icons">
+                
+                
+                    
+<li><a href="//github.com/mountainmath" target="_blank" title="GitHub" class="fa fa-github"></a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li><a href="//twitter.com/vb_jens" target="_blank" title="Twitter" class="fa fa-twitter"></a></li>
+
+
+
+<li><a href="mailto:jens@mountainmath.ca" title="Email" class="fa fa-envelope"></a></li>
+
+
+                
+            </ul>
+        </section>
+
+    
+        <section id="recent-posts">
+            <ul class="posts">
+                <header>
+                    <h3>Recent Posts</h3>
+                </header>
+                
+                    
+                
+
+                
+                    
+                
+
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/08/24/dot-density/">dot-density</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-24'>
+                                    August 24, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/08/23/density/">Density</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-23'>
+                                    August 23, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/08/06/millennials-redux/">Millennials Redux</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-06'>
+                                    August 6, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/05/16/lifeblood/">Lifeblood</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-05-16'>
+                                    May 16, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/04/10/surprise/">Surprise Maps</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-04-10'>
+                                    April 10, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+
+                
+                    <li>
+                        <ul class="actions">
+                            <li><a href=
+                            
+                                /blog/
+                            
+                            class="button">View more posts</a></li>
+                        </ul>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+    
+    
+    
+        <section id="categories">
+            <ul class="posts">
+                <header>
+                    <h3><a href="/categories/">Categories</a></h3>
+                </header>
+
+                
+                    
+                
+
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/vancouver/">Vancouver</a>
+                                <span style="float:right;">39</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/censusmapper/">CensusMapper</a>
+                                <span style="float:right;">21</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/assessment-data/">Assessment Data</a>
+                                <span style="float:right;">14</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/mapzen/">Mapzen</a>
+                                <span style="float:right;">10</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/osm/">OSM</a>
+                                <span style="float:right;">10</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/bikes/">bikes</a>
+                                <span style="float:right;">8</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/zoning/">zoning</a>
+                                <span style="float:right;">7</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/geeky/">geeky</a>
+                                <span style="float:right;">6</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/transportation/">Transportation</a>
+                                <span style="float:right;">5</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/density/">density</a>
+                                <span style="float:right;">5</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/taxes/">taxes</a>
+                                <span style="float:right;">5</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/land-use/">land use</a>
+                                <span style="float:right;">4</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/newsfail/">newsfail</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/teardowns/">teardowns</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/empty-homes/">Empty Homes</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/cancensus/">cancensus</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/isochrones/">Isochrones</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/surrey/">Surrey</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/transporation/">Transporation</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/zoning/">Zoning</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/dotdensity/">dotdensity</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+            </ul>
+        </section>
+    
+
+    
+        
+        <section class="blurb">
+            <h2>About</h2>
+            <p>Mountain Doodles is an insomnia driven MountainMath side project, born out of random questions, trying to give partial answers through data.</p>
+
+            <ul class="actions">
+                <li><a href="/about/" class="button">Learn More</a></li>
+            </ul>
+        </section>
+        
+
+    
+        <section id="footer">
+            <ul class="icons">
+                
+                
+                    
+<li><a href="//github.com/mountainmath" target="_blank" title="GitHub" class="fa fa-github"></a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li><a href="//twitter.com/vb_jens" target="_blank" title="Twitter" class="fa fa-twitter"></a></li>
+
+
+
+<li><a href="mailto:jens@mountainmath.ca" title="Email" class="fa fa-envelope"></a></li>
+
+
+                
+            </ul>
+
+            <p class="copyright">&copy; Mountain Doodles. Design: <a href="http://html5up.net" target="_blank">HTML5 UP</a>. Ported by <a href="//github.com/jpescador" target="_blank">Julio Pescador</a>. Powered by <a href="//gohugo.io" target="_blank">Hugo</a></p>
+        </section>
+
+</section>
+
+            </div>
+        <a id="back-to-top" href="#" class="fa fa-arrow-up fa-border fa-2x"></a>
+        
+
+        
+        
+            
+        
+
+        
+        
+            <script src="/js/jquery.min.js"></script>
+            <script src="/js/skel.min.js"></script>
+            <script src="/js/util.js"></script>
+            <script src="/js/main.js"></script>
+            <script src="/js/backToTop.js"></script>
+            <script src="/js/highlight.pack.js"></script>
+        
+
+        
+
+            
+            <script>hljs.initHighlightingOnLoad();</script>
+            
+    </body>
+</html>
+

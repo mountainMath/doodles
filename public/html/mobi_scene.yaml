@@ -1,0 +1,880 @@
+import: refill-style.yaml
+
+sources:
+    osm:
+        type: TopoJSON
+        url: //vector.mapzen.com/osm/all/{z}/{x}/{y}.topojson?api_key=vector-tiles-S6vce5W
+        rasters: [normals]
+        max_zoom: 16
+    normals:
+        type: Raster
+        url: https://terrain-preview.mapzen.com/normal/{z}/{x}/{y}.png
+        max_zoom: 14
+
+styles:
+    casing_left:
+        base: lines
+        texcoords: true
+        shaders:
+            defines:
+                FLIP: true
+                LINE_WIDTH:  0.0001
+                SPIKE_WIDTH: 1.
+                SPIKE_SCALE: 2.
+            blocks:
+                global: |
+                    float pulse(float x,float p, float w){
+                        x = abs(x - p);
+                        if( x>w ) return 0.0;
+                        x /= w;
+                        return 1.0 - x*x*(3.0-2.0*x);
+                    }
+                color: |
+                    vec2 st = v_texcoord.xy;
+                    #ifdef FLIP
+                    st.x = 1. - st.x;
+                    #endif
+                    float pattern = step(.5,  pulse(st.x,0.5,LINE_WIDTH) + pulse(st.x,0.146,LINE_WIDTH));
+                    pattern += (step(.5,st.x))*pulse(fract(st.y*SPIKE_SCALE),.1,SPIKE_WIDTH);
+                    if (pattern==0.) {
+                        discard;
+                    }
+    casing_right:
+        base: lines
+        texcoords: true
+        shaders:
+            defines:
+                FLIP: false
+                LINE_WIDTH:  0.0001
+                SPIKE_WIDTH: 1.
+                SPIKE_SCALE: 2.
+            blocks:
+                global: |
+                    float pulse(float x,float p, float w){
+                        x = abs(x - p);
+                        if( x>w ) return 0.0;
+                        x /= w;
+                        return 1.0 - x*x*(3.0-2.0*x);
+                    }
+                color: |
+                    vec2 st = v_texcoord.xy;
+                    #ifdef FLIP
+                    st.x = 1. - st.x;
+                    #endif
+                    float pattern = step(.5,  pulse(st.x,0.5,LINE_WIDTH) + pulse(st.x,0.146,LINE_WIDTH));
+                    pattern += (step(.5,st.x))*pulse(fract(st.y*SPIKE_SCALE),.1,SPIKE_WIDTH);
+                    if (pattern==0.) {
+                        discard;
+                    }
+    terrain:
+        base: polygons
+        # mix: [grid]
+        raster: normal
+        shaders:
+            uniforms:
+                u_envmap: images/draw-test8.jpg
+                u_scale: 3. # higher values are more exaggerated
+                u_scale_end: 0.001
+                u_scale_fade_start: 3.
+                u_scale_fade_duration: 15.
+            blocks:
+                global: |
+                    // Simplified view-independent environment map
+                    vec4 terrainEnvmap (in sampler2D _tex, in vec3 _normal) {
+                        const vec3 eye = vec3(0.,0.,-1.);
+                        vec3 r = reflect(eye, _normal);
+                        r.z += 1.;
+                        float m = 2. * length(r);
+                        vec2 uv = r.xy / m + .5;
+                        return texture2D(_tex, uv);
+                    }
+                    const float e = 2.71828;
+                color: |
+                    normal.z /= u_scale; // turn terrain exaggeration up/down
+                    // fade out spheremap normals with a function
+                    // https://www.desmos.com/calculator/ptgkzcnfyc
+                    float m = 3.5 * (u_map_position.z - 0.8) * pow(e, u_map_position.z * -.29);
+                    // https://www.desmos.com/calculator/sanlujpfmc
+                    //float a = -0.0013719
+                    //float b = 0.057575
+                    //float c = -0.82002
+                    //float d = 4.2489
+                    //float f = -2.8336
+                    //float m = (a * pow(u_map_position.z, 4) + (b * pow(u_map_position.z, 3)) + (c * pow(u_map_position.z, 2)) + ( d * u_map_position.z) + f
+                    m = clamp(m, 0., 1.5);
+                    // normal = normalize(normal);
+                    color = terrainEnvmap(u_envmap, normal);
+
+                    // Apply contrast
+                    float contrast = m;
+                    color.rgb = ((color.rgb - 0.5) * max(contrast, 0.)) + 0.5;
+                    // Apply brightness
+                    float brightness = .5 - m * .5;
+                    color.rgb += brightness;
+
+                    color *= v_color; // apply layer color
+
+    terrain_more:
+        base: polygons
+        # mix: [grid]
+        raster: normal
+        shaders:
+            uniforms:
+                # u_envmap: images/relief-shading-environment-map.jpg
+                u_envmap: images/draw-test8.jpg
+                u_scale: 3. # higher values are more exaggerated
+                u_scale_end: 0.001
+                u_scale_fade_start: 3.
+                u_scale_fade_duration: 15.
+            blocks:
+                global: |
+                    // Simplified view-independent environment map
+                    vec4 terrainEnvmap (in sampler2D _tex, in vec3 _normal) {
+                        const vec3 eye = vec3(0.,0.,-1.);
+                        vec3 r = reflect(eye, _normal);
+                        r.z += 1.;
+                        float m = 2. * length(r);
+                        vec2 uv = r.xy / m + .5;
+                        return texture2D(_tex, uv);
+                    }
+                    const float e = 2.71828;
+                color: |
+                    normal.z /= u_scale; // turn terrain exaggeration up/down
+                    // fade out spheremap normals with a function
+                    // https://www.desmos.com/calculator/ptgkzcnfyc
+                    float m = 3.5 * (u_map_position.z - 0.8) * pow(e, u_map_position.z * -.29);
+                    // https://www.desmos.com/calculator/sanlujpfmc
+                    //float a = -0.0013719
+                    //float b = 0.057575
+                    //float c = -0.82002
+                    //float d = 4.2489
+                    //float f = -2.8336
+                    //float m = (a * pow(u_map_position.z, 4) + (b * pow(u_map_position.z, 3)) + (c * pow(u_map_position.z, 2)) + ( d * u_map_position.z) + f
+                    m = clamp(m, 0., 1.5);
+                    // normal = normalize(normal);
+                    color = terrainEnvmap(u_envmap, normal);
+
+                    // Apply contrast
+                    float contrast = m;
+                    color.rgb = ((color.rgb - 0.5) * max(contrast, 0.)) + 0.5;
+                    // Apply brightness
+                    float brightness = .5 - m * .5;
+                    color.rgb += brightness;
+
+                    color *= v_color; // apply layer color
+
+layers:
+    bicycle-roads:
+        data: { source: osm, layer: roads }
+        filter:
+            all:
+                - $zoom: { min: 11 }
+            any:
+                - is_bicycle_related: true
+                # 20160520 nvkelso: this is a hack as we're not calculating is_bicycle_related inclusive of bicycle=*
+                - bicycle: [yes, designated]
+                # 20160520 nvkelso: this is a hack as we don't currently export bicycle=* on pedestrian ways
+                - highway: pedestrian
+        draw:
+            lines:
+                interactive: true
+                color: [0.460,0.640,1.000]
+                width: [[11, 1px], [12, 1.2px], [13, 1.5px],[14,1.6px],[15,1.9px],[16,0.01px]]
+                # let roads sort themselves past zoom 14
+                order: 490
+                outline:
+                    order: 486
+                    color: [0.182,0.593,0.730]
+                    width: [[15, 0px],[16, 0.5px],[17, 1px]]
+#        early:
+#            filter:
+#                all:
+#                    - $zoom: [11]
+#                    - bicycle_network: [lcn]
+#                    - not:
+#                        - kind: path
+#            draw:
+#                lines:
+#                    visible: false
+#                    #color: red
+
+        cycleway-path-early:
+                filter:
+                    all:
+                        - $zoom: { max: 16 }
+                        - any:
+                            - highway: [cycleway, track, path, pedestrian, footway, steps]
+                            - cycleway: [sidepath, track, opposite_track]
+                            - cycleway_left: [sidepath, track, opposite_track]
+                            - cycleway_right: [sidepath, track, opposite_track]
+                        - not:
+                            any:
+                                - cycleway: [lane, opposite, opposite_lane]
+                                - cycleway_left: [lane, opposite, opposite_lane]
+                                - cycleway_right: [lane, opposite, opposite_lane]
+                draw:
+                    lines:
+                        color: '#02c014' #'#99ce9c'
+#                early-z15:
+#                    filter: { $zoom: [14,15] }
+#                    draw:
+#                        lines:
+#                            color: '#54b356'
+                track:
+                    filter: { highway: track }
+                    draw:
+                        lines:
+                            color: '#cfbe99'
+                    early-z15:
+                        filter: { $zoom: [14,15] }
+                        draw:
+                            lines:
+                                color: '#b39654'
+                sidepath-z15:
+                    filter:
+                        - cycleway: [sidepath]
+                        - cycleway_left: [sidepath]
+                        - cycleway_right: [sidepath]
+                    draw:
+                        lines:
+                            width: [[11, 1px], [12, 1.2px], [13, 1.0px],[14,1.2px],[15,1.5px],[16,0.01px]]
+        tracks-early:
+            filter:
+                 all:
+                    - not: { highway: [cycleway, track, path, pedestrian, footway, steps] }
+                    - $zoom: [14,15]
+                 any:
+                    - cycleway: [track, opposite_track]
+                    - cycleway_left: [track, opposite_track]
+                    - cycleway_right: [track, opposite_track]
+            draw:
+                lines:
+                    width: 2.2px
+        separated_bike_lanes-etc-early:
+            filter:
+                 all:
+                    - not: { highway: [cycleway, track, path, pedestrian, footway, steps] }
+                    - $zoom: [14,15]
+                 any:
+                    - cycleway: [lane, opposite, opposite_lane]
+                    - cycleway_left: [lane, opposite, opposite_lane]
+                    - cycleway_right: [lane, opposite, opposite_lane]
+                    - bicycle: [yes, designated]
+            draw:
+                lines:
+                    color: '#3b69fe'
+                    width: 2.2px
+        labels-cycleway:
+            filter: { $zoom: { min: 17 } }
+            draw:
+                text-blend-order:
+                    priority: 58
+                    interactive: true
+                    text_source: |
+                        function() {
+                            if( (feature.highway == 'cycleway' && feature.cycleway == 'sidepath' || feature.cycleway == 'segregated') ||
+                                (feature.highway == 'footway'  && feature.bicycle == 'yes' && feature.segregated == 'yes' )
+                            ) {
+                                return "Sidepath";
+                            } else if( feature.highway == "cycleway" && feature.cycleway != 'sidepath' ) {
+                                return "Bike path";
+                            } else if( feature.highway == "footway" && (feature.bicycle == 'designated' || feature.bicycle == 'yes') ) {
+                                return "Designated footway";
+                            } else if( feature.highway == "steps" && (feature.bicycle == 'designated' || feature.bicycle == 'yes') ) {
+                                return "Designated steps";
+                            } else if( feature.highway == 'track' && (feature.bicycle == 'designated' || feature.bicycle == 'yes') ) {
+                                return "Designated track";
+                            } else if( feature.highway == 'pedestrian' ) {
+                                return "Designated pedestrian";
+                            } else if( feature.kind == 'path' && (feature.bicycle == 'designated' || feature.bicycle == 'yes') ) {
+                                return "Designated path";
+                            } else if( feature.cycleway && feature.oneway == 'yes' ) {
+                                return feature.cycleway + " (implied right)";
+                            } else if( feature.cycleway ) {
+                                return feature.cycleway + " (both sides)";
+                            } else if( feature.cycleway_left && feature.cycleway_right ){
+                                return feature.cycleway_left + " (left) & " + feature.cycleway_right + " (right)";
+                            } else if( feature.cycleway_left ){
+                                return feature.cycleway_left + " (left side)";
+                            } else if ( feature.cycleway_right ){
+                                return feature.cycleway_right + " (right side)";
+                            } else {
+                                return "Designated route only";
+                            }
+                        }
+                    font:
+                        fill: blue #[0.143,0.544,0.481]
+                        style: italic
+                        size: 12px
+                        stroke: { color: white, width: 4 }
+        double-lines:
+            filter: { $zoom: { min: 16 } }
+            draw:
+                lines:
+                    color: [[16,[1.00,1.00,1.00]], [17,'#dbe6f9']]
+                    width: [[15,0px],[16,1px],[17,4px],[18,6m]]
+                    outline:
+                        color: [0.460,0.640,1.000]
+                        width: [[15, 0.5px],[16, 1.5px],[17, 1.5px],[18, 2.5px],[19, 1m]]
+                casing_left:
+                    visible: false
+                    interactive: true
+                    order: 486
+                    color: [0.460,0.640,1.000]
+                    width: [[15, 0.5px],[16, 5.5px],[17, 10px],[18, 9m],[19, 8m]]
+                casing_right:
+                    visible: false
+                    interactive: true
+                    order: 486
+                    color: white
+                    width: [[15, 0.5px],[16, 6px],[17, 10px],[18, 9m],[19, 8m]]
+            labels-early:
+                filter: { $zoom: [16] }
+                draw:
+                    text-blend-order:
+                        visible: false
+            cycleway-path:
+                filter:
+                    any:
+                        - { highway: cycleway }
+                        - { highway: path, bicycle: [designated, yes] }
+                        - { highway: track, bicycle: [designated, yes] }
+                        - { highway: footway, bicycle: [designated, yes] }
+                        - { highway: steps, bicycle: [designated, yes] }
+                        - { cycleway: [track, opposite_track] }
+                        - { highway: pedestrian }
+                    not:
+                        - { highway: footway, bicycle: yes, segregated: yes, cycleway: [sidepath] }
+                draw:
+                    lines:
+                        order: 486
+                        color: '#02c014' #'#99ce9c'
+                        outline:
+                            color: [[16,'#54b356'],[17,'#3ba53d'],[18,green]]
+                    text-blend-order:
+                        font:
+                            fill: green
+                cycleway_tracks:
+                    filter: { cycleway: [track, opposite_track], oneway: false }
+                    draw:
+                        lines:
+                            color: '#afdcb2'
+                footway_steps:
+                    filter: { highway: [footway, steps] }
+                    draw:
+                        lines:
+                            color: '#afdcb2'
+                            width: [[15,0px],[16,0.6px],[17,2.0px],[18,3m]]
+                            outline:
+                                color: [[16,'#6abe6c'],[17,'#5cb65e']]
+                                width: [[15, 0.5px],[16, 1.5px],[17, 1px],[18, 2px],[19, 0.7m]]
+                    steps:
+                        filter: { highway: steps }
+                        draw:
+                            lines:
+                                color: '#eac6c6'
+                                outline:
+                                    color: [[16,'#bf6b6b'],[17,'#b04d4d']]
+                            text-blend-order:
+                                font:
+                                    fill: '#b04d4d'
+                tracks:
+                    filter: { highway: track }
+                    draw:
+                        lines:
+                            order: 487
+                            color: '#cebe99'
+                            outline:
+                                color: [[16,'#b39654'],[17,'#a6863c'],[18,'#826219']]
+                        text-blend-order:
+                            font:
+                                fill: '#826219'
+            separated_bike_lanes_tracks_etc:
+                filter:
+#                     all:
+#                        - not: { highway: [cycleway, track, path, pedestrian, footway, steps] }
+                     any:
+                        - { oneway: yes, highway: [cycleway, track, path, pedestrian, footway, steps] }
+                        - { oneway: yes, cycleway: [lane, track, opposite, opposite_lane, opposite_track] }
+                        - cycleway_left: [lane, track, opposite, opposite_lane, opposite_track]
+                        - cycleway_right: [lane, track, opposite, opposite_lane, opposite_track]
+                        - { bicycle: [yes, designated], not: { highway: [path, cycleway] } }
+                draw:
+                    lines:
+                        outline:
+                            order: 488
+                            color: blue
+                    casing_left:
+                        color: white
+                    casing_right:
+                        color: blue
+                left_or_right_or_implied:
+                    filter:
+                        any:
+                            - cycleway_left: true
+                            - cycleway_right: true
+                            - { oneway: yes, cycleway: true }
+                            - { oneway: yes, highway: true }
+                    draw:
+                        lines:
+                            color: [[16,'#dbe6f9'], [17,'#dbe6f9']]
+                            width: [[15,1px],[16,3px],[17,6.5px],[18,6m]]
+                            outline:
+                                visible: false
+                                width: 0px
+                        casing_left:
+                            visible: true
+                        casing_right:
+                            visible: true
+                    left_is_special:
+                        filter:
+                            any:
+                                - cycleway_left: true
+                                - cycleway: opposite
+                        draw:
+                            casing_left:
+                                color: blue
+                            casing_right:
+                                color: white
+                        omg_oneway_bicycle:
+                            filter: { cycleway: [opposite, opposite_lane], oneway_bicycle: no }
+                            draw:
+                                casing_right:
+                                    color: blue
+                    shared_lane:
+                        filter:
+                             any:
+                                - cycleway: [shared_lane, shared]
+                                - cycleway_left: [shared_lane, shared]
+                                - cycleway_right: [shared_lane, shared]
+                        draw:
+                            lines:
+                                color: '#fffbca'
+                            casing_right:
+                                color: [0.460,0.640,1.000]
+                    cycle_track:
+                        filter:
+                             any:
+                                - { highway: true, cycleway: [track, opposite_track] }
+                                - cycleway_left: [track, opposite_track]
+                                - cycleway_right: [track, opposite_track]
+                                - highway: [cycleway, path, pedestrian, footway, steps]
+                        draw:
+                            lines:
+                                color: '#afdcb2'
+                                order: 492
+                            casing_right:
+                                color: '#02c014' #[[16,'#54b356'],[17,'#3ba53d'],[18,green]]
+                            text-blend-order:
+                                font:
+                                    fill: green
+                        cycleway_left:
+                            filter:
+                                - cycleway_left: true
+                            draw:
+                                casing_left:
+                                    color: '#02c014' #[[16,'#54b356'],[17,'#3ba53d'],[18,green]]
+                                casing_right:
+                                    color: white
+                        # sometimes there are also lanes on the other side
+                        cycleway_left_lane:
+                            filter:
+                                - cycleway_left: [lane, opposite, opposite_lane]
+                            draw:
+                                casing_left:
+                                    color: blue
+                                casing_right:
+                                    color: '#02c014'
+                    track_track:
+                        filter:
+                             any:
+                                - highway: [track]
+                        draw:
+                            lines:
+                                color: '#afdcb2'
+                            casing_right:
+                                color: brown #'#00c445' #[[16,'#54b356'],[17,'#3ba53d'],[18,green]]
+                            text-blend-order:
+                                font:
+                                    fill: brown
+                        cycleway_left:
+                            filter:
+                                - cycleway_left: true
+                            draw:
+                                casing_left:
+                                    color: brown #'#00c445' #[[16,'#54b356'],[17,'#3ba53d'],[18,green]]
+                                casing_right:
+                                    color: white
+
+            lane:
+                filter:
+                     any:
+                        - cycleway: [lane, opposite, opposite_lane]
+                        - cycleway_left: [lane, opposite, opposite_lane]
+                        - cycleway_right: [lane, opposite, opposite_lane]
+                draw:
+                    lines:
+                        outline:
+                            color: blue
+            shared_lane:
+                filter:
+                     any:
+                        - cycleway: [shared_lane, shared]
+                        - cycleway_left: [shared_lane, shared]
+                        - cycleway_right: [shared_lane, shared]
+                draw:
+                    lines:
+                        order: 489
+                        color: '#fffbca'
+                    text-blend-order:
+                        font:
+                            stroke:
+                                color: '#fffbca'
+            sidepath:
+                filter:
+                    any:
+                        - cycleway: [sidepath, segregated]
+                        - cycleway_left: [sidepath, segregated]
+                        - cycleway_right: [sidepath, segregated]
+                        - { highway: footway, bicycle: yes, segregated: yes }
+                draw:
+                    lines:
+                        order: 491
+                        width: [[15,0px],[16,0.6px],[17,2.5px],[18,2.5m]]
+                        color: '#afdcb2'
+                        outline:
+                            color: [[16,'#6abe6c'],[17,'#5cb65e']]
+                            width: [[15, 0.5px],[16, 1.0px],[17, 1px],[18, 2px],[19, 0.7m]]
+                    text-blend-order:
+                        font:
+                            fill: green
+    bike-realted-icons:
+        data: { source: osm, layer: [pois,landuse] }
+        filter:
+            kind: [bicycle, bicycle_rental, bicycle_rental_station, bicycle_parking, cycle_barrier, bicycle_junction, bicycle_repair_station]
+            any:
+                - area: false
+                  all:
+                - area: true
+                  all:
+                      - $geometry: point
+                      - kind: true
+        draw:
+            icons:
+                size: [[13, 12px], [16, 16px], [19, 20px]]
+                interactive: true
+                order: 41
+                color: white
+                #visible: function() { if( feature.min_zoom <= $zoom ) { return true; } else { return false; } }
+                sprite: function() { return feature.kind }
+            text-blend-order:
+                order: 42
+                interactive: true
+                #visible: function() { if( feature.min_zoom <= $zoom ) { return true; } else { return false; } }
+                move_into_tile: false # preserves text alignment w/icons in JS
+                anchor: bottom
+                offset: [[13, [0, 6px]], [16, [0, 8px]], [19, [0, 10px]]] # offset tracks alongside icon size (half icon height)
+                interactive: true
+                priority: 16
+                font:
+                    fill: black
+                    weight: 400
+                    size: 11px
+                    stroke: { color: white, width: 3 }
+        bike-shop:
+            filter: { kind: [bicycle, bicycle_rental] }
+            draw:
+                icons:
+                    sprite: bike-shop
+                text-blend-order:
+                    font:
+                        weight: 600
+                        size: 12px
+        bike-rental-station:
+            filter: { kind: [bicycle_rental_station] }
+            draw:
+                icons:
+                    sprite: bike-shop
+        bike-repair-station:
+            filter: { kind: [bicycle_repair_station] }
+            draw:
+                icons:
+                    sprite: bike-shop
+        bicycle-parking:
+            filter: { kind: [bicycle_parking] }
+            draw:   { icons: { sprite: bicycle-parking } }
+        cycle_barrier:
+            filter: { kind: [cycle_barrier] }
+            draw:   { icons: { sprite: generic, color: black } }
+
+
+    earth:
+        data: { source: osm}
+        draw:
+            terrain:
+                order: function() { return feature.sort_key; }
+                color: [1.0, 1.0, 1.0]
+            polygons:
+                visible: false
+
+    landuse:
+        data: { source: osm}
+        draw:
+            terrain_more:
+                order: function() { return feature.sort_key; }
+                color: [1.0, 1.0, 1.0]
+                interactive: false
+            polygons:
+                visible: false
+                interactive: false
+        tier1:
+            national_park:
+                draw:
+                    park-dots1:
+                        visible: false
+                    terrain_more:
+                        color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+                us_national_park:
+                    draw:
+                        pixel-pattern-light:
+                            visible: false
+        tier2:
+            conservation:
+                draw:
+                    polygons:
+                        visible: false
+                    terrain_more:
+                        color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+                wilderness-areas:
+                    draw:
+                        pixel-pattern-light:
+                            visible: false
+                national_forest_level_6:
+                    draw:
+                        park-dots1:
+                            visible: false
+#                         terrain_more:
+#                            color: [0.945,0.995,0.945]
+            # gotta be a protected area to draw green, not just a landcover type
+            farm:
+                draw:
+                    polygons:
+                        visible: false
+            forest:
+                national-forest:
+                    draw:
+                        pixel-pattern-bright:
+                            visible: false
+                        terrain_more:
+                            color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+                            visible: true
+                landuse-forest:
+                    draw:
+                        pixel-pattern-bright:
+                            visible: false
+                        terrain_more:
+                            color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+                            visible: true
+
+            nature_reserve:
+                draw:
+                    pixel-pattern-light:
+                        visible: false
+                wilderness-areas:
+                    draw:
+                        pixel-pattern-light:
+                            visible: false
+                        terrain_more:
+                            color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+
+            parks-and-national-forests-not-national-park:
+                draw:
+                    park-dots1:
+                        visible: false
+                    terrain_more:
+                        color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+            urban:
+                draw:
+                    polygons:
+                        visible: false
+        tier3:
+            airport:
+                draw:
+                    polygons:
+                        visible: false
+                    terrain_more:
+                        color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+            military:
+                draw:
+                    polygons:
+                        visible: false
+                    terrain_more:
+                        color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+            university:
+                draw:
+                    dots-rev:
+                        visible: false
+                    terrain_more:
+                        color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+        tier4:
+            cemetery:
+                draw:
+                    tiny-dots:
+                        visible: false
+                    terrain_more:
+                        color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+            golf_course:
+                draw:
+                    medium-dots:
+                        visible: false
+                    terrain_more:
+                        color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+            hospital:
+                draw:
+                    medium-dots:
+                        visible: false
+                    terrain_more:
+                        color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+            industrial:
+                draw:
+                    polygons:
+                        visible: false
+            power:
+                draw:
+                    polygons:
+                        visible: false
+            railway:
+                draw:
+                    polygons:
+                        visible: false
+            sports_centre:
+                draw:
+                    polygons:
+                        visible: false
+            recreation_ground:
+                draw:
+                    polygons:
+                        visible: false
+            retail:
+                draw:
+                    polygons:
+                        visible: false
+            stadium:
+                draw:
+                    polygons:
+                        visible: false
+            zoo:
+                draw:
+                    polygons:
+                        visible: false
+                    terrain_more:
+                        color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+            winter_sports:
+                draw:
+                    polygons:
+                        visible: false
+            man-made:
+                draw:
+                    horizontal-bars:
+                        visible: false
+                pier:
+                    draw:
+                        polygons:
+                            visible: false
+        tier5:
+            tourism-related:
+                draw:
+                    dots:
+                        visible: false
+            beach:
+                draw:
+                    dots:
+                        visible: false
+                    terrain_more:
+                        color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+        tier6:
+            garden:
+                draw:
+                    tiny-dots:
+                        visible: false
+                    terrain_more:
+                        color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+            parking:
+                draw:
+                    horizontal-bars-rev:
+                        visible: false
+                early:
+                    draw:
+                        horizontal-bars-rev:
+                            visible: false
+            pedestrian:
+                draw:
+                    park-dots1:
+                        visible: false
+                green-stuff:
+                    draw:
+                        dots:
+                            visible: false
+            pitch:
+                draw:
+                    tiny-dots:
+                        visible: false
+            place_of_worship:
+                draw:
+                    polygons:
+                        visible: false
+            playground:
+                draw:
+                    dots-rev:
+                        visible: false
+            school:
+                draw:
+                    dots-rev:
+                        visible: false
+                    terrain_more:
+                        color: [[8,[1.0,1.0,1.0]],[10,[0.999,0.999,0.999]],[12,[0.985,0.985,0.985]],[14,[0.97,0.97,0.97]],[15,[0.98,0.98,0.98]]]
+            minor-landuse:
+                draw:
+                    dots:
+                        visible: false
+
+    landuse-not-filtered:
+        runway:
+            draw:
+                polygons:
+                    visible: false
+        apron:
+            draw:
+                polygons:
+                    visible: false
+        minor-amusement-park-landuse:
+            draw:
+                dots:
+                    visible: false
+        minor-zoo-landuse:
+            draw:
+                dots:
+                    visible: false
+
+    buildings:
+        interactive:
+            draw: { polygons: { interactive: false } }
+
+    building-labels:
+        draw:
+            text-blend-order:
+                interactive: false
+
+    address-labels:
+        draw:
+            text-blend-order:
+                interactive: false
+
+    water:
+        draw:
+            waves:
+                interactive: false
+        river:
+            draw:
+                stream-waves:
+                    interactive: false

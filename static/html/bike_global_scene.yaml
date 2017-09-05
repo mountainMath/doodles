@@ -1,0 +1,353 @@
+# This style is an homage to Michal Migurski's High Road demo:
+# https://github.com/migurski/HighRoad
+# It uses stops to set line and outline widths at various zoom levels,
+# and the sort_key property to arrange bridges, overpasses, and tunnels
+# by depth.
+#
+
+sources:
+    osm:
+        type: TopoJSON
+        url:  //vector.mapzen.com/osm/all/{z}/{x}/{y}.topojson?api_key=vector-tiles-o7hC53g
+camera:
+    type: isometric
+    axis: [0, .1] # very small building extrusion
+
+lights:
+    light1:
+        type: directional
+        direction: [1, 1, -.9]
+        diffuse: .5
+        ambient: .85
+
+styles:
+    flatlines:
+        base: lines
+        lighting: false # ignore lights
+    flatpolys:
+        base: polygons
+        lighting: false # ignore lights
+    paper:
+        base: polygons
+        texcoords: true
+        material:
+            normal:
+                texture: https://cdn.rawgit.com/tangrams/tangram-sandbox/gh-pages/styles/imgs/normal-0031.jpg
+                mapping: planar
+                scale: 0.001
+            ambient: 1.
+            diffuse: 1.
+
+scene:
+    background:
+        color: [.4, .4, .4]
+
+layers:
+    earth:
+        data: { source: osm, layer: earth }
+        draw:
+            flatpolys:
+                order: 0
+                color: [.4, .4, .4]
+
+    landuse:
+        data: { source: osm, layer: landuse }
+        filter:
+            # show smaller landuse areas at higher zooms
+            any:
+                - { $zoom: { min: 1 }, area: { min: 10000000 } }
+                - { $zoom: { min: 9 }, area: { min: 1000000 } }
+                - { $zoom: { min: 10 }, area: { min: 330000 } }
+                - { $zoom: { min: 12 }, area: { min: 100000 } }
+                - { $zoom: { min: 13 }, area: { min: 10000 } }
+                - { $zoom: { min: 15 } }
+        parks:
+            filter: { kind: [park, cemetery, graveyard, forest, wood, protected_area, recreation_ground, golf_course] }
+            draw:
+                paper:
+                    order: 1
+                    # tone down green as you zoom out
+                    color: [[10, [0.2, 0.3, 0.4]], [14, [0.3, 0.4, 0.3]]]
+        playgrounds:
+            filter: { kind: [pitch, playground] }
+            draw:
+                flatpolys:
+                    order: 2
+                    color: [0.2, 0.4, 0.2]
+        institutional:
+            filter: { kind: [university,school,library,hospital,sports_centre,stadium,college] }
+            draw:
+                flatpolys:
+                    order: 2
+                    color: [0.3,0.2,0.3] #'#ff99ff' #[0.3, 0.3, 0.675]
+        commercial:
+            filter: {kind: [retail,commercial]}
+            draw:
+                flatpolys:
+                    order: 2
+                    color: [0.3,0.2,0.2] #'#ff9999' #[0.3, 0.3, 0.675]
+
+
+    water:
+        data: { source: osm, layer: water }
+        filter:
+            # show smaller landuse areas at higher zooms
+            any:
+                - { $zoom: { min: 1 }, area: { min: 10000000 } }
+                - { $zoom: { min: 9 }, area: { min: 1000000 } }
+                - { $zoom: { min: 10 }, area: { min: 330000 } }
+                - { $zoom: { min: 12 }, area: { min: 100000 } }
+                - { $zoom: { min: 13 }, area: { min: 10000 } }
+                - { $zoom: { min: 15 } }
+        draw:
+            paper:
+                order: 3
+                color:   '#88bbee' #'#030b21' # '#040d2a' #
+
+    bikeways:
+        data: { source: osm, layer: roads}
+        properties:
+            cycleway: true
+            shared_path: true
+            bike_minor: true
+            bike_minor_i: true
+            bike_major: true
+            bike_major_i: true
+            #bike_network: true
+            footway: false
+            minor: false
+            major: false
+            faded: 0.15
+            faded_outline: 0.05
+
+        cycleway:
+            filter: {all: [[highway: cycleway, cycleway: [opposite_track]],[{bicycle: designated},{not: {foot: yes}}]]}
+            draw:
+                flatlines:
+                    #interactive: true
+                    order: 110
+                    color: |
+                        function() {var opacity=(properties.cycleway) ? 1 : properties.faded; return [.1, .8, .1, opacity];}
+                    width: [[10, 2px], [14, 3px], [16, 4px], [17, 5m]]
+                    outline:
+                        color: |
+                            function() {var opacity=(properties.cycleway) ? 1 : properties.faded_outline; return [.1, .4, .1,opacity];}
+                        width: [[12, 1px], [16, 1px]]
+            labels:
+                filter: function(){ return properties.cycleway;}
+                draw:
+                    text:
+                        order: 111
+                        font:
+                            typeface: Bold 10px Helvetica
+                            fill: white
+                            stroke: { color: black , width: 1 }
+        shared_path:
+            filter: [{highway: [path, track,pedestrian, footway], bicycle: yes},{all: [[highway: cycleway, cycleway: [opposite_track]],{not: [{bicycle: designated},{not: {foot: yes}}]}]}]
+            draw:
+                flatlines:
+                    #interactive: true
+                    order: 105
+                    color: |
+                        function() {var opacity=(properties.shared_path) ? 1 : properties.faded; return [.1, .6, .9, opacity];}
+                    width: [[10, 1px], [14, 2px], [16, 3px], [17, 5m]]
+                    outline:
+                        color: |
+                            function() {var opacity=(properties.shared_path) ? 1 : properties.faded_outline; return [.1, .3, .45,opacity];}
+                        width: [[12, 1px], [16, 1px]]
+            labels:
+                filter: function(){ return properties.shared_path;}
+                draw:
+                    text:
+                        order: 111
+                        font:
+                            typeface: Bold 10px Helvetica
+                            fill: white
+                            stroke: { color: black , width: 1 }
+        bike_related:
+            filter: {is_bicycle_related: true}
+            minor:
+                filter: {kind: minor_road}
+                bike:
+                    filter: {cycleway: lane}
+                    draw:
+                        flatlines:
+                            #interactive: true
+                            order: 100
+                            color: |
+                                function() {var opacity=(properties.bike_minor_i) ? 1 : properties.faded; return [.6, .8, .2, opacity];}
+                            width: [[10, 1px], [14, 2px], [16, 3px], [17, 5m]]
+                            outline:
+                                color: |
+                                    function() {var opacity=(properties.bike_minor_i) ? 1 : properties.faded_outline; return [.2, .4, .1,opacity];}
+                                width: [[12, 1px], [16, 1px]]
+                labels:
+                    filter: function(){ return properties.bike_minor_i;}
+                    draw:
+                        text:
+                            order: 111
+                            font:
+                                typeface: Bold 10px Helvetica
+                                fill: white
+                                stroke: { color: black , width: 1 }
+                no_bike:
+                    filter: {not: {cycleway: lane}}
+                    draw:
+                        flatlines:
+                            #interactive: true
+                            order: 95
+                            color: |
+                                function() {var opacity=(properties.bike_minor) ? 1 : properties.faded; return [.7, .7, .3, opacity];}
+                            width: [[10, 1px], [14, 2px], [16, 3px], [17, 5m]]
+                labels:
+                    filter: function(){ return properties.bike_minor;}
+                    draw:
+                        text:
+                            order: 111
+                            font:
+                                typeface: Bold 10px Helvetica
+                                fill: white
+                                stroke: { color: black , width: 1 }
+            major:
+                filter: {kind: major_road}
+                bike:
+                    filter: {cycleway: lane}
+                    draw:
+                        flatlines:
+                            #interactive: true
+                            order: 90
+                            color: |
+                                function() {var opacity=(properties.bike_major_i) ? 1 : properties.faded; return [.5, .6, .2, opacity];}
+                            width: [[10, 1px], [14, 2px], [16, 3px], [17, 5m]]
+                labels:
+                    filter: function(){ return properties.bike_major_i;}
+                    draw:
+                        text:
+                            order: 111
+                            font:
+                                typeface: Bold 10px Helvetica
+                                fill: white
+                                stroke: { color: black , width: 1 }
+                no_bike:
+                    filter: {not: {cycleway: lane}}
+                    draw:
+                        flatlines:
+                            #interactive: true
+                            order: 80
+                            color: |
+                                function() {var opacity=(properties.bike_major) ? 1 : properties.faded; return [.5, .3, .2, opacity];}
+                            width: [[10, 1px], [14, 2px], [16, 3px], [17, 5m]]
+                labels:
+                    filter: function(){ return properties.bike_major;}
+                    draw:
+                        text:
+                            order: 111
+                            font:
+                                typeface: Bold 10px Helvetica
+                                fill: white
+                                stroke: { color: black , width: 1 }
+        path:
+            filter: {highway: footway}
+            draw:
+                flatlines:
+                    #interactive: true
+                    order: 75
+                    color: |
+                        function() {var opacity=(properties.footway) ? 1 : properties.faded; return [.8, .1, .8, opacity];}
+                    width: [[10, 1px], [14, 1px], [16, 1px]]
+            labels:
+                filter: function(){ return properties.footway;}
+                draw:
+                    text:
+                        order: 111
+                        font:
+                            typeface: Bold 10px Helvetica
+                            fill: white
+                            stroke: { color: black , width: 1 }
+        minor:
+            filter: {highway: [rural, residential], kind: minor_road}
+            draw:
+                flatlines:
+                    #interactive: true
+                    order: 75
+                    color: |
+                        function() {var opacity=(properties.minor) ? 1 : properties.faded; return [.6, .6, .6, opacity];}
+                    width: [[10, 1px], [14, 1px], [16, 1px]]
+            labels:
+                filter: function(){ return properties.minor;}
+                draw:
+                    text:
+                        order: 111
+                        font:
+                            typeface: Bold 10px Helvetica
+                            fill: white
+                            stroke: { color: black , width: 1 }
+        major:
+            filter: {highway: [rural, residential, tertiary, secondary], not: {kind: minor_road}}
+            draw:
+                flatlines:
+                    #interactive: true
+                    order: 70
+                    color: |
+                        function() {var opacity=(properties.major) ? 1 : properties.faded; return [.3, .3, .3, opacity];}
+                    width: [[10, 1px], [14, 1px], [16, 1px]]
+            labels:
+                filter: function(){ return properties.major;}
+                draw:
+                    text:
+                        order: 111
+                        font:
+                            typeface: Bold 10px Helvetica
+                            fill: white
+                            stroke: { color: black , width: 1 }
+
+    # buildings are the only layer that gets lighting
+    buildings:
+        data: { source: osm, layer: buildings }
+                # under z15, only extrude buildings taller than 20m
+                #extrude: function () { return ( $zoom >= 16) || ($zoom >= 15 && feature.height > 20) }
+        commercial:
+            filter: {landuse_kind: [retail,commercial]}
+            draw:
+                polygons:
+                    order: 9
+                    color: [0.7,0.5,0.5]
+                    extrude: function () { return ( $zoom >= 16) || ($zoom >= 15 && feature.height > 20) }
+        parks:
+            filter: { kind: [park, cemetery, graveyard, forest, wood, protected_area, recreation_ground, golf_course,pitch,playground] }
+            draw:
+                polygons:
+                    order: 9
+                    color: [0.5,0.8,0.5]
+                    extrude: function () { return ( $zoom >= 16) || ($zoom >= 15 && feature.height > 20) }
+        institutional:
+            filter: { kind: [university,school,library,hospital,sports_centre,stadium,college] }
+            draw:
+                polygons:
+                    order: 9
+                    color: [0.7,0.5,0.7]
+                    extrude: function () { return ( $zoom >= 16) || ($zoom >= 15 && feature.height > 20) }
+        residential:
+            filter: {not: { kind: [retail,commercial,university,school,library,hospital,sports_centre,stadium,college,park, cemetery, graveyard, forest, wood, protected_area, recreation_ground, golf_course,pitch,playground] }}
+            draw:
+                polygons:
+                    order: 9
+                    color: [0.3,0.3,0.3]
+                    extrude: function () { return ( $zoom >= 16) || ($zoom >= 15 && feature.height > 20) }
+
+    places:
+        data: { source: osm }
+        filter: { name: true, not: { kind: [county, state, island] } }
+        draw:
+            text:
+                font:
+                    weight: 100
+                    size: 18px
+                    family: Helvetica
+                    fill: white
+                    stroke: { color: black, width: 3 }
+        # nix podunk burgs under z15
+        minor-places:
+            filter: { kind: [hamlet, village, town, neighbourhood, suburb, quarter], $zoom: { max: 15 } }
+            visible: false
+

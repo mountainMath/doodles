@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Zoning on Mountain Doodles</title>
+    <link>/categories/zoning/</link>
+    <description>Recent content in Zoning on Mountain Doodles</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Wed, 12 Oct 2016 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/categories/zoning/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Zoned Capacity</title>
+      <link>/blog/2016/10/12/zoned-capacity/</link>
+      <pubDate>Wed, 12 Oct 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2016/10/12/zoned-capacity/</guid>
+      <description>The term has recently been making the rounds in Vancouver. A typical statement is that Vancouver has enough zoned capacity until 2041. These kind of claims are usually attributed to the Coriolis report on CACs.
+We took a look at the report to see what exactly it says and how the term is used there.
+TL;DR Takeaways  Zoned capacity &amp;ne; Development capacity. Much of the zoned capacity referred to in the Coriolis report is not outright zoned but relies on conditional up-zoning the development permit board may (or may not) grant.</description>
+    </item>
+    
+  </channel>
+</rss>

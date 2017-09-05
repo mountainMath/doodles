@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8">
+<style>
+    body{
+        margin:5px;
+    }
+    path {
+        stroke: black;
+        stroke-width: 1px;
+        fill: none;
+    }
+    path:hover {
+        stroke-width: 3px;
+    }
+    #map {
+        border:solid darkgray 1px;
+        border-radius: 5px;
+        margin:4px;
+    }
+    #legend {
+        text-align: right;
+        font-size: large;
+        width:200px;
+    }
+    #title{
+        font-size: 40px;
+        font-family:"sans-serif";
+    }
+    .buttons{
+        overflow: auto;
+        display: block;
+    }
+    label{
+        white-space: nowrap;
+        border:solid lightgray 1pt;
+        border-radius: 2px;
+        margin:2px;
+        display: inline-block;
+    }
+
+</style>
+    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+</head>
+<body>
+<script>
+    var QueryString = function () {
+        // This function is anonymous, is executed immediately and
+        // the return value is assigned to QueryString!
+        var query_string = {};
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        for (var i=0;i<vars.length;i++) {
+            var pair = vars[i].split("=");
+            // If first entry with this name
+            if (typeof query_string[pair[0]] === "undefined") {
+                query_string[pair[0]] = pair[1];
+                // If second entry with this name
+            } else if (typeof query_string[pair[0]] === "string") {
+                var arr = [ query_string[pair[0]], pair[1] ];
+                query_string[pair[0]] = arr;
+                // If third or later entry with this name
+            } else {
+                query_string[pair[0]].push(pair[1]);
+            }
+        }
+        return query_string;
+    } ();
+    var footerHeight=QueryString.fh ? QueryString.fh : 40;
+
+    var height=window.innerHeight-20;
+    var width=window.innerWidth-20;
+
+    var mapHeight=height-footerHeight;
+
+    var svg = d3.select("body").append("svg").attr("width", width)
+            .attr("height", height).attr('id','map');
+    var g = svg.append("g").attr("width", width)
+            .attr("height", mapHeight);
+    svg.append('text')
+            .attr('x',10)
+            .attr('y',40)
+            .attr('id','title')
+            .text(QueryString.city ? QueryString.city : 'Vancouver');
+    var legend=svg.append('text')
+            .attr('y',40)
+            .attr('text-anchor','end')
+            .attr('id','legend');
+    var footer=svg.append("svg:foreignObject")
+            .attr('x',10)
+            .attr("height",footerHeight+5);
+
+    var options=footer.append("xhtml:body")
+            .attr('id','buttons');
+
+    var dataURL=(QueryString.dataUrl)? QueryString.dataUrl : 'http://doodles.mountainmath.ca/data/bikeways.geojson';
+    dataURL=dataURL.replace('%3A',':');
+    while (dataURL.match('%2F')) dataURL=dataURL.replace('%2F','/');
+
+    d3.json(dataURL, function(error, collection) {
+        var bbox = d3.geo.bounds(collection);
+        var center = [(bbox[0][0] + bbox[1][0]) / 2.0, (bbox[0][1] + bbox[1][1]) / 2.0];
+        var scale=150;
+        var offset=[width/2,mapHeight/2];
+        var projection = d3.geo.mercator().center(center).scale(scale).translate(offset);
+        var path = d3.geo.path().projection(projection);
+        var infrastructure_types = {};
+
+
+        g.selectAll("path")
+                .data(collection.features)
+                .enter()
+                .append("path")
+                .attr('class', function (d) {
+                    var lane_type = d.properties[(QueryString.type) ? QueryString.type : 'TYPE'];
+                    if (!lane_type) {lane_type='NA';}
+                    if (lane_type=='-') {lane_type='none';}
+                    infrastructure_types[lane_type] = (infrastructure_types[lane_type]) ? infrastructure_types[lane_type] + 1 : 1;
+                        lane_type = lane_type.split(' ').join('_').toLowerCase();
+                    return lane_type;
+                })
+                .on('mouseover', function (d) {
+                    legend.text(d.properties[(QueryString.name) ? QueryString.name : 'NAME']);
+                })
+                .on('mouseout', function (d) {
+                    legend.text(' ');
+                });
+        console.log(infrastructure_types);
+        var buttons = '';
+        Object.keys(infrastructure_types).map(function (i) {
+            buttons += '<label><input type="checkbox" name="' + i.split(' ').join('_').toLowerCase() + '" checked >' + i + '</label>'
+        });
+        options.html(buttons);
+        d3.selectAll("#buttons input").on('click', function (d) {
+            var display = (this.checked) ? 'inherit' : 'none';
+            d3.selectAll('path.' + this.name).attr('display', display);
+        });
+
+        function resize() {
+            if (QueryString.nh!='true') {
+                height = window.innerHeight - 20;
+            }
+            width = window.innerWidth - 20;
+            mapHeight = height - footerHeight;
+            svg.attr("width", width).attr("height", height);
+            g.attr("width", width);
+            footer.attr('y', mapHeight-10)
+                    .attr("width", width - 20);
+            legend.attr('x', width - 20);
+            var svgBox = path.bounds(collection);
+            var scaleAdjust=Math.min(width / (svgBox[1][0] - svgBox[0][0]) * 0.9, mapHeight / (svgBox[1][1] - svgBox[0][1]) * 0.8);
+            scale *= scaleAdjust;
+            offset=[width/2,mapHeight/2];
+            projection = d3.geo.mercator()
+                    .center(center)
+                    .scale(scale).translate(offset);
+            path = d3.geo.path().projection(projection);
+            g.selectAll("path").attr("d", path);
+        }
+
+        resize();
+        window.onresize = resize;
+        if (QueryString.zoom) {
+            var zoom = d3.behavior.zoom()
+                    .on("zoom", function () {
+                        g.attr("transform", "translate(" +
+                        d3.event.translate.join(",") + ")scale(" + d3.event.scale + ")");
+                        g.selectAll("path")
+                                .attr("d", path);
+                    });
+
+            svg.call(zoom);
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+    /* CSS goes here. */
+    .propertyBoundary{
+        stroke: #aaa;
+        stroke-width: 0px;
+        opacity: 0.5;
+    }
+
+    .info {
+        padding: 6px 8px;
+        font: 14px/16px Arial, Helvetica, sans-serif;
+        background: white;
+        background: rgba(255,255,255,0.8);
+        box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        border-radius: 5px;
+    }
+
+    .info h4 {
+        margin: 0 0 5px;
+        color: #777;
+    }
+
+    .legend {
+        line-height: 18px;
+        color: #555;
+    }
+
+    .legend i {
+        width: 18px;
+        height: 18px;
+        float: left;
+        margin-right: 8px;
+        opacity: 0.7;
+    }
+
+    .downloadPane {
+/*        width:97%;
+        height:90%;*/
+    }
+    .innerDownloadPane{
+        padding-top:10%;
+        padding-bottom:20%;
+    }
+    .innerDownloadPane h3{
+        line-height: 1.1em;
+        text-align: center;
+        max-width: 400px;
+        position:relative;
+        margin: 0 auto;
+    }
+    h3.subtitle{
+        margin-bottom: 30px;
+    }
+    h3.title{
+        margin-bottom: 10px;
+    }
+    .downloadButton {
+        height:40px;
+        width:200px;
+
+        margin: -40px -100px;
+        position:relative;
+        left:50%;
+
+        background-color: lightblue;
+    }
+
+
+</style>
+<head>
+  <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+  <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+    <script src="/js/colorbrewer.js" ></script>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="http://d3js.org/topojson.v1.min.js"></script>
+  <script src="http://cdn-geoweb.s3.amazonaws.com/esri-leaflet/0.0.1-beta.5/esri-leaflet.js"></script>
+</head>
+<body>
+<div id="map" style="width:100%;height:800px;"></div>
+<div id="ajaxBusy"></div>
+<script>
+
+
+  var typeArray=[
+      'Rezoning',
+      'Development Permit Bonus',
+      'HRA',
+      'Development Permit Through Discretion',
+      'Rezoning/HRA',
+      'Text Amendment'
+  ];
+  var domainLength=typeArray.length;
+  var domainArray=[0,1,2,3,4,5];
+
+  var height=window.innerHeight-20;
+  var width=window.innerWidth-20;
+
+  d3.select('#map').style('height',(height) + 'px');
+
+    var x=[49.261083,-123.17];
+  var southWest = L.latLng(49.174297067849565, -123.39431762695314),
+          northEast = L.latLng(49.34771717789966, -122.94559478759764),
+          bounds = L.latLngBounds(southWest, northEast);
+    var map = new L.Map("map", {maxZoom:18, minZoom:12}).setMaxBounds(bounds).setView(x, 12);//.locate({"setView": true});
+
+    L.esri.basemapLayer("Gray").addTo(map);
+
+    var svg = d3.select(map.getPanes().overlayPane).append("svg");
+    var g = svg.append("g").attr("class", "leaflet-zoom-hide");
+
+    var color=d3.scale.linear()
+            .domain(domainArray)
+            .range(colorbrewer.Spectral[domainLength]);
+
+    var transform = d3.geo.transform({point: projectPoint});
+    var propertyMap = d3.geo.path()
+            .projection(transform);
+
+    function pointsForMeters(meters){
+        radius=meters/(40000000*(Math.cos(map.getBounds().getCenter().lat/180*Math.PI))/Math.pow(2,(8+map._zoom)));
+//        if (radius<1) radius=1;
+        return radius;
+    }
+
+    function projectPoint(x, y) {
+        var point = map.latLngToLayerPoint(new L.LatLng(y, x));
+        this.stream.point(point.x, point.y);
+    }
+
+
+    Number.prototype.format = function(n, x) {
+        var re = '\\d(?=(\\d{' + (x || 3) + '})+' + (n > 0 ? '\\.' : '$') + ')';
+        return this.toFixed(Math.max(0, ~~n)).replace(new RegExp(re, 'g'), '$&,');
+    };
+
+
+
+
+    var propertyColor=function(props){
+        var type=props.TYPE;
+        var index=typeArray.indexOf(type);
+        return color(index);
+    };
+
+
+  function tooltipText(props){
+      var text= '';
+      text+=props.ADDRESS + '<br>';
+      if (props.REPLACEMENT_ADDRESS) text+='Mapped Address ' + props.REPLACEMENT_ADDRESS + '<br>';
+      text+=props.TYPE + '<br>';
+      if (props.BENEFIT) text+='Public Benefit ' + props.BENEFIT + '<br>';
+      if (props.DENSITY) text+='Added sq ft ' + props.DENSITY + '<br>';
+      if (props.AMENITY) text+='<div style="max-width:300px">' + props.AMENITY + '</div>';
+      text+=props.YEAR + '<br>';
+      if (props.TYPE_STRING) text+=props.TYPE_STRING + '<br>';
+
+      return text;
+    }
+
+    var info = L.control();
+
+    info.onAdd = function (map) {
+        this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+        this.update();
+        return this._div;
+    };
+
+    info.update = function (props) {
+        this._div.innerHTML = '<h4>Vancouver CACs 2010, 2011 and 2012</h4>' +  (props ?
+                tooltipText(props)
+                : '');
+    };
+
+
+
+    var downloadPane= L.control({position: 'topleft'});
+    downloadPane.onAdd = function(map) {
+        this._div=L.DomUtil.create('div', 'info downloadPane'); // create a div with a class "info"
+        var buttonHTML='<button class="downloadButton" onclick="loadData();">Download and Map CAC Data</button>';
+//        var titleText='<h3 class="title">To map the teardown properties you will need to download about 6MB of data, older computers may struggle with the javascript.</h3>';
+//        var subtitleText='<h3 class="subtitle">Don\'t attempt this on an old mobile device, it won\'t be able to handle the data and freeze or crash.</h3>';
+        var innerHTML='<div class="innerDownloadPane" style="width:' + (width-30) + 'px;">' + buttonHTML + '</div>';
+        this._div.innerHTML=innerHTML;
+        return this._div;
+    }
+
+    downloadPane.addTo(map);
+
+
+    function loadData() {
+        var downloadingText='<h3>downloading...</h3>'
+        downloadPane._div.innerHTML='<div class="innerDownloadPane" style="width:' + (width-30) + 'px;">' + downloadingText + '</div>';
+
+        d3.json("/data/cac.json", function (error, properties) {
+            var downloadingText='<h3>processing...</h3>'
+            downloadPane._div.innerHTML='<div class="innerDownloadPane" style="width:' + (width-30) + 'px;">' + downloadingText + '</div>';
+
+            if (error) return console.error(error);
+            var propertyData = topojson.feature(properties, properties.objects.cac);
+            var filteredData = propertyData.features;
+            var propertyBoundaries = g.selectAll(".propertyBoundary")
+                    .data(filteredData)
+                    .enter().append("path")
+                    .attr("class", "propertyBoundary")
+                    .attr("fill", function (d) {
+                        return propertyColor(d.properties);
+                    })
+                    .on("mouseover", function (d) {
+                        info.update(d.properties);
+                    })
+                    .on("mouseout", function () {
+                        info.update();
+                    })
+                    .on('touch', function (d) {
+                        info.update(d.properties);
+                    })
+                    .on('click', function (d) {
+                        info.update(d.properties);
+                    }
+            );
+
+
+            map.on("viewreset", reset);
+            reset();
+            downloadPane.removeFrom(map);
+            info.addTo(map);
+            legend.addTo(map);
+
+
+            function reset() {
+                var
+                        bounds = propertyMap.bounds(propertyData),
+                        topLeft = bounds[0],
+                        bottomRight = bounds[1];
+
+
+                svg.attr("width", bottomRight[0] - topLeft[0])
+                        .attr("height", bottomRight[1] - topLeft[1])
+                        .style("left", topLeft[0] + "px")
+                        .style("top", topLeft[1] + "px");
+                g.attr("transform", "translate(" + -topLeft[0] + "," + -topLeft[1] + ")");
+                var points = pointsForMeters(1);
+                if (points < 0.3) points = 0; else points = 1;
+                propertyBoundaries.attr("d", propertyMap)
+                        .style('stroke-width', points + 'px');
+            };
+        });
+    }
+
+  var legend = L.control({position: 'bottomleft'});
+
+  legend.onAdd = function (map) {
+      var div = L.DomUtil.create('div', 'info legend');
+      var grades=color.range();
+
+      for (var i = 0; i < grades.length; i++) {
+          div.innerHTML +='<i style="background:' + grades[i] + '"></i> ' + typeArray[i]+ (grades[i+1] ? '<br>' : '');
+      }
+      return div;
+  };
+
+
+
+
+</script>

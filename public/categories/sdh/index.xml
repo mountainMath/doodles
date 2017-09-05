@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>SDH on Mountain Doodles</title>
+    <link>/categories/sdh/</link>
+    <description>Recent content in SDH on Mountain Doodles</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 17 Jun 2016 09:34:37 -0700</lastBuildDate>
+    
+	<atom:link href="/categories/sdh/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>SDH Zoning and Land Use</title>
+      <link>/posts/content/posts/2016-06-17-sdh-zoning-and-land-use/</link>
+      <pubDate>Fri, 17 Jun 2016 09:34:37 -0700</pubDate>
+      
+      <guid>/posts/content/posts/2016-06-17-sdh-zoning-and-land-use/</guid>
+      <description>Recently the question around the amount of space taken up (exclusively) by single detached houses has show up on my Twitter feed citing that SFH take up 70%, 66%, and 57%, 56% (timestamp 3:50). I personally have thrown in 34% as a contender. And, just for the fun of it, by the end of this post I will have thrown 33% and 28% and my favorite, 81%, into the mix.</description>
+    </item>
+    
+  </channel>
+</rss>

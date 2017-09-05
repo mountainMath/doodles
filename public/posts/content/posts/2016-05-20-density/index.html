@@ -1,0 +1,1178 @@
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        
+            
+                <title>FSR</title>
+            
+        
+
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="generator" content="Hugo 0.26" />
+        
+    
+        
+    
+
+    
+
+    <link rel="apple-touch-icon-precomposed"
+        href='/favicon/apple-touch-icon-precomposed.png'>
+    <link rel="icon" href='/favicon/favicon.png'>
+    
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="msapplication-TileImage"
+        content='/favicon/mstile.png'>
+
+
+
+        
+            <meta name="author" content="Jens von Bergmann">
+        
+        
+            <meta name="description" content="Using LIDAR data to estimate building floor space?">
+        
+
+        <meta name="twitter:card" content="summary"/><meta name="twitter:title" content="FSR"/>
+<meta name="twitter:description" content="Using LIDAR data to estimate building floor space?"/>
+<meta name="twitter:site" content="@vb_jens"/>
+
+        <meta property="og:title" content="FSR" />
+<meta property="og:description" content="Using LIDAR data to estimate building floor space?" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/posts/content/posts/2016-05-20-density/" />
+
+
+
+<meta property="article:published_time" content="2016-05-20T22:51:29-07:00"/>
+<meta property="article:modified_time" content="2016-05-20T22:51:29-07:00"/>
+
+
+
+
+
+
+
+
+
+
+
+        
+<meta itemprop="name" content="FSR">
+<meta itemprop="description" content="Using LIDAR data to estimate building floor space?">
+
+
+<meta itemprop="dateModified" content="2016-05-20T22:51:29-07:00" />
+<meta itemprop="wordCount" content="1155">
+
+
+
+<meta itemprop="keywords" content="" />
+
+        
+
+        
+
+        
+        
+            
+        
+
+        
+        
+            <link rel="stylesheet" href="/css/google-font.css" />
+            <link rel="stylesheet" href="/css/font-awesome.min.css" />
+            <link rel="stylesheet" href="/css/main.css" />
+            <link rel="stylesheet" href="/css/add-on.css" />
+            <link rel="stylesheet" href="/css/monokai-sublime.css">
+        
+
+        
+
+        
+        
+        
+            
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-54516567-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+        
+    </head>
+    <body>
+
+        
+        <div id="wrapper">
+
+    
+    
+<header id="header">
+    
+        <h2><a href="/">Mountain Doodles</i></a></h2>
+    
+
+    <nav class="links">
+        <ul>
+            
+                <li>
+                    <a href="/blog">
+                        
+                            <i class="fa fa-newspaper-o">&nbsp;</i>Blog
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/blog/archives">
+                        Archives
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/categories">
+                        Categories
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/about">
+                        About
+                    </a>
+                </li>
+            
+        </ul>
+    </nav>
+    <nav class="main">
+        <ul>
+            
+            <li id="share-nav" class="share-menu" style="display:none;">
+                <a class="fa-share-alt" href="#share-menu">Share</a>
+            </li>
+            
+            <li class="search">
+                <a class="fa-search" href="#search">Search</a>
+                <form id="search" method="get" action="//google.com/search">
+                    <input type="text" name="q" placeholder="Search" />
+                    <input type="hidden" name="q" value="site:/">
+                </form>
+            </li>
+            <li class="menu">
+                <a class="fa-bars" href="#menu">Menu</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+
+<section id="menu">
+
+    
+        <section>
+            <form class="search" method="get" action="//google.com/search">
+                <input type="text" name="q" placeholder="Search" />
+                <input type="hidden" name="q" value="site:/">
+            </form>
+        </section>
+
+    
+        <section>
+            <ul class="links">
+                
+                    <li>
+                        <a href="/blog">
+                            <h3>
+                                
+                                    <i class="fa fa-newspaper-o">&nbsp;</i>
+                                
+                                Blog
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/archives">
+                            <h3>
+                                
+                                Archives
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/categories">
+                            <h3>
+                                
+                                Categories
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/about">
+                            <h3>
+                                
+                                About
+                            </h3>
+                        </a>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+        <section>
+            <ul class="links">
+                <header>
+                    <h3>Recent Posts</h3>
+                </header>
+                
+                    
+                
+
+                
+                    <li>
+                        <a href="/posts/content/posts/2017-08-25-dot-density/"><p>dot-density</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/posts/density/"><p>Density</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/posts/content/posts/2017-08-06-millennials-redux/"><p>Millennials Redux</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/posts/content/posts/2017-05-16-lifeblood/"><p>Lifeblood</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/posts/content/posts/2017-04-10-surprise/"><p>Surprise Maps</p></a>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+        
+</section>
+
+    <section id="share-menu">
+    <section id="social-share-nav">
+        <ul class="links">
+            <header>
+                <h3>Share this post <i class="fa fa-smile-o"></i></h3>
+            </header>
+            
+
+
+<li><a href="//twitter.com/share?url=%2fposts%2fcontent%2fposts%2f2016-05-20-density%2f&text=FSR&via=vb_jens" target="_blank" class="share-btn twitter">
+    <i class="fa fa-twitter"></i>
+    <p>Twitter</p>
+</a></li>
+
+
+<li><a href="//plus.google.com/share?url=%2fposts%2fcontent%2fposts%2f2016-05-20-density%2f" target="_blank" class="share-btn google-plus">
+    <i class="fa fa-google-plus"></i>
+    <p>Google+</p>
+</a></li>
+
+
+<li><a href="//www.facebook.com/sharer/sharer.php?u=%2fposts%2fcontent%2fposts%2f2016-05-20-density%2f" target="_blank" class="share-btn facebook">
+    <i class="fa fa-facebook"></i>
+    <p>Facebook</p>
+</a></li>
+
+
+<li><a href="//reddit.com/submit?url=%2fposts%2fcontent%2fposts%2f2016-05-20-density%2f&title=FSR" target="_blank" class="share-btn reddit">
+    <i class="fa fa-reddit-alien"></i>
+    <p>Reddit</p>
+</a></li>
+
+
+<li><a href="//www.linkedin.com/shareArticle?url=%2fposts%2fcontent%2fposts%2f2016-05-20-density%2f&title=FSR" target="_blank" class="share-btn linkedin">
+    <i class="fa fa-linkedin"></i>
+    <p>LinkedIn</p>
+</a></li>
+
+
+<li><a href="//www.stumbleupon.com/submit?url=%2fposts%2fcontent%2fposts%2f2016-05-20-density%2f&title=FSR" target="_blank" class="share-btn stumbleupon">
+    <i class="fa fa-stumbleupon"></i>
+    <p>StumbleUpon</p>
+</a></li>
+
+
+<li><a href="mailto:?subject=Check out this post by Jens%20von%20Bergmann&body=%2fposts%2fcontent%2fposts%2f2016-05-20-density%2f" target="_blank" class="share-btn email">
+    <i class="fa fa-envelope"></i>
+    <p>Email</p>
+</a></li>
+
+        </ul>
+    </section>
+</section>
+
+    
+    <div id="main">
+        
+        
+        <article class="post">
+    <header>
+    <div class="title">
+        
+            <h1><a href="/posts/content/posts/2016-05-20-density/">FSR</a></h1>
+            
+        
+        
+            <p>Using LIDAR data to estimate building floor space?</p>
+        
+    </div>
+    <div class="meta">
+        
+            
+        
+
+        <time class="published"
+            datetime='2016-05-20'>
+            May 20, 2016</time>
+        <span class="author">Jens von Bergmann</span>
+        
+            <p>6 minute read</p>
+        
+        
+    </div>
+</header>
+
+
+    <section id="social-share">
+        <ul class="icons">
+            
+
+
+<li><a href="//twitter.com/share?url=%2fposts%2fcontent%2fposts%2f2016-05-20-density%2f&text=FSR&via=vb_jens" target="_blank" class="share-btn twitter">
+    <i class="fa fa-twitter"></i>
+    <p>Twitter</p>
+</a></li>
+
+
+<li><a href="//plus.google.com/share?url=%2fposts%2fcontent%2fposts%2f2016-05-20-density%2f" target="_blank" class="share-btn google-plus">
+    <i class="fa fa-google-plus"></i>
+    <p>Google+</p>
+</a></li>
+
+
+<li><a href="//www.facebook.com/sharer/sharer.php?u=%2fposts%2fcontent%2fposts%2f2016-05-20-density%2f" target="_blank" class="share-btn facebook">
+    <i class="fa fa-facebook"></i>
+    <p>Facebook</p>
+</a></li>
+
+
+<li><a href="//reddit.com/submit?url=%2fposts%2fcontent%2fposts%2f2016-05-20-density%2f&title=FSR" target="_blank" class="share-btn reddit">
+    <i class="fa fa-reddit-alien"></i>
+    <p>Reddit</p>
+</a></li>
+
+
+<li><a href="//www.linkedin.com/shareArticle?url=%2fposts%2fcontent%2fposts%2f2016-05-20-density%2f&title=FSR" target="_blank" class="share-btn linkedin">
+    <i class="fa fa-linkedin"></i>
+    <p>LinkedIn</p>
+</a></li>
+
+
+<li><a href="//www.stumbleupon.com/submit?url=%2fposts%2fcontent%2fposts%2f2016-05-20-density%2f&title=FSR" target="_blank" class="share-btn stumbleupon">
+    <i class="fa fa-stumbleupon"></i>
+    <p>StumbleUpon</p>
+</a></li>
+
+
+<li><a href="mailto:?subject=Check out this post by Jens%20von%20Bergmann&body=%2fposts%2fcontent%2fposts%2f2016-05-20-density%2f" target="_blank" class="share-btn email">
+    <i class="fa fa-envelope"></i>
+    <p>Email</p>
+</a></li>
+
+        </ul>
+    </section>
+    
+    
+
+    
+        
+        
+
+
+
+
+    
+
+
+        
+
+        <a href="/posts/content/posts/2016-05-20-density/" class="image featured">
+            <img src="/images/fsr.png" alt="" />
+        </a>
+    
+
+
+    <div id="content">
+        
+
+<p>Ever since I played with the <a href="http://mountainmath.ca/vancouver_lidar/map">LIDAR-generated building height data</a> I thought
+that I should use that to map gross floor area (GFA) and floor space ratio (FSR). Gross floor area is the total floor area
+inside the building envelope. So for a three storey building, it is the area of the footprint times three.
+Floor space ratio is the GFA divided by the area of the parcel it sits on. There are several reasons why this may be
+interesting.</p>
+
+<p>GFA is the currency of the developer. Especially once we enter the world of apartment or commercial buildings,
+gross floor area is directly proportional to the amount of money a developer can charge for a property, either when stratified
+and sold or when rented out.</p>
+
+<p>FSR on the other hand is a measure of density, and it is the currency of the zoning code. Height and site coverage are
+also regulated in the zoning code and there is an obvious relationship to FSR. But because GFA is so important to the
+developer, FSR usually receives more attention in public discussions.</p>
+
+<p><a href="https://mountainmath.ca/map/assessment?layer=16" target="_blank"><img  src="/images/fsr.png" style="width:50%;float:right;margin-left:10px;"></a>
+Read on or <a href="https://mountainmath.ca/map/assessment?layer=16" target="_blank" class='btn btn-default'>head straight for the interactive map</a> to browse
+Vancouver by FSR. Read the disclaimer at the bottom before using any data for purposes other than general reference.</p>
+
+<!-- more -->
+
+<h2 id="maximum-allowable-fsr-and-spot-zoning">Maximum Allowable FSR and Spot Zoning.</h2>
+
+<p>The maximum allowable FSR is set by the zoning code. Because land is so valuable in Vancouver, most people will try
+to maximize GFA when building a new building, so they typically go right up to the maximum allowable FSR. Previously we have
+<a href="http://doodles.mountainmath.ca/blog/2016/03/05/physical-sfh-form-over-time/">examined the effects of various related metrics like height and site coverage</a>
+for single family homes.</p>
+
+<p><a href="https://mountainmath.ca/map/assessment?zoom=15&lat=49.2599&lng=-123.1583&layer=6" target="_blank"><img  src="/images/spot-zoning.png" style="width:30%;float:right;margin-left:10px;"></a>
+At least this is how it works for RS/RT zones. If you are looking to develop a different property, say a mixed use or
+an apartment building or commercial building you will probably be looking to up-zone. That is, you will try to convince
+the city (and the local population) to allow you to build more GFA than zoning would allow. If successful the city will
+create a new zone just for your property and ask for some compensation in form of CACs (aiming to recoup about 80% of the
+uplift in value the up-zoning creates) in return. That process is called
+spot zoning and it can be seen in form of the little &ldquo;Comprehensive Development&rdquo; zones that are visible as yellow
+sprinkles in the otherwise quite uniform zones on the map.</p>
+
+<p>In reality the process of up-zoning a property is a lot more complex, arduous and time consuming, which favours larger
+developers with deep pockets that can take the risk and sit out the long process of eventually obtaining higher GFA. One
+of the many reasons why the &ldquo;missing middle&rdquo; is missing.</p>
+
+<h2 id="mapping-density">Mapping Density</h2>
+
+<p><a href="https://censusmapper.ca/maps/302#16/49.2375/-123.1573" target="_blank"><img  src="/images/kerrisdale_people.png" style="width:30%;float:left;margin-right:10px;"></a>
+From Census data we know the <a href="https://censusmapper.ca/maps/302">nighttime density</a>, that is where people live and sleep.
+But we don&rsquo;t know where they are
+during the daytime.</p>
+
+<p><a href="https://mountainmath.ca/map/assessment?zoom=16&lat=49.238&lng=-123.154&layer=16" target="_blank"><img  src="/images/kerrisdale_fsr.png" style="width:30%;float:right;margin-left:10px;"></a>
+FSR is also often seen as such a measure of density, although it only focuses on density on property parcels and neglects
+all the space between parcels, like roads right of ways and parks.</p>
+
+<p>In mostly residential neighbourhoods the two densities correspond quite closely, but in areas with large commercial buildings
+(nighttime) population density can be quite low while FSR is very high as can easily be seen by comparing the two maps.</p>
+
+<p><a href="https://mountainmath.ca/assessment_gl/map?zoom=16&lat=49.2384&lng=-123.1567" target="_blank"><img  src="/images/kerrisdale_tax.png" style="width:30%;float:left;margin-right:10px;"></a>
+<a href="https://mountainmath.ca/assessment_gl/map">Tax density</a>, that is property taxes collected per area, give another view of
+&ldquo;density&rdquo; in the city that highlights relative property values and emphasises commercial land use that pays five times
+the residential tax rate.</p>
+
+<p>There are lots of other measures of density that are important for different purposes, for example <a href="http://mountainmath.ca/census3">household density</a>
+(in full 3D, requires modern computer),
+<a href="https://censusmapper.ca/maps/359">the density of private dwelling units</a> or <a href="https://censusmapper.ca/maps/35">toddler density</a> just to name a few.</p>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<p>There are several directions I want to take this. Now that FSR is available for all properties, I can
+compare purpose built rental buildings to strata buildings. For example, in my
+<a href="http://mountainmath.ca/assessment/split_map">Buildings and Dirt map</a> I can&rsquo;t integrate purpose
+built rentals because I don&rsquo;t know how many rental units they have. The assessment data from the Vancouver Open Data portal,
+does not have that information, and BC Assessment won&rsquo;t share it (in a hassle-free way). But I can make a similar map based on GFA instead of
+number of units and examine
+how GFA effect land and building values across different land uses. And in many ways GFA may be a better unit for comparisons
+than number of suites.</p>
+
+<p><a href="https://mountainmath.ca/map/assessment?zoom=13&lat=49.2488&lng=-123.1211&layer=17&filter=res" target="_blank"><img  src="/images/value_per_gfa.png" style="width:50%;float:right;margin-left:10px;"></a>
+Or I can just make a <a href="https://mountainmath.ca/map/assessment?zoom=14&amp;lat=49.2684&amp;lng=-123.1354&amp;layer=17">straight-up map of total assessed value per GFA</a>.
+And maybe add a filter to only show this for <a href="https://mountainmath.ca/map/assessment?zoom=13&amp;lat=49.2488&amp;lng=-123.1211&amp;layer=17&amp;filter=res">residential and mixed use units</a>
+like in the image if that&rsquo;s what we are interested in.</p>
+
+<p>Another interesting application is to use this data to do something along the lines of this
+<a href="http://www.nytimes.com/interactive/2016/05/19/upshot/forty-percent-of-manhattans-buildings-could-not-be-built-today.html?_r=0">excellent analysis the New York Times published</a>
+for Vancouver. FSR, next to building heights and lot coverage that I
+<a href="http://doodles.mountainmath.ca/blog/2016/03/05/physical-sfh-form-over-time/">have already analysed from a different angle</a>,
+is an important metric to detect buildings that could not be rebuilt under regular zoning.</p>
+
+<p>Lastly, having data on building GFA, together with assessment open data, allows for reverse-engineering of the GFA of individual
+strata units. That makes the analysis of condo assessment data more meaningful as we can analyse assessed condo values by
+unit size. One of the reasons why we are only talking about single family homes (or in some cases RS zoned homes) and
+not condos is that it is very easy to compare single family homes. But comparing condos doesn&rsquo;t make much sense unless
+one also has data on the size of each condo. And this has probably focused the public debate too much on single family
+homes when we should be paying a lot more attention to condos. And purpose built rental units.</p>
+
+<h2 id="disclaimer">Disclaimer</h2>
+
+<p>The FSR was estimated using coarse building data extracted from LIDAR data. The motivation was to use the FSR for aggregate
+analysis and not for getting accurate estimates of individual buildings.</p>
+
+<p>Secondary buildings like garages or laneway houses are only inconsistently detected and mapped. The data is from 2009,
+buildings built after that are greyed out.</p>
+
+<p>The algorithm to compute FSR
+from this building data is rather crude and only makes rudimentary attempts to adjust for varying floor heights of buildings
+different for land uses, overhangs and eyebrows and dealing with pitched roofs or mechanical units.</p>
+
+<p>Building data was clipped to property polygons to deal with cases of buildings spanning several legal lots or not properly
+separated.</p>
+
+<p>The FSR computed only roughly resembles the FSR defined in building codes. In particular our model with grossly
+overestimate the FSR for buildings with overhanging features like
+the Lookout on the Harbour Centre.</p>
+
+<p>Block level aggregates will underestimate FSR in the presence of properties excluded from the FSR calculation.</p>
+
+<p>Do not be use the FSR estimates as an authoritative source for any individual building FSR.</p>
+
+    </div>
+
+    <footer>
+        <ul class="stats">
+    
+        
+
+        
+        
+            <li>
+                
+                
+                    
+
+                    
+
+                    
+
+                    
+                        Categories
+                    
+                
+            </li>
+        
+    
+
+    
+    
+        <li><a href='/categoriesvancouver'>Vancouver</a></li>
+    
+        <li><a href='/categoriesopen-data'>Open Data</a></li>
+    
+        <li><a href='/categoriesassessment'>Assessment</a></li>
+    
+        <li><a href='/categoriesdensity'>Density</a></li>
+    
+        <li><a href='/categoriesfsr'>FSR</a></li>
+    
+        <li><a href='/categoriescensus'>Census</a></li>
+    
+</ul>
+
+    </footer>
+</article>
+<ul class="actions pagination">
+    
+        <li><a href="/posts/content/posts/2016-05-16-my-global-bike-map/"
+                class="button big previous">My Global Bike Map</a></li>
+    
+
+    
+        <li><a href="/posts/content/posts/2016-06-17-sdh-zoning-and-land-use/"
+                class="button big next">SDH Zoning and Land Use</a></li>
+    
+</ul>
+
+
+
+    
+        <article class="post">
+            <div id="disqus_thread"></div>
+<script>
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "doodlesmountainmathca" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+        </article>
+    
+
+
+    </div>
+    
+<section id="sidebar">
+
+    
+        <section id="intro">
+            
+            
+                
+                    <img src="/img/main/jens_square_small.jpeg" width="150" alt="Mountain Doodles" />
+                
+            
+            
+                <header>
+                    <h2>Mountain Doodles</h2>
+                    <p>Too much data, too little time.</p>
+                </header>
+            
+            <ul class="icons">
+                
+                
+                    
+<li><a href="//github.com/mountainmath" target="_blank" title="GitHub" class="fa fa-github"></a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li><a href="//twitter.com/vb_jens" target="_blank" title="Twitter" class="fa fa-twitter"></a></li>
+
+
+
+<li><a href="mailto:jens@mountainmath.ca" title="Email" class="fa fa-envelope"></a></li>
+
+
+                
+            </ul>
+        </section>
+
+    
+        <section id="recent-posts">
+            <ul class="posts">
+                <header>
+                    <h3>Recent Posts</h3>
+                </header>
+                
+                    
+                
+
+                
+                    
+                
+
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/content/posts/2017-08-25-dot-density/">dot-density</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-25'>
+                                    August 25, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/density/">Density</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-23'>
+                                    August 23, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/content/posts/2017-08-06-millennials-redux/">Millennials Redux</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-06'>
+                                    August 6, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/content/posts/2017-05-16-lifeblood/">Lifeblood</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-05-16'>
+                                    May 16, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/posts/content/posts/2017-04-10-surprise/">Surprise Maps</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-04-10'>
+                                    April 10, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+
+                
+                    <li>
+                        <ul class="actions">
+                            <li><a href=
+                            
+                                /blog/
+                            
+                            class="button">View more posts</a></li>
+                        </ul>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+    
+    
+    
+        <section id="categories">
+            <ul class="posts">
+                <header>
+                    <h3><a href="/categories/">Categories</a></h3>
+                </header>
+
+                
+                    
+                
+
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/vancouver/">Vancouver</a>
+                                <span style="float:right;">39</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/censusmapper/">CensusMapper</a>
+                                <span style="float:right;">20</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/mapzen/">Mapzen</a>
+                                <span style="float:right;">11</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/assessment/">Assessment</a>
+                                <span style="float:right;">9</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/osm/">OSM</a>
+                                <span style="float:right;">8</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/open-data/">Open Data</a>
+                                <span style="float:right;">8</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/bikes/">bikes</a>
+                                <span style="float:right;">7</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/census/">Census</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/d3/">D3</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/taxes/">Taxes</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/transit/">Transit</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/zoning/">Zoning</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/newsfail/">newsfail</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/canada/">Canada</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/isochrones/">Isochrones</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/opendata/">OpenData</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/bcassessment/">BCAssessment</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/density/">Density</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/empty-homes/">Empty Homes</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/fsr/">FSR</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/land-use/">Land Use</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/stats/">Stats</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/surrey/">Surrey</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/traffic/">Traffic</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/cansensus/">cansensus</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/dotdensity/">dotdensity</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/taxes/">taxes</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+            </ul>
+        </section>
+    
+
+    
+        
+        <section class="blurb">
+            <h2>About</h2>
+            <p>Mountain Doodles is an insomnia driven MountainMath side project, born out of random questions, trying to give partial answers through data.</p>
+
+            <ul class="actions">
+                <li><a href="/about/" class="button">Learn More</a></li>
+            </ul>
+        </section>
+        
+
+    
+        <section id="footer">
+            <ul class="icons">
+                
+                
+                    
+<li><a href="//github.com/mountainmath" target="_blank" title="GitHub" class="fa fa-github"></a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li><a href="//twitter.com/vb_jens" target="_blank" title="Twitter" class="fa fa-twitter"></a></li>
+
+
+
+<li><a href="mailto:jens@mountainmath.ca" title="Email" class="fa fa-envelope"></a></li>
+
+
+                
+            </ul>
+
+            <p class="copyright">&copy; Mountain Doodles. Design: <a href="http://html5up.net" target="_blank">HTML5 UP</a>. Ported by <a href="//github.com/jpescador" target="_blank">Julio Pescador</a>. Powered by <a href="//gohugo.io" target="_blank">Hugo</a></p>
+        </section>
+
+</section>
+
+            </div>
+        <a id="back-to-top" href="#" class="fa fa-arrow-up fa-border fa-2x"></a>
+        
+
+        
+        
+            
+        
+
+        
+        
+            <script src="/js/jquery.min.js"></script>
+            <script src="/js/skel.min.js"></script>
+            <script src="/js/util.js"></script>
+            <script src="/js/main.js"></script>
+            <script src="/js/backToTop.js"></script>
+            <script src="/js/highlight.pack.js"></script>
+        
+
+        
+
+            
+            <script>hljs.initHighlightingOnLoad();</script>
+            
+    </body>
+</html>
+

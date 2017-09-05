@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Fun on Mountain Doodles</title>
+    <link>/categories/fun/</link>
+    <description>Recent content in Fun on Mountain Doodles</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 21 Oct 2016 20:38:14 -0700</lastBuildDate>
+    
+	<atom:link href="/categories/fun/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Trick-or-Treat 2016</title>
+      <link>/posts/content/posts/2016-10-21-trick-or-treat-2016/</link>
+      <pubDate>Fri, 21 Oct 2016 20:38:14 -0700</pubDate>
+      
+      <guid>/posts/content/posts/2016-10-21-trick-or-treat-2016/</guid>
+      <description>A year ago, as were were just getting CensusMapper up and running, we put out three Halloween-themed census maps. Those maps almost broke our servers when they went viral. At least as viral as census data goes. They were viewed by over 150,000 Canadians over the course of three days. And many of those came back to view the maps more than once.
+Lots of things have happened at CensusMapper since last year, and we heeded the call and put some of CensusMapper&amp;rsquo;s prowess to use to make some important improvements for this Halloween.</description>
+    </item>
+    
+  </channel>
+</rss>

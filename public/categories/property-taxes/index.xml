@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Property taxes on Mountain Doodles</title>
+    <link>/categories/property-taxes/</link>
+    <description>Recent content in Property taxes on Mountain Doodles</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 13 Dec 2016 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/categories/property-taxes/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Updated Property Tax Data</title>
+      <link>/blog/2016/12/13/updated-property-tax-data/</link>
+      <pubDate>Tue, 13 Dec 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2016/12/13/updated-property-tax-data/</guid>
+      <description>The property tax data for the City of Vancouver has been available for a while now, and with new assessment data becoming available soon everyone&amp;rsquo;s worried about what their property taxes will look like. The City just passed a 3.9% increase in their budget, so on average everyone will pay 3.9% more taxes than they did last year.
+The exact change in property taxes varies from property to property. There is a nice overview on how this works in general, for the City of Vancouver there is an added complication of land value averaging meant to soften sudden land value increases, that effectively serves to lower taxes for single family homeowners in a rising market.</description>
+    </item>
+    
+  </channel>
+</rss>

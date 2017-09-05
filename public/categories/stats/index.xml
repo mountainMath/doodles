@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Stats on Mountain Doodles</title>
+    <link>/categories/stats/</link>
+    <description>Recent content in Stats on Mountain Doodles</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 10 Apr 2017 08:43:58 -0700</lastBuildDate>
+    
+	<atom:link href="/categories/stats/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Surprise Maps</title>
+      <link>/blog/2017/04/10/surprise/</link>
+      <pubDate>Mon, 10 Apr 2017 08:43:58 -0700</pubDate>
+      
+      <guid>/blog/2017/04/10/surprise/</guid>
+      <description>At CensusMapper we like building models based on census data. We now have a common tiling for 2011 and 2016 geographies that allows us to easily model changes over time. After building a model we often want to see how well the model performs. An easy way to do this is to simply map the difference of observations and model predictions.
+Those maps are great and it is easy to understand what is mapped.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>D3 on Mountain Doodles</title>
+    <link>/categories/d3/</link>
+    <description>Recent content in D3 on Mountain Doodles</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 05 Sep 2014 13:27:18 -0700</lastBuildDate>
+    
+	<atom:link href="/categories/d3/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Vancouver Teardown Map</title>
+      <link>/blog/2014/09/05/content/posts/2014-09-05-vancouver-teardown-map/</link>
+      <pubDate>Fri, 05 Sep 2014 13:27:18 -0700</pubDate>
+      
+      <guid>/blog/2014/09/05/content/posts/2014-09-05-vancouver-teardown-map/</guid>
+      <description>There has been lots of talk about old homes being torn down and replaced in Vancouver. The likeliest targets are houses of relatively low value sitting on expensive land. So how many teardown candidates are there in Vancouver, and where in Vancouver are they located?
+To answer this we use data from Vancouver&amp;rsquo;s open data catalogue to build an interactive map to explore the low end of the building stock. More specifically, we set a somewhat arbitrary ratio of (assessed) house value to total (assessed) property value (house + land) of 5% and label everything below that a &amp;ldquo;teardown candidate&amp;rdquo;.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Assessment Data on Mountain Doodles</title>
+    <link>/categories/assessment-data/</link>
+    <description>Recent content in Assessment Data on Mountain Doodles</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 21 Feb 2017 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/categories/assessment-data/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>More on Teardowns</title>
+      <link>/blog/2017/02/21/more-on-teardowns/</link>
+      <pubDate>Tue, 21 Feb 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2017/02/21/more-on-teardowns/</guid>
+      <description>A little over a year ago we ran some analysis on teardowns of single family homes in the City of Vancouver. We used the City of Vancouver open data to understand why some single family homes got torn down and other&amp;rsquo;s don&amp;rsquo;t.
+Relying entirely on open data, there were some important questions that could not be answered. So together with Joe Dahmen at UBC&amp;rsquo;s School Of Architecture And Landscape Architecture we came back to the question and folded in transaction data from BC Assessment to add some more details and rigor.</description>
+    </item>
+    
+    <item>
+      <title>Bumper Year for Thumb Twiddlers</title>
+      <link>/blog/2017/01/18/bumper-year-for-thumb-twiddlers/</link>
+      <pubDate>Wed, 18 Jan 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2017/01/18/bumper-year-for-thumb-twiddlers/</guid>
+      <description>Almost a year has passed since we first noticed how sitting on single family homes and twiddling thumbs generates more income than working. And not just at the level of individual single family households. In the City of Vancouver, the cumulative land value gains of just the single family homes eclipsed the cumulative taxable earnings reported to the CRA for the entire population.
+With the new assessment data available now, it is time to run the numbers and see how our thumb-twiddlers fared vs workers this year.</description>
+    </item>
+    
+    <item>
+      <title>The Coveted $1.2m - $1.6m Vote</title>
+      <link>/blog/2017/01/17/the-coveted-2m-6m-vote/</link>
+      <pubDate>Tue, 17 Jan 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2017/01/17/the-coveted-2m-6m-vote/</guid>
+      <description>Earlier this month the province increased the threshold for the homeowner grant from $1.2 million to $1.6 million dollars. It&amp;rsquo;s an election year, and with the BC Assessment data for the City of Vancouver now being available via their open data catalogue we can ask who exactly this move was targeting.
+Restricted to the City of Vancouver, the answer is quite simple. There are about 24,000 single family homes, 1,200 duplex units and 4,000 condo units in that bracket.</description>
+    </item>
+    
+    <item>
+      <title>2017 Vancouver Assessment Data</title>
+      <link>/blog/2017/01/16/2017-assessment-data/</link>
+      <pubDate>Mon, 16 Jan 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2017/01/16/2017-assessment-data/</guid>
+      <description>The friendly folks at Vancouver Open Data just updated their property assessment data with the fresh 2017 property tax assessments. Time to run the script to update the Vancouver Assessment Map with the new data, just like we did last year.
+For now we just updated our standard visuals and computed some overall statistics. We will take a closer look at the data over the coming days.
+Maps  By now we have a variety of maps that highlight different aspects of Vancouver real estate, and after running the import scripts they automatically serve the newest data.</description>
+    </item>
+    
+    <item>
+      <title>Updated Property Tax Data</title>
+      <link>/blog/2016/12/13/updated-property-tax-data/</link>
+      <pubDate>Tue, 13 Dec 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2016/12/13/updated-property-tax-data/</guid>
+      <description>The property tax data for the City of Vancouver has been available for a while now, and with new assessment data becoming available soon everyone&amp;rsquo;s worried about what their property taxes will look like. The City just passed a 3.9% increase in their budget, so on average everyone will pay 3.9% more taxes than they did last year.
+The exact change in property taxes varies from property to property. There is a nice overview on how this works in general, for the City of Vancouver there is an added complication of land value averaging meant to soften sudden land value increases, that effectively serves to lower taxes for single family homeowners in a rising market.</description>
+    </item>
+    
+    <item>
+      <title>Mixing Data</title>
+      <link>/blog/2016/07/06/mixing-data/</link>
+      <pubDate>Wed, 06 Jul 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2016/07/06/mixing-data/</guid>
+      <description>Census data is very rich and with CensusMapper we now have about 1 billion data points right at our fingertips. And we have managed to open up some of our interfaces for everyone to explore data and make their own maps and freely share them.
+Things really get interesting when one mixes custom data with census data. While, at this point, these are not part of the freely available CensusMapper functionality we still wanted to share what can be done.</description>
+    </item>
+    
+    <item>
+      <title>On Houses and Dirt</title>
+      <link>/blog/2016/04/01/on-dirt-and-houses/</link>
+      <pubDate>Fri, 01 Apr 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2016/04/01/on-dirt-and-houses/</guid>
+      <description>The story of Vancouver real estate is mostly a story of dirt. After spending a bit of time to collect relevant data I am now wondering how to make better visualizations to make that data more accessible.
+ Looking at my old maps based around assessment data, there are a couple of things that bother me. They are not very good at showing changes over time. And they are not very good at highlighting the different role of dirt and the houses on top.</description>
+    </item>
+    
+    <item>
+      <title>On Mixed Use</title>
+      <link>/blog/2016/03/28/on-mixed-use/</link>
+      <pubDate>Mon, 28 Mar 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2016/03/28/on-mixed-use/</guid>
+      <description>Redeveloping single storey commercial properties into mixed use is taking off in Vancouver right now. It&amp;rsquo;s a little frustrating to see how pretty much every story I have seen on this get the effect this has on property taxes wrong, including one on the generally quite good Price Tags blog. People claim that converting single story commercial to mixed use pushes up the property taxes for the commercial tenants. Property taxes are an important piece of the puzzle in Vancouver, so I decided to go into a little detail on this.</description>
+    </item>
+    
+    <item>
+      <title>On Condos</title>
+      <link>/blog/2016/02/10/on-condos/</link>
+      <pubDate>Wed, 10 Feb 2016 11:01:47 -0800</pubDate>
+      
+      <guid>/blog/2016/02/10/on-condos/</guid>
+      <description>Lots has been said about the upper end of owned dwellings. The movement of the &amp;ldquo;million dollar line&amp;rdquo;, the emergence of the &amp;ldquo;two million dollar line&amp;rdquo; and &amp;ldquo;multi-million dollar lines&amp;rdquo;. Most of that discussion is focused on single detached homes or on proxies for &amp;ldquo;single detached&amp;rdquo; like RS zoned properties.
+But all of these maps have a clear bias toward the more expensive homes. Everyone knows by now where the most expensive properties are.</description>
+    </item>
+    
+    <item>
+      <title>Work vs Twiddling Thumbs</title>
+      <link>/blog/2016/01/24/work-vs-twiddling-thumbs/</link>
+      <pubDate>Sun, 24 Jan 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2016/01/24/work-vs-twiddling-thumbs/</guid>
+      <description>In the ongoing debate on affordability of housing in the City of Vancouver we regularly hear voices expressing concern for &amp;ldquo;elderly folks of modest means who had been counting on using their home as a pension&amp;rdquo; to argue against doing anything to ease the housing affordability problems many (younger) people are facing. In these arguments the concern for &amp;ldquo;elderly folks of modest means&amp;rdquo; seems curiously focused to those who own property as opposed to, for example, the 20% of the elderly people in Vancouver that live in poverty (15k total).</description>
+    </item>
+    
+    <item>
+      <title>Updated Vancouver Assessment Data</title>
+      <link>/blog/2016/01/17/updated-vancouver-assessment-data/</link>
+      <pubDate>Sun, 17 Jan 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2016/01/17/updated-vancouver-assessment-data/</guid>
+      <description>The friendly folks at Vancouver Open Data just updated their property assessment data with the fresh 2016 property tax assessments. Time to run the script to update the Vancouver Assessment Map with the new data. And for good measure I pasted over some of the thematic map engine from CensusMapper to improve the mapping performance.
+Maps The interactive assessment map offers several views. In the panel on the top right we can select how to view the data.</description>
+    </item>
+    
+    <item>
+      <title>Vancouver Assessment Data</title>
+      <link>/blog/2015/03/23/vancouver-assessment-data/</link>
+      <pubDate>Mon, 23 Mar 2015 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2015/03/23/vancouver-assessment-data/</guid>
+      <description>The City of Vancouver has recently updated their open data catalogue with historic tax data. We figured that would be a good time to take our previous rather clumsy attempts to map tax data and polish that up a bit.
+This time we put in a couple of evenings to build a more responsive map with multiple options of what to map. Head straight for &amp;lsquo;the map&amp;rsquo; or read on for some background information, including some methodology on data cleaning and interpolation.</description>
+    </item>
+    
+    <item>
+      <title>Vancouver High Value Improvements Map</title>
+      <link>/blog/2014/09/07/vancouver-high-value-improvements-map/</link>
+      <pubDate>Sun, 07 Sep 2014 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2014/09/07/vancouver-high-value-improvements-map/</guid>
+      <description>After the teardown map that looked at the low end of Vancouver&amp;rsquo;s building stock, a natural question is to look at the high end. Just as before, we are focusing on the (assessed) value of the building relative to the total (assessed) value of land and improvements. We defined &amp;ldquo;highly improved&amp;rdquo; properties to be properties where the ratio is at least 50%, so the building is worth at least as much as the land it is built on.</description>
+    </item>
+    
+    <item>
+      <title>Vancouver Teardown Map</title>
+      <link>/blog/2014/09/05/vancouver-teardown-map/</link>
+      <pubDate>Fri, 05 Sep 2014 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2014/09/05/vancouver-teardown-map/</guid>
+      <description>There has been lots of talk about old homes being torn down and replaced in Vancouver. The likeliest targets are houses of relatively low value sitting on expensive land. So how many teardown candidates are there in Vancouver, and where in Vancouver are they located?
+To answer this we use data from Vancouver&amp;rsquo;s open data catalogue to build an interactive map to explore the low end of the building stock. More specifically, we set a somewhat arbitrary ratio of (assessed) house value to total (assessed) property value (house + land) of 5% and label everything below that a &amp;ldquo;teardown candidate&amp;rdquo;.</description>
+    </item>
+    
+  </channel>
+</rss>

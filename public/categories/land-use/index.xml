@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Land use on Mountain Doodles</title>
+    <link>/categories/land-use/</link>
+    <description>Recent content in Land use on Mountain Doodles</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 17 Jun 2016 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/categories/land-use/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>SDH Zoning and Land Use</title>
+      <link>/blog/2016/06/17/sdh-zoning-and-land-use/</link>
+      <pubDate>Fri, 17 Jun 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2016/06/17/sdh-zoning-and-land-use/</guid>
+      <description>Recently the question around the amount of space taken up (exclusively) by single detached houses has show up on my Twitter feed citing that SFH take up 70%, 66%, and 57%, 56% (timestamp 3:50). I personally have thrown in 34% as a contender. And, just for the fun of it, by the end of this post I will have thrown 33% and 28% and my favorite, 81%, into the mix.</description>
+    </item>
+    
+    <item>
+      <title>Property Taxes and Land Use</title>
+      <link>/blog/2016/03/02/property-taxes-and-land-use/</link>
+      <pubDate>Wed, 02 Mar 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2016/03/02/property-taxes-and-land-use/</guid>
+      <description>Since I started thinking about tax density, the amount of property taxes collected per area, I always felt that the data presentation in the map fell short.
+Property taxes are somewhat insulated from the ups and downs of the real estate market as they are need-based and the mill rate changes to flatten out the crazyness of the market. But what they lack in interesting patterns over time they more than makes up for in interesting patterns in space.</description>
+    </item>
+    
+    <item>
+      <title>Land Use, Roads (and Parking)</title>
+      <link>/blog/2016/02/29/land-use/</link>
+      <pubDate>Mon, 29 Feb 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2016/02/29/land-use/</guid>
+      <description>The other day at the SFU&amp;rsquo;s City Conversations someone asked a question about space dedicated to roads, and how that could be unlocked to aid housing. He mentioned what percentage of space is currently dedicated to roads. I forgot the number, but I thought to myself that I should look that up for all Metro Vancouver communities. So here we go. Actually, it would be interesting to compare how land is allocated to all kinds of land uses across Metro Vancouver, not just roads.</description>
+    </item>
+    
+    <item>
+      <title>Land Use Data</title>
+      <link>/blog/2016/01/31/land-use/</link>
+      <pubDate>Sun, 31 Jan 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2016/01/31/land-use/</guid>
+      <description>Metro Vancouver has a fairly good land use dataset that I imported quite some time ago so that I could take a good look at it. But then I forgot about it until @HealthyCityMaps reminded me just at the time when the discussions about assessmened values in Vancouver were flaring up again.
+So finally I decided to mark up the City of Vancouver assessment dataset with the land use from the Metro Vancouver land use dataset.</description>
+    </item>
+    
+  </channel>
+</rss>

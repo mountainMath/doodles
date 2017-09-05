@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>CAC on Mountain Doodles</title>
+    <link>/categories/cac/</link>
+    <description>Recent content in CAC on Mountain Doodles</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Wed, 05 Nov 2014 12:03:25 -0800</lastBuildDate>
+    
+	<atom:link href="/categories/cac/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Mapping CACs</title>
+      <link>/posts/content/posts/2014-11-05-mapping-cacs/</link>
+      <pubDate>Wed, 05 Nov 2014 12:03:25 -0800</pubDate>
+      
+      <guid>/posts/content/posts/2014-11-05-mapping-cacs/</guid>
+      <description>After reading the post on Price Tags, originally from Karen Sawatzky&amp;rsquo;s blog, I got curious about getting a geographic overview over the CACs in Vancouver in 2010, 2011 and 2012.
+As opposed to the teardown map the dataset is quite small, so there should be no problems viewing this on a mobile device. As always, map is below the fold.
+Some of the property addresses did not match any address in the CoV open data property database, probably because the developments are quite new and new addresses got assigned.</description>
+    </item>
+    
+  </channel>
+</rss>

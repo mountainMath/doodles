@@ -1,0 +1,1272 @@
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        
+            
+                <title>Mobi -- a First Look</title>
+            
+        
+
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="generator" content="Hugo 0.26" />
+        
+    
+        
+    
+
+    
+
+    <link rel="apple-touch-icon-precomposed"
+        href='/favicon/apple-touch-icon-precomposed.png'>
+    <link rel="icon" href='/favicon/favicon.png'>
+    
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="msapplication-TileImage"
+        content='/favicon/mstile.png'>
+
+
+
+        
+            <meta name="author" content="Jens von Bergmann">
+        
+        
+            <meta name="description" content="Scraping Mobi data.">
+        
+
+        <meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Mobi -- a First Look"/>
+<meta name="twitter:description" content="Scraping Mobi data."/>
+<meta name="twitter:site" content="@vb_jens"/>
+
+        <meta property="og:title" content="Mobi -- a First Look" />
+<meta property="og:description" content="Scraping Mobi data." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/blog/2016/08/16/mobi-a-first-look/" />
+
+
+
+<meta property="article:published_time" content="2016-08-16T00:00:00&#43;00:00"/>
+<meta property="article:modified_time" content="2016-08-16T00:00:00&#43;00:00"/>
+
+
+
+
+
+
+
+
+
+
+
+        
+<meta itemprop="name" content="Mobi -- a First Look">
+<meta itemprop="description" content="Scraping Mobi data.">
+
+
+<meta itemprop="dateModified" content="2016-08-16T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="1058">
+
+
+
+<meta itemprop="keywords" content="" />
+
+        
+
+        
+
+        
+        
+            
+        
+
+        
+        
+            <link rel="stylesheet" href="/css/google-font.css" />
+            <link rel="stylesheet" href="/css/font-awesome.min.css" />
+            <link rel="stylesheet" href="/css/main.css" />
+            <link rel="stylesheet" href="/css/add-on.css" />
+            <link rel="stylesheet" href="/css/monokai-sublime.css">
+        
+
+        
+
+        
+        
+        
+            
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-54516567-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+        
+    </head>
+    <body>
+
+        
+        <div id="wrapper">
+
+    
+    
+<header id="header">
+    
+        <h2><a href="/">Mountain Doodles</i></a></h2>
+    
+
+    <nav class="links">
+        <ul>
+            
+                <li>
+                    <a href="/blog">
+                        
+                            <i class="fa fa-newspaper-o">&nbsp;</i>Blog
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/blog/archives">
+                        Archives
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/categories">
+                        Categories
+                    </a>
+                </li>
+            
+                <li>
+                    <a href="/about">
+                        About
+                    </a>
+                </li>
+            
+        </ul>
+    </nav>
+    <nav class="main">
+        <ul>
+            
+            <li id="share-nav" class="share-menu" style="display:none;">
+                <a class="fa-share-alt" href="#share-menu">Share</a>
+            </li>
+            
+            <li class="search">
+                <a class="fa-search" href="#search">Search</a>
+                <form id="search" method="get" action="//google.com/search">
+                    <input type="text" name="q" placeholder="Search" />
+                    <input type="hidden" name="q" value="site:/">
+                </form>
+            </li>
+            <li class="menu">
+                <a class="fa-bars" href="#menu">Menu</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+
+<section id="menu">
+
+    
+        <section>
+            <form class="search" method="get" action="//google.com/search">
+                <input type="text" name="q" placeholder="Search" />
+                <input type="hidden" name="q" value="site:/">
+            </form>
+        </section>
+
+    
+        <section>
+            <ul class="links">
+                
+                    <li>
+                        <a href="/blog">
+                            <h3>
+                                
+                                    <i class="fa fa-newspaper-o">&nbsp;</i>
+                                
+                                Blog
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/archives">
+                            <h3>
+                                
+                                Archives
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/categories">
+                            <h3>
+                                
+                                Categories
+                            </h3>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a href="/about">
+                            <h3>
+                                
+                                About
+                            </h3>
+                        </a>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+        <section>
+            <ul class="links">
+                <header>
+                    <h3>Recent Posts</h3>
+                </header>
+                
+                    
+                
+
+                
+                    <li>
+                        <a href="/blog/2017/08/24/dot-density/"><p>dot-density</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/08/23/density/"><p>Density</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/08/06/millennials-redux/"><p>Millennials Redux</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/05/16/lifeblood/"><p>Lifeblood</p></a>
+                    </li>
+                
+                    <li>
+                        <a href="/blog/2017/04/10/surprise/"><p>Surprise Maps</p></a>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+        
+</section>
+
+    <section id="share-menu">
+    <section id="social-share-nav">
+        <ul class="links">
+            <header>
+                <h3>Share this post <i class="fa fa-smile-o"></i></h3>
+            </header>
+            
+
+
+<li><a href="//twitter.com/share?url=%2fblog%2f2016%2f08%2f16%2fmobi-a-first-look%2f&text=Mobi%20--%20a%20First%20Look&via=vb_jens" target="_blank" class="share-btn twitter">
+    <i class="fa fa-twitter"></i>
+    <p>Twitter</p>
+</a></li>
+
+
+<li><a href="//plus.google.com/share?url=%2fblog%2f2016%2f08%2f16%2fmobi-a-first-look%2f" target="_blank" class="share-btn google-plus">
+    <i class="fa fa-google-plus"></i>
+    <p>Google+</p>
+</a></li>
+
+
+<li><a href="//www.facebook.com/sharer/sharer.php?u=%2fblog%2f2016%2f08%2f16%2fmobi-a-first-look%2f" target="_blank" class="share-btn facebook">
+    <i class="fa fa-facebook"></i>
+    <p>Facebook</p>
+</a></li>
+
+
+<li><a href="//reddit.com/submit?url=%2fblog%2f2016%2f08%2f16%2fmobi-a-first-look%2f&title=Mobi%20--%20a%20First%20Look" target="_blank" class="share-btn reddit">
+    <i class="fa fa-reddit-alien"></i>
+    <p>Reddit</p>
+</a></li>
+
+
+<li><a href="//www.linkedin.com/shareArticle?url=%2fblog%2f2016%2f08%2f16%2fmobi-a-first-look%2f&title=Mobi%20--%20a%20First%20Look" target="_blank" class="share-btn linkedin">
+    <i class="fa fa-linkedin"></i>
+    <p>LinkedIn</p>
+</a></li>
+
+
+<li><a href="//www.stumbleupon.com/submit?url=%2fblog%2f2016%2f08%2f16%2fmobi-a-first-look%2f&title=Mobi%20--%20a%20First%20Look" target="_blank" class="share-btn stumbleupon">
+    <i class="fa fa-stumbleupon"></i>
+    <p>StumbleUpon</p>
+</a></li>
+
+
+<li><a href="mailto:?subject=Check out this post by Jens%20von%20Bergmann&body=%2fblog%2f2016%2f08%2f16%2fmobi-a-first-look%2f" target="_blank" class="share-btn email">
+    <i class="fa fa-envelope"></i>
+    <p>Email</p>
+</a></li>
+
+        </ul>
+    </section>
+</section>
+
+    
+    <div id="main">
+        
+        
+        <article class="post">
+    <header>
+    <div class="title">
+        
+            <h1><a href="/blog/2016/08/16/mobi-a-first-look/">Mobi -- a First Look</a></h1>
+            
+        
+        
+            <p>Scraping Mobi data.</p>
+        
+    </div>
+    <div class="meta">
+        
+            
+        
+
+        <time class="published"
+            datetime='2016-08-16'>
+            August 16, 2016</time>
+        <span class="author">Jens von Bergmann</span>
+        
+            <p>5 minute read</p>
+        
+        
+    </div>
+</header>
+
+
+    <section id="social-share">
+        <ul class="icons">
+            
+
+
+<li><a href="//twitter.com/share?url=%2fblog%2f2016%2f08%2f16%2fmobi-a-first-look%2f&text=Mobi%20--%20a%20First%20Look&via=vb_jens" target="_blank" class="share-btn twitter">
+    <i class="fa fa-twitter"></i>
+    <p>Twitter</p>
+</a></li>
+
+
+<li><a href="//plus.google.com/share?url=%2fblog%2f2016%2f08%2f16%2fmobi-a-first-look%2f" target="_blank" class="share-btn google-plus">
+    <i class="fa fa-google-plus"></i>
+    <p>Google+</p>
+</a></li>
+
+
+<li><a href="//www.facebook.com/sharer/sharer.php?u=%2fblog%2f2016%2f08%2f16%2fmobi-a-first-look%2f" target="_blank" class="share-btn facebook">
+    <i class="fa fa-facebook"></i>
+    <p>Facebook</p>
+</a></li>
+
+
+<li><a href="//reddit.com/submit?url=%2fblog%2f2016%2f08%2f16%2fmobi-a-first-look%2f&title=Mobi%20--%20a%20First%20Look" target="_blank" class="share-btn reddit">
+    <i class="fa fa-reddit-alien"></i>
+    <p>Reddit</p>
+</a></li>
+
+
+<li><a href="//www.linkedin.com/shareArticle?url=%2fblog%2f2016%2f08%2f16%2fmobi-a-first-look%2f&title=Mobi%20--%20a%20First%20Look" target="_blank" class="share-btn linkedin">
+    <i class="fa fa-linkedin"></i>
+    <p>LinkedIn</p>
+</a></li>
+
+
+<li><a href="//www.stumbleupon.com/submit?url=%2fblog%2f2016%2f08%2f16%2fmobi-a-first-look%2f&title=Mobi%20--%20a%20First%20Look" target="_blank" class="share-btn stumbleupon">
+    <i class="fa fa-stumbleupon"></i>
+    <p>StumbleUpon</p>
+</a></li>
+
+
+<li><a href="mailto:?subject=Check out this post by Jens%20von%20Bergmann&body=%2fblog%2f2016%2f08%2f16%2fmobi-a-first-look%2f" target="_blank" class="share-btn email">
+    <i class="fa fa-envelope"></i>
+    <p>Email</p>
+</a></li>
+
+        </ul>
+    </section>
+    
+    
+
+    
+        
+        
+
+
+
+
+    
+
+
+        
+
+        <a href="/blog/2016/08/16/mobi-a-first-look/" class="image featured">
+            <img src="/images/mobi_main.png" alt="" />
+        </a>
+    
+
+
+    <div id="content">
+        
+
+<p>Vancouver finally has a bikeshare system. And everyone is hoping it will succeed, despite the obstacles BC&rsquo;s mandatory
+helmet law poses for the system. So we are eager to find out how things are going with Mobi.</p>
+
+<p>To set the background, consider that
+<a href="http://www.seattlemet.com/articles/2016/3/21/the-rise-and-fall-and-possible-rise-again-of-pronto">Seattle&rsquo;s Pronto is getting less than 1 ride per bike per day</a>
+after half a year in operation. In comparison, bike shares that are considered &lsquo;successful&rsquo; in North America get 3 to 5
+rides per bike per day. Taipei&rsquo;s system, which I am particularly fond of, gets over 11 rides per bike per day.</p>
+
+<p>So how about Mobi? It barely started, and it&rsquo;s not really fair to run the numbers right now. But we just couldn&rsquo;t hold
+our curiosity back.</p>
+
+<!-- more -->
+
+<h2 id="data">Data</h2>
+
+<p><a href="http://mountainmath.ca/mobi#14.287582005629245/49.2742/-123.1277" target="_blank"><img  src="/images/mobi_main.png"  style="width:50%;float:right;margin-left:10px;"></a>
+First off, some caveats. Mobi does not have an official API for their system. In fact, they only provide a barely usable
+<a href="https://www.mobibikes.ca">map of station statuses at the bottom of their landing page</a>. So we decided to
+jump in and scrape their data to <a href="http://doodles.mountainmath.ca/blog/2016/07/26/bike-share-map/">make our own map</a>. In
+absence of better alternatives, the <em>official</em> Mobi smartphone app is still not released, the map has gotten quite popular.
+And in absence of an official Mobi API there are now others, like <a href="http://transitapp.com/">TransitApp</a>, that are consuming our
+<a href="http://mountainmath.ca/mobi/stations">station data shadow API</a>.</p>
+
+<p>What that means in terms of data quality is that while we get fairly accurate station bike counts at about a 1-minute
+interval, there are some issues with using the data for rigorous analysis. If a bike gets checked in while another one
+gets checked out at about the same time there is a good chance that we will miss it. And we can&rsquo;t distinguish rebalancing
+from a group of people checking out or dropping off a bunch of bikes at the same time. And we don&rsquo;t have individual bike
+data to look at travel patterns, for example what popular trip patterns are. Moreover we currently don&rsquo;t collect and store
+weather data, an important variable that should be included in any bike share analysis.</p>
+
+<p>That pretty much rules out anything but high level analysis.</p>
+
+<h2 id="station-history">Station History</h2>
+
+<p>To get an initial idea we started to look at station history. We only started recording Saturday 13th. For the fun of it
+we added one day history to our <a href="https://mountainmath.ca/mobi">Mobi bike station and bike infrastructure map</a>. Drop me
+a line if you are interested in longer timeframes.</p>
+
+<p>Taking a look at the daily overall usage patterns
+<div style="padding:2px;border: 1px solid black;border-radius:5px;">
+<div id="graph_mobi_hourly" style="height:200px;max-width:640px;" data-url="/data/mobi_hourly.json"></div>
+</div>
+things are pretty much as expected. Nice Gaussians for the weekend usage, and some commute spikes for the weekday usage.
+Squinting really hard one might want to make out a slight lunchtime boost, we will have to collect more data to confirm
+that.</p>
+
+<p>Another thing we see is that usage seems to hit a low point around 4am, so that&rsquo;s a good time to divide up the days when
+looking at daily usage. Adding up the rides we get around 1400 rides a day. At around 3am we detect 490 bikes in the
+stations, so that makes about 3 rides per bike per day. On average. That a pretty impressive number for a system that is
+just getting off the ground. And that&rsquo;s while still in &ldquo;members only&rdquo; mode. The nice weather has helped, but there is no
+getting around the fact that Mobi is off to a great start!</p>
+
+<p>Of course not every bike is getting 3 rides. Some get more, some get less. For example, a bike parked at the
+<a href="http://mountainmath.ca/mobi#17/49.27147/-123.10407">Ontario &amp; Seawall</a> station has been very popular, here is live data
+on the most recent days of usage.
+ <div id="station_graph_os" style="height:150px;"></div></p>
+
+<p><a href="http://mountainmath.ca/mobi#19/49.26084/-123.11418" target="_blank"><img  src="/images/yukon_12.png"  style="width:50%;float:right;margin-left:10px;"></a>
+On the other hand, bikes at <a href="http://mountainmath.ca/mobi#19/49.26084/-123.11418">Yukon &amp; 12th</a> have been having a hard
+time to find riders. Both stations are at the
+current boundary of the system, it is hard to say what makes the difference. The particular location of the least used
+station is sure to get some people talking.</p>
+
+<p>Mobi is undoubtedly carefully
+analyzing their station usage and incorporating that into their strategic planning how to expand their network. And
+hopefully publish a useful API for all the data geeks out there.</p>
+
+<script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="/lib/jquery.min.js" charset="utf-8"></script>
+<script>
+
+function graphBikeStation(selector,station_id){
+  var outerHeight=$(selector).height(),
+      outerWidth=$($(selector)[0].parentNode).width();
+  var margin = {top: 20, right: 20, bottom: 30, left: 50},
+      width = outerWidth - margin.left - margin.right,
+      height = outerHeight - margin.top - margin.bottom;
+
+  var formatDate = d3.time.format("%X");
+  var x = d3.time.scale()
+      .range([0, width]);
+
+  var y = d3.scale.linear()
+      .range([height, 0]);
+
+  var xAxis = d3.svg.axis().scale(x).orient('bottom');
+
+  var yAxis = d3.svg.axis().scale(y).orient('left').ticks(5);
+
+  var line = d3.svg.line()
+      .x(function(d) { return x(d.created_at); })
+      .y(function(d) { return y(d.available_bikes); })
+      .interpolate('step-after');
+  var bikeArea = d3.svg.area()
+      .x(function(d, i) { return x(d.created_at); })
+      .y0(function(d) { return y(d.available_bikes); })
+      .y1(function(d) { return height; })
+      .interpolate('step-after');
+  var dockArea = d3.svg.area()
+      .x(function(d, i) { return x(d.created_at); })
+      .y0(function(d) { return 0; })
+      .y1(function(d) { return y(d.available_bikes); })
+      .interpolate('step-after');
+
+
+  var svg = d3.select(selector).append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  d3.json('http://mountainmath.ca/bike_providers/1/bike_stations/' + station_id + '.json?days=7',function(error,data){
+  data=data[0].stations[0].statuses;
+  data.forEach(function(d){type(d)});
+  var last=data[data.length-1];
+  var lastTime=new Date(d3.time.format.iso.parse(last.updated_at).getTime() + 5*60000);
+  data.push({id:last.id,available_bikes:last.available_bikes,free_docks:last.free_docks,created_at:lastTime,updated_at:lastTime});
+
+  x.domain(d3.extent(data, function(d) { return d.created_at; }));
+  y.domain([0,data[0].available_bikes+data[0].free_docks]);
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
+//      .append("text")
+//      .attr("transform", "rotate(-90)")
+//      .attr("y", 6)
+//      .attr("dy", ".71em")
+//      .style("text-anchor", "end")
+//      .text("Available Bikes");
+
+  svg.append("path")
+      .datum(data)
+      .attr("class", "area bike")
+      .style("fill",'rgba(33, 139, 51, 0.7)')
+      .attr("d", bikeArea);
+  svg.append("path")
+      .datum(data)
+      .attr("class", "area dock")
+      .style("fill",'rgba(212, 10, 44, 0.7')
+      .attr("d", dockArea);
+
+
+  function type(d) {
+    d.created_at = d3.time.format.iso.parse(d.created_at);
+    d.available_bikes = +d.available_bikes;
+    return d;
+  }
+  });
+}
+
+
+
+function bar_graph(div,shiftAxis,domainFormatter,rangeFormatter,domainLabelFormatter,rangeLabelFormatter){
+    if (!domainFormatter) domainFormatter=d3.format("d");
+    if (!rangeLabelFormatter) rangeLabelFormatter=rangeFormatter;
+    if (!rangeFormatter)
+     rangeFormatter = function (y) {
+        return y;
+     };
+     if (!domainLabelFormatter) domainLabelFormatter=domainFormatter;
+
+var margin = {top: 20, right: 20, bottom: 40, left: 70},
+    width = parseInt(div.style("width")) - margin.left - margin.right,
+    height = parseInt(div.style("height")) - margin.top - margin.bottom;
+
+var x = d3.scale.ordinal()
+    .rangeRoundBands([0, width], .1);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .tickFormat(domainFormatter)
+    .orient("bottom");
+
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .tickFormat(rangeFormatter)
+    .ticks(5, rangeFormatter);
+
+var svg = div.append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var data_url=div[0][0].dataset.url;
+
+d3.json(data_url, function(error, json) {
+  if (error) throw error;
+  var graphData=json[0];
+  var data=graphData.data;
+  
+  data.forEach(function(d,i){d.date= d3.time.format.iso.parse(d.date)});
+  
+  var container=d3.select(div.node().parentNode);
+  container.selectAll('.legend.no-margin').remove();
+  var legend=container.append('div').attr('class',"legend no-margin");
+  legend.append('p').html('<i style="background:'+graphData.color + '"></i>' + graphData.label +  '<span style="float:right;margin-right:10px;" id="' + graphData.class+'_value"></span>');
+  
+  x.domain(data.map(function(d) {return d.date }));
+  y.domain([0, d3.max(data, function(d) { return d.count; })]);
+  
+  var domainTickValues=[];
+  var skip=Math.round(60/x.rangeBand());
+  if (skip<=0) skip=1;
+  for (var i=0;i<x.domain().length;i++) {
+    if (i % skip==0) domainTickValues.push(x.domain()[i]);
+  }
+  //if (x.domain().length % 5 !=0) domainTickValues.push(x.domain()[x.domain().length-1]);
+  xAxis.tickValues(domainTickValues);
+
+  var xShift=shiftAxis ?  -x.rangeBand()/2.0 * 1.1 : 0;
+  
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(" + xShift + "," + height + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
+//    .append("text")
+//      .attr("transform", "rotate(-90)")
+//      .attr("y", 6)
+//      .attr("dy", ".71em")
+//      .style("text-anchor", "end")
+//      .text("Probability");
+
+  svg.selectAll(".bar")
+      .data(data)
+    .enter().append("rect")
+      .attr("class", graphData.class + " bar")
+      .style("fill", graphData.color)
+      .attr("x", function(d) { return x(d.date); })
+      .attr("width", x.rangeBand())
+      .attr("y", function(d) { return y(d.count); })
+      .attr("height", function(d) { return height - y(d.count); })
+      .on('mouseover',function(d){
+         d3.select('#'+this.classList[0]+'_value').text(domainLabelFormatter(d.date) + ': ' + rangeLabelFormatter(d.count)) 
+      }).on('click',function(d){
+       d3.select('#'+this.classList[0]+'_value').text(domainLabelFormatter(d.date) + ': ' + rangeLabelFormatter(d.count)) 
+      }).on('touch',function(d){
+         d3.select('#'+this.classList[0]+'_value').text(domainLabelFormatter(d.date) + ': ' + rangeLabelFormatter(d.count)) 
+      }).on('mouseout',function(){d3.select('#'+this.classList[0]+'_value').text('')});
+
+      
+});
+
+}
+
+
+
+var numberFormatter=d3.format(",");
+var dateFormatter=d3.time.format("%a %I%p");//d3.time.format("%a %H:%M"); //d3.format(",");//
+bar_graph(d3.select("#graph_mobi_hourly"),true,dateFormatter,numberFormatter);
+
+graphBikeStation('#station_graph_os',1);
+</script>
+
+    </div>
+
+    <footer>
+        <ul class="stats">
+    
+        
+
+        
+        
+            <li>
+                
+                
+                    
+
+                    
+
+                    
+
+                    
+                        Categories
+                    
+                
+            </li>
+        
+    
+
+    
+    
+        <li><a href='/categoriesosm'>OSM</a></li>
+    
+        <li><a href='/categoriesmapzen'>Mapzen</a></li>
+    
+        <li><a href='/categoriesbikes'>bikes</a></li>
+    
+</ul>
+
+    </footer>
+</article>
+<ul class="actions pagination">
+    
+        <li><a href="/blog/2016/08/04/rt/"
+                class="button big previous">What&#39;s up with RT?</a></li>
+    
+
+    
+        <li><a href="/blog/2016/08/24/mobi-running-stats/"
+                class="button big next">Mobi Running Stats</a></li>
+    
+</ul>
+
+
+
+    
+        <article class="post">
+            <div id="disqus_thread"></div>
+<script>
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "doodlesmountainmathca" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+        </article>
+    
+
+
+    </div>
+    
+<section id="sidebar">
+
+    
+        <section id="intro">
+            
+            
+                
+                    <img src="/img/main/jens_square_small.jpeg" width="150" alt="Mountain Doodles" />
+                
+            
+            
+                <header>
+                    <h2>Mountain Doodles</h2>
+                    <p>Too much data, too little time.</p>
+                </header>
+            
+            <ul class="icons">
+                
+                
+                    
+<li><a href="//github.com/mountainmath" target="_blank" title="GitHub" class="fa fa-github"></a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li><a href="//twitter.com/vb_jens" target="_blank" title="Twitter" class="fa fa-twitter"></a></li>
+
+
+
+<li><a href="mailto:jens@mountainmath.ca" title="Email" class="fa fa-envelope"></a></li>
+
+
+                
+            </ul>
+        </section>
+
+    
+        <section id="recent-posts">
+            <ul class="posts">
+                <header>
+                    <h3>Recent Posts</h3>
+                </header>
+                
+                    
+                
+
+                
+                    
+                
+
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/08/24/dot-density/">dot-density</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-24'>
+                                    August 24, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/08/23/density/">Density</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-23'>
+                                    August 23, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/08/06/millennials-redux/">Millennials Redux</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-08-06'>
+                                    August 6, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/05/16/lifeblood/">Lifeblood</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-05-16'>
+                                    May 16, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <h3><a href="/blog/2017/04/10/surprise/">Surprise Maps</a></h3>
+                                
+                                    
+                                
+                                <time class="published" datetime=
+                                    '2017-04-10'>
+                                    April 10, 2017</time>
+                            </header>
+                        </article>
+                    </li>
+                
+
+                
+                    <li>
+                        <ul class="actions">
+                            <li><a href=
+                            
+                                /blog/
+                            
+                            class="button">View more posts</a></li>
+                        </ul>
+                    </li>
+                
+            </ul>
+        </section>
+
+    
+    
+    
+    
+        <section id="categories">
+            <ul class="posts">
+                <header>
+                    <h3><a href="/categories/">Categories</a></h3>
+                </header>
+
+                
+                    
+                
+
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/vancouver/">Vancouver</a>
+                                <span style="float:right;">39</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/censusmapper/">CensusMapper</a>
+                                <span style="float:right;">21</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/assessment-data/">Assessment Data</a>
+                                <span style="float:right;">14</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/mapzen/">Mapzen</a>
+                                <span style="float:right;">10</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/osm/">OSM</a>
+                                <span style="float:right;">10</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/bikes/">bikes</a>
+                                <span style="float:right;">8</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/zoning/">zoning</a>
+                                <span style="float:right;">7</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/geeky/">geeky</a>
+                                <span style="float:right;">6</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/transportation/">Transportation</a>
+                                <span style="float:right;">5</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/density/">density</a>
+                                <span style="float:right;">5</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/taxes/">taxes</a>
+                                <span style="float:right;">5</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/land-use/">land use</a>
+                                <span style="float:right;">4</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/newsfail/">newsfail</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/teardowns/">teardowns</a>
+                                <span style="float:right;">3</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/empty-homes/">Empty Homes</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/cancensus/">cancensus</a>
+                                <span style="float:right;">2</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/isochrones/">Isochrones</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/surrey/">Surrey</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/transporation/">Transporation</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/zoning/">Zoning</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+                    <li>
+                        <article>
+                            <header>
+                                <a href="/categories/dotdensity/">dotdensity</a>
+                                <span style="float:right;">1</span>
+                            </header>
+                        </article>
+                    </li>
+                
+            </ul>
+        </section>
+    
+
+    
+        
+        <section class="blurb">
+            <h2>About</h2>
+            <p>Mountain Doodles is an insomnia driven MountainMath side project, born out of random questions, trying to give partial answers through data.</p>
+
+            <ul class="actions">
+                <li><a href="/about/" class="button">Learn More</a></li>
+            </ul>
+        </section>
+        
+
+    
+        <section id="footer">
+            <ul class="icons">
+                
+                
+                    
+<li><a href="//github.com/mountainmath" target="_blank" title="GitHub" class="fa fa-github"></a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li><a href="//twitter.com/vb_jens" target="_blank" title="Twitter" class="fa fa-twitter"></a></li>
+
+
+
+<li><a href="mailto:jens@mountainmath.ca" title="Email" class="fa fa-envelope"></a></li>
+
+
+                
+            </ul>
+
+            <p class="copyright">&copy; Mountain Doodles. Design: <a href="http://html5up.net" target="_blank">HTML5 UP</a>. Ported by <a href="//github.com/jpescador" target="_blank">Julio Pescador</a>. Powered by <a href="//gohugo.io" target="_blank">Hugo</a></p>
+        </section>
+
+</section>
+
+            </div>
+        <a id="back-to-top" href="#" class="fa fa-arrow-up fa-border fa-2x"></a>
+        
+
+        
+        
+            
+        
+
+        
+        
+            <script src="/js/jquery.min.js"></script>
+            <script src="/js/skel.min.js"></script>
+            <script src="/js/util.js"></script>
+            <script src="/js/main.js"></script>
+            <script src="/js/backToTop.js"></script>
+            <script src="/js/highlight.pack.js"></script>
+        
+
+        
+
+            
+            <script>hljs.initHighlightingOnLoad();</script>
+            
+    </body>
+</html>
+

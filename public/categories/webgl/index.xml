@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>WebGl on Mountain Doodles</title>
+    <link>/categories/webgl/</link>
+    <description>Recent content in WebGl on Mountain Doodles</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sun, 13 Dec 2015 12:04:25 -0800</lastBuildDate>
+    
+	<atom:link href="/categories/webgl/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>How to make a bike map</title>
+      <link>/posts/content/posts/2015-12-13-how-to-make-a-bike-map/</link>
+      <pubDate>Sun, 13 Dec 2015 12:04:25 -0800</pubDate>
+      
+      <guid>/posts/content/posts/2015-12-13-how-to-make-a-bike-map/</guid>
+      <description>Here come some general thoughts on bike maps. Not throught through yet, just jotting down some ideas so that I don&amp;rsquo;t forget and maybe to start a discussion.
+Bike enthusiasts, OSM folks and mapping technology wonks read on! ####Why make a new bike map? Plainly put, I don&amp;rsquo;t like a lot of the bike maps out there. Time for my little bike map rant:
+ Lots of maps don&amp;rsquo;t accomplish their core mission: accurately map bike infrastructure.</description>
+    </item>
+    
+  </channel>
+</rss>

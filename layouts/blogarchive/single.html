@@ -1,0 +1,30 @@
+{{ partial "general-title" . }}
+
+{{ partial "header" . }}
+    {{ partial "navbar" . }}
+    <!-- Main -->
+    <div id="main">
+      <ul id="blog-archives" class="posts">
+          {{ .Content }} <!-- content of the markdown file. note that inside the range .Content will point to each page's content -->
+            <header>
+                <h1>{{ .Title }}</h1>
+            </header>
+            {{ range (where .Site.Pages "Type" "post") }}
+                <li style="margin:0;">
+                    <article>
+                        <header>
+                          <a style="text-transform: uppercase;letter-spacing: 0.25em;transition: color 0.2s ease;font-size: 100%;" href="{{ .Permalink }}" title="{{ .Title }}">{{ .Title }}</a>
+                          <time style="float:right;">
+                            <span class="month">{{ .Date | dateFormat "Jan" }}</span> <!-- print publish month -->
+                            <span class="day">{{ .Date | dateFormat "2" }}</span> <!-- print publish day -->
+                            <span class="year">{{ .Date | dateFormat "2006"}}</span> <!-- print publish year -->
+                          </time>
+                        </header>
+                    </article>
+                </li>
+           {{ end }}
+        </ul>
+    </div>
+    {{ partial "sidebar" . }}
+{{ partial "footer" . }}
+

@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Categories on Mountain Doodles</title>
+    <link>/categories/</link>
+    <description>Recent content in Categories on Mountain Doodles</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 21 Feb 2017 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/categories/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Assessment Data</title>
+      <link>/categories/assessment-data/</link>
+      <pubDate>Tue, 21 Feb 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/assessment-data/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Bikes</title>
+      <link>/categories/bikes/</link>
+      <pubDate>Wed, 24 Aug 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/bikes/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Cancensus</title>
+      <link>/categories/cancensus/</link>
+      <pubDate>Thu, 24 Aug 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/cancensus/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>CensusMapper</title>
+      <link>/categories/censusmapper/</link>
+      <pubDate>Thu, 24 Aug 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/censusmapper/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Density</title>
+      <link>/categories/density/</link>
+      <pubDate>Wed, 23 Aug 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/density/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Dotdensity</title>
+      <link>/categories/dotdensity/</link>
+      <pubDate>Thu, 24 Aug 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/dotdensity/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Empty Homes</title>
+      <link>/categories/empty-homes/</link>
+      <pubDate>Mon, 03 Apr 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/empty-homes/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Geeky</title>
+      <link>/categories/geeky/</link>
+      <pubDate>Thu, 24 Aug 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/geeky/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Isochrones</title>
+      <link>/categories/isochrones/</link>
+      <pubDate>Fri, 18 Nov 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/isochrones/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Land use</title>
+      <link>/categories/land-use/</link>
+      <pubDate>Fri, 17 Jun 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/land-use/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Mapzen</title>
+      <link>/categories/mapzen/</link>
+      <pubDate>Wed, 01 Mar 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/mapzen/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Newsfail</title>
+      <link>/categories/newsfail/</link>
+      <pubDate>Wed, 23 Aug 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/newsfail/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>OSM</title>
+      <link>/categories/osm/</link>
+      <pubDate>Wed, 25 Jan 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/osm/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Surrey</title>
+      <link>/categories/surrey/</link>
+      <pubDate>Sun, 27 Mar 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/surrey/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Taxes</title>
+      <link>/categories/taxes/</link>
+      <pubDate>Tue, 13 Dec 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/taxes/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Teardowns</title>
+      <link>/categories/teardowns/</link>
+      <pubDate>Tue, 21 Feb 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/teardowns/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Transporation</title>
+      <link>/categories/transporation/</link>
+      <pubDate>Wed, 20 Apr 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/transporation/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Transportation</title>
+      <link>/categories/transportation/</link>
+      <pubDate>Wed, 01 Mar 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/transportation/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Vancouver</title>
+      <link>/categories/vancouver/</link>
+      <pubDate>Mon, 03 Apr 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/vancouver/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Zoning</title>
+      <link>/categories/zoning/</link>
+      <pubDate>Mon, 06 Mar 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/zoning/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Zoning</title>
+      <link>/categories/zoning/</link>
+      <pubDate>Wed, 12 Oct 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/categories/zoning/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>
