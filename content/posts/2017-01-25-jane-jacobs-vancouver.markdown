@@ -44,7 +44,7 @@ the geojson and ran the script below. These are the results:
 If you want to make your own, just grab the [lightly adapted](https://github.com/gboeing/osmnx/blob/master/examples/09-example-figure-ground.ipynb) code below.
 Yes, it is that easy.
 
-####Code to generate the images
+### Code to generate the images
 
     # jane_jacobs.py
     import geojson

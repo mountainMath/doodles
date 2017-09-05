@@ -3,7 +3,7 @@ title: TOD Mode Share
 date: 2016-04-20
 categories:
   - Vancouver
-  - Transporation
+  - Transportation
   - CensusMapper
 slug: tod-mode-share
 author: Jens von Bergmann
