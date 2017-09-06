@@ -35,8 +35,8 @@ First up, the change in under 15 year olds between the 2011 and 2016 censuses in
 .halves {width:45%;display:inline-block;padding:2%;margin:2%;align:top;}
 </style>
 <p>{{< figure link="https://censusmapper.ca/maps/830" src="/images/change_in_u_15.png" title="Change in Numebr of Under 15 2011-2016"  class="halves" >}} {{< figure link="https://censusmapper.ca/maps/831" src="/images/share_change_in_u_15.png" title="Change in Share of Under 15 2011-2016" class="halves">}}</p>
-<p>As expected, population change is a strong confounding variable. For example, Surrey saw in overall increase in the number of children whereas the City of Vancouver experienced a slight drop, but the share of chidren in the total population dropped more in Surrey than it did in Vancouver. Both views address different questions.</p>
-<p>Next we can look at where young families with children live, where we call families “young” if the oder parent is below 40 years old.</p>
+<p>As expected, population change is a strong confounding variable. For example, Surrey saw in overall increase in the number of children whereas the City of Vancouver experienced a slight drop, but the share of children in the total population dropped more in Surrey than it did in Vancouver. Both views address different questions.</p>
+<p>Next we can look at where young families with children live, where we call families “young” if the older parent is below 40 years old.</p>
 <p>{{< figure link="https://censusmapper.ca/maps/832" src="/images/young_families.png" title="Young families as share of all families with children in 2016" >}} This captures the geographic split of families with children at home by age of the older parent, and we can clearly see how young families are much more prevalent in the central areas and the skytrain corridors, with another cluster further out in Langley.</p>
 <p>This sets the stage for a deeper dive into the data on children under 15 in the City of Vancouver.</p>
 </div>
@@ -71,7 +71,7 @@ na_rows
 ## 1 9330058.00 2011  NA  NA    NA
 
 all_na &lt;- na_rows %&gt;% pull(&quot;GeoUID&quot;)</code></pre>
-<p>Of note here is that the 2011 data has one CT with suppressed data on the number of children. There are several routes we can take moving forward, we could set the NA numbers to zero, we could exlcude the offending CT from the analysis or we could estimate the number of children from the overall City of Vancouver counts. There is no perfect answer to this, for the purpose of our analysis that separates different regions within CoV we think it’s best to omit the CT.</p>
+<p>Of note here is that the 2011 data has one CT with suppressed data on the number of children. There are several routes we can take moving forward, we could set the NA numbers to zero, we could exclude the offending CT from the analysis or we could estimate the number of children from the overall City of Vancouver counts. There is no perfect answer to this, for the purpose of our analysis that separates different regions within CoV we think it’s best to omit the CT.</p>
 <p>Let’s inspect the number of children in the offending CT to get an idea how it will effect our analysis and define a convenience function that drops it from the analysis if needed.</p>
 <pre><code>data[data$GeoUID %in% all_na,] %&gt;% as.data.frame %&gt;% select(c(&quot;year&quot;,age_groups, &quot;0-14&quot;))
 
@@ -83,7 +83,7 @@ all_na &lt;- na_rows %&gt;% pull(&quot;GeoUID&quot;)</code></pre>
 data &lt;- data %&gt;% filter(!data$GeoUID %in% all_na)</code></pre>
 <p>We see that there aren’t many kids in this census tract, and there is not much movement in the total numbers between 2006 and 2016. Excluding this CT will not have much impact on the overall analysis.</p>
 <p>This can serve as a good reminder that census numbers are just estimates, the relevant global response rate for the City of Vancouver has been around 5% for all three censuses. That’s pretty good, but the response rate is not unbiased and may have a small effect on the analysis.</p>
-<p>As alluded to in the introduction, we have split CoV into two areas, which we refer to as “central” and “outer” regions. Census trackts change over time, so it’s always good to do a quick visual check what we got the split consistent over time, as well as remind ourselves what they are.</p>
+<p>As alluded to in the introduction, we have split CoV into two areas, which we refer to as “central” and “outer” regions. Census tracts change over time, so it’s always good to do a quick visual check what we got the split consistent over time, as well as remind ourselves what they are.</p>
 <pre><code>grid.arrange(
   ggplot(data %&gt;% filter(year == &quot;2006&quot;)) + ggtitle(2006) +
     geom_sf(aes(fill = central)) + basemap,
@@ -109,7 +109,7 @@ data &lt;- data %&gt;% filter(!data$GeoUID %in% all_na)</code></pre>
 </div>
 <div id="vsb" class="section level2">
 <h2>VSB</h2>
-<p>If we are interested in different regions, it is now easy to adapt the analysis. Let’s look at Vancouver School Board, who is struggling to deal with changing enrolment patterns in their schools. The above analysis of central vs outer regions in the City of Vancouver touches on some of the problems, but overall the City of Vancouver does not match the geography of SD 39. To remedy this, let’s just re-run the overview analysis using the correct region.</p>
+<p>If we are interested in different regions, it is now easy to adapt the analysis. Let’s look at Vancouver School Board, who is struggling to deal with changing enrollment patterns in their schools. The above analysis of central vs outer regions in the City of Vancouver touches on some of the problems, but overall the City of Vancouver does not match the geography of SD 39. To remedy this, let’s just re-run the overview analysis using the correct region.</p>
 <pre><code>vsb_regions=list(CT=c(&quot;9330069.01&quot;,&quot;9330069.02&quot;),CSD=c(&quot;5915022&quot;,&quot;5915803&quot;))
 vsb_2016 &lt;- get_census(dataset=&#39;CA16&#39;, 
                         regions=vsb_regions, vectors=vectors_2016, 
@@ -131,12 +131,12 @@ vsb_data=rbind(rbind(vsb_2016 %&gt;% select(vs), vsb_2011 %&gt;% select(vs)), vs
   ncol = 2,
   top = &quot;VSB (SD 39) 5-14 Year Olds&quot;,
   bottom=&quot;Canada Census 2006, 2011, 2016 via cancensus &amp; CensusMapper.ca&quot;)</code></pre>
-<p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-14-1.png" width="768" /> Here we notice that the trend of declining population of 5 to 14 year olds has been reversed, although the share of children in that age bracked out of the total population still declined.</p>
+<p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-14-1.png" width="768" /> Here we notice that the trend of declining population of 5 to 14 year olds has been reversed, although the share of children in that age bracket out of the total population still declined.</p>
 </div>
 <div id="the-bigger-picture" class="section level2">
 <h2>The bigger picture</h2>
 <p>The variations that we see locally in Vancouver also exist on much larger scales across the country. There are many factors influencing the growth and decline of children, and it requires more analysis to better understand what drives this. We wrap this up with a quick overview of the Country and Provincial level.</p>
-<p>The underlying trend in Canada, as our population ages, is toward a declining share of children under 15. Between 2011 and 2016 the share declined by 0.1 percentage points. But at the same time our population is growing, which lead to an overall increase in the number of children by 4.1% over that timeframe. As you can explore in the <a href="https://censusmapper.ca/maps/830#3/56.12/-117.25">online map</a> the number of children under 15 has increased most in Alberta (by 13.8%), with the Maritimes registering a drop in the total number of children under 15. The overall share of children in the population also <a href="https://censusmapper.ca/maps/831#3/64.74/-110.21">increased in Alberta, Manitoba and Quebec</a>.</p>
+<p>The underlying trend in Canada, as our population ages, is toward a declining share of children under 15. Between 2011 and 2016 the share declined by 0.1 percentage points. But at the same time our population is growing, which lead to an overall increase in the number of children by 4.1% over that time frame. As you can explore in the <a href="https://censusmapper.ca/maps/830#3/56.12/-117.25">online map</a> the number of children under 15 has increased most in Alberta (by 13.8%), with the Maritimes registering a drop in the total number of children under 15. The overall share of children in the population also <a href="https://censusmapper.ca/maps/831#3/64.74/-110.21">increased in Alberta, Manitoba and Quebec</a>.</p>
 <p>Other directions that are worth exploring is to better understand family formation and family migration. We have already <a href="http://doodles.mountainmath.ca/blog/2017/05/16/lifeblood/">dug into migration patterns</a> to visualize net migration by age groups. It’s good to remember that net migration is a different point of view compared to looking at change in the size, or relative size, of age brackets as we have done in this post. As an example consider the two maps below that show net migration on the left and change in size of an age cohort on the right. Click through for live maps.</p>
 <p>{{< figure link="https://censusmapper.ca/maps/731" src="/images/net_van.png" title="Net Migration of 2011 0-4 year old cohort"  class="halves" >}} {{< figure link="https://censusmapper.ca/maps/745" src="/images/change_school.png" title="Change in Share of 5-9 2011-2016" class="halves">}}</p>
 </div>
