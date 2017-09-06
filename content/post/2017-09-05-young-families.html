@@ -20,7 +20,7 @@ type: "post"
 
 
 <p>The fate of young families in Vancouver is a frequent news topic. And as Vancouver is growing it is important to understand how families navigate the sometime challenging environment and what choices and compromises they make.</p>
-<p>So we decided to take a closer look at where families and their children live in Vancouver over the last decade and how they fit into the rest of Vancouver. I had most of scripts already assembled over the long weekend to provide some data for a <a href="https://beta.theglobeandmail.com/news/british-columbia/young-families-opt-for-diverse-downtown-over-spacious-suburbs-in-vancouver/article36163103/?ref=http://www.theglobeandmail.com&amp;cmpid=rss1&amp;click=dlvr.it">story by Mike Hager</a>, so I decided to tidy things up and add some visuals. Using our new <code>cancensus</code> R package this blog post is an R notebook that can be found <a href="xxx">in the github repo of this blog</a>, which makes the analysis fully reproducible and easily adaptable to e.g. re-run it for other regions.</p>
+<p>So we decided to take a closer look at where families and their children live in Vancouver over the last decade and how they fit into the rest of Vancouver. I had most of scripts already assembled over the long weekend to provide some data for a <a href="https://beta.theglobeandmail.com/news/british-columbia/young-families-opt-for-diverse-downtown-over-spacious-suburbs-in-vancouver/article36163103/?ref=http://www.theglobeandmail.com&amp;cmpid=rss1&amp;click=dlvr.it">story by Mike Hager</a>, so I decided to tidy things up and add some visuals. Using our new <code>cancensus</code> R package this blog post is an R notebook that can be found <a href="https://github.com/mountainMath/doodles/blob/master/content/post/2017-09-05-young-families.Rmd">in the github repo of this blog</a>, which makes the analysis fully reproducible and easily adaptable to e.g. re-run it for other regions.</p>
 <div id="tldr" class="section level2">
 <h2>TL;DR</h2>
 <blockquote>
@@ -110,7 +110,7 @@ data &lt;- data %&gt;% filter(!data$GeoUID %in% all_na)</code></pre>
 </div>
 <div id="vsb" class="section level2">
 <h2>VSB</h2>
-<p>If we are interested in different regions, it is not easy to adapt the analysis. Let’s look at Vancouver School Board, who is struggling to deal with changing enrolment patterns in their schools. The above analysis of central vs outer regions in the City of Vancouver touches on some of the problems, but overall the City of Vancouver does not match the geography of SD 39. To remedy this, let’s just re-run the overview analysis using the correct region.</p>
+<p>If we are interested in different regions, it is now easy to adapt the analysis. Let’s look at Vancouver School Board, who is struggling to deal with changing enrolment patterns in their schools. The above analysis of central vs outer regions in the City of Vancouver touches on some of the problems, but overall the City of Vancouver does not match the geography of SD 39. To remedy this, let’s just re-run the overview analysis using the correct region.</p>
 <pre><code>vsb_regions=list(CT=c(&quot;9330069.01&quot;,&quot;9330069.02&quot;),CSD=c(&quot;5915022&quot;,&quot;5915803&quot;))
 vsb_2016 &lt;- get_census(dataset=&#39;CA16&#39;, 
                         regions=vsb_regions, vectors=vectors_2016, 
