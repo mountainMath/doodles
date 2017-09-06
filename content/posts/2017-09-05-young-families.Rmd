@@ -39,7 +39,7 @@ CensusMapper is a great tool for exploratory analysis. Let's get a quick overvie
 
 First up, the change in under 15 year olds between the 2011 and 2016 censuses in the Vancouver area, shown as the percentage change in the total number on the left and the percentage point change as a share of the total population on the right.
 <style>
-.halves {width:48%;display:inline-block;padding:2%;align:top;}
+.halves {width:45%;display:inline-block;padding:2%;margin:2%;align:top;}
 </style>
 `r htmltools::HTML('{{< figure link="https://censusmapper.ca/maps/830" src="/images/change_in_u_15.png" title="Change in Numebr of Under 15 2011-2016"  class="halves" >}}')`
 `r htmltools::HTML('{{< figure link="https://censusmapper.ca/maps/831" src="/images/share_change_in_u_15.png" title="Change in Share of Under 15 2011-2016" class="halves">}}')`
