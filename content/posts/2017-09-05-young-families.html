@@ -3,7 +3,6 @@ title: Young Families
 author: Jens von Bergmann
 date: 2017-09-05
 slug: young-families
-draft: true
 categories:
   - CensusMapper
   - cancensus
@@ -95,7 +94,7 @@ data &lt;- data %&gt;% filter(!data$GeoUID %in% all_na)</code></pre>
   ncol = 3,
   top = &#39;Visual feedback for &quot;central&quot; region selection&#39;,
   bottom=&quot;Canada Census 2006, 2011, 2016 via cancensus &amp; CensusMapper.ca&quot;)</code></pre>
-<p><img src="/post/2017-09-05-young-families_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 <p>With the data all prepared and the suppressed census counts taken care of, let’s check the development of children in the central and outer regions.</p>
 <pre><code>grid.arrange(total_graph(data ,&quot;Overall Total&quot;), 
              share_graph(data ,&quot;Overall Share&quot;),
@@ -106,7 +105,7 @@ data &lt;- data %&gt;% filter(!data$GeoUID %in% all_na)</code></pre>
              ncol = 2,
              top = &quot;City of Vancouver Under 15 Year Olds&quot;,
              bottom=&quot;Canada Census 2006, 2011, 2016 via cancensus &amp; CensusMapper.ca&quot;)</code></pre>
-<p><img src="/post/2017-09-05-young-families_files/figure-html/graph-1.png" width="768" /></p>
+<p><img src="/posts/2017-09-05-young-families_files/figure-html/graph-1.png" width="768" /></p>
 </div>
 <div id="vsb" class="section level2">
 <h2>VSB</h2>
@@ -126,9 +125,9 @@ vsb_2006 &lt;- get_census(dataset=&#39;CA06&#39;,
                         geo_format=&quot;sf&quot;) %&gt;% prep_2006
 vsb_data=rbind(rbind(vsb_2016 %&gt;% select(vs), vsb_2011 %&gt;% select(vs)), vsb_2006 %&gt;% select(vs) )
 total_graph(vsb_data ,&quot;VSB (SD 39) Total&quot;,groups=c(&quot;5-9&quot;,&quot;10-14&quot;),y_label=&quot;Number of Children 5-14&quot;)</code></pre>
-<p><img src="/post/2017-09-05-young-families_files/figure-html/unnamed-chunk-12-1.png" width="672" /> Here we notice that the trend of declining population of 5 to 14 year olds has been reversed, although the share of children in that age bracked out of the total population still declined as the next graph shows.</p>
+<p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-12-1.png" width="672" /> Here we notice that the trend of declining population of 5 to 14 year olds has been reversed, although the share of children in that age bracked out of the total population still declined as the next graph shows.</p>
 <pre><code>share_graph(vsb_data ,&quot;VSB (SD 39) Share&quot;,groups=c(&quot;5-9&quot;,&quot;10-14&quot;),y_label=&quot;Share of Population 5-14&quot;)</code></pre>
-<p><img src="/post/2017-09-05-young-families_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
 </div>
 <div id="the-bigger-picture" class="section level2">
 <h2>The bigger picture</h2>

@@ -11,7 +11,7 @@ tags: []
 description: 'Understanding children and young families.'
 featured: 'graph-1.png'
 featuredalt: ""
-featuredpath: "/post/2017-09-05-young-families_files/figure-html"
+featuredpath: "/posts/2017-09-05-young-families_files/figure-html"
 linktitle: ''
 type: "post"
 ---
@@ -24,7 +24,7 @@ knitr::render_markdown(TRUE)
 
 The fate of young families in Vancouver is a frequent news topic. And as Vancouver is growing it is important to understand how families navigate the sometime challenging environment and what choices and compromises they make.
 
-So we decided to take a closer look at where families and their children live in Vancouver over the last decade and how they fit into the rest of Vancouver. I had most of scripts already assembled over the long weekend to provide some data for a [story by Mike Hager](https://beta.theglobeandmail.com/news/british-columbia/young-families-opt-for-diverse-downtown-over-spacious-suburbs-in-vancouver/article36163103/?ref=http://www.theglobeandmail.com&cmpid=rss1&click=dlvr.it), so I decided to tidy things up and add some visuals. Using our new `cancensus` R package this blog post is an R notebook that can be found [in the github repo of this blog](https://github.com/mountainMath/doodles/blob/master/content/post/2017-09-05-young-families.Rmd), which makes the analysis fully reproducible and easily adaptable to e.g. re-run it for other regions.
+So we decided to take a closer look at where families and their children live in Vancouver over the last decade and how they fit into the rest of Vancouver. I had most of scripts already assembled over the long weekend to provide some data for a [story by Mike Hager](https://beta.theglobeandmail.com/news/british-columbia/young-families-opt-for-diverse-downtown-over-spacious-suburbs-in-vancouver/article36163103/?ref=http://www.theglobeandmail.com&cmpid=rss1&click=dlvr.it), so I decided to tidy things up and add some visuals. Using our new `cancensus` R package this blog post is an R notebook that can be found [in the github repo of this blog](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-09-05-young-families.Rmd), which makes the analysis fully reproducible and easily adaptable to e.g. re-run it for other regions.
 
 ## TL;DR
 
