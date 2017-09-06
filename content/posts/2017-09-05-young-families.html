@@ -11,7 +11,7 @@ tags: []
 description: 'Understanding children and young families.'
 featured: 'graph-1.png'
 featuredalt: ""
-featuredpath: "/post/2017-09-05-young-families_files/figure-html"
+featuredpath: "/posts/2017-09-05-young-families_files/figure-html"
 linktitle: ''
 type: "post"
 ---
@@ -19,7 +19,7 @@ type: "post"
 
 
 <p>The fate of young families in Vancouver is a frequent news topic. And as Vancouver is growing it is important to understand how families navigate the sometime challenging environment and what choices and compromises they make.</p>
-<p>So we decided to take a closer look at where families and their children live in Vancouver over the last decade and how they fit into the rest of Vancouver. I had most of scripts already assembled over the long weekend to provide some data for a <a href="https://beta.theglobeandmail.com/news/british-columbia/young-families-opt-for-diverse-downtown-over-spacious-suburbs-in-vancouver/article36163103/?ref=http://www.theglobeandmail.com&amp;cmpid=rss1&amp;click=dlvr.it">story by Mike Hager</a>, so I decided to tidy things up and add some visuals. Using our new <code>cancensus</code> R package this blog post is an R notebook that can be found <a href="https://github.com/mountainMath/doodles/blob/master/content/post/2017-09-05-young-families.Rmd">in the github repo of this blog</a>, which makes the analysis fully reproducible and easily adaptable to e.g. re-run it for other regions.</p>
+<p>So we decided to take a closer look at where families and their children live in Vancouver over the last decade and how they fit into the rest of Vancouver. I had most of scripts already assembled over the long weekend to provide some data for a <a href="https://beta.theglobeandmail.com/news/british-columbia/young-families-opt-for-diverse-downtown-over-spacious-suburbs-in-vancouver/article36163103/?ref=http://www.theglobeandmail.com&amp;cmpid=rss1&amp;click=dlvr.it">story by Mike Hager</a>, so I decided to tidy things up and add some visuals. Using our new <code>cancensus</code> R package this blog post is an R notebook that can be found <a href="https://github.com/mountainMath/doodles/blob/master/content/posts/2017-09-05-young-families.Rmd">in the github repo of this blog</a>, which makes the analysis fully reproducible and easily adaptable to e.g. re-run it for other regions.</p>
 <div id="tldr" class="section level2">
 <h2>TL;DR</h2>
 <blockquote>
@@ -32,7 +32,7 @@ type: "post"
 <p>CensusMapper is a great tool for exploratory analysis. Let’s get a quick overview over how the landscape of children and young families is changing.</p>
 First up, the change in under 15 year olds between the 2011 and 2016 censuses in the Vancouver area, shown as the percentage change in the total number on the left and the percentage point change as a share of the total population on the right.
 <style>
-.halves {width:48%;display:inline-block;padding:2%;align:top;}
+.halves {width:45%;display:inline-block;padding:2%;margin:2%;align:top;}
 </style>
 <p>{{< figure link="https://censusmapper.ca/maps/830" src="/images/change_in_u_15.png" title="Change in Numebr of Under 15 2011-2016"  class="halves" >}} {{< figure link="https://censusmapper.ca/maps/831" src="/images/share_change_in_u_15.png" title="Change in Share of Under 15 2011-2016" class="halves">}}</p>
 <p>As expected, population change is a strong confounding variable. For example, Surrey saw in overall increase in the number of children whereas the City of Vancouver experienced a slight drop, but the share of chidren in the total population dropped more in Surrey than it did in Vancouver. Both views address different questions.</p>
