@@ -1,0 +1,372 @@
+---
+title: Young Families
+author: Jens von Bergmann
+date: 2017-09-05
+slug: young-families
+draft: true
+categories:
+  - CensusMapper
+  - cancensus
+  - Vancouver
+tags: []
+description: 'Understanding children and young families.'
+featured: 'graph-1.png'
+featuredalt: ""
+featuredpath: "/post/2017-09-05-young-families_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+```{r, include=FALSE}
+library(blogdown)
+knitr::render_markdown(TRUE)
+```
+
+
+The fate of young families in Vancouver is a frequent news topic. And as Vancouver is growing it is important to understand how families navigate the sometime challenging environment and what choices and compromises they make.
+
+So we decided to take a closer look at where families and their children live in Vancouver over the last decade and how they fit into the rest of Vancouver. I had most of scripts already assembled over the long weekend to provide some data for a [story by Mike Hager](https://beta.theglobeandmail.com/news/british-columbia/young-families-opt-for-diverse-downtown-over-spacious-suburbs-in-vancouver/article36163103/?ref=http://www.theglobeandmail.com&cmpid=rss1&click=dlvr.it), so I decided to tidy things up and add some visuals. Using our new `cancensus` R package this blog post is an R notebook that can be found [in the github repo of this blog](xxx), which makes the analysis fully reproducible and easily adaptable to e.g. re-run it for other regions.
+
+## TL;DR
+
+> As we can see in the graphs, the total number of children in the City of Vancouver declined between each of the census periods. But that trend has reversed in the central areas, here taken to be the area west of Victoria, north of 16th and east of Trafalgar. Quite remarkably, in the central area even the share of children in the population increased 2011-2016, contrary to the national trend. Overall, the share of children in the central areas is still lower than in the outlying areas, but they are moving in opposite directions.
+
+<!-- more -->
+
+
+
+## Exploring the data
+CensusMapper is a great tool for exploratory analysis. Let's get a quick overview over how the landscape of children and young families is changing.
+
+First up, the change in under 15 year olds between the 2011 and 2016 censuses in the Vancouver area, shown as the percentage change in the total number on the left and the percentage point change as a share of the total population on the right.
+<style>
+.halves {width:48%;display:inline-block;padding:2%;align:top;}
+</style>
+`r htmltools::HTML('{{< figure link="https://censusmapper.ca/maps/830" src="/images/change_in_u_15.png" title="Change in Numebr of Under 15 2011-2016"  class="halves" >}}')`
+`r htmltools::HTML('{{< figure link="https://censusmapper.ca/maps/831" src="/images/share_change_in_u_15.png" title="Change in Share of Under 15 2011-2016" class="halves">}}')`
+
+As expected, population change is a strong confounding variable. For example, Surrey saw in overall increase in the number of children whereas the City of Vancouver experienced a slight drop, but the share of chidren in the total population dropped more in Surrey than it did in Vancouver. Both views address different questions.
+
+Next we can look at where young families with children live, where we call families "young" if the oder parent is below 40 years old.
+
+`r htmltools::HTML('{{< figure link="https://censusmapper.ca/maps/832" src="/images/young_families.png" title="Young families as share of all families with children in 2016" >}}')`
+This captures the geographic split of families with children at home by age of the older parent, and we can clearly see how young families are much more prevalent in the central areas and the skytrain corridors, with another cluster further out in Langley.
+
+This sets the stage for a deeper dive into the data on children under 15 in the City of Vancouver.
+
+## Using `cancensus` for more detailed analysis
+```{r, include=FALSE}
+library(sf)
+# devtools::install_github("tidyverse/ggplot2")
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(dplyr)
+
+vectors_2016 <- c("v_CA16_4","v_CA16_7","v_CA16_25","v_CA16_43")
+vectors_2011 <- c("v_CA11F_8","v_CA11F_11","v_CA11F_14")
+vectors_2006 <- c("v_CA06_4","v_CA06_5","v_CA06_6","v_CA06_23","v_CA06_24","v_CA06_25")
+
+cts <- c("9330068.00","9330063.00","9330066.00","9330067.02","9330062.00","9330060.01","9330061.00","9330067.01","9330065.00","9330064.00","9330060.02","9330059.11","9330059.08","9330059.10","9330059.07","9330059.09","9330059.14","9330059.13","9330059.06","9330058.00","9330057.02","9330057.01","9330050.03","9330050.04","9330049.01","9330049.02","9330048.00","9330047.02","9330047.01","9330046.00")
+ct_base <- unique(sub(".[0-9]{2}$","",cts))
+central_condition <- function(data) {
+  sub(".[0-9]{2}$","",data$GeoUID) %in% ct_base & data$GeoUID != "9330050.02"
+}
+
+percent <- function(x){paste0(round(x*100,1),"%")}
+
+prep_2016 <- function(data){
+    data %>% mutate(
+      "0-4" = v_CA16_7, 
+       "5-9" = v_CA16_25, 
+       "10-14" = v_CA16_43, 
+       "0-14" = v_CA16_4,
+       "year" = "2016",
+       central = central_condition(.))
+}
+
+prep_2011 <- function(data){
+    data %>% mutate(
+      "0-4" = v_CA11F_8, 
+       "5-9" = v_CA11F_11, 
+       "10-14" = v_CA11F_14, 
+       "0-14" = `0-4` + `5-9` + `10-14`,
+       "year" = "2011",
+       central = central_condition(.))
+}
+
+prep_2006 <- function(data){
+  data %>%  mutate(
+    "0-4" = v_CA06_4 + v_CA06_23, 
+     "5-9" = v_CA06_5 + v_CA06_24, 
+     "10-14" = v_CA06_6 + v_CA06_25, 
+     "0-14" = `0-4` + `5-9` + `10-14`,
+     "year" = "2006",
+     central = central_condition(.))
+}
+
+get_na_regions <- function(data,categories){
+  data$GeoUID[is.na(data %>% select(categories))] %>% na.omit %>% as.vector
+}
+```
+
+Let's load the relevant census numbers, `cancensus` makes this easy, although we are hiding some prep work for clarity in this post, download the R notebook for full details. 
+```{r, message=FALSE, warning=FALSE}
+library(cancensus)
+
+regions <- list(CSD="5915022")
+age_groups=c("0-4","5-9","10-14")
+
+data_2016 <- get_census(dataset='CA16', 
+                        regions=regions, vectors=vectors_2016, 
+                        level='CT',  labels = 'short', 
+                        geo_format="sf") %>% prep_2016
+data_2011 <- get_census(dataset='CA11', 
+                        regions=regions, vectors=vectors_2011, 
+                        level='CT', labels = 'short', 
+                        geo_format="sf") %>% prep_2011
+data_2006 <- get_census(dataset='CA06', 
+                        regions=regions, vectors=vectors_2006, 
+                        level='CT', labels = 'short', 
+                        geo_format="sf") %>% prep_2006
+# and all into one data frame
+vs=c("Population","0-4","5-9","10-14","0-14","year","central","GeoUID")
+data=rbind(rbind(data_2016 %>% select(vs), data_2011 %>% select(vs)), data_2006 %>% select(vs))
+# Check to make sure we got good data for all regions (we don't for in 2011)
+na_rows <- data %>% filter(is.na(`0-4`) | is.na(`5-9`) | is.na(`10-14`)) %>% as.data.frame %>% select(c("GeoUID","year",age_groups))
+na_rows
+all_na <- na_rows %>% pull("GeoUID")
+```
+Of note here is that the 2011 data has one CT with suppressed data on the number of children. There are several routes we can take moving forward, we could set the NA numbers to zero, we could exlcude the offending CT from the analysis or we could estimate the number of children from the overall City of Vancouver counts. There is no perfect answer to this, for the purpose of our analysis that separates different regions within CoV we think it's best to omit the CT.
+
+Let's inspect the number of children in the offending CT to get an idea how it will effect our analysis and define a convenience function that drops it from the analysis if needed. 
+
+```{r}
+data[data$GeoUID %in% all_na,] %>% as.data.frame %>% select(c("year",age_groups, "0-14"))
+data <- data %>% filter(!data$GeoUID %in% all_na)
+```
+We see that there aren't many kids in this census tract, and there is not much movement in the total numbers between 2006 and 2016. Excluding this CT will not have much impact on the overall analysis.
+
+This can serve as a good reminder that census numbers are just estimates, the relevant global response rate for the City of Vancouver has been around 5% for all three censuses. That's pretty good, but the response rate is not unbiased and may have a small effect on the analysis.
+
+As alluded to in the introduction, we have split CoV into two areas, which we refer to as "central" and "outer" regions.
+Census trackts change over time, so it's always good to do a quick visual check what we got the split consistent over time, as well as remind ourselves what they are.
+
+```{r, include=FALSE}
+   basemap <- list(theme_bw(),
+                   geom_sf(data=data_2016 %>% filter(GeoUID %in% all_na, year=="2016"),aes(fill = "grey")),
+        theme(axis.text.y=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.ticks.x=element_blank(),
+        legend.position="none"),
+            labs(fill="Central"))
+
+```
+
+
+```{r}
+grid.arrange(
+  ggplot(data %>% filter(year == "2006")) + ggtitle(2006) +
+    geom_sf(aes(fill = central)) + basemap,
+   ggplot(data %>% filter(year == "2011")) + ggtitle(2011) +
+    geom_sf(aes(fill = central)) + basemap,
+   ggplot(data %>% filter(year == "2016")) + ggtitle(2016) +
+    geom_sf(aes(fill = central)) +  basemap,
+  ncol = 3,
+  top = 'Visual feedback for "central" region selection',
+  bottom="Canada Census 2006, 2011, 2016 via cancensus & CensusMapper.ca")
+```
+
+
+
+With the data all prepared and the suppressed census counts taken care of, let's check the development of children in the central and outer regions. 
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+total_graph <- function(data,title,groups = age_groups, y_label="Number of Children Under 15") {
+  
+  plot_data <- data %>% 
+    group_by(year) %>% 
+    summarize(`0-4`=sum(`0-4`),  
+              `5-9`=sum(`5-9`),  
+              `10-14`=sum(`10-14`),  
+              `0-14`=sum(`0-14`),  
+              Population=sum(Population)) %>%
+    tidyr::gather(key = `Age Group`, value = Count, groups) 
+  plot_data$`Age Group` <- as.factor(plot_data$`Age Group`)
+  levels(plot_data$`Age Group`)=groups
+  
+  ggplot(plot_data , aes(x = `year`, y = Count, group = `Age Group`, fill = `Age Group`)) +
+    geom_bar(stat = "identity", position="stack") +
+    scale_y_continuous() + 
+    labs(x = "Census Year", y = y_label, title=title) +
+    scale_fill_brewer(palette = "Paired") +
+    theme_bw()
+}
+
+
+share_graph <- function(data,title,groups=age_groups, y_label="Share of Population Under 15") {
+  library(ggplot2)
+  share_plot_data <- data %>% 
+    group_by(year) %>% 
+    summarize(`0-4`=sum(`0-4`)/sum(Population),  
+              `5-9`=sum(`5-9`)/sum(Population),  
+              `10-14`=sum(`10-14`)/sum(Population),  
+              `0-14`=sum(`0-14`)/sum(Population),  
+              Population=sum(Population)) %>%
+    tidyr::gather(key = `Age Group`, value = Count, groups) 
+  share_plot_data$`Age Group` <- as.factor(share_plot_data$`Age Group`)
+  levels(share_plot_data$`Age Group`)=groups
+  
+  
+  ggplot(share_plot_data , aes(x = `year`, y = Count, group = `Age Group`, fill = `Age Group`)) +
+    geom_bar(stat = "identity") +
+    scale_y_continuous(labels = percent) + 
+    labs(x = "Census Year", y = y_label, title=title) +
+    scale_fill_brewer(palette = "Paired") +
+    theme_bw()
+}
+
+```
+
+
+
+```{r graph, fig.height=8, fig.width=8}
+grid.arrange(total_graph(data ,"Overall Total"), 
+             share_graph(data ,"Overall Share"),
+             total_graph(data %>% filter(central) ,"Central Areas Total"),
+             share_graph(data %>% filter(central),"Central Areas Share"),
+             total_graph(data %>% filter(!central) ,"Outer Areas Total"),
+             share_graph(data %>% filter(!central) ,"Outer Areas Share"),
+             ncol = 2,
+             top = "City of Vancouver Under 15 Year Olds",
+             bottom="Canada Census 2006, 2011, 2016 via cancensus & CensusMapper.ca")
+```
+
+
+```{r, include=FALSE}
+child_summary <- function(data1,data2,geo_omit,text){
+  
+  s1 <- data1 %>% 
+    filter(!GeoUID %in% geo_omit) %>% 
+    group_by(central)  %>% 
+    summarize(total=sum(`0-14`),  Population=sum(Population))
+  s2 <- data2 %>% 
+    filter(!GeoUID %in% geo_omit) %>% 
+    group_by(central)  %>% 
+    summarize(total=sum(`0-14`),Population=sum(Population))
+
+    
+  print_summary <- function(s1,s2) {
+    x1=sum(s1$total)
+    x2=sum(s2$total)
+    print(as.name(paste0(text," total number of children under 15 ",
+                         x1," ->",x2, " (",x2-x1," difference, ",percent((x2-x1)/x1)," change)")))
+    x1=sum(s1$total)/sum(s1$Population)
+    x2=sum(s2$total)/sum(s2$Population)
+    print(as.name(paste0(text," share of population ",
+                 percent(x1), " -> ",
+                 percent(x2), " (",percent(x2-x1)," point difference)")))
+  }
+  
+  print(as.name("Overall"))
+  print_summary(s1,s2)
+  
+  if (nrow(data1)!=sum(!data1$central)) {
+    print(as.name("Central Areas"))
+    print_summary(s1[s1$central==TRUE,],s2[s2$central==TRUE,])
+    
+    print(as.name("Outer Areas"))
+    print_summary(s1[s1$central==FALSE,],s2[s2$central==FALSE,])
+  }
+}
+
+
+child_summary(data_2011,data_2016,na_rows %>% filter(year=="2011" | year=="2016") %>% pull("GeoUID"),"2011 -> 2016")
+child_summary(data_2006,data_2011,na_rows %>% filter(year=="2006" | year=="2011") %>% pull("GeoUID"),"2006 -> 2011")
+child_summary(data_2006,data_2016,na_rows %>% filter(year=="2006" | year=="2016") %>% pull("GeoUID"),"2006 -> 2016")
+
+```
+
+
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+# As a check we compare that to the overall Vancouver numbers.
+# This allows us to estimate the overall changes, including the data that was suppressed at the CT level.
+
+cov_2016 <- get_census(dataset='CA16', 
+                        regions=regions,vectors=vectors_2016, 
+                        level='Regions', labels = 'short', 
+                        geo_format="sf")%>% prep_2016
+cov_2011 <- get_census(dataset='CA11', 
+                        regions=regions, vectors=vectors_2011, 
+                        level='Regions',  labels = 'short', 
+                        geo_format="sf")  %>% prep_2011
+cov_2006 <- get_census(dataset='CA06', 
+                        regions=regions, vectors=vectors_2006, 
+                        level='Regions', labels = 'short', 
+                        geo_format="sf") %>% prep_2006
+```
+
+```{r, include=FALSE}
+child_summary(cov_2011,cov_2016,c(),"City Level 2011 -> 2016")
+child_summary(cov_2006,cov_2011,c(),"City Level 2006 -> 2011")
+child_summary(cov_2006,cov_2016,c(),"City Level 2006 -> 2016")
+```
+
+
+```{r, eval=FALSE, include=FALSE}
+data <- data_2011 %>% mutate(children_pct = `0-14` / Population)
+ggplot(data) +
+  geom_sf(aes(fill = children_pct)) +
+  scale_fill_viridis_c("%children_pct") +
+  ggtitle("Share of Population below the age of 15") +
+  labs(labels = scales::percent, color="test") +
+  theme_bw()
+```
+
+
+## VSB
+If we are interested in different regions, it is not easy to adapt the analysis. Let's look at Vancouver School Board, who is struggling to deal with changing enrolment patterns in their schools. The above analysis of central vs outer regions in the City of Vancouver touches on some of the problems, but overall the City of Vancouver does not match the geography of SD 39. To remedy this, let's just re-run the overview analysis using the correct region.
+
+
+```{r, message=FALSE, warning=FALSE}
+vsb_regions=list(CT=c("9330069.01","9330069.02"),CSD=c("5915022","5915803"))
+vsb_2016 <- get_census(dataset='CA16', 
+                        regions=vsb_regions, vectors=vectors_2016, 
+                        level='Regions', labels = 'short', 
+                        geo_format="sf")  %>% prep_2016
+vsb_2011 <- get_census(dataset='CA11', 
+                        regions=vsb_regions, vectors=vectors_2011, 
+                        level='Regions', labels = 'short', 
+                        geo_format="sf") %>% prep_2011
+vsb_2006 <- get_census(dataset='CA06', 
+                        regions=vsb_regions, vectors=vectors_2006, 
+                        level='Regions', labels = 'short', 
+                        geo_format="sf") %>% prep_2006
+vsb_data=rbind(rbind(vsb_2016 %>% select(vs), vsb_2011 %>% select(vs)), vsb_2006 %>% select(vs) )
+total_graph(vsb_data ,"VSB (SD 39) Total",groups=c("5-9","10-14"),y_label="Number of Children 5-14")
+```
+Here we notice that the trend of declining population of 5 to 14 year olds has been reversed, although the share of children in that age bracked out of the total population still declined as the next graph shows.
+
+```{r, include=FALSE}
+child_summary(vsb_2011,vsb_2016,c(),"VSB Level 2011 -> 2016")
+child_summary(vsb_2006,vsb_2011,c(),"VSB Level 2006 -> 2011")
+child_summary(vsb_2006,vsb_2016,c(),"VSB Level 2006 -> 2016")
+```
+
+
+```{r}
+share_graph(vsb_data ,"VSB (SD 39) Share",groups=c("5-9","10-14"),y_label="Share of Population 5-14")
+```
+
+## The bigger picture
+The variations that we see locally in Vancouver also exist on much larger scales across the country. There are many factors influencing the growth and decline of children, and it requires more analysis to better understand what drives this. We wrap this up with a quick overview of the Country and Provincial level.
+
+The underlying trend in Canada, as our population ages, is toward a declining share of children under 15. Between 2011 and 2016 the share declined by 0.1 percentage points. But at the same time our population is growing, which lead to an overall increase in the number of children by 4.1% over that timeframe. As you can explore in the [online map](https://censusmapper.ca/maps/830#3/56.12/-117.25) the number of children under 15 has increased most in Alberta (by 13.8%), with the Maritimes registering a drop in the total number of children under 15. The overall share of children in the population also [increased in Alberta, Manitoba and Quebec](https://censusmapper.ca/maps/831#3/64.74/-110.21).
+
+Other directions that are worth exploring is to better understand family formation and family migration. We have already [dug into migration patterns](http://doodles.mountainmath.ca/blog/2017/05/16/lifeblood/) to visualize net migration by age groups. It's good to remember that net migration is a different point of view compared to looking at change in the size, or relative size, of age brackets as we have done in this post. As an example consider the two maps below that show net migration on the left and change in size of an age cohort on the right. Click through for live maps.
+
+`r htmltools::HTML('{{< figure link="https://censusmapper.ca/maps/731" src="/images/net_van.png" title="Net Migration of 2011 0-4 year old cohort"  class="halves" >}}')`
+`r htmltools::HTML('{{< figure link="https://censusmapper.ca/maps/745" src="/images/change_school.png" title="Change in Share of 5-9 2011-2016" class="halves">}}')`
+

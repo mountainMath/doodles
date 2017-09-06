@@ -126,6 +126,6 @@ googleAnalytics = "UA-54516567-1"
 ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 
 [permalinks]
-    #post = "/blog/:year/:month/:day/:slug/"
-    posts = "/blog/:year/:month/:day/:slug/"
+    post = "/blog/:year/:month/:day/:slug/"
+    #posts = "/blog/:year/:month/:day/:slug/"
     #blog = "/blog/:year/:month/:day/:slug/"
