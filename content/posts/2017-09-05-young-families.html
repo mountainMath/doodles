@@ -123,11 +123,15 @@ vsb_2006 &lt;- get_census(dataset=&#39;CA06&#39;,
                         regions=vsb_regions, vectors=vectors_2006, 
                         level=&#39;Regions&#39;, labels = &#39;short&#39;, 
                         geo_format=&quot;sf&quot;) %&gt;% prep_2006
-vsb_data=rbind(rbind(vsb_2016 %&gt;% select(vs), vsb_2011 %&gt;% select(vs)), vsb_2006 %&gt;% select(vs) )
-total_graph(vsb_data ,&quot;VSB (SD 39) Total&quot;,groups=c(&quot;5-9&quot;,&quot;10-14&quot;),y_label=&quot;Number of Children 5-14&quot;)</code></pre>
-<p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-12-1.png" width="672" /> Here we notice that the trend of declining population of 5 to 14 year olds has been reversed, although the share of children in that age bracked out of the total population still declined as the next graph shows.</p>
-<pre><code>share_graph(vsb_data ,&quot;VSB (SD 39) Share&quot;,groups=c(&quot;5-9&quot;,&quot;10-14&quot;),y_label=&quot;Share of Population 5-14&quot;)</code></pre>
-<p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+vsb_data=rbind(rbind(vsb_2016 %&gt;% select(vs), vsb_2011 %&gt;% select(vs)), vsb_2006 %&gt;% select(vs) )</code></pre>
+<p>With the data at hand, let’s see how it plays out for VSB.</p>
+<pre><code>grid.arrange(
+  total_graph(vsb_data ,&quot;VSB (SD 39) Total&quot;,groups=c(&quot;5-9&quot;,&quot;10-14&quot;),y_label=&quot;Number of Children 5-14&quot;),
+  share_graph(vsb_data ,&quot;VSB (SD 39) Share&quot;,groups=c(&quot;5-9&quot;,&quot;10-14&quot;),y_label=&quot;Share of Population 5-14&quot;),
+  ncol = 2,
+  top = &quot;VSB (SD 39) 5-14 Year Olds&quot;,
+  bottom=&quot;Canada Census 2006, 2011, 2016 via cancensus &amp; CensusMapper.ca&quot;)</code></pre>
+<p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-14-1.png" width="768" /> Here we notice that the trend of declining population of 5 to 14 year olds has been reversed, although the share of children in that age bracked out of the total population still declined.</p>
 </div>
 <div id="the-bigger-picture" class="section level2">
 <h2>The bigger picture</h2>
