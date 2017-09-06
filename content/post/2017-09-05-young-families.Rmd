@@ -3,7 +3,6 @@ title: Young Families
 author: Jens von Bergmann
 date: 2017-09-05
 slug: young-families
-draft: true
 categories:
   - CensusMapper
   - cancensus
