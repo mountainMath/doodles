@@ -127,5 +127,5 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 
 [permalinks]
     post = "/blog/:year/:month/:day/:slug/"
-    #posts = "/blog/:year/:month/:day/:slug/"
-    #blog = "/blog/:year/:month/:day/:slug/"
+    posts = "/blog/:year/:month/:day/:slug/"
+    blog = "/blog/:year/:month/:day/:slug/"
