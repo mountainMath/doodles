@@ -9,7 +9,7 @@ categories:
   - Vancouver
 tags: []
 description: 'Understanding children and young families.'
-image: "/posts/2017-09-05-young-families_files/figure-html/graph-1.png"
+images: ["https://doodles.mountainmath.ca/posts/2017-09-05-young-families_files/figure-html/graph-1.png"]
 featured: 'graph-1.png'
 featuredalt: ""
 featuredpath: "/posts/2017-09-05-young-families_files/figure-html"
