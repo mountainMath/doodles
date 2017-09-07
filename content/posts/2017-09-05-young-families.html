@@ -107,10 +107,10 @@ data &lt;- data %&gt;% filter(!data$GeoUID %in% all_na)</code></pre>
              bottom=&quot;Canada Census 2006, 2011, 2016 via cancensus &amp; CensusMapper.ca&quot;)</code></pre>
 <p><img src="/posts/2017-09-05-young-families_files/figure-html/graph-1.png" width="768" /></p>
 </div>
-<div id="vsb" class="section level2">
-<h2>VSB</h2>
+<div id="vsb-corrected" class="section level2">
+<h2>VSB (Corrected)</h2>
 <p>If we are interested in different regions, it is now easy to adapt the analysis. Let’s look at Vancouver School Board, who is struggling to deal with changing enrollment patterns in their schools. The above analysis of central vs outer regions in the City of Vancouver touches on some of the problems, but overall the City of Vancouver does not match the geography of SD 39. To remedy this, let’s just re-run the overview analysis using the correct region.</p>
-<pre><code>vsb_regions=list(CT=c(&quot;9330069.01&quot;,&quot;9330069.02&quot;),CSD=c(&quot;5915022&quot;,&quot;5915803&quot;))
+<pre><code>vsb_regions=list(CT=c(&quot;9330069.01&quot;,&quot;9330069.02&quot;,&quot;9330069.00&quot;),CSD=c(&quot;5915022&quot;,&quot;5915803&quot;))
 vsb_2016 &lt;- get_census(dataset=&#39;CA16&#39;, 
                         regions=vsb_regions, vectors=vectors_2016, 
                         level=&#39;Regions&#39;, labels = &#39;short&#39;, 
@@ -124,6 +124,18 @@ vsb_2006 &lt;- get_census(dataset=&#39;CA06&#39;,
                         level=&#39;Regions&#39;, labels = &#39;short&#39;, 
                         geo_format=&quot;sf&quot;) %&gt;% prep_2006
 vsb_data=rbind(rbind(vsb_2016 %&gt;% select(vs), vsb_2011 %&gt;% select(vs)), vsb_2006 %&gt;% select(vs) )</code></pre>
+<p>It’s always good to get a visual confirmation we got the regions right, especially in a case like this one where the geographic regions changed over time. And we missed this an earlier version of this post!</p>
+<pre><code>grid.arrange(
+  ggplot(vsb_data %&gt;% filter(year == &quot;2006&quot;)) + ggtitle(2006) +
+    geom_sf(aes(fill = &quot;grey&quot;)) + basemap,
+   ggplot(vsb_data %&gt;% filter(year == &quot;2011&quot;)) + ggtitle(2011) +
+    geom_sf(aes(fill = &quot;grey&quot;)) + basemap,
+   ggplot(vsb_data %&gt;% filter(year == &quot;2016&quot;)) + ggtitle(2016) +
+    geom_sf(aes(fill = &quot;grey&quot;)) +  basemap,
+  ncol = 3,
+  top = &#39;Visual feedback for VSB region selection&#39;,
+  bottom=&quot;Canada Census 2006, 2011, 2016 via cancensus &amp; CensusMapper.ca&quot;)</code></pre>
+<p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
 <p>With the data at hand, let’s see how it plays out for VSB.</p>
 <pre><code>grid.arrange(
   total_graph(vsb_data ,&quot;VSB (SD 39) Total&quot;,groups=c(&quot;5-9&quot;,&quot;10-14&quot;),y_label=&quot;Number of Children 5-14&quot;),
@@ -131,7 +143,15 @@ vsb_data=rbind(rbind(vsb_2016 %&gt;% select(vs), vsb_2011 %&gt;% select(vs)), vs
   ncol = 2,
   top = &quot;VSB (SD 39) 5-14 Year Olds&quot;,
   bottom=&quot;Canada Census 2006, 2011, 2016 via cancensus &amp; CensusMapper.ca&quot;)</code></pre>
-<p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-14-1.png" width="768" /> Here we notice that the trend of declining population of 5 to 14 year olds has been reversed, although the share of children in that age bracket out of the total population still declined.</p>
+<p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-16-1.png" width="768" /> Here we notice that the trend of declining population of 5 to 14 year olds <del>has been reversed</del> is continuing on at a slower pace. We see that the 5-9 year old age group has increased slightly by 2.9%, but that’s not enough to make up for the continued drop in the 10-14 population by 4.5%, adding up to an overall decline by 1%. One word of caution is that the UCB census numbers are quite problematic, the census has been missing significant portions of the newer developments in the 2011 and 2016 censuses and it is difficult to estimate the relative effects of this. For completeness, the table of the counts:</p>
+<pre><code>vsb_summary
+
+## # A tibble: 3 x 6
+##    year `0-4` `5-9` `10-14` `0-14` Population
+##   &lt;chr&gt; &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;      &lt;int&gt;
+## 1  2006 25390 24490   26115  75995     590243
+## 2  2011 25610 23130   25030  73770     617848
+## 3  2016 25480 23790   23895  73175     649028</code></pre>
 </div>
 <div id="the-bigger-picture" class="section level2">
 <h2>The bigger picture</h2>

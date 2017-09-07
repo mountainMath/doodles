@@ -191,9 +191,7 @@ total_graph <- function(data,title,groups = age_groups, y_label="Number of Child
               `10-14`=sum(`10-14`),  
               `0-14`=sum(`0-14`),  
               Population=sum(Population)) %>%
-    tidyr::gather(key = `Age Group`, value = Count, groups) 
-  plot_data$`Age Group` <- as.factor(plot_data$`Age Group`)
-  levels(plot_data$`Age Group`)=groups
+    tidyr::gather(key = `Age Group`, value = Count, groups, levels=groups) 
   
   ggplot(plot_data , aes(x = `year`, y = Count, group = `Age Group`, fill = `Age Group`)) +
     geom_bar(stat = "identity", position="stack") +
@@ -213,10 +211,7 @@ share_graph <- function(data,title,groups=age_groups, y_label="Share of Populati
               `10-14`=sum(`10-14`)/sum(Population),  
               `0-14`=sum(`0-14`)/sum(Population),  
               Population=sum(Population)) %>%
-    tidyr::gather(key = `Age Group`, value = Count, groups) 
-  share_plot_data$`Age Group` <- as.factor(share_plot_data$`Age Group`)
-  levels(share_plot_data$`Age Group`)=groups
-  
+    tidyr::gather(key = `Age Group`, value = Count, groups, levels=groups) 
   
   ggplot(share_plot_data , aes(x = `year`, y = Count, group = `Age Group`, fill = `Age Group`)) +
     geom_bar(stat = "identity") +
@@ -325,12 +320,12 @@ ggplot(data) +
 ```
 
 
-## VSB
+## VSB (Corrected)
 If we are interested in different regions, it is now easy to adapt the analysis. Let's look at Vancouver School Board, who is struggling to deal with changing enrollment patterns in their schools. The above analysis of central vs outer regions in the City of Vancouver touches on some of the problems, but overall the City of Vancouver does not match the geography of SD 39. To remedy this, let's just re-run the overview analysis using the correct region.
 
 
 ```{r, message=FALSE, warning=FALSE}
-vsb_regions=list(CT=c("9330069.01","9330069.02"),CSD=c("5915022","5915803"))
+vsb_regions=list(CT=c("9330069.01","9330069.02","9330069.00"),CSD=c("5915022","5915803"))
 vsb_2016 <- get_census(dataset='CA16', 
                         regions=vsb_regions, vectors=vectors_2016, 
                         level='Regions', labels = 'short', 
@@ -345,6 +340,34 @@ vsb_2006 <- get_census(dataset='CA06',
                         geo_format="sf") %>% prep_2006
 vsb_data=rbind(rbind(vsb_2016 %>% select(vs), vsb_2011 %>% select(vs)), vsb_2006 %>% select(vs) )
 ```
+
+It's always good to get a visual confirmation we got the regions right, especially in a case like this one where the geographic regions changed over time. And we missed this an earlier version of this post!
+
+```{r}
+grid.arrange(
+  ggplot(vsb_data %>% filter(year == "2006")) + ggtitle(2006) +
+    geom_sf(aes(fill = "grey")) + basemap,
+   ggplot(vsb_data %>% filter(year == "2011")) + ggtitle(2011) +
+    geom_sf(aes(fill = "grey")) + basemap,
+   ggplot(vsb_data %>% filter(year == "2016")) + ggtitle(2016) +
+    geom_sf(aes(fill = "grey")) +  basemap,
+  ncol = 3,
+  top = 'Visual feedback for VSB region selection',
+  bottom="Canada Census 2006, 2011, 2016 via cancensus & CensusMapper.ca")
+```
+
+```{r, include=FALSE}
+vsb_summary=vsb_data %>% 
+  as.data.frame %>% 
+  select(c("year","Population","0-14",age_groups)) %>%
+    group_by(year) %>% 
+    summarize(`0-4`=sum(`0-4`),  
+              `5-9`=sum(`5-9`),  
+              `10-14`=sum(`10-14`),  
+              `0-14`=sum(`0-14`),  
+              Population=sum(Population))
+```
+
 
 ```{r, include=FALSE}
 child_summary(vsb_2011,vsb_2016,c(),"VSB Level 2011 -> 2016")
@@ -361,7 +384,11 @@ grid.arrange(
   top = "VSB (SD 39) 5-14 Year Olds",
   bottom="Canada Census 2006, 2011, 2016 via cancensus & CensusMapper.ca")
 ```
-Here we notice that the trend of declining population of 5 to 14 year olds has been reversed, although the share of children in that age bracket out of the total population still declined.
+Here we notice that the trend of declining population of 5 to 14 year olds ~~has been reversed~~ is continuing on at a slower pace. We see that the 5-9 year old age group has increased slightly by 2.9%, but that's not enough to make up for the continued drop in the 10-14 population by 4.5%, adding up to an overall decline by 1%. One word of caution is that the UCB census numbers are quite problematic, the census has been missing significant portions of the newer developments in the 2011 and 2016 censuses and it is difficult to estimate the relative effects of this. For completeness, the table of the counts:
+```{r}
+vsb_summary
+```
+
 
 
 ## The bigger picture
