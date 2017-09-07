@@ -9,6 +9,7 @@ author: Jens von Bergmann
 tags: []
 description: "Making StatCan open data more accessible"
 featured: 'map-tools.jpg'
+images: ["https://doodles.mountainmath.ca/images/map-tools.jpg"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

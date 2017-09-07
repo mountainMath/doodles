@@ -10,6 +10,7 @@ slug: bike-share-map
 tags: []
 description: "We weren't fond of Mobi's map, so we made our own."
 featured: 'bike-share-image-large.png'
+images: ["https://doodles.mountainmath.ca/images/bike-share-image-large.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

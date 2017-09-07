@@ -11,6 +11,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Updaing our tax density visualizations.'
 featured: 'pt_animated.gif'
+images: ["https://doodles.mountainmath.ca/images/pt_animated.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

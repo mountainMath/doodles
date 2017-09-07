@@ -11,6 +11,7 @@ author: Jens von Bergmann
 tags: []
 description: "Investigating taxes and land use"
 featured: 'tax_density.jpg'
+images: ["https://doodles.mountainmath.ca/images/tax_density.jpg"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

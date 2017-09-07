@@ -8,6 +8,7 @@ author: Jens von Bergmann
 tags: []
 description: "CACs"
 featured: 'cacs.png'
+images: ["https://doodles.mountainmath.ca/images/cacs.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

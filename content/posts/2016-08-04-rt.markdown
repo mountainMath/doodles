@@ -9,6 +9,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Scraping Mobi data.'
 featured: 'rt_teardowns.png'
+images: ["https://doodles.mountainmath.ca/images/rt_teardowns.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

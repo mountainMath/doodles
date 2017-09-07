@@ -9,6 +9,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Using LIDAR data to estimate building floor space?'
 featured: 'fsr.png'
+images: ["https://doodles.mountainmath.ca/images/fsr.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

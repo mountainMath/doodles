@@ -10,6 +10,7 @@ categories:
 slug: dot-density
 tags: []
 description: 'Multi-category dot-density maps are hard.'
+images: ["https://doodles.mountainmath.ca/images/recent_immigrants_cropped.png"]
 featured: 'recent_immigrants_cropped.png'
 featuredalt: ""
 featuredpath: "/images"

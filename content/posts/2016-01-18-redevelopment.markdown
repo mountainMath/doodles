@@ -12,6 +12,7 @@ author: Jens von Bergmann
 tags: []
 description: "Digging into teardowns"
 featured: 'teardowns.png'
+images: ["https://doodles.mountainmath.ca/images/teardowns.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

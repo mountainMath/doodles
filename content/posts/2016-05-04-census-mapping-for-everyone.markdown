@@ -8,6 +8,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Opening up StatCan open data, one step at a time.'
 featured: 'animated_simple.gif'
+images: ["https://doodles.mountainmath.ca/images/animated_simple.gif"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

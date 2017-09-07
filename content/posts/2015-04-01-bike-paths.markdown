@@ -10,6 +10,7 @@ author: Jens von Bergmann
 tags: []
 description: "Naked bike maps"
 featured: 'naked_bike_map.png'
+images: ["https://doodles.mountainmath.ca/images/naked_bike_map.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

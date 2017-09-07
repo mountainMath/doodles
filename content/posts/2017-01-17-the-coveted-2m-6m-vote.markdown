@@ -9,6 +9,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Mapping the poor recipients of a tax break'
 featured: 'coveted_vote.png'
+images: ["https://doodles.mountainmath.ca/images/coveted_vote.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

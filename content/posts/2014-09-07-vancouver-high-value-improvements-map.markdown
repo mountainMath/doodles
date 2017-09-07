@@ -9,6 +9,7 @@ author: Jens von Bergmann
 tags: []
 description: "Playing with Assessment Data"
 featured: 'improvements.png'
+images: ["https://doodles.mountainmath.ca/images/improvements.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

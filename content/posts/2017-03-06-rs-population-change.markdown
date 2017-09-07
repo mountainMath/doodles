@@ -10,6 +10,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Did RS zoned land loose population?'
 featured: 'pop_change_ct.png'
+images: ["https://doodles.mountainmath.ca/images/pop_change_ct.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

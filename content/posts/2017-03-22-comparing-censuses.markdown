@@ -9,6 +9,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Not so unique GeoUIDs and other pitfalls.'
 featured: 'pop_change.png'
+images: ["https://doodles.mountainmath.ca/images/pop_change.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

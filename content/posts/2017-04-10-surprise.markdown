@@ -9,6 +9,7 @@ slug: surprise
 tags: []
 description: 'Showing only what matters.'
 featured: 'surprise.png'
+images: ["https://doodles.mountainmath.ca/images/surprise.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

@@ -11,6 +11,7 @@ author: Jens von Bergmann
 tags: []
 description: "Modern Web Mapping Technology Meets Bikes"
 featured: 'bike-map.png'
+images: ["https://doodles.mountainmath.ca/images/bike-map.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

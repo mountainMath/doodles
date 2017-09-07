@@ -10,6 +10,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Making sense of the new city data.'
 featured: 'unoccupied-trends.png'
+images: ["https://doodles.mountainmath.ca/images/unoccupied-trends.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

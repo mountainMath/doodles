@@ -10,6 +10,7 @@ categories:
 slug: density
 tags: []
 description: 'Thinking about density.'
+images: ["https://doodles.mountainmath.ca/images/densest_CMAs.png"]
 featured: 'densest_CMAs.png'
 featuredalt: ""
 featuredpath: "date"

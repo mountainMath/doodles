@@ -10,6 +10,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Adding mode share to our TOD map.'
 featured: 'mode_share.png'
+images: ["https://doodles.mountainmath.ca/images/mode_share.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

@@ -11,6 +11,7 @@ author: Jens von Bergmann
 tags: []
 description: 'How much land do single detached and duplex houses consume?'
 featured: 'land_use_van.png'
+images: ["https://doodles.mountainmath.ca/images/land_use_van.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

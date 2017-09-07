@@ -10,6 +10,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Adding mode share to our TOD map.'
 featured: 'tax_density_mixed_use.png'
+images: ["https://doodles.mountainmath.ca/images/tax_density_mixed_use.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

@@ -11,6 +11,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Scraping Mobi data.'
 featured: 'mobi_main.png'
+images: ["https://doodles.mountainmath.ca/images/mobi_main.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

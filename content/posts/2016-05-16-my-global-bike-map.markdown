@@ -11,6 +11,7 @@ author: Jens von Bergmann
 tags: []
 description: 'The beauty of building things with global datasets.'
 featured: 'vancouver_bike.png'
+images: ["https://doodles.mountainmath.ca/images/vancouver_bike.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

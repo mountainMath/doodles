@@ -10,6 +10,7 @@ author: Jens von Bergmann
 tags: []
 description: "Mapping Vancouver Assessment Data"
 featured: 'land_value.jpg'
+images: ["https://doodles.mountainmath.ca/images/land_value.jpg"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

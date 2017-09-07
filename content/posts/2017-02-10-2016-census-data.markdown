@@ -8,6 +8,7 @@ author: Jens von Bergmann
 tags: []
 description: 'A first look at the 2016 census.'
 featured: 'van_pop_change.png'
+images: ["https://doodles.mountainmath.ca/images/van_pop_change.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

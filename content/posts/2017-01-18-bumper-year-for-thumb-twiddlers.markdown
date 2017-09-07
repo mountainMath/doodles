@@ -9,6 +9,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Vancouver land working harder than ever.'
 featured: 'twiddling_thumbs_2006_2017.png'
+images: ["https://doodles.mountainmath.ca/images/twiddling_thumbs_2006_2017.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

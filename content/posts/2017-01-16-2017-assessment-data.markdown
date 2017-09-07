@@ -9,6 +9,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Visualizing the latest land value gains.'
 featured: 'value_animated.gif'
+images: ["https://doodles.mountainmath.ca/images/value_animated.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

@@ -10,6 +10,7 @@ author: Jens von Bergmann
 tags: []
 description: "Vancouver land works harder than it's people"
 featured: 'sfh_rise.png'
+images: ["https://doodles.mountainmath.ca/images/sfh_rise.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

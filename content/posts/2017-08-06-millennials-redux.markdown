@@ -9,6 +9,7 @@ slug: millennials-redux
 tags: []
 description: 'Millennials are still not fleeing.'
 featured: 'millennial_grap_2.png'
+images: ["https://doodles.mountainmath.ca/images/millennial_grap_2.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

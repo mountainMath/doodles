@@ -11,6 +11,7 @@ author: Jens von Bergmann
 tags: []
 description: "Playing with Assessment Data"
 featured: 'map_of_teardowns.png'
+images: ["https://doodles.mountainmath.ca/images/map_of_teardowns.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

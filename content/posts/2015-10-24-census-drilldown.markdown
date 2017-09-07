@@ -9,6 +9,7 @@ author: Jens von Bergmann
 tags: []
 description: "Drilling into census regions"
 featured: 'wheel.png'
+images: ["https://doodles.mountainmath.ca/images/wheel.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

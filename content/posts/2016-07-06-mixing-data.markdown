@@ -10,6 +10,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Mixing datasets allows a deeper view.'
 featured: 'restaurants_2.png'
+images: ["https://doodles.mountainmath.ca/images/restaurants_2.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

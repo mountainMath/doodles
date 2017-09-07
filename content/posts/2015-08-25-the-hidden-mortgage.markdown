@@ -9,6 +9,7 @@ author: Jens von Bergmann
 tags: []
 description: "Housing vs Transportation Costs"
 featured: 'dwelling_value.jpg'
+images: ["https://doodles.mountainmath.ca/images/dwelling_value.jpg"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

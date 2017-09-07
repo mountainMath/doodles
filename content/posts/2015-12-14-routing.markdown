@@ -11,6 +11,7 @@ author: Jens von Bergmann
 tags: []
 description: "Tweaking bike routing"
 featured: 'bike-routes2.png'
+images: ["https://doodles.mountainmath.ca/images/bike-routes2.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

@@ -10,6 +10,7 @@ author: Jens von Bergmann
 tags: []
 description: 'The tax implications of RS zoning.'
 featured: 'secondary_suites.png'
+images: ["https://doodles.mountainmath.ca/images/secondary_suites.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

@@ -10,6 +10,7 @@ tags: []
 draft: true
 description: 'Playing with elevation data.'
 featured: 'van_sea_level.png'
+images: ["https://doodles.mountainmath.ca/images/van_sea_level.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

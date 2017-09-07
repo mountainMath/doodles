@@ -9,6 +9,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Visualizing land vs building values.'
 featured: 'vanre.gif'
+images: ["https://doodles.mountainmath.ca/images/vanre.gif"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

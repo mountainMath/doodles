@@ -11,6 +11,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Bike share stats for all.'
 featured: 'mobi_main2.png'
+images: ["https://doodles.mountainmath.ca/images/mobi_main2.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

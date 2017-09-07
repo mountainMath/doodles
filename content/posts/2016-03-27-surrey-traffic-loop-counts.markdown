@@ -9,6 +9,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Exploring induction loop counter data.'
 featured: 'surrey_traffic.png'
+images: ["https://doodles.mountainmath.ca/images/surrey_traffic.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

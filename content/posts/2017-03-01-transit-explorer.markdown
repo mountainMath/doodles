@@ -10,6 +10,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Dynamic Isochrones!'
 featured: 'transit_vancouver.png'
+images: ["https://doodles.mountainmath.ca/images/transit_vancouver.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

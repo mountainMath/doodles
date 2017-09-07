@@ -12,6 +12,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Visualizing tax density and land use.'
 featured: 'tax_density.png'
+images: ["https://doodles.mountainmath.ca/images/tax_density.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

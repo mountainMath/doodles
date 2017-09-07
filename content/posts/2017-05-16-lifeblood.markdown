@@ -8,6 +8,7 @@ slug: lifeblood
 tags: []
 description: 'Exploring net migration patterns.'
 featured: 'net_van.png'
+images: ["https://doodles.mountainmath.ca/images/net_van.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

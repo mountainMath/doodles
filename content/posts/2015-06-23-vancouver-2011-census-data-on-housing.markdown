@@ -8,6 +8,7 @@ author: Jens von Bergmann
 tags: []
 description: "Playing with Census Data"
 featured: 'affordability.jpg'
+images: ["https://doodles.mountainmath.ca/images/affordability.jpg"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

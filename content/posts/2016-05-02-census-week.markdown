@@ -8,6 +8,7 @@ author: Jens von Bergmann
 tags: []
 description: 'New data is on the way.'
 featured: 'census.jpg'
+images: ["https://doodles.mountainmath.ca/images/census.jpg"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

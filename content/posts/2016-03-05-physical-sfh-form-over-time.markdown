@@ -9,6 +9,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Digging into the data of SFH.'
 featured: 'building_height.png'
+images: ["https://doodles.mountainmath.ca/images/building_height.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

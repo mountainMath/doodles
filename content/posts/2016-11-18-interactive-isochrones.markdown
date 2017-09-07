@@ -10,6 +10,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Exploring Isochrones.'
 featured: 'isochrone.png'
+images: ["https://doodles.mountainmath.ca/images/isochrone.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

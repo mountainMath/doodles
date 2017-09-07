@@ -11,6 +11,7 @@ slug: joyce-collingwood
 tags: []
 description: 'Pitfalls in empty condos.'
 featured: 'non-primary.png'
+images: ["https://doodles.mountainmath.ca/images/non-primary.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

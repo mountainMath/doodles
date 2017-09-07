@@ -13,6 +13,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Some more details behind our data story on teardowns.'
 featured: 'teardowns_animated.gif'
+images: ["https://doodles.mountainmath.ca/images/teardowns_animated.gif"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

@@ -9,6 +9,7 @@ slug: canvas-vs-svg
 tags: []
 description: "Web performance tuning"
 featured: 'chrome.png'
+images: ["https://doodles.mountainmath.ca/images/chrome.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

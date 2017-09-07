@@ -9,6 +9,7 @@ author: Jens von Bergmann
 tags: []
 description: 'Affordable for whom?'
 featured: 'sfh_price_2015.png'
+images: ["https://doodles.mountainmath.ca/images/sfh_price_2015.png"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

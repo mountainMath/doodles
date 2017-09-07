@@ -8,9 +8,9 @@ slug: incomes
 author: Jens von Bergmann
 tags: []
 description: 'Progressing past medians.'
-featured: 'sfh_price_2015.png'
+featured: ''
 featuredalt: ""
-featuredpath: "/images"
+featuredpath: ""
 linktitle: ''
 type: "post"
 ---
