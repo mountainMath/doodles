@@ -131,16 +131,16 @@ data_2006 <- get_census(dataset='CA06',
 # and all into one data frame
 vs=c("Population","0-4","5-9","10-14","0-14","year","central","GeoUID")
 data=rbind(rbind(data_2016 %>% select(vs), data_2011 %>% select(vs)), data_2006 %>% select(vs))
-# Check to make sure we got good data for all regions (we don't for in 2011)
-na_rows <- data %>% filter(is.na(`0-4`) | is.na(`5-9`) | is.na(`10-14`)) %>% as.data.frame %>% select(c("GeoUID","year",age_groups))
-na_rows
-all_na <- na_rows %>% pull("GeoUID")
 ```
 Of note here is that the 2011 data has one CT with suppressed data on the number of children. There are several routes we can take moving forward, we could set the NA numbers to zero, we could exclude the offending CT from the analysis or we could estimate the number of children from the overall City of Vancouver counts. There is no perfect answer to this, for the purpose of our analysis that separates different regions within CoV we think it's best to omit the CT.
 
 Let's inspect the number of children in the offending CT to get an idea how it will effect our analysis and define a convenience function that drops it from the analysis if needed. 
 
 ```{r}
+# Check to make sure we got good data for all regions (we don't for in 2011)
+na_rows <- data %>% as.data.frame %>% 
+  filter(is.na(`0-4`) | is.na(`5-9`) | is.na(`10-14`)) %>%  select(c("GeoUID","year",age_groups))
+all_na <- na_rows %>%pull("GeoUID")
 data[data$GeoUID %in% all_na,] %>% as.data.frame %>% select(c("year",age_groups, "0-14"))
 data <- data %>% filter(!data$GeoUID %in% all_na)
 ```
@@ -164,7 +164,7 @@ Census tracts change over time, so it's always good to do a quick visual check w
 ```
 
 
-```{r}
+```{r, echo=FALSE}
 grid.arrange(
   ggplot(data %>% filter(year == "2006")) + ggtitle(2006) +
     geom_sf(aes(fill = central)) + basemap,
@@ -225,7 +225,7 @@ share_graph <- function(data,title,groups=age_groups, y_label="Share of Populati
 
 
 
-```{r graph, fig.height=8, fig.width=8}
+```{r graph, echo=FALSE, fig.height=8, fig.width=8}
 grid.arrange(total_graph(data ,"Overall Total"), 
              share_graph(data ,"Overall Share"),
              total_graph(data %>% filter(central) ,"Central Areas Total"),
@@ -343,7 +343,7 @@ vsb_data=rbind(rbind(vsb_2016 %>% select(vs), vsb_2011 %>% select(vs)), vsb_2006
 
 It's always good to get a visual confirmation we got the regions right, especially in a case like this one where the geographic regions changed over time. And we missed this an earlier version of this post!
 
-```{r}
+```{r, echo=FALSE}
 grid.arrange(
   ggplot(vsb_data %>% filter(year == "2006")) + ggtitle(2006) +
     geom_sf(aes(fill = "grey")) + basemap,
@@ -376,7 +376,7 @@ child_summary(vsb_2006,vsb_2016,c(),"VSB Level 2006 -> 2016")
 ```
 
 With the data at hand, let's see how it plays out for VSB.
-```{r, fig.width=8, fig.height=3}
+```{r, echo=FALSE, fig.height=3, fig.width=8}
 grid.arrange(
   total_graph(vsb_data ,"VSB (SD 39) Total",groups=c("5-9","10-14"),y_label="Number of Children 5-14"),
   share_graph(vsb_data ,"VSB (SD 39) Share",groups=c("5-9","10-14"),y_label="Share of Population 5-14"),

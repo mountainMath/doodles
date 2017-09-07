@@ -62,18 +62,14 @@ data_2006 &lt;- get_census(dataset=&#39;CA06&#39;,
                         geo_format=&quot;sf&quot;) %&gt;% prep_2006
 # and all into one data frame
 vs=c(&quot;Population&quot;,&quot;0-4&quot;,&quot;5-9&quot;,&quot;10-14&quot;,&quot;0-14&quot;,&quot;year&quot;,&quot;central&quot;,&quot;GeoUID&quot;)
-data=rbind(rbind(data_2016 %&gt;% select(vs), data_2011 %&gt;% select(vs)), data_2006 %&gt;% select(vs))
-# Check to make sure we got good data for all regions (we don&#39;t for in 2011)
-na_rows &lt;- data %&gt;% filter(is.na(`0-4`) | is.na(`5-9`) | is.na(`10-14`)) %&gt;% as.data.frame %&gt;% select(c(&quot;GeoUID&quot;,&quot;year&quot;,age_groups))
-na_rows
-
-##       GeoUID year 0-4 5-9 10-14
-## 1 9330058.00 2011  NA  NA    NA
-
-all_na &lt;- na_rows %&gt;% pull(&quot;GeoUID&quot;)</code></pre>
+data=rbind(rbind(data_2016 %&gt;% select(vs), data_2011 %&gt;% select(vs)), data_2006 %&gt;% select(vs))</code></pre>
 <p>Of note here is that the 2011 data has one CT with suppressed data on the number of children. There are several routes we can take moving forward, we could set the NA numbers to zero, we could exclude the offending CT from the analysis or we could estimate the number of children from the overall City of Vancouver counts. There is no perfect answer to this, for the purpose of our analysis that separates different regions within CoV we think it’s best to omit the CT.</p>
 <p>Let’s inspect the number of children in the offending CT to get an idea how it will effect our analysis and define a convenience function that drops it from the analysis if needed.</p>
-<pre><code>data[data$GeoUID %in% all_na,] %&gt;% as.data.frame %&gt;% select(c(&quot;year&quot;,age_groups, &quot;0-14&quot;))
+<pre><code># Check to make sure we got good data for all regions (we don&#39;t for in 2011)
+na_rows &lt;- data %&gt;% as.data.frame %&gt;% 
+  filter(is.na(`0-4`) | is.na(`5-9`) | is.na(`10-14`)) %&gt;%  select(c(&quot;GeoUID&quot;,&quot;year&quot;,age_groups))
+all_na &lt;- na_rows %&gt;%pull(&quot;GeoUID&quot;)
+data[data$GeoUID %in% all_na,] %&gt;% as.data.frame %&gt;% select(c(&quot;year&quot;,age_groups, &quot;0-14&quot;))
 
 ##   year 0-4 5-9 10-14 0-14
 ## 1 2016  65  50    60  180
@@ -84,27 +80,8 @@ data &lt;- data %&gt;% filter(!data$GeoUID %in% all_na)</code></pre>
 <p>We see that there aren’t many kids in this census tract, and there is not much movement in the total numbers between 2006 and 2016. Excluding this CT will not have much impact on the overall analysis.</p>
 <p>This can serve as a good reminder that census numbers are just estimates, the relevant global response rate for the City of Vancouver has been around 5% for all three censuses. That’s pretty good, but the response rate is not unbiased and may have a small effect on the analysis.</p>
 <p>As alluded to in the introduction, we have split CoV into two areas, which we refer to as “central” and “outer” regions. Census tracts change over time, so it’s always good to do a quick visual check what we got the split consistent over time, as well as remind ourselves what they are.</p>
-<pre><code>grid.arrange(
-  ggplot(data %&gt;% filter(year == &quot;2006&quot;)) + ggtitle(2006) +
-    geom_sf(aes(fill = central)) + basemap,
-   ggplot(data %&gt;% filter(year == &quot;2011&quot;)) + ggtitle(2011) +
-    geom_sf(aes(fill = central)) + basemap,
-   ggplot(data %&gt;% filter(year == &quot;2016&quot;)) + ggtitle(2016) +
-    geom_sf(aes(fill = central)) +  basemap,
-  ncol = 3,
-  top = &#39;Visual feedback for &quot;central&quot; region selection&#39;,
-  bottom=&quot;Canada Census 2006, 2011, 2016 via cancensus &amp; CensusMapper.ca&quot;)</code></pre>
 <p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 <p>With the data all prepared and the suppressed census counts taken care of, let’s check the development of children in the central and outer regions.</p>
-<pre><code>grid.arrange(total_graph(data ,&quot;Overall Total&quot;), 
-             share_graph(data ,&quot;Overall Share&quot;),
-             total_graph(data %&gt;% filter(central) ,&quot;Central Areas Total&quot;),
-             share_graph(data %&gt;% filter(central),&quot;Central Areas Share&quot;),
-             total_graph(data %&gt;% filter(!central) ,&quot;Outer Areas Total&quot;),
-             share_graph(data %&gt;% filter(!central) ,&quot;Outer Areas Share&quot;),
-             ncol = 2,
-             top = &quot;City of Vancouver Under 15 Year Olds&quot;,
-             bottom=&quot;Canada Census 2006, 2011, 2016 via cancensus &amp; CensusMapper.ca&quot;)</code></pre>
 <p><img src="/posts/2017-09-05-young-families_files/figure-html/graph-1.png" width="768" /></p>
 </div>
 <div id="vsb-corrected" class="section level2">
@@ -125,25 +102,8 @@ vsb_2006 &lt;- get_census(dataset=&#39;CA06&#39;,
                         geo_format=&quot;sf&quot;) %&gt;% prep_2006
 vsb_data=rbind(rbind(vsb_2016 %&gt;% select(vs), vsb_2011 %&gt;% select(vs)), vsb_2006 %&gt;% select(vs) )</code></pre>
 <p>It’s always good to get a visual confirmation we got the regions right, especially in a case like this one where the geographic regions changed over time. And we missed this an earlier version of this post!</p>
-<pre><code>grid.arrange(
-  ggplot(vsb_data %&gt;% filter(year == &quot;2006&quot;)) + ggtitle(2006) +
-    geom_sf(aes(fill = &quot;grey&quot;)) + basemap,
-   ggplot(vsb_data %&gt;% filter(year == &quot;2011&quot;)) + ggtitle(2011) +
-    geom_sf(aes(fill = &quot;grey&quot;)) + basemap,
-   ggplot(vsb_data %&gt;% filter(year == &quot;2016&quot;)) + ggtitle(2016) +
-    geom_sf(aes(fill = &quot;grey&quot;)) +  basemap,
-  ncol = 3,
-  top = &#39;Visual feedback for VSB region selection&#39;,
-  bottom=&quot;Canada Census 2006, 2011, 2016 via cancensus &amp; CensusMapper.ca&quot;)</code></pre>
 <p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
-<p>With the data at hand, let’s see how it plays out for VSB.</p>
-<pre><code>grid.arrange(
-  total_graph(vsb_data ,&quot;VSB (SD 39) Total&quot;,groups=c(&quot;5-9&quot;,&quot;10-14&quot;),y_label=&quot;Number of Children 5-14&quot;),
-  share_graph(vsb_data ,&quot;VSB (SD 39) Share&quot;,groups=c(&quot;5-9&quot;,&quot;10-14&quot;),y_label=&quot;Share of Population 5-14&quot;),
-  ncol = 2,
-  top = &quot;VSB (SD 39) 5-14 Year Olds&quot;,
-  bottom=&quot;Canada Census 2006, 2011, 2016 via cancensus &amp; CensusMapper.ca&quot;)</code></pre>
-<p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-16-1.png" width="768" /> Here we notice that the trend of declining population of 5 to 14 year olds <del>has been reversed</del> is continuing on at a slower pace. We see that the 5-9 year old age group has increased slightly by 2.9%, but that’s not enough to make up for the continued drop in the 10-14 population by 4.5%, adding up to an overall decline by 1%. One word of caution is that the UCB census numbers are quite problematic, the census has been missing significant portions of the newer developments in the 2011 and 2016 censuses and it is difficult to estimate the relative effects of this. For completeness, the table of the counts:</p>
+<p>With the data at hand, let’s see how it plays out for VSB. <img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-16-1.png" width="768" /> Here we notice that the trend of declining population of 5 to 14 year olds <del>has been reversed</del> is continuing on at a slower pace. We see that the 5-9 year old age group has increased slightly by 2.9%, but that’s not enough to make up for the continued drop in the 10-14 population by 4.5%, adding up to an overall decline by 1%. One word of caution is that the UCB census numbers are quite problematic, the census has been missing significant portions of the newer developments in the 2011 and 2016 censuses and it is difficult to estimate the relative effects of this. For completeness, the table of the counts:</p>
 <pre><code>vsb_summary
 
 ## # A tibble: 3 x 6
