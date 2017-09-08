@@ -16,7 +16,7 @@ googleAnalytics = "UA-54516567-1"
     socialAppearAtTop    = true
     socialAppearAtBottom = true
     # set this to the section name if section is not post
-    viewMorePostLink     = "/blog/"
+    viewMorePostLink     = "/blog/archives"
     #default author, not sure if this works
     author = "Jens von Bergmann"
     dateFormat = "2006/01/02"    
@@ -77,17 +77,17 @@ googleAnalytics = "UA-54516567-1"
 
 [[menu.main]]
     name = "Archives"
-    url = "/blog/archives"
+    url = "/blog/archives/"
     weight = 2
 
 [[menu.main]]
     name = "Categories"
-    url = "/categories"
+    url = "/categories/"
     weight = 3
 
 [[menu.main]]
     name = "About"
-    url = "/about"
+    url = "/about/"
     weight = 4
 
 # Insert your username and the icon will apear on the page as long as
