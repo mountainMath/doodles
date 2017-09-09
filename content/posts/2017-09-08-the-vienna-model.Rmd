@@ -1,0 +1,136 @@
+---
+title: The Vienna Model
+author: Jens von Bergmann
+date: '2017-09-08'
+slug: the-vienna-model
+categories:
+  - Assessment Data
+  - CensusMapper
+  - land use
+  - Vancouver
+  - zoning
+tags: []
+description: "Comparing Vancouver and Vienna"
+featured: 'vancouver_fsr.png'
+images: ["https://doodles.mountainmath.ca/images/vancouver_fsr.png"]
+featuredalt: ""
+featuredpath: "/images"
+linktitle: ''
+type: "post"
+---
+
+Over the backdrop of Vancouver's rising real estate values the [exhibition of the "Vienna Model" at the Museum of Vancouver](http://www.museumofvancouver.ca/exhibitions/exhibit/vienna-model-housing-21st-century-city) has triggered lots of discussions what Vancouver could learn from cities like Wien. There are many angles to approach this, one of them that has received a lot of attention is the much larger proportion of government owned subsidized housing in Wien compared to Vancouver. In this post we want to focus on a different angle: land use.
+
+
+## Land use
+Some people, like [Mike Eliason](https://twitter.com/bruteforceblog/status/906203295743582208), have been doing a good job to showcase land use in Wien. I want to take a simple look at two kinds of density where I have seen nice maps for Wien and reproduce them for Vancouver.
+
+## (Gross) Population Density
+Consider the following map of (gross) population density for Wien.
+![Wien density](/images/wien_pop_density.png)
+It shows the number of people per hectare in each area, roughly taken at the block level and including streets and parks.
+
+
+```{r, include=FALSE}
+cutoffs <- c(-Inf,1,50,100,150,200,250,300,Inf)
+labels <- c("Below 1","1 to 50","50 to 100","100 to 150","150 to 200","200 to 250","250 to 300","Over 300")
+#palette <- setNames(c('#a0a0a0','#FEFF6C','#FCD153','#F9B738','#EA9823','#B75917','#8D290B','#560007'),labels)
+palette <- setNames(c('#a0a0a0','#FBD036','#F1B430','#E39828','#D17C20','#C36717','#B65113','#962704'),labels)
+
+library(sf)
+library(ggsn)
+library(ggplot2)
+```
+
+```{r, include=FALSE}
+draw_map <-function(density_data,boundary_data,palette,title,scale_distance=5) {
+ggplot() +
+  geom_sf(data=density_data, aes(fill = density),color=NA) +
+  scale_fill_manual(values=palette, na.value='#808080', name="People per hectare") +
+  theme_minimal() +
+  labs(title=title,caption="Canada Census 2016 via cancensus & censusmapper.ca") +
+  geom_sf(data=boundary_data, color='black',fill='NA', size=0.1) +
+  theme(axis.text = element_blank(), 
+        axis.title = element_blank(), 
+        axis.ticks = element_blank(),
+        panel.grid.major = element_line(colour = "white"), 
+        panel.grid.minor = element_line(colour = "white"),
+        panel.background = element_blank(), 
+        axis.line = element_blank()) +
+  north(boundary_data, symbol=12, location='bottomleft') +
+  scalebar(boundary_data, dist = scale_distance, dd2km = TRUE, model = 'WGS84', height = 0.02/scale_distance,st.size=5)
+}
+```
+
+
+We can build a map like this fairly easily using the `cancensus` R package. First we take a look at all of Metro Vancouver.
+```{r, fig.height=10, fig.width=10, message=FALSE, warning=FALSE}
+library(cancensus)
+muni_boundaries <- get_census(dataset='CA16', 
+                          regions=list(CMA="59933"), 
+                          level='CSD', 
+                          geo_format = 'sf') 
+block_data <- get_census(dataset='CA16', 
+                          regions=list(CMA="59933"), 
+                          level='DB', 
+                          geo_format = 'sf') %>%
+  mutate(pph = Population/`Shape Area`/100.0) %>%
+  mutate(density= cut(pph,breaks=cutoffs, labels=labels))
+draw_map(density_data=block_data,
+         boundary_data=muni_boundaries,
+         palette=palette,
+         title="Metro Vancouver Population Density")
+```
+But both area and population are not a good match, the total area is `r format(round(sum(muni_boundaries[["Shape Area"]])),big.mark=',')` km^2 and the population comes out at `r format(sum(muni_boundaries[["Population"]]),big.mark=',')`.
+
+
+
+We can cut that down to "Inner Metro Vancouver" that is roughly comparable to Wien in area.
+
+```{r, fig.height=10, fig.width=10, message=FALSE, warning=FALSE}
+regions=list(CT=c("9330069.01","9330069.02"),CSD=c("5915022","5915051","5915025","5915015","5915029","5915803"))
+inner_muni_boundaries <- get_census(dataset='CA16', 
+                          regions=regions, 
+                          level='Regions', 
+                          geo_format = 'sf') 
+inner_block_data <- get_census(dataset='CA16', 
+                          regions=regions, 
+                          level='DB', 
+                          geo_format = 'sf') %>%
+  mutate(pph = Population/`Shape Area`/100.0) %>%
+  mutate(density= cut(pph,breaks=cutoffs, labels=labels))
+
+draw_map(density_data=inner_block_data,
+         boundary_data=inner_muni_boundaries,
+         palette=palette,
+         title="Inner Metro Vancouver Population Density",scale_distance=2.5)
+```
+
+For the Inner Metro Vancouver we have total area `r format(round(sum(inner_muni_boundaries[["Shape Area"]])),big.mark=',')` km^2 and the population comes out at `r format(sum(inner_muni_boundaries[["Population"]]),big.mark=',')`, with the Wien comparison included again below and comes out at almost the same length scale. Area matches quite well, but Wien's population sits much higher at almost 1.9 million.
+![Wien density](/images/wien_pop_density.png)
+
+And we can see the reason for that right away. Eyeballing it Wien seems to have more unbuilt (grey) area, but in Vancouver the lowest density tier dominates, closet followed by the next one. In Wien however, these kind of low densities are only found on the fringes and Wien steps up much faster to the middle of our density scale. For more explorations on density in Vancouver see our [recent post on density](https://doodles.mountainmath.ca/blog/2017/08/23/density/).
+
+## FSR
+The above considerations concerned gross population density, calculated at block-level scales. But this misses some important aspects of density, namely the built form. For example, downtown Vancouver have blocks with zero population density, but there are lots of tall office buildings. One way to measure the density of built form is FSR or the floor space ratio. The image below has a little explainer (in German), the essence is that FSR is the "gross floor space", so the area of the building footprint times the number of floors, divided by the lot area. This kind of density ignores the space taken up by streets. But it mixes the unbuilt area on private properties with the built area. For example, one can achieve an FSR of 3 by building a three storey building that covers the entire lot, or build a 9 storey building that leaves two thirds of the lot vacant, e.g. covered by surface parking or green space.
+
+
+![Wien FSR](/images/wien_fsr.png)
+
+How does that compare to Vancouver? Unfortunately there aren't good freely available data sources for that. But at least for the City of Vancouver we can get a pretty good estimate by using LIDAR data from the City of Vancouver open data portal. This allows us to estimate the FSR of the building stock fairly accurately for denser buildings, say over 1 FSR. But it gets quite inaccurate for lower density FSR. Fortunately we found a [neat mapping tool](http://www.energyexplorer.ca/home-energy/) that had the floor area for most single family homes, which fills that gap.
+
+The estimated FSR numbers are bound to be off a bit, in particular they won't properly reflect buildings built after 2009, the time when the LIDAR survey was taken, and 2012-ish which seems to be roughly the snapshot of the single family homes data I found. For course BCAssessment has fairly accurate data on this, and in a better world the government would open up their data stores to facilitate open and transparent planning. But unfortunately that's not the world we currently live in, so we will make due with what we have.
+
+Also, we don't have an open API to our highly processed database containing City of Vancouver building stock data, so we will skip the notions of including the R code in this blog and just include the image.
+![Vancouver FSR](/images/vancouver_fsr.png).
+
+We should remember that the area of the City of Vancouver is much smaller than Vienna, comparing the scale bars we can scale the maps for better comparison.
+
+<img src="/images/wien_fsr_cropped.png" style="width:58%;"><img src="/images/vancouver_fsr.png" style="width:41%;padding:15% 0%">
+
+Comparing the City of Vancouver to central Vienna it becomes abundantly clear how different the built form of these two areas are.
+
+## Takeaway
+The "Vienna Model" has many components that make it work. Having been able to build up a sizable social housing bank is one important ingredient, but one that's hard to replicate in a reasonable amount of time. Most cities trying to emulate the Vienna model will have to make due with slowly building out their public housing sector, but that's a hard fight for resources and space. 
+
+Another is a forward-looking land use policy, that allocates housing close to the centre of the city. This is also hard to replicate in many North American cities that have restrictive zoning policy, forcing low density housing close to city centres. Loosening these restrictions is a similarly slow fight.

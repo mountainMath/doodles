@@ -7,7 +7,6 @@ categories:
 slug: trick-or-treat-2016
 author: Jens von Bergmann
 tags: []
-draft: true
 description: 'Halloween Mapping Fun.'
 images: ["https://doodles.mountainmath.ca/images/tot_density.png"]
 featured: 'tot_density.png'
