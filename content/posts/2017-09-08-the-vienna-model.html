@@ -21,7 +21,7 @@ type: "post"
 
 
 
-<p>Over the backdrop of Vancouver’s rising real estate values the <a href="http://www.museumofvancouver.ca/exhibitions/exhibit/vienna-model-housing-21st-century-city">exhibition of the “Vienna Model” at the Museum of Vancouver</a> has triggered lots of discussions what Vancouver could learn from cities like Wien. There are many angles to approach this, one of them that has received a lot of attention is the much larger proportion of government owned subsidized housing in Wien compared to Vancouver. In this post we want to focus on a different angle: land use.</p>
+<p>Over the backdrop of Vancouver’s rising real estate values the <a href="http://www.museumofvancouver.ca/exhibitions/exhibit/vienna-model-housing-21st-century-city">exhibition of the “Vienna Model” at the Museum of Vancouver</a> has triggered lots of discussions about what Vancouver could learn from cities like Wien. There are many angles to approach this, one of them that has received a lot of attention is the much larger proportion of government owned subsidized housing in Wien compared to Vancouver. In this post we want to focus on a different angle: land use.</p>
 <div id="land-use" class="section level2">
 <h2>Land use</h2>
 <p>Some people, like <a href="https://twitter.com/bruteforceblog/status/906203295743582208">Mike Eliason</a>, have been doing a good job to showcase land use in Wien. I want to take a simple look at two kinds of density where I have seen nice maps for Wien and reproduce them for Vancouver.</p>
@@ -45,7 +45,7 @@ draw_map(density_data=block_data,
          boundary_data=muni_boundaries,
          palette=palette,
          title=&quot;Metro Vancouver Population Density&quot;)</code></pre>
-<p><img src="/posts/2017-09-08-the-vienna-model_files/figure-html/unnamed-chunk-3-1.png" width="960" /> But both area and population are not a good match, the total area is 3,040 km^2 and the population comes out at 2,463,431.</p>
+<p><img src="/posts/2017-09-08-the-vienna-model_files/figure-html/unnamed-chunk-3-1.png" width="960" /> But both area and population are not a good match, the total area is 3,040 km<sup>2</sup> and the population comes out at 2,463,431.</p>
 <p>We can cut that down to “Inner Metro Vancouver” that is roughly comparable to Wien in area.</p>
 <pre class="r"><code>regions=list(CT=c(&quot;9330069.01&quot;,&quot;9330069.02&quot;),CSD=c(&quot;5915022&quot;,&quot;5915051&quot;,&quot;5915025&quot;,&quot;5915015&quot;,&quot;5915029&quot;,&quot;5915803&quot;))
 inner_muni_boundaries &lt;- get_census(dataset=&#39;CA16&#39;, 
@@ -64,7 +64,7 @@ draw_map(density_data=inner_block_data,
          palette=palette,
          title=&quot;Inner Metro Vancouver Population Density&quot;,scale_distance=2.5)</code></pre>
 <p><img src="/posts/2017-09-08-the-vienna-model_files/figure-html/unnamed-chunk-4-1.png" width="960" /></p>
-<p>For the Inner Metro Vancouver we have total area 408 km^2 and the population comes out at 1,203,986, with the Wien comparison included again below and comes out at almost the same length scale. Area matches quite well, but Wien’s population sits much higher at almost 1.9 million. <img src="/images/wien_pop_density.png" alt="Wien density" /></p>
+<p>For the Inner Metro Vancouver we have total area 408 km<sup>2</sup> and the population comes out at 1,203,986, with the Wien comparison included again below and comes out at almost the same length scale. Area matches quite well, but Wien’s population sits much higher at almost 1.9 million. <img src="/images/wien_pop_density.png" alt="Wien density" /></p>
 <p>And we can see the reason for that right away. Eyeballing it Wien seems to have more unbuilt (grey) area, but in Vancouver the lowest density tier dominates, closet followed by the next one. In Wien however, these kind of low densities are only found on the fringes and Wien steps up much faster to the middle of our density scale. For more explorations on density in Vancouver see our <a href="https://doodles.mountainmath.ca/blog/2017/08/23/density/">recent post on density</a>.</p>
 </div>
 <div id="fsr" class="section level2">

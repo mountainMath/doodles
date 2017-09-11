@@ -19,7 +19,7 @@ linktitle: ''
 type: "post"
 ---
 
-Over the backdrop of Vancouver's rising real estate values the [exhibition of the "Vienna Model" at the Museum of Vancouver](http://www.museumofvancouver.ca/exhibitions/exhibit/vienna-model-housing-21st-century-city) has triggered lots of discussions what Vancouver could learn from cities like Wien. There are many angles to approach this, one of them that has received a lot of attention is the much larger proportion of government owned subsidized housing in Wien compared to Vancouver. In this post we want to focus on a different angle: land use.
+Over the backdrop of Vancouver's rising real estate values the [exhibition of the "Vienna Model" at the Museum of Vancouver](http://www.museumofvancouver.ca/exhibitions/exhibit/vienna-model-housing-21st-century-city) has triggered lots of discussions about what Vancouver could learn from cities like Wien. There are many angles to approach this, one of them that has received a lot of attention is the much larger proportion of government owned subsidized housing in Wien compared to Vancouver. In this post we want to focus on a different angle: land use.
 
 
 ## Land use
@@ -81,7 +81,7 @@ draw_map(density_data=block_data,
          palette=palette,
          title="Metro Vancouver Population Density")
 ```
-But both area and population are not a good match, the total area is `r format(round(sum(muni_boundaries[["Shape Area"]])),big.mark=',')` km^2 and the population comes out at `r format(sum(muni_boundaries[["Population"]]),big.mark=',')`.
+But both area and population are not a good match, the total area is `r format(round(sum(muni_boundaries[["Shape Area"]])),big.mark=',')` km^2^ and the population comes out at `r format(sum(muni_boundaries[["Population"]]),big.mark=',')`.
 
 
 
@@ -106,7 +106,7 @@ draw_map(density_data=inner_block_data,
          title="Inner Metro Vancouver Population Density",scale_distance=2.5)
 ```
 
-For the Inner Metro Vancouver we have total area `r format(round(sum(inner_muni_boundaries[["Shape Area"]])),big.mark=',')` km^2 and the population comes out at `r format(sum(inner_muni_boundaries[["Population"]]),big.mark=',')`, with the Wien comparison included again below and comes out at almost the same length scale. Area matches quite well, but Wien's population sits much higher at almost 1.9 million.
+For the Inner Metro Vancouver we have total area `r format(round(sum(inner_muni_boundaries[["Shape Area"]])),big.mark=',')` km^2^ and the population comes out at `r format(sum(inner_muni_boundaries[["Population"]]),big.mark=',')`, with the Wien comparison included again below and comes out at almost the same length scale. Area matches quite well, but Wien's population sits much higher at almost 1.9 million.
 ![Wien density](/images/wien_pop_density.png)
 
 And we can see the reason for that right away. Eyeballing it Wien seems to have more unbuilt (grey) area, but in Vancouver the lowest density tier dominates, closet followed by the next one. In Wien however, these kind of low densities are only found on the fringes and Wien steps up much faster to the middle of our density scale. For more explorations on density in Vancouver see our [recent post on density](https://doodles.mountainmath.ca/blog/2017/08/23/density/).

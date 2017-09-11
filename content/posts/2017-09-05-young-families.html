@@ -53,15 +53,75 @@ data_2016 &lt;- get_census(dataset=&#39;CA16&#39;,
                         regions=regions, vectors=vectors_2016, 
                         level=&#39;CT&#39;,  labels = &#39;short&#39;, 
                         geo_format=&quot;sf&quot;) %&gt;% prep_2016
-data_2011 &lt;- get_census(dataset=&#39;CA11&#39;, 
+
+## </code></pre>
+<p>Downloading: 2.7 kB<br />
+Downloading: 2.7 kB<br />
+Downloading: 2.7 kB<br />
+Downloading: 2.7 kB<br />
+Downloading: 2.7 kB<br />
+Downloading: 2.7 kB<br />
+Downloading: 16 kB<br />
+Downloading: 16 kB<br />
+Downloading: 16 kB<br />
+Downloading: 16 kB<br />
+Downloading: 19 kB<br />
+Downloading: 19 kB<br />
+Downloading: 19 kB<br />
+Downloading: 19 kB<br />
+Downloading: 19 kB<br />
+Downloading: 19 kB</p>
+<pre><code>data_2011 &lt;- get_census(dataset=&#39;CA11&#39;, 
                         regions=regions, vectors=vectors_2011, 
                         level=&#39;CT&#39;, labels = &#39;short&#39;, 
                         geo_format=&quot;sf&quot;) %&gt;% prep_2011
-data_2006 &lt;- get_census(dataset=&#39;CA06&#39;, 
+
+## </code></pre>
+<p>Downloading: 2.6 kB<br />
+Downloading: 2.6 kB<br />
+Downloading: 2.6 kB<br />
+Downloading: 2.6 kB<br />
+Downloading: 2.6 kB<br />
+Downloading: 2.6 kB<br />
+Downloading: 15 kB<br />
+Downloading: 15 kB<br />
+Downloading: 15 kB<br />
+Downloading: 15 kB<br />
+Downloading: 15 kB<br />
+Downloading: 15 kB</p>
+<pre><code>data_2006 &lt;- get_census(dataset=&#39;CA06&#39;, 
                         regions=regions, vectors=vectors_2006, 
                         level=&#39;CT&#39;, labels = &#39;short&#39;, 
                         geo_format=&quot;sf&quot;) %&gt;% prep_2006
-# and all into one data frame
+
+## </code></pre>
+<p>Downloading: 2.7 kB<br />
+Downloading: 2.7 kB<br />
+Downloading: 2.7 kB<br />
+Downloading: 2.7 kB<br />
+Downloading: 2.7 kB<br />
+Downloading: 2.7 kB<br />
+Downloading: 3.6 kB<br />
+Downloading: 3.6 kB<br />
+Downloading: 3.6 kB<br />
+Downloading: 3.6 kB<br />
+Downloading: 7.6 kB<br />
+Downloading: 7.6 kB<br />
+Downloading: 7.6 kB<br />
+Downloading: 7.6 kB<br />
+Downloading: 7.6 kB<br />
+Downloading: 7.6 kB<br />
+Downloading: 12 kB<br />
+Downloading: 12 kB<br />
+Downloading: 12 kB<br />
+Downloading: 12 kB<br />
+Downloading: 15 kB<br />
+Downloading: 15 kB<br />
+Downloading: 15 kB<br />
+Downloading: 15 kB<br />
+Downloading: 15 kB<br />
+Downloading: 15 kB</p>
+<pre><code># and all into one data frame
 vs=c(&quot;Population&quot;,&quot;0-4&quot;,&quot;5-9&quot;,&quot;10-14&quot;,&quot;0-14&quot;,&quot;year&quot;,&quot;central&quot;,&quot;GeoUID&quot;)
 data=rbind(rbind(data_2016 %&gt;% select(vs), data_2011 %&gt;% select(vs)), data_2006 %&gt;% select(vs))</code></pre>
 <p>Of note here is that the 2011 data has one CT with suppressed data on the number of children. There are several routes we can take moving forward, we could set the NA numbers to zero, we could exclude the offending CT from the analysis or we could estimate the number of children from the overall City of Vancouver counts. There is no perfect answer to this, for the purpose of our analysis that separates different regions within CoV we think it’s best to omit the CT.</p>
@@ -93,15 +153,59 @@ vsb_2016 &lt;- get_census(dataset=&#39;CA16&#39;,
                         regions=vsb_regions, vectors=vectors_2016, 
                         level=&#39;Regions&#39;, labels = &#39;short&#39;, 
                         geo_format=&quot;sf&quot;)  %&gt;% prep_2016
-vsb_2011 &lt;- get_census(dataset=&#39;CA11&#39;, 
+
+## </code></pre>
+<p>Downloading: 300 B<br />
+Downloading: 300 B<br />
+Downloading: 300 B<br />
+Downloading: 300 B<br />
+Downloading: 300 B<br />
+Downloading: 300 B<br />
+Downloading: 3.6 kB<br />
+Downloading: 3.6 kB<br />
+Downloading: 4.4 kB<br />
+Downloading: 4.4 kB<br />
+Downloading: 4.4 kB<br />
+Downloading: 4.4 kB<br />
+Downloading: 4.4 kB<br />
+Downloading: 4.4 kB</p>
+<pre><code>vsb_2011 &lt;- get_census(dataset=&#39;CA11&#39;, 
                         regions=vsb_regions, vectors=vectors_2011, 
                         level=&#39;Regions&#39;, labels = &#39;short&#39;, 
                         geo_format=&quot;sf&quot;) %&gt;% prep_2011
-vsb_2006 &lt;- get_census(dataset=&#39;CA06&#39;, 
+
+## </code></pre>
+<p>Downloading: 270 B<br />
+Downloading: 270 B<br />
+Downloading: 270 B<br />
+Downloading: 270 B<br />
+Downloading: 270 B<br />
+Downloading: 270 B<br />
+Downloading: 3 kB<br />
+Downloading: 3 kB<br />
+Downloading: 3 kB<br />
+Downloading: 3 kB<br />
+Downloading: 3 kB<br />
+Downloading: 3 kB</p>
+<pre><code>vsb_2006 &lt;- get_census(dataset=&#39;CA06&#39;, 
                         regions=vsb_regions, vectors=vectors_2006, 
                         level=&#39;Regions&#39;, labels = &#39;short&#39;, 
                         geo_format=&quot;sf&quot;) %&gt;% prep_2006
-vsb_data=rbind(rbind(vsb_2016 %&gt;% select(vs), vsb_2011 %&gt;% select(vs)), vsb_2006 %&gt;% select(vs) )</code></pre>
+
+## </code></pre>
+<p>Downloading: 300 B<br />
+Downloading: 300 B<br />
+Downloading: 300 B<br />
+Downloading: 300 B<br />
+Downloading: 300 B<br />
+Downloading: 300 B<br />
+Downloading: 3.3 kB<br />
+Downloading: 3.3 kB<br />
+Downloading: 3.3 kB<br />
+Downloading: 3.3 kB<br />
+Downloading: 3.3 kB<br />
+Downloading: 3.3 kB</p>
+<pre><code>vsb_data=rbind(rbind(vsb_2016 %&gt;% select(vs), vsb_2011 %&gt;% select(vs)), vsb_2006 %&gt;% select(vs) )</code></pre>
 <p>It’s always good to get a visual confirmation we got the regions right, especially in a case like this one where the geographic regions changed over time. And we missed this an earlier version of this post!</p>
 <p><img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
 <p>With the data at hand, let’s see how it plays out for VSB. <img src="/posts/2017-09-05-young-families_files/figure-html/unnamed-chunk-16-1.png" width="768" /> Here we notice that the trend of declining population of 5 to 14 year olds <del>has been reversed</del> is continuing on at a slower pace. We see that the 5-9 year old age group has increased slightly by 2.9%, but that’s not enough to make up for the continued drop in the 10-14 population by 4.5%, adding up to an overall decline by 1%. One word of caution is that the UCB census numbers are quite problematic, the census has been missing significant portions of the newer developments in the 2011 and 2016 censuses and it is difficult to estimate the relative effects of this. For completeness, the table of the counts:</p>
