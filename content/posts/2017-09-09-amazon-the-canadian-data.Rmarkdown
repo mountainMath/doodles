@@ -11,12 +11,12 @@ description: "Playing the Amazon Game"
 featured: ''
 featuredalt: ""
 featuredpath: ""
-images: ["http://127.0.0.1:4321/post/2017-09-09-amazon-the-canadian-data_files/figure-html/all_cma-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2017-09-09-amazon-the-canadian-data_files/figure-html/all_cma-1.png"]
 linktitle: ''
 type: "post"
 ---
 
-I wasn't really getting into the Amazon HQ2 thing, but then the [Upshot](https://www.nytimes.com/interactive/2017/09/09/upshot/where-should-amazon-new-headquarters-be.html?smid=tw-share&_r=0) did some analysis that excluded Canadian metros. That's not right. So I decided to fill in the gap. Our [`cancensus`](https://github.com/mountainMath/cancensus) package is perfect for the job. This post is generated from an R markdown document, which is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/post/2017-09-09-amazon-the-canadian-data.markdown) for anyone interested in refining this.
+I wasn't really getting into the Amazon HQ2 thing, but then the [Upshot](https://www.nytimes.com/interactive/2017/09/09/upshot/where-should-amazon-new-headquarters-be.html?smid=tw-share&_r=0) did some analysis that excluded Canadian metros. That's not right. So I decided to fill in the gap. Our [`cancensus`](https://github.com/mountainMath/cancensus) package is perfect for the job. This post is generated from an R markdown document, which is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-09-09-amazon-the-canadian-data.markdown) for anyone interested in refining this.
 
 ```{r libraries, include=FALSE}
 library(sf)
@@ -275,7 +275,7 @@ basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color)
 International comparisons are hard. I have lived in both cities, in Denver for a year as a student, in Calgary for a couple of years doing research and teaching. Personally I like both cities, but would prefer Calgary as a place to live. But that's just my personal preference.
 
 ## Think I didn't use the right metrics?
-Do you feel I unjustly threw out some candidates? Don't trust my numbers? Spotted a mistake? Maybe I used the wrong metrics? No worries. This post is written as an R markdown document with all the code embedded to generate the numbers. Just [grab it from GitHub](https://github.com/mountainMath/doodles/blob/master/content/post/2017-09-09-amazon-the-canadian-data.markdown) and modify it to fit your preferences!
+Do you feel I unjustly threw out some candidates? Don't trust my numbers? Spotted a mistake? Maybe I used the wrong metrics? No worries. This post is written as an R markdown document with all the code embedded to generate the numbers. Just [grab it from GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-09-09-amazon-the-canadian-data.markdown) and modify it to fit your preferences!
 
 
 
