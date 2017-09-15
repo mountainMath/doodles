@@ -8,7 +8,7 @@ categories:
   - CensusMapper
 tags: []
 description: 'Incomes are complex.'
-#images: ["https://doodles.mountainmath.ca/posts/2017-09-15-income-a-first-look_files/figure-html/income_dist_2016-1.png"]
+#images: ["https://doodles.mountainmath.ca/posts/2017-09-14-income-a-first-look_files/figure-html/income_dist_2016-1.png"]
 #featured: 'graph-1.png'
 featuredalt: ""
 #featuredpath: "/posts/2017-09-05-young-families_files/figure-html"
@@ -89,7 +89,7 @@ Let's go beyond the medians and look at distributions. Let's compare how the top
 graph_distributions_for_year(2016)
 ```
 
-<img src="/posts/2017-09-14-income-a-first-look_files/figure-html/unnamed-chunk-5-1.png" width="864" />
+<img src="/posts/2017-09-14-income-a-first-look_files/figure-html/income_dist_2016-1.png" width="864" />
 
 
 ## Income Through Time
@@ -99,7 +99,7 @@ The same code that visualized the income distribution for 2015 data works for ot
 graph_distributions_for_year(2006)
 ```
 
-<img src="/posts/2017-09-14-income-a-first-look_files/figure-html/income_dist_2016-1.png" width="864" />
+<img src="/posts/2017-09-14-income-a-first-look_files/figure-html/income_dist_2006-1.png" width="864" />
 But doing actual comparisons through time is much harder. Firstly, the income brackets don't line up. That's not that big a deal though, one could re-group the data. But depending what we want to use the data for we probably want to adjust for inflation. And that messes up the bracket cutoffs anyway, and we need to become creative.
 
 There are plenty of ways to mess this up, some media outlets have [adjusted twice for inflation](https://twitter.com/trevortombe/status/908041204276723712), others have compared inflation adjusted income gains against the (by definition) unadjusted HPI. We will save diving into comparing incomes across time for another post. And maybe also take a look how 2010 NHS income data fits in between 2005 and 2015, there has been lots of hand-wringing about that data and I am quite curious how the extensive StatCan post-processing of NHS income data stacks up.

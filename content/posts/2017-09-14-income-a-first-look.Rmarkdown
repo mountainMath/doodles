@@ -8,7 +8,7 @@ categories:
   - CensusMapper
 tags: []
 description: 'Incomes are complex.'
-#images: ["https://doodles.mountainmath.ca/posts/2017-09-15-income-a-first-look_files/figure-html/income_dist_2016-1.png"]
+#images: ["https://doodles.mountainmath.ca/posts/2017-09-14-income-a-first-look_files/figure-html/income_dist_2016-1.png"]
 #featured: 'graph-1.png'
 featuredalt: ""
 #featuredpath: "/posts/2017-09-05-young-families_files/figure-html"
@@ -106,7 +106,7 @@ Overall, the statistics look quite similar, but details matter. Comparing income
 Bottom line, it matters how we boil down the numbers.
 
 ## Income Distributions
-```{r, message=FALSE, warning=FALSE, include=FALSE}
+```{r income_dist_function, message=FALSE, warning=FALSE, include=FALSE}
 graph_distributions_for_year <- function(year) {
   level="CSD"
   topn=15
@@ -158,14 +158,14 @@ graph_distributions_for_year <- function(year) {
 }
 ```
 Let's go beyond the medians and look at distributions. Let's compare how the top 15 municipalities in Metro Vancouver stack up. We will hide code (it is on [GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-09-14-income-a-first-look.Rmarkdown)] if you are interested in playing with it), but simply grab the relevant data and graph it.
-```{r, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+```{r income_dist_2016, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 graph_distributions_for_year(2016)
 ```
 
 
 ## Income Through Time
 The same code that visualized the income distribution for 2015 data works for other census years too (with some mild case checking), we we can easily visualize the 2005 data (from the 2016 census).
-```{r income_dist_2016, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+```{r income_dist_2006, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 graph_distributions_for_year(2006)
 ```
 But doing actual comparisons through time is much harder. Firstly, the income brackets don't line up. That's not that big a deal though, one could re-group the data. But depending what we want to use the data for we probably want to adjust for inflation. And that messes up the bracket cutoffs anyway, and we need to become creative.
