@@ -41,6 +41,7 @@ cmas <- get_census(dataset='CA16',regions=list(C='01'), geo_format='sf', level='
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
 cmas <- cmas%>% mutate(name= sub(" \\(.*\\)$","",name))
 cma_color="#94AE25"
+lambert <- coord_sf(crs=st_crs(102002))
 basemap <- ggplot() +
   theme_minimal() +
   #labs(title="The Amazon Search, Canadian Version",caption="Canada Census 2016 via cancensus & censusmapper.ca") +
@@ -55,8 +56,8 @@ basemap <- ggplot() +
 
 
 ```{r all_cma, fig.height=10, fig.width=10, echo=FALSE, message=FALSE, warning=FALSE}
-basemap + geom_sf(data=provinces,color='black',fill='NA', size=0.1) + coord_sf(crs=st_crs(102002)) +
-  geom_sf(data=cmas, color=cma_color,fill=cma_color) + coord_sf(crs=st_crs(102002))
+basemap + geom_sf(data=provinces,color='black',fill='NA', size=0.1) + lambert +
+  geom_sf(data=cmas, color=cma_color,fill=cma_color) + lambert
 ```
 
 Our candidate regions are 
@@ -66,7 +67,7 @@ Our candidate regions are
 Since none of the regions are in the Territories we will drop them from the map.
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
 provinces <- provinces %>% filter(! name %in% c("Yukon","Northwest Territories","Nunavut"))
-basemap <- basemap + geom_sf(data=provinces,color='black',fill='NA', size=0.1) + coord_sf(crs=st_crs(102002))
+basemap <- basemap + geom_sf(data=provinces,color='black',fill='NA', size=0.1) + lambert
 ```
 
 
@@ -75,7 +76,7 @@ That's an easy one, let's get to work and filter down to the ones with at least 
 
 ```{r round1, echo=TRUE, fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 cmas <- cmas %>% filter(Population >= 1000000)
-basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + coord_sf(crs=st_crs(102002))
+basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + lambert
 ```
 
 This leaves us with 6 regions, namely 
@@ -103,7 +104,7 @@ cmas$employment_change <- (cmas[[employment_vector_2011]]-cmas[[employment_vecto
 Hiding some details (they are available in the R notebook) of pulling in the data, let's impose a cutoff of at least 5% growth over the 5 year period between the censuses.
 ```{r round2, fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 cmas <- cmas %>% filter(employment_change >= 0.05)
-basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + coord_sf(crs=st_crs(102002))
+basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + lambert
 ```
 
 Which drops Montreal from our list and, displaying the growth rates for additional information, leaves us with
@@ -150,7 +151,7 @@ cmas <- cmas %>%
 Applying the filter we are left with
 ```{r round3, fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 cmas <- cmas %>% filter(tech_ratio_11 >= 1/8)
-basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + coord_sf(crs=st_crs(102002))
+basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + lambert
 ```
 
 >`r paste(paste0(cmas$name,": ",round(cmas$tech_ratio_06*100,1),"% -> ",round(cmas$tech_ratio_11*100,1),"%"), collapse=", ")`,
@@ -237,7 +238,7 @@ We can clearly see the boom-bust cycles in Calgary that is a major driver of the
 Going off the CMHC rent numbers, as well as the history of rent changes, we eliminate Vancouver. It's proximity to Seattle it made it a poor choice to start with.
 ```{r round4, echo=FALSE, fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 cmas <- cmas %>% filter(name != "Vancouver")
-basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + coord_sf(crs=st_crs(102002))
+basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + lambert
 ```
 
 
@@ -267,7 +268,7 @@ Let's assume Amazon wants an urban campus, the question of space becomes one of 
 That leaves us with a sole candidate, Calgary, a city frequently ranked near the top of global livability indices, situated in proximity to beautiful national parks in the Rocky Mountains, with the recent expansion of their light rail system and downtown bike infrastructure not yet be reflected in our numbers, with an existing and growing pool of tech-related professionals and currently a good amount of office space already built and available. 
 ```{r winner, echo=FALSE, fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 cmas <- cmas %>% filter(name != "Toronto")
-basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + coord_sf(crs=st_crs(102002))
+basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + lambert
 ```
 
 ## Calgary vs Denver

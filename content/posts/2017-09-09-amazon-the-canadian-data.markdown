@@ -53,7 +53,7 @@ That's an easy one, let's get to work and filter down to the ones with at least 
 
 ```r
 cmas <- cmas %>% filter(Population >= 1000000)
-basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + coord_sf(crs=st_crs(102002))
+basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + lambert
 ```
 
 <img src="/posts/2017-09-09-amazon-the-canadian-data_files/figure-html/round1-1.png" width="960" />
@@ -70,7 +70,7 @@ Hiding some details (they are available in the R notebook) of pulling in the dat
 
 ```r
 cmas <- cmas %>% filter(employment_change >= 0.05)
-basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + coord_sf(crs=st_crs(102002))
+basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + lambert
 ```
 
 <img src="/posts/2017-09-09-amazon-the-canadian-data_files/figure-html/round2-1.png" width="960" />
@@ -89,7 +89,7 @@ Applying the filter we are left with
 
 ```r
 cmas <- cmas %>% filter(tech_ratio_11 >= 1/8)
-basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + coord_sf(crs=st_crs(102002))
+basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + lambert
 ```
 
 <img src="/posts/2017-09-09-amazon-the-canadian-data_files/figure-html/round3-1.png" width="960" />
