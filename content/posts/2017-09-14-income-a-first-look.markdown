@@ -21,7 +21,7 @@ Income numbers for the 2016 census are out, and I am taking a first shot to dig 
 In the standard release we got median income data (no average income numbers this year, for better or worse), individual and household income distributions, income deciles for families, and two low income measures by rough age groups. That's a lot to digest. I have made some graphs to make sense of it, and [got nudged to share my code](https://twitter.com/rtanglao/status/908547217333542912). That's a good idea, so I packed it into a blog post. For readability I hide some of the code, but the full R notebook [lives on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-09-14-income-a-first-look.Rmarkdown).
 
 ## Median Incomes
-The first look is usually at median incomes, it breaks things down into one simple, easily digestable number. The only trouble is, what the median for which income statistic should we use? Let's get an overview of what there is.
+The first look is usually at median incomes, it breaks things down into one simple, easily digestible number. The only trouble is, what the median for which income statistic should we use? Let's get an overview of what there is.
 
 Let's load in some census data to see. As an example, let's look at income statistics for the 10 most populous cities.
 
