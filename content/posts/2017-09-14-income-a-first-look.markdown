@@ -76,10 +76,12 @@ ggplot(plot_data , aes(x = `Region Name`, y = value, fill=`Region Name`)) +
 <img src="/posts/2017-09-14-income-a-first-look_files/figure-html/median_income_stats-1.png" width="1056" />
 
 
+<a href="https://censusmapper.ca/maps/838"><img src="/images/income_animated.gif" style="width:50%;float:right;margin-left:10px;"></a>
 Overall, the statistics look quite similar, but details matter. Comparing incomes in Toronto and Vancouver we see that while Toronto's median income at $65,829 is higher than Vancouver's $65,327, that's entirely due to the different household composition of these two cities, Vancouver has proportionally more one-person households. Splitting things up we can look at median one-person household income, where Vancouver's $38,449 edges out Toronto's 
 $38,018, and at median two-or-more-person household income, where Vancouver's $89,207 easily beats Toronto's $82,908.
 
-Bottom line, it matters how we boil down the numbers.
+Bottom line, it matters how we boil down the numbers. On CensusMapper we built and [easy way to explore the various median income statistics further](https://censusmapper.ca/maps/838).
+
 
 ## Income Distributions
 

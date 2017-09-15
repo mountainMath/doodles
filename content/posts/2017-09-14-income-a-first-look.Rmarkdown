@@ -100,10 +100,12 @@ ggplot(plot_data , aes(x = `Region Name`, y = value, fill=`Region Name`)) +
 ```
 
 
+<a href="https://censusmapper.ca/maps/838"><img src="/images/income_animated.gif" style="width:50%;float:right;margin-left:10px;"></a>
 Overall, the statistics look quite similar, but details matter. Comparing incomes in Toronto and Vancouver we see that while Toronto's median income at `r data_for("Toronto","v_CA16_2397")` is higher than Vancouver's `r data_for("Vancouver","v_CA16_2397")`, that's entirely due to the different household composition of these two cities, Vancouver has proportionally more one-person households. Splitting things up we can look at median one-person household income, where Vancouver's `r data_for("Vancouver","v_CA16_2400")` edges out Toronto's 
 `r data_for("Toronto","v_CA16_2400") `, and at median two-or-more-person household income, where Vancouver's `r data_for("Vancouver","v_CA16_2403")` easily beats Toronto's `r data_for("Toronto","v_CA16_2403")`.
 
-Bottom line, it matters how we boil down the numbers.
+Bottom line, it matters how we boil down the numbers. On CensusMapper we built and [easy way to explore the various median income statistics further](https://censusmapper.ca/maps/838).
+
 
 ## Income Distributions
 ```{r income_dist_function, message=FALSE, warning=FALSE, include=FALSE}
