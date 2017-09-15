@@ -149,7 +149,7 @@ graph_distributions_for_year <- function(year) {
   ggplot(plot_data %>% arrange(`Region Name`), aes(x = `Region Name`, y = Count, group = `Income Bracket`, fill=`Income Bracket`)) +
     geom_bar(position = "fill", stat = "identity") +
     scale_y_continuous(labels = scales::percent) + 
-    labs(x = paste0(topn," largest ",level," in Metro Vancouver"), y = "Household Total Income", title="Household Total Income Distribution",caption="Canada Census ",year," via cancensus & censusmapper.ca") +
+    labs(x = paste0(topn," largest ",level," in Metro Vancouver"), y = "Household Total Income", title="Household Total Income Distribution",caption=paste0("Canada Census ",year," via cancensus & censusmapper.ca")) +
     #scale_fill_brewer(palette = "Paired") +
     scale_fill_viridis_d("Income Bracket",option=as.character(options_list[dataset])) +
     coord_flip() +
