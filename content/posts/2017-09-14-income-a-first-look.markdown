@@ -8,7 +8,7 @@ categories:
   - CensusMapper
 tags: []
 description: 'Incomes are complex.'
-#images: ["https://doodles.mountainmath.ca/posts/2017-09-14-income-a-first-look_files/figure-html/income_dist_2016-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2017-09-14-income-a-first-look_files/figure-html/income_dist_2016-1.png"]
 #featured: 'graph-1.png'
 featuredalt: ""
 #featuredpath: "/posts/2017-09-05-young-families_files/figure-html"
