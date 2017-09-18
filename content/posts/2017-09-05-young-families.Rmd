@@ -120,15 +120,15 @@ age_groups=c("0-4","5-9","10-14")
 data_2016 <- get_census(dataset='CA16', 
                         regions=regions, vectors=vectors_2016, 
                         level='CT',  labels = 'short', 
-                        geo_format="sf") %>% prep_2016
+                        geo_format="sf", quiet = TRUE) %>% prep_2016
 data_2011 <- get_census(dataset='CA11', 
                         regions=regions, vectors=vectors_2011, 
                         level='CT', labels = 'short', 
-                        geo_format="sf") %>% prep_2011
+                        geo_format="sf", quiet = TRUE) %>% prep_2011
 data_2006 <- get_census(dataset='CA06', 
                         regions=regions, vectors=vectors_2006, 
                         level='CT', labels = 'short', 
-                        geo_format="sf") %>% prep_2006
+                        geo_format="sf", quiet = TRUE) %>% prep_2006
 # and all into one data frame
 vs=c("Population","0-4","5-9","10-14","0-14","year","central","GeoUID")
 data=rbind(rbind(data_2016 %>% select(vs), data_2011 %>% select(vs)), data_2006 %>% select(vs))
