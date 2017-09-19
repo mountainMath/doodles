@@ -1,0 +1,284 @@
+---
+title: 'A Retrospective Look at NHS Income Data '
+author: Jens von Bergmann
+date: '2017-09-16'
+slug: a-retrospective-look-at-nhs-income-data
+categories:
+  - cancensus
+  - CensusMapper
+tags: []
+draft: true
+description: "How bad were the NHS income numbers?"
+#featured: ''
+#featuredalt: ""
+#featuredpath: ""
+#images: [""]
+linktitle: ''
+type: "post"
+---
+
+
+## NHS Income Data, a First Retrospective
+There was much hand wringing when NHS income data got released. The change in methods were big, most notably the replacement of the mandatory long form census, that was administered to a random 1 in 5 sub sample, by the voluntary NHS that went out to approximately 1 in 3 households. The (design-weighted) response rate for the NHS was 77%, compared to 94% for the long form in 2006. 
+
+In other words, one could no longer assume that the returned NHS came from a random sub sample. Any sub sample is prone to have errors, but we know how to estimate these if the sub sample is random. 
+But if the sub sample is not random, like in the 2011 NHS, estimating these errors moves out of the realm of solid statistics and into the arts. The assumptions we have to make to estimate the error become quite onerous, and often unrealistic.
+
+But not all is lost. Stats Canada has some powerful methods to overcome some of these problems. 2011 still had the basic short form census, and that can be used to benchmark the NHS against. The short form tells us something about who returned the long form - and who did not. And Stats Canada has the ability to link households through time to learn more about biases in which households returned the census and which did not. And it had the ability to fold in other administrative data, like CRA tax returns and immigration data, to adjust aggregate data. And such [post-processing was performed on the NHS income data](https://ww2.amstat.org/sections/srms/Proceedings/y2013/files/308507_80988.pdf). 
+
+The question now is, how do those numbers stack up?
+
+## Evaluating NSH Income Data
+This is just an exploration, not a proper statistical evaluation. For this we will focus on median household incomes in Metro Vancouver and try and understand how NHS data fits in between the 2006 and 2016 censuses. There are some fundamental issues in our analysis that we will conveniently ignore. Most importantly, the geographic regions have changed between the censuses. So we can't compare median incomes in all regions. In the 2016 data Stats Canada has stopped reporting average incomes, which makes it impossible to re-aggregate the data to a common tiling across censuses like we have done e.g. for [our net migration map](https://censusmapper.ca/maps/731).
+
+Let's first look at the median household incomes for all of Metro Vancouver. Here we can be reasonably confident that the numbers reported in all three census, including the 2011 NHS, are robust. We will use [`cancensus`](https://github.com/mountainMath/cancensus) to load the data.
+
+```{r loading_packages, include=FALSE}
+library(sf)
+library(tidyr)
+library(ggplot2)
+library(ggalt)
+library(spdep)
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+library(cancensus)
+regions=list(CMA="59933") # Metro Vancouver
+vector_list=list('CA06'="v_CA06_2000",'CA11'="v_CA11N_2562","CA16"="v_CA16_2397") # Median Household Total Income
+inflation_list=list('CA06'=0.8465679,'CA11'=0.9220553,"CA16"=1) # Relative CPI to convert to constant 2015 dollars
+```
+
+```{r, include=FALSE}
+get_income_data <- function(level){
+  result <- lapply(c('CA06','CA11','CA16'),function(dataset){
+  income_vector <- as.character(vector_list[dataset])
+  inflation=as.numeric(inflation_list[dataset])
+  data <- get_census(dataset = dataset,
+                    vectors=c(income_vector),
+                    regions=regions,
+                    level=level,
+                    labels='short')  %>% 
+   mutate(income := !!as.name(income_vector)) %>%
+   mutate(income_adj = income / !!inflation)
+ return(data)
+})
+
+data <- result[[1]] %>% inner_join(result[[2]],by="GeoUID",suffix=c("_2006","_2011")) %>% 
+  inner_join(result[[3]], by="GeoUID") %>% 
+  rename(income_adj_2016 = income_adj) %>%
+  mutate(name=`Region Name`)
+
+return(data)
+}
+```
+With a convenience function defined to load the data into a data frame we grab the overview data for Metro Vancouver.
+
+```{r, include=FALSE}
+
+income_dumbbell <- function(data,title) {
+data$trend <- ifelse(data$income_adj_2016 >= data$income_adj_2006, "Positive","Negative")
+dumbbell_plot <- ggplot(data, aes(y = GeoUID, x= income_adj_2006, xend = income_adj_2016)) + 
+  geom_dumbbell(data = data[data$trend == "Positive",],size = 1.25, color = "#80cdc1",
+                colour_x = "#a6611a", colour_xend = "#018571",
+                size_x = 2.25, size_xend = 2,
+                dot_guide = TRUE, dot_guide_size = 0.10,
+                show.legend = TRUE) + 
+  geom_dumbbell(data = data[data$trend == "Negative",], aes(y = GeoUID, x= income_adj_2006, xend = income_adj_2016),
+                size = 1.25, color = "#dfc27d",
+                colour_x = "#a6611a", colour_xend = "#018571",
+                size_x = 2.25, size_xend = 2,
+                dot_guide = TRUE, dot_guide_size = 0.10,
+                show.legend = TRUE) +
+  geom_point(aes(y = GeoUID, x= income_adj_2011),color="darkblue") +
+  scale_y_discrete(name="", limits = factor((data %>% arrange(desc(income_adj_2006)))$GeoUID , ordered=TRUE)) +
+  scale_x_continuous("Median Household Income (2015 constant dollars)", 
+                     labels = function(x){return(paste0("$",format(round(x/1000)),"k"))}) + 
+  labs(title = title,
+       caption="Canada Census 2016, 2011 and 2006 via cancensus & CensusMapper.ca") +
+  theme_minimal()
+if ("income_estimate_2_2011" %in% names(data)){
+  dumbbell_plot <- dumbbell_plot + geom_point(data=data,aes(y = GeoUID, x= income_estimate_2_2011), shape=4, color="black")
+}
+dumbbell_plot
+}
+```
+
+
+```{r, message=FALSE, warning=FALSE, fig.height=1.6, fig.width=7}
+overview_data <- get_income_data(names(regions))
+overview_name <- paste0(sub(" \\(.+\\)$","",overview_data$`Region Name`)," ",names(regions))
+income_dumbbell(overview_data, overview_name)
+```
+
+```{r, include=FALSE}
+format_percent <- function(x){return(paste0(round(x*100,1),"%"))}
+growth_2005_2010 <- overview_data$income_adj_2011/overview_data$income_adj_2006
+growth_2010_2015 <- overview_data$income_adj_2016/overview_data$income_adj_2011
+income_estimator_1_2011 <- function(income_2006){return(growth_2005_2010*income_2006)}
+
+alpha <- (overview_data$income_adj_2011-overview_data$income_adj_2006)/(overview_data$income_adj_2016-overview_data$income_adj_2006)
+income_estimator_2_2011 <- function(income_2006,income_2016){return(alpha*income_2016+(1-alpha)*income_2006)}
+```
+
+We see that the 2010 NHS income number (in blue) sits neatly between the 2005 (in red) and 2015 (in green). To be more precise, the adjusted median household income grew `r format_percent(growth_2005_2010-1)` between 2005 and 2010 and it grew `r format_percent(growth_2010_2015-1)` between 2010 and 2015. Another way to view this is to say that the 2010 NHS income number is situated at `r format_percent(alpha)` up the adjusted income gain between 2005 and 2015. 
+
+## Modelling 2010 Income Data for Sub-Regions
+One way to evaluate 2010 NHS income data is to compare it against a model. A good way to do this is to pull in 2010 CRA income data. There are some issues that need to be dealt with, namely that CRA income data is reported for a different pool of people and uses a different definition of what counts as "income", and CRA has no reliable way to estimate "household" level incomes. We could simply fall back to individual incomes to deal with the last issue, and adding in 2005 CRA data to benchmark against 2005 census income data would give a way to assess the differences in reporting methods. I have not seen any studies that have done this in a satisfactory way, and CensusMapper does not have CT level CRA data (which requires a custom tabulation that is outside of the scope of our usual work, and researchers we contacted that have this data weren't willing to share it for the greater public benefit).
+
+For this post we will use two naive methods to estimate 2010 income numbers. 
+
+#### Model 1
+Model 1 assumes that the sub-region income growth occurred uniformly at the metro level rate of `r format_percent(growth_2005_2010-1)`. 
+
+#### Model 2
+Model 2 uses the hindsight of 2015 income data and assumes that changes in income over the time period between 2005 and 2015 were uniform in time in each sub-region, so that the 2010 actual income sat at `r format_percent(alpha)` between the 2005 and 2015 numbers. We use this as our "best guess" model.
+
+The rationale behind these models is that, to first approximation, change is generally gradual in time and uniform in space. We will formalize this a bit later.
+
+## 2010 Income Data for Sub-Regions
+So let's pull in the income data for Metro Vancouver's census tracts and see how our expectation stacks up against the NHS numbers.
+```{r, message=FALSE, warning=FALSE, fig.height=30, fig.width=10}
+data <- get_income_data("CT")
+data$income_estimate_1_2011 <- income_estimator_1_2011(data$income_adj_2006)
+data$income_estimate_2_2011 <- income_estimator_2_2011(data$income_adj_2006,data$income_adj_2016)
+income_dumbbell(data, paste0("Census Tracts in ",overview_name))
+```
+
+
+```{r, include=FALSE}
+income_below <- nrow(data %>% filter(income_adj_2006 > income_adj_2011 & income_adj_2016 > income_adj_2011))
+income_above <- nrow(data %>% filter(income_adj_2006 < income_adj_2011 & income_adj_2016 < income_adj_2011))
+total = nrow(data)
+```
+
+We see that in just over half of the tracts the 2010 NHS number lies within the range, but in `r format_percent(income_below/total)` of the cases the NHS number is below the range and in `r format_percent(income_above/total)` above. We would certainly expect it to lie outside the range in some cases, but not in so many. Over the 10 year time frame the income decreased in `r format_percent(sum(data$income_adj_2016<data$income_adj_2006, na.rm=TRUE)/total)` of the tracts, over the two 5 year time frame it decreased by `r format_percent(sum(data$income_adj_2011<data$income_adj_2006, na.rm=TRUE)/total)` and `r format_percent(sum(data$income_adj_2016<data$income_adj_2011, na.rm=TRUE)/total)`. We would expect the 5 year data to be more volatile, but again not by that much.
+
+Taking a look at the relative difference of our expectation and the NHS numbers we see that in general the deviation seems balanced,
+```{r, message=FALSE, warning=FALSE}
+data <- data %>% mutate(`Model 1 Difference`=income_adj_2011/income_estimate_1_2011-1,
+                        `Model 2 Difference`=income_adj_2011/income_estimate_2_2011-1)
+ggplot(data %>% gather(key="Model", value="Relative Difference", c("Model 1 Difference","Model 2 Difference"))) +
+  geom_density(aes(x=`Relative Difference`, color=Model)) +
+  labs(title="Relative Difference of Estimates to NHS (CT level data)")
+```
+
+skewing slightly low. We see that the the NHS data is more consistent with our Model 2 assumptions than with Model 1.
+
+## Temporal Correlations
+Testing the idea of temporal auto-correlation more formally, we would expect that the median incomes from adjacent censuses correlate higher than the the ones from the 10 year difference. The correlation coefficients are 
+
+Comparison | CT Level Coefficient
+----------- | ------------
+2005 to 2015 | `r round(cor(data$income_adj_2006,data$income_adj_2016, use = "complete.obs"),4)`
+2005 - 2010 NHS | `r round(cor(data$income_adj_2006,data$income_adj_2011, use = "complete.obs"),4)`
+2010 NHS - 2015 | `r round(cor(data$income_adj_2011,data$income_adj_2016, use = "complete.obs"),4)`
+2010 Model 1 - 2015 | `r round(cor(data$income_estimate_1_2011,data$income_adj_2016, use = "complete.obs"),4)`
+
+What we see is that the 2010 NHS income numbers correlate better with the 2015 numbers than both the 2005 numbers and our Model 1, even though the correlation with 2005 numbers is quite poor. This redeems some of the quality concerns we observed earlier, and addresses some of the criticism initially leveraged against the NHS income numbers, namely that they appeared out of line with 2005 incomes.
+
+
+The takeaway here is that the 2010 census tract income numbers add value over both, just having 2010 numbers and our naive model. But serious quality concerns remain.
+
+## Spatial Correlations
+The next step is to check for biases in the NHS income data. One simply way to do this is to run a spatial auto-correlation of the relative difference of the NHS data to our "best guess" Model 2. If there is bias in the NHS data, it ought to show up in as spatial auto-correlation as pretty much any potential demographic variable linked to non return bias will have spatial auto-correlation.
+
+As a first step, let's visualize the spatial relationships between the relative difference of the NHS median incomes from our Model 2 expectation.
+
+```{r rel_change_map, fig.height=10, fig.width=10, message=FALSE, warning=TRUE}
+geos <- get_census(dataset = "CA16",
+                   regions=regions,
+                   level="CT",
+                   geo_format = 'sf') %>% 
+  left_join(data, by="GeoUID") %>%
+  mutate(bins=cut(`Model 2 Difference`,c(-Inf,seq(-0.25,0.25,0.1),Inf),c("Below -0.25","-0.25 to -0.15","-0.15 to -0.05","-0.05 to 0.05","0.05 to 0.15","0.15 to 0.25","Above 0.25")))
+ggplot(geos) +
+  geom_sf(aes(fill=bins)) +
+  scale_fill_brewer("Relative Difference",palette = 'PiYG',na.value="grey80") +
+  ggtitle("Difference of NSH from Expectation") + 
+  theme_void()
+```
+
+
+
+Testing formally for spatial auto-correlation
+```{r, fig.height=7, fig.width=7}
+sp=as(geos %>% select("Model 2 Difference") %>% na.omit,"Spatial")
+wr <- poly2nb(sp, row.names=sp$GeoUID, queen=TRUE, snap=0.005)
+#plot(sp, col='gray', border='blue')
+#plot(wr, coordinates(sp), col='red', lwd=0.5, add=TRUE)
+ww <-  nb2listw(wr, style='B', zero.policy = TRUE)
+moran.mc(sp$Model.2.Difference, ww, nsim=500, zero.policy = TRUE)
+```
+
+the results are inconclusive. Let's quickly re-run our tests at the Dissemination Area level. Dissemination Area level is prone to be much more noisy than census tract level data, but also much more prone to bias. If the bias dominates we would expect to see strong non-random spatial patterns, although they may be masked by random noise due to the smaller sample size for DAs.
+
+```{r, message=FALSE, warning=FALSE}
+data_da <- get_income_data("DA")
+data_da <- data_da %>% mutate(
+  income_estimate_1_2011 = income_estimator_1_2011(income_adj_2006),
+  income_estimate_2_2011 = income_estimator_2_2011(income_adj_2006,income_adj_2016),
+  `Model 1 Difference`=income_adj_2011/income_estimate_1_2011-1,
+  `Model 2 Difference`=income_adj_2011/income_estimate_2_2011-1)
+ggplot(data_da %>% gather(key="Model", value="Relative Difference", c("Model 1 Difference","Model 2 Difference"))) +
+  geom_density(aes(x=`Relative Difference`, color=Model)) +
+  labs(title="Relative Difference of Estimates to NHS (DA level data)")
+```
+
+```{r, include=FALSE}
+income_below_da <- nrow(data_da %>% filter(income_adj_2006 > income_adj_2011 & income_adj_2016 > income_adj_2011))
+income_above_da <- nrow(data_da %>% filter(income_adj_2006 < income_adj_2011 & income_adj_2016 < income_adj_2011))
+total_da = nrow(data_da)
+```
+
+As expected, the DA level data is significantly more noisy. In `r format_percent(income_below_da/total_da)` of the cases the NHS number is below the income range set by 2005 and 2015 numbers, and in `r format_percent(income_above_da/total_da)` above.
+
+We can again check the temporal correlation coefficients, they are 
+
+Comparison | DA Level Coefficient
+----------- | ------------
+2005 to 2015 | `r round(cor(data_da$income_adj_2006,data_da$income_adj_2016, use = "complete.obs"),4)`
+2005 - 2010 NHS | `r round(cor(data_da$income_adj_2006,data_da$income_adj_2011, use = "complete.obs"),4)`
+2010 NHS - 2015 | `r round(cor(data_da$income_adj_2011,data_da$income_adj_2016, use = "complete.obs"),4)`
+2010 Model 1 - 2015 | `r round(cor(data_da$income_estimate_1_2011,data_da$income_adj_2016, use = "complete.obs"),4)`
+
+and we again see that the 2010 NHS numbers correlate better with 2015 numbers than either 2005 number or our Model 1.
+
+```{r, message=FALSE, warning=TRUE}
+geos_da <- get_census(dataset = "CA16",
+                   regions=regions,
+                   level="DA",
+                   geo_format = 'sf') %>% 
+  left_join(data_da, by="GeoUID") 
+```
+
+```{r rel_change_map_da, eval=FALSE, fig.height=10, fig.width=10, include=FALSE}
+ggplot(geos_da %>%
+  mutate(bins=cut(`Model 2 Difference`,c(-Inf,seq(-0.45,0.45,0.1),Inf),
+                  c("Below -0.45","-0.45 to -0.35","-0.35 to -0.25","-0.25 to -0.15","-0.15 to -0.05","-0.05 to 0.05","0.05 to 0.15","0.15 to 0.25","0.25 to 0.35","0.35 to 0.45","Above 0.45")))) +
+  geom_sf(aes(fill=bins),size=0.1) +
+  scale_fill_brewer("Relative Difference",palette = 'PiYG',na.value="grey80") +
+  ggtitle("Difference of NSH from Expectation") + 
+  theme_void()
+
+```
+
+
+```{r, fig.height=7, fig.width=7}
+sp_da=as(geos_da %>% select("Model 2 Difference") %>% na.omit,"Spatial")
+wr <- poly2nb(sp_da, row.names=sp$GeoUID, queen=TRUE, snap=0.001)
+#plot(sp, col='gray', border='blue')
+#plot(wr, coordinates(sp_da), col='red', lwd=0.5, add=TRUE)
+ww <-  nb2listw(wr, style='B', zero.policy = TRUE)
+moran.mc(sp_da$Model.2.Difference, ww, nsim=500, zero.policy = TRUE)
+```
+
+This confirms that the spatial distribution of the relative difference is not random at the DA level, and it points to systematic bias in the data. 
+
+The census has a wealth of variables that we can use to explore this bias, and it is tempting to start to test against variables that [have been identified as effecting the non-return rate of the NHS](http://www12.statcan.gc.ca/nhs-enm/2011/ref/reports-rapports/sw-ep/ch5-eng.cfm).
+
+This is probably a good time to remind ourselves that the NHS income data is the result of post-processing by Stats Canada, so any investigation of that sort will only be able to discover the bias in these post-processed values. 
+
+Another obstacle is that we will have to investigate the relationships between census variables and biases in NHS income numbers at the aggregate level, which requires powerful statistical tools to make inferences about the relationship at the individual level that we are after.
+
+We will leave this for another day and another post.

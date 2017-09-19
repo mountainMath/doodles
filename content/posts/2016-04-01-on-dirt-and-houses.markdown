@@ -80,7 +80,7 @@ to make housing more affordable is to reduce the impact of the land value. Conve
 duplex immediately cuts the land value in half. If we replace it with a 4-plex, land values go down to a quarter for each
 housing unit.
 
-###Dividing Dirt (Update)
+## Dividing Dirt (Update)
 We added stratified residential units into the visualization so we can take a closer look what happens when we *divide dirt*,
 that is when we allow more housing units on a single property. In the RT zones
 the city allows duplexes or coach houses, so two stratified units on a single property. In other zones, like RM, some CD and
