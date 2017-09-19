@@ -235,7 +235,7 @@ ggplot(cmhc, aes(x = Year, y = Rate, color = Series)) +
 
 We can clearly see the boom-bust cycles in Calgary that is a major driver of the vacancy rate, and the rents reacting in response to the changing vacancy rate. In Toronto we notice a brief time around 2004 when the vacancy rate was flirting with breaking the 5% barrier where (nominal) rent increases halted, but poor data quality hinders us from finding out exactly what happened. In Vancouver we see consistent rent increases, ranging from moderate to severe at times when the Vacancy rate drops below 1%, only held at bay by rent control. And we notice a nasty looking uptick in same-sample rent growth at the end after several years of very low and dropping vacancy rate.
 
-Going off the CMHC rent numbers, as well as the history of rent changes, we eliminate Vancouver. It's proximity to Seattle it made it a poor choice to start with.
+Going off the CMHC rent numbers, as well as the history of rent changes, we eliminate Vancouver. Its proximity to Seattle it made it a poor choice to start with.
 ```{r round4, echo=FALSE, fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
 cmas <- cmas %>% filter(name != "Vancouver")
 basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + lambert

@@ -1,15 +1,37 @@
- — Historical Average Rent($) by Dwelling Type  
-2007 to 2016
-,Single,,Semi / Row / Duplex,,Other- Primarily Accessory Suites,,Total,,
-2007,**,,**,,**,,**,,
-2008,"1,159",b ,992,b ,926,b ,"1,029",a ,
-2009,"1,296",b ,981,b ,926,b ,"1,081",a ,
-2010,"1,293",b ,970,b ,948,c ,"1,037",b ,
-2011,"1,463",b ,**,,899,c ,"1,171",c ,
-2012,"1,498",b ,"1,113",b ,882,b ,"1,150",a ,
-2013,"1,586",b ,"1,073",b ,820,b ,"1,145",b ,
-2014,"1,565",b ,"1,141",b ,869,b ,"1,180",b ,
-2015,"1,571",c ,"1,262",b ,"1,015",c ,"1,265",b ,
-2016,"1,618",b ,**,,917,b ,"1,289",b ,
+Vancouver — Historical % Change of Average Rents by Bedroom Type  
+1990 to 2017 Row / Apartment October
+,Bachelor,,1 Bedroom,,2 Bedroom,,3 Bedroom +,,Total,,
+1990 October,**,,**,,**,,**,,**,,
+1991 October,5.3,b ,4.4,b ,1.5,c ,1.9,c ,3.3,b ,
+1992 October,2.7,b ,1.8,b ,3.1,b ,**,,1.8,a ,
+1993 October,3.5,b ,2.6,a ,1.6,b ,3.7,d ,2.6,a ,
+1994 October,2.5,b ,3.1,d ,2.6,b ,1.3,a ,2.6,b ,
+1995 October,3.3,b ,2.5,a ,3.1,b ,2.7,b ,2.6,a ,
+1996 October,2.8,a ,2.8,a ,2.5,a ,++,,2.5,a ,
+1997 October,2.1,b ,1.6,a ,0.8,a ,3.2,d ,1.5,a ,
+1998 October,0.9,a ,0.7,a ,1.7,c ,++,,0.9,a ,
+1999 October,++,,0.9,a ,1.9,b ,1.3,a ,0.9,a ,
+2000 October,2.4,b ,2.2,a ,2.2,b ,1.6,c ,2.1,a ,
+2001 October,4.3,b ,4.4,b ,3.6,b ,2.3,c ,4.3,a ,
+2002 October,2.8,b ,2.7,a ,2.5,b ,3.6,d ,2.6,a ,
+2003 October,2.4,b ,1.8,b ,2.6,b ,3.1,c ,2.1,b ,
+2004 October,1.6,c ,1.7,b ,1.6,c ,1.4,d ,1.6,b ,
+2005 October,2.3,b ,1.9,a ,1.8,b ,3.8,d ,2.0,a ,
+2006 October,3.9,a ,3.9,a ,4.4,a ,3.1,b ,3.9,a ,
+2007 October,4.7,b ,4.4,a ,5.5,a ,4.6,b ,4.6,a ,
+2008 October,3.6,b ,4.2,a ,4.6,a ,5.5,d ,4.3,a ,
+2009 October,3.6,a ,2.9,a ,2.6,a ,3.7,b ,2.9,a ,
+2010 October,3.0,a ,2.6,a ,3.1,a ,2.3,b ,2.6,a ,
+2011 October,2.2,a ,2.3,a ,2.3,a ,2.7,a ,2.3,a ,
+2012 October,2.5,a ,2.3,a ,2.3,a ,1.9,a ,2.3,a ,
+2013 October,2.4,a ,2.4,a ,2.1,a ,2.3,a ,2.2,a ,
+2014 October,2.3,a ,2.6,a ,2.4,a ,2.3,b ,2.5,a ,
+2015 October,3.8,a ,3.8,a ,4.5,a ,4.1,b ,3.9,a ,
+2016 October,6.4,a ,6.8,a ,5.7,a ,4.8,b ,6.4,a ,
 
-Source,CMHC Secondary Rental Market Survey
+Notes
+"The following letter codes are used to indicate the reliability of the estimates: a - Excellent, b- Very good, c - Good, d - Fair (Use with Caution)"
+** Data suppressed to protect confidentiality or data not statistically reliable
+ - No units exist in the universe for this category
+n/a: Not applicable
+Source,CMHC Rental Market Survey
