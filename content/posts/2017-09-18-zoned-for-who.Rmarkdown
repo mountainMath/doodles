@@ -35,6 +35,8 @@ The 23,310 households with income above $200,000 have a little more choice, and 
 
 At $300,000 homes on the West Side start to come into reach in Marpole. Landlording still helps. But even a tax-cheating artisanal landlording $500,000 earning household still can't touch the majority of the West Side.
 
+If all else fails you can still take artisanal landlording to the next level and [try to rationalize why renting out a suite on Airbnb is a good idea](https://www.theglobeandmail.com/real-estate/in-high-cost-vancouver-the-trick-is-getting-strangers-to-pay-the-rent/article15676047/?arc404=true) to increase your cash flow.
+
 ## Who do we zone this for?
 Honestly, I don't know who we zone RS land for. The 23,310 households with income over $200,000? I don't think people in that income group need special protection for their housing. They will be able to afford a place to live irrespective of zoning. And that still does not answer that question for the West Side. And no, the fraction of households making $500,000 per year is not enough justification to zone most of the West Side single-family.
 
