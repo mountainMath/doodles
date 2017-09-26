@@ -6,6 +6,7 @@ slug: a-retrospective-look-at-nhs-income-data
 categories:
   - cancensus
   - CensusMapper
+  - geeky
 tags: []
 draft: true
 description: "How bad were the NHS income numbers?"
@@ -54,7 +55,7 @@ With a convenience function defined to load the data into a data frame we grab t
 ```r
 overview_data <- get_income_data(names(regions))
 overview_name <- paste0(sub(" \\(.+\\)$","",overview_data$`Region Name`)," ",names(regions))
-income_dumbbell(overview_data, overview_name)
+income_dumbbell(overview_data, overview_name,y="name")
 ```
 
 <img src="/posts/2017-09-16-a-retrospective-look-at-nhs-income-data_files/figure-html/unnamed-chunk-4-1.png" width="672" />
@@ -77,6 +78,21 @@ Model 2 uses the hindsight of 2015 income data and assumes that changes in incom
 The rationale behind these models is that, to first approximation, change is generally gradual in time and uniform in space. We will formalize this a bit later.
 
 ## 2010 Income Data for Sub-Regions
+
+We start off by looking at Metro Vancouver's medium and large municipalities.
+
+```r
+data <- get_income_data("CSD")
+data$income_estimate_1_2011 <- income_estimator_1_2011(data$income_adj_2006)
+data$income_estimate_2_2011 <- income_estimator_2_2011(data$income_adj_2006,data$income_adj_2016)
+income_dumbbell(data %>% filter(Households > 10000), paste0("Municipalities with at least 10,000 households in ",overview_name),y="name")
+```
+
+<img src="/posts/2017-09-16-a-retrospective-look-at-nhs-income-data_files/figure-html/unnamed-chunk-6-1.png" width="960" />
+
+That looks pretty good, in most cases the 2010 data sits in the range between the 2005 and 2015 data where we would expect it to be, with a few exceptions (which should also be expected), but nothing out of the ordinary. Especially the larger cities seem to show a good match, with Richmond registering a drop from 2010 to 2015 that could be a reflection of to the increase in one-person households during that time.
+
+## Census Tracts
 So let's pull in the income data for Metro Vancouver's census tracts and see how our expectation stacks up against the NHS numbers.
 
 ```r
@@ -86,7 +102,7 @@ data$income_estimate_2_2011 <- income_estimator_2_2011(data$income_adj_2006,data
 income_dumbbell(data, paste0("Census Tracts in ",overview_name))
 ```
 
-<img src="/posts/2017-09-16-a-retrospective-look-at-nhs-income-data_files/figure-html/unnamed-chunk-6-1.png" width="960" />
+<img src="/posts/2017-09-16-a-retrospective-look-at-nhs-income-data_files/figure-html/unnamed-chunk-7-1.png" width="960" />
 
 
 
@@ -103,7 +119,7 @@ ggplot(data %>% gather(key="Model", value="Relative Difference", c("Model 1 Diff
   labs(title="Relative Difference of Estimates to NHS (CT level data)")
 ```
 
-<img src="/posts/2017-09-16-a-retrospective-look-at-nhs-income-data_files/figure-html/unnamed-chunk-8-1.png" width="672" />
+<img src="/posts/2017-09-16-a-retrospective-look-at-nhs-income-data_files/figure-html/unnamed-chunk-9-1.png" width="672" />
 
 skewing slightly low. We see that the the NHS data is more consistent with our Model 2 assumptions than with Model 1.
 
@@ -165,7 +181,7 @@ moran.mc(sp$Model.2.Difference, ww, nsim=500, zero.policy = TRUE)
 ## weights: ww  
 ## number of simulations + 1: 501 
 ## 
-## statistic = -0.00096903, observed rank = 258, p-value = 0.485
+## statistic = -0.00096903, observed rank = 247, p-value = 0.507
 ## alternative hypothesis: greater
 ```
 
@@ -184,7 +200,7 @@ ggplot(data_da %>% gather(key="Model", value="Relative Difference", c("Model 1 D
   labs(title="Relative Difference of Estimates to NHS (DA level data)")
 ```
 
-<img src="/posts/2017-09-16-a-retrospective-look-at-nhs-income-data_files/figure-html/unnamed-chunk-10-1.png" width="672" />
+<img src="/posts/2017-09-16-a-retrospective-look-at-nhs-income-data_files/figure-html/unnamed-chunk-11-1.png" width="672" />
 
 
 

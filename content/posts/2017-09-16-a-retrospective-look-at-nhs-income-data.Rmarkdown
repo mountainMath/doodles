@@ -6,6 +6,7 @@ slug: a-retrospective-look-at-nhs-income-data
 categories:
   - cancensus
   - CensusMapper
+  - geeky
 tags: []
 draft: true
 description: "How bad were the NHS income numbers?"
@@ -76,29 +77,29 @@ With a convenience function defined to load the data into a data frame we grab t
 
 ```{r, include=FALSE}
 
-income_dumbbell <- function(data,title) {
+income_dumbbell <- function(data,title,y="GeoUID") {
 data$trend <- ifelse(data$income_adj_2016 >= data$income_adj_2006, "Positive","Negative")
-dumbbell_plot <- ggplot(data, aes(y = GeoUID, x= income_adj_2006, xend = income_adj_2016)) + 
+dumbbell_plot <- ggplot(data, aes_string(y = y, x= "income_adj_2006", xend = "income_adj_2016")) + 
   geom_dumbbell(data = data[data$trend == "Positive",],size = 1.25, color = "#80cdc1",
                 colour_x = "#a6611a", colour_xend = "#018571",
                 size_x = 2.25, size_xend = 2,
                 dot_guide = TRUE, dot_guide_size = 0.10,
                 show.legend = TRUE) + 
-  geom_dumbbell(data = data[data$trend == "Negative",], aes(y = GeoUID, x= income_adj_2006, xend = income_adj_2016),
+  geom_dumbbell(data = data[data$trend == "Negative",], aes_string(y = y, x= "income_adj_2006", xend = "income_adj_2016"),
                 size = 1.25, color = "#dfc27d",
                 colour_x = "#a6611a", colour_xend = "#018571",
                 size_x = 2.25, size_xend = 2,
                 dot_guide = TRUE, dot_guide_size = 0.10,
                 show.legend = TRUE) +
-  geom_point(aes(y = GeoUID, x= income_adj_2011),color="darkblue") +
-  scale_y_discrete(name="", limits = factor((data %>% arrange(desc(income_adj_2006)))$GeoUID , ordered=TRUE)) +
+  geom_point(aes_string(y = y, x= "income_adj_2011"),color="darkblue") +
+  scale_y_discrete(name="", limits = factor((data %>% arrange(desc(income_adj_2006)))[[y]] , ordered=TRUE)) +
   scale_x_continuous("Median Household Income (2015 constant dollars)", 
                      labels = function(x){return(paste0("$",format(round(x/1000)),"k"))}) + 
   labs(title = title,
        caption="Canada Census 2016, 2011 and 2006 via cancensus & CensusMapper.ca") +
   theme_minimal()
 if ("income_estimate_2_2011" %in% names(data)){
-  dumbbell_plot <- dumbbell_plot + geom_point(data=data,aes(y = GeoUID, x= income_estimate_2_2011), shape=4, color="black")
+  dumbbell_plot <- dumbbell_plot + geom_point(data=data,aes_string(y = y, x= "income_estimate_2_2011"), shape=4, color="black")
 }
 dumbbell_plot
 }
@@ -108,7 +109,7 @@ dumbbell_plot
 ```{r, message=FALSE, warning=FALSE, fig.height=1.6, fig.width=7}
 overview_data <- get_income_data(names(regions))
 overview_name <- paste0(sub(" \\(.+\\)$","",overview_data$`Region Name`)," ",names(regions))
-income_dumbbell(overview_data, overview_name)
+income_dumbbell(overview_data, overview_name,y="name")
 ```
 
 ```{r, include=FALSE}
@@ -137,6 +138,18 @@ Model 2 uses the hindsight of 2015 income data and assumes that changes in incom
 The rationale behind these models is that, to first approximation, change is generally gradual in time and uniform in space. We will formalize this a bit later.
 
 ## 2010 Income Data for Sub-Regions
+
+We start off by looking at Metro Vancouver's medium and large municipalities.
+```{r, message=FALSE, warning=FALSE, fig.height=5, fig.width=10}
+data <- get_income_data("CSD")
+data$income_estimate_1_2011 <- income_estimator_1_2011(data$income_adj_2006)
+data$income_estimate_2_2011 <- income_estimator_2_2011(data$income_adj_2006,data$income_adj_2016)
+income_dumbbell(data %>% filter(Households > 10000), paste0("Municipalities with at least 10,000 households in ",overview_name),y="name")
+```
+
+That looks pretty good, in most cases the 2010 data sits in the range between the 2005 and 2015 data where we would expect it to be, with a few exceptions (which should also be expected), but nothing out of the ordinary. Especially the larger cities seem to show a good match, with Richmond registering a drop from 2010 to 2015 that could be a reflection of to the increase in one-person households during that time.
+
+## Census Tracts
 So let's pull in the income data for Metro Vancouver's census tracts and see how our expectation stacks up against the NHS numbers.
 ```{r, message=FALSE, warning=FALSE, fig.height=30, fig.width=10}
 data <- get_income_data("CT")
