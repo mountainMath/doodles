@@ -181,7 +181,7 @@ moran.mc(sp$Model.2.Difference, ww, nsim=500, zero.policy = TRUE)
 ## weights: ww  
 ## number of simulations + 1: 501 
 ## 
-## statistic = -0.00096903, observed rank = 247, p-value = 0.507
+## statistic = -0.00096903, observed rank = 281, p-value = 0.4391
 ## alternative hypothesis: greater
 ```
 
