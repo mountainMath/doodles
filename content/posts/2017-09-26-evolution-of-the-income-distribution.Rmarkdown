@@ -170,7 +170,7 @@ We see that the City of Vancouver has a significantly higher share of 1-person h
 plot_opts <-  list(
   geom_bar(stat = 'identity', position = "dodge",aes(x=`Income Brackets`, fill=`Region Name`)),
   scale_fill_brewer(palette = "Accent"),
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)),
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), panel.grid.major.x = element_blank()),
   labs(y="Net Change (Households)", x="Income Brackets (nominal)")
 )
 
@@ -229,6 +229,7 @@ ratios <- inner_join(ratios, ratios_05_15 %>% rename(ratio_05_15 = ratio), by="R
 Taking the income brackets that are common in the 2005 and 2010 income data we get.
 ```{r 2005-2010_total_change, echo=FALSE, fig.height=5, fig.width=10}
 ggplot(plot_data_05_10, aes(y=Count)) + plot_opts + 
+  geom_vline(xintercept=seq(1.5, length(unique(plot_data_05_10$Count))-0.5, 1),lwd=0.5, colour="white") +
   labs(title="2005 - 2010 Change in Households by Income Bracket")
 ```
 
@@ -237,6 +238,7 @@ In the 2005-2010 numbers we see Vancouver take the lead in dropping households i
 Here we should keep in mind that while the 2010 NHS income data is overall quite robust for larger geographic regions, it may have some issues at some of the individual income brackets. Looking at the 2010 to 2015 time frame that has somewhat finer brackets available we see that this trend is consistent.
 ```{r 2010-2015_total_change, echo=FALSE, fig.height=5, fig.width=10}
 ggplot(plot_data_10_15, aes(y=Count)) + plot_opts + 
+  geom_vline(xintercept=seq(1.5, length(unique(plot_data_10_15$Count))-0.5, 1),lwd=0.5, colour="white") +
   labs(title="2010 - 2015 Change in Households by Income Bracket")
 ```
 
@@ -245,6 +247,7 @@ We have finer data for the 2010-2015 time frame. The numbers have the other regi
 For completeness, also consider the change over the full 2005 - 2015 time frame that skips over the 2010 NHS numbers.
 ```{r 2005-2015_total_change, echo=FALSE, fig.height=5, fig.width=10}
 ggplot(plot_data_05_15, aes(y=Count)) + plot_opts + 
+  geom_vline(xintercept=seq(1.5, length(unique(plot_data_05_15$Count))-0.5, 1),lwd=0.5, colour="white") +
   labs(title="2005 - 2015 Change in Households by Income Bracket")
 ```
 
@@ -259,21 +262,21 @@ To better understand how the makeup of households by income bracket is changing 
 
 ```{r 2005-2010_rel_change, echo=FALSE, fig.height=5, fig.width=10}
 ggplot(plot_data_05_10, aes(y=ratio))  + plot_opts + 
-  #scale_y_continuous(labels = scales::percent) + 
+  geom_vline(xintercept=seq(1.5, length(unique(plot_data_05_10$ratio))-0.5, 1),lwd=0.5, colour="white") +
   labs(y="Normalized Net Change (Households)", title="2005 - 2010 Normalized Change in Households by Income Bracket")
 ```
 
 Viewed this way, it really brings out just how much the income brackets in City of Vancouver has been changing.
 ```{r 2010-2015_rel_change, echo=FALSE, fig.height=5, fig.width=10}
 ggplot(plot_data_10_15, aes(y=ratio)) + plot_opts + 
-  #scale_y_continuous(labels = scales::percent) + 
+  geom_vline(xintercept=seq(1.5, length(unique(plot_data_10_15$ratio))-0.5, 1),lwd=0.5, colour="white") +
   labs(y="Normalized Net Change (Households)", title="2010 - 2015 Normalized Change in Households by Income Bracket")
 ```
 
 In the 2010 to 2015 time frame that change is a little more muted.
 ```{r 2005-2015_rel_change, echo=FALSE, fig.height=5, fig.width=10}
 ggplot(plot_data_05_15, aes(y=ratio)) + plot_opts + 
-  #scale_y_continuous(labels = scales::percent) + 
+  geom_vline(xintercept=seq(1.5, length(unique(plot_data_05_15$ratio))-0.5, 1),lwd=0.5, colour="white") +
   labs(y="Normalized Net Change (Households)", title="2005 - 2015 Normalized Change in Households by Income Bracket")
 ```
 
@@ -312,19 +315,19 @@ ggplot(plot_data2_10_15, aes(y=Count)) + plot_opts +
 ## Normalized Change
 ```{r 2005-2010_rel_change2, echo=FALSE, fig.height=5, fig.width=10}
 ggplot(plot_data2_05_10, aes(y=ratio))  + plot_opts + 
-  #scale_y_continuous(labels = scales::percent) + 
+  geom_vline(xintercept=seq(1.5, length(unique(plot_data2_05_10$ratio))-0.5, 1),lwd=0.5, colour="white") +
   labs(y="Normalized Net Change (Households)", title="2005 - 2010 Normalized Change in Households by Income Bracket")
 ```
 
 ```{r 2010-2015_rel_change2, echo=FALSE, fig.height=5, fig.width=10}
 ggplot(plot_data2_10_15, aes(y=ratio)) + plot_opts + 
-  #scale_y_continuous(labels = scales::percent) + 
+  geom_vline(xintercept=seq(1.5, length(unique(plot_data2_10_15$ratio))-0.5, 1),lwd=0.5, colour="white") +
   labs(y="Normalized Net Change (Households)", title="2010 - 2015 Normalized Change in Households by Income Bracket")
 ```
 
 ```{r 2005-2015_rel_change2, echo=FALSE, fig.height=5, fig.width=10}
 ggplot(plot_data2_05_15, aes(y=ratio)) + plot_opts + 
-  #scale_y_continuous(labels = scales::percent) + 
+  geom_vline(xintercept=seq(1.5, length(unique(plot_data2_05_15$ratio))-0.5, 1),lwd=0.5, colour="white") +
   labs(y="Normalized Net Change (Households)", title="2005 - 2015 Normalized Change in Households by Income Bracket")
 ```
 
@@ -387,7 +390,8 @@ decile_plot_data <- get_plot_data(deciles_10,deciles_15, deciles)
 With a bit of copy-paste we can see how this pans out in Vancouver.
 ```{r 2010-2015_total_decile_change, echo=FALSE, fig.height=5, fig.width=10}
 ggplot(decile_plot_data, aes(y=Count)) + plot_opts + 
-  labs(y="Net Change (People)", 
+  geom_vline(xintercept=seq(1.5, length(unique(decile_plot_data$Count))-0.5, 1),lwd=0.5, colour="white") +
+ labs(y="Net Change (People)", 
        x="Decile",
        title="2010 - 2015 Change in Adjusted After Tax Family Income by Decile")
 ```
@@ -396,6 +400,7 @@ Looking at the change in the total number of people per adjusted income decile w
 
 ```{r 2010-2015_rel_decile_change, echo=FALSE, fig.height=5, fig.width=10}
 ggplot(decile_plot_data, aes(y=ratio)) + plot_opts + 
+  geom_vline(xintercept=seq(1.5, length(unique(decile_plot_data$ratio))-0.5, 1),lwd=0.5, colour="white") +
   labs(y="Normalized Net Change (People)", 
        x="Decile",
       title="2010 - 2015 Normalized Change in In Adjusted Family Income by Decile")
