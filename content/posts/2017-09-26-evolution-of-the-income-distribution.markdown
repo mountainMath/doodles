@@ -149,4 +149,5 @@ Looking at the change in the total number of people per adjusted income decile w
 
 <img src="/posts/2017-09-26-evolution-of-the-income-distribution_files/figure-html/2010-2015_rel_decile_change-1.png" width="960" />
 
-Normalizing the data so that the total net change adds to 1 for each region emphasizes the trends we observed in the data. Especially Richmond is curious with a large increase in the bottom decile and a drop in the top decile (and also the two below that), a patterned that is, to a lesser extent, mimicked by Burnaby.
+Normalizing the data so that the total net change adds to 1 for each region emphasizes the trends we observed in the data. Especially Richmond is curious with a large increase in the bottom decile and a drop in the top decile (and also the two below that), a pattern that is, to a lesser extent, mimicked by Burnaby.
+

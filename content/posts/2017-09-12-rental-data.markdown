@@ -45,30 +45,6 @@ We start with CMHC and census data, both of these are freely available and both 
 ```r
 #devtools::install_github("mountainmath/cancensus")
 library(cancensus)
-```
-
-```
-## Loading required package: dplyr
-```
-
-```
-## 
-## Attaching package: 'dplyr'
-```
-
-```
-## The following objects are masked from 'package:stats':
-## 
-##     filter, lag
-```
-
-```
-## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union
-```
-
-```r
 #devtools::install_github("mountainmath/cmhc")
 library(cmhc)
 ```
@@ -111,15 +87,7 @@ ggplot(plot_data %>% arrange(Date) %>% filter(name=="Vancouver"),
   geom_point()
 ```
 
-```
-## Warning: Removed 2 rows containing missing values (geom_path).
-```
-
-```
-## Warning: Removed 16 rows containing missing values (geom_point).
-```
-
-<img src="/posts/2017-09-12-rental-data_files/figure-html/unnamed-chunk-4-1.png" width="672" />
+<img src="/posts/2017-09-12-rental-data_files/figure-html/unnamed-chunk-4-1.png" width="960" />
 
 
 

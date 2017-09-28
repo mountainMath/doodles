@@ -406,4 +406,5 @@ ggplot(decile_plot_data, aes(y=ratio)) + plot_opts +
       title="2010 - 2015 Normalized Change in In Adjusted Family Income by Decile")
 ```
 
-Normalizing the data so that the total net change adds to 1 for each region emphasizes the trends we observed in the data. Especially Richmond is curious with a large increase in the bottom decile and a drop in the top decile (and also the two below that), a patterned that is, to a lesser extent, mimicked by Burnaby.
+Normalizing the data so that the total net change adds to 1 for each region emphasizes the trends we observed in the data. Especially Richmond is curious with a large increase in the bottom decile and a drop in the top decile (and also the two below that), a pattern that is, to a lesser extent, mimicked by Burnaby.
+

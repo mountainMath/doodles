@@ -41,7 +41,7 @@ Each of these sources comes with it's own advantages and limitations. To underst
 
 We start with CMHC and census data, both of these are freely available and both measure "stock" rents. We have convenient access to census data using our [`cancensus` package](https://github.com/mountainMath/cancensus) and CMHC data using our [`cmhc` package])https://github.com/mountainMath/cmhc).
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 #devtools::install_github("mountainmath/cancensus")
 library(cancensus)
 #devtools::install_github("mountainmath/cmhc")
@@ -54,15 +54,14 @@ library(tidyr)
 library(reshape2)
 parse_integer <- function(x){return(as.integer(sub(",", "", x, fixed = TRUE)))}
 prep <- function(data) {
-  as_integer=c("Bachelor","1 Bedroom","2 Bedroom","3 Bedroom +","Total","Single","Semi / Row / Duplex","Other- Primarily Accessory Suites")
+  variables=c("Bachelor","1 Bedroom","2 Bedroom","3 Bedroom +","Total","Single","Semi / Row / Duplex","Other- Primarily Accessory Suites")
   data$Date=as.integer(sub("\\s.+$","",data$X1))
-  return(data %>% mutate_at(intersect(names(data), as_integer), funs(parse_integer)) %>%
-           select(c("Date","name",intersect(names(data), as_integer)))) 
+  return(data %>%  select(c("Date","name",intersect(names(data), variables)))) 
 }
 ```
 
 Let's read in the historical average rent data from CMHC.
-```{r}
+```{r, message=FALSE, warning=FALSE}
 places=c("Vancouver","Toronto","Calgary","Victoria")
 average_primary_rents <- do.call(rbind,lapply(places, function(place_name){
   get_cmhc(cmhc_timeseries_params(table_id = "2.2.11", geography_id = cmhc_geography_list[place_name])) %>%
@@ -76,7 +75,7 @@ average_other_secondary_rents <- do.call(rbind,lapply(places, function(place_nam
 ```
 
 And plot the time series.
-```{r}
+```{r, fig.height=5, fig.width=10, message=FALSE, warning=FALSE}
 plot_data <- #do.call(rbind,
   rbind(rbind(average_primary_rents %>% rename(`Total Primary` = Total) %>% melt(id=c("Date","name")), 
   average_condo_rents %>% 
