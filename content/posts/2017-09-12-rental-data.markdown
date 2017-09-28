@@ -39,7 +39,7 @@ Data obtained this way measures "turnover" rents, so the amount people pay at th
 ## Comparing Sources
 Each of these sources comes with it's own advantages and limitations. To understand these, let's check how these different sources relate.
 
-We start with CMHC and census data, both of these are freely available and both measure "stock" rents. We have convenient access to census data using our [`cancensus` package](https://github.com/mountainMath/cancensus) and CMHC data using our [`cmhc` package])https://github.com/mountainMath/cmhc).
+We start with CMHC and census data, both of these are freely available and both measure "stock" rents. We have convenient access to census data using our [`cancensus` package](https://github.com/mountainMath/cancensus) and CMHC data using our [`cmhc` package](https://github.com/mountainMath/cmhc).
 
 
 ```r
@@ -84,7 +84,9 @@ plot_data <- #do.call(rbind,
 ggplot(plot_data %>% arrange(Date) %>% filter(name=="Vancouver"), 
        aes(x=Date, y=value, colour=variable)) + 
   geom_line() +
-  geom_point()
+  geom_point() +
+  scale_y_continuous(labels=currency_format) +
+  labs(title="Vancouver Stock Median Rents", x="Year", y="Monthly Rent")
 ```
 
 <img src="/posts/2017-09-12-rental-data_files/figure-html/unnamed-chunk-4-1.png" width="960" />
