@@ -13,7 +13,7 @@ description: "How bad were the NHS income numbers?"
 featured: 'csd_comparison-1.png'
 #featuredalt: ""
 featuredpath: "/posts/2017-09-29-a-retrospective-look-at-nhs-income-data_files/figure-html/"
-images: ["https://mountainmath.ca/posts/2017-09-29-a-retrospective-look-at-nhs-income-data_files/figure-html/csd_comparison-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2017-09-29-a-retrospective-look-at-nhs-income-data_files/figure-html/csd_comparison-1.png"]
 linktitle: ''
 type: "post"
 ---
@@ -204,7 +204,7 @@ moran.mc(sp$Model.2.Difference, ww, nsim=500, zero.policy = TRUE)
 ## weights: ww  
 ## number of simulations + 1: 501 
 ## 
-## statistic = -0.00096903, observed rank = 280, p-value = 0.4411
+## statistic = -0.00096903, observed rank = 268, p-value = 0.4651
 ## alternative hypothesis: greater
 ```
 
@@ -278,7 +278,7 @@ moran.mc(sp_da$Model.2.Difference, ww, nsim=500, zero.policy = TRUE)
 ## weights: ww  
 ## number of simulations + 1: 501 
 ## 
-## statistic = 0.032273, observed rank = 500, p-value = 0.001996
+## statistic = 0.032273, observed rank = 501, p-value = 0.001996
 ## alternative hypothesis: greater
 ```
 
