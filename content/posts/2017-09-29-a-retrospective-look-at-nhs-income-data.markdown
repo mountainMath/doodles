@@ -204,7 +204,7 @@ moran.mc(sp$Model.2.Difference, ww, nsim=500, zero.policy = TRUE)
 ## weights: ww  
 ## number of simulations + 1: 501 
 ## 
-## statistic = -0.00096903, observed rank = 268, p-value = 0.4651
+## statistic = -0.00096903, observed rank = 293, p-value = 0.4152
 ## alternative hypothesis: greater
 ```
 
@@ -306,5 +306,5 @@ The bottom line is that the general caveats for NHS income data remain in place.
 Keeping some of the limitations of our analysis in mind, it does point toward some redeeming features of the NHS data. Even though it is quite noise and may exhibit weak biases, it has added a lot of value to analyses. And some of the early criticism, namely the large discrepancy from 2005 results, is partially redeemed by showing much better relation to the 2015 income data.
 
 ## Improvements on this Analysis
-There is plenty of rooms for improvement of this analysis. As usual, the entire analysis is embedded in this blog post and can be [downloaded from GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-09-20-a-retrospective-look-at-nhs-income-data.Rmarkdown). Feel free to fork, download, or file and issue or a pull request if you find errors or problems in the analysis. 
+There is plenty of rooms for improvement of this analysis. As usual, the entire analysis is embedded in this blog post and can be [downloaded from GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-09-29-a-retrospective-look-at-nhs-income-data.Rmarkdown). Feel free to fork, download, or file and issue or a pull request if you find errors or problems in the analysis. 
 If you may wish to just reproduce the analysis for a different region, or a different variable, that you are interested in, just grab the code and make the appropriate changes.

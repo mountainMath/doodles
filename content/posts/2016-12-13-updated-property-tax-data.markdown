@@ -34,7 +34,7 @@ To make the change in property taxes a little more transparent I have added a ti
 [Tax Density by Land Use Map](https://mountainmath.ca/assessment_gl/map?zoom=15&lat=49.2672&lng=-123.1449) that I have
 [described previously](http://doodles.mountainmath.ca/blog/2016/03/02/property-taxes-and-land-use/). So now people can
 go back in time and see how property taxes changed and compare it to their neighbours. At the same time I
-have updated the data on my [regular assessment data maps]() to be based on the 2016 tax data, more background on the
+have updated the data on my [regular assessment data maps](https://mountainmath.ca/map/assessment?zoom=13&lat=49.2484&lng=-123.1124&layer=10&mapBase=2) to be based on the 2016 tax data, more background on the
 tax data is in [this post](http://doodles.mountainmath.ca/blog/2015/05/31/density-in-vancouver/).
 
 Check out the <a class='btn' href="https://mountainmath.ca/assessment_gl/map?zoom=14&lat=49.2814&lng=-123.1312" target="_blank">interactive map</a>.

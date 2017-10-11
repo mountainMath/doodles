@@ -3,7 +3,7 @@ title: Zoned Capacity
 author: Jens von Bergmann
 date: 2016-10-12
 categories:
-  - Zoning
+  - zoning
   - Vancouver
 slug: zoned-capacity
 author: Jens von Bergmann
