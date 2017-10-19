@@ -8,8 +8,8 @@ categories:
   - Vancouver
 tags: []
 description: 'Counting children in poverty by school catchment area.'
-images: ["https://doodles.mountainmath.ca/posts/2017-10-15-vsb-vulnerable-students_files/figure-html/under_18-1.svg"]
-featured: 'under_18-1.svg'
+images: ["https://doodles.mountainmath.ca/posts/2017-10-15-vsb-vulnerable-students_files/figure-html/under_18-1.png"]
+featured: 'under_18-1.png'
 featuredalt: ""
 featuredpath: "/posts/2017-10-15-vsb-vulnerable-students_files/figure-html"
 linktitle: ''
@@ -267,11 +267,11 @@ Generally, the *Under 6* and *Uner 18* poverty rates correlate quite well, which
 
 We can also get a geographic overview over the *Under 18* poverty rates by catchment.
 
-<img src="/posts/2017-10-15-vsb-vulnerable-students_files/figure-html/under_18-1.svg" width="672" />
+<img src="/posts/2017-10-15-vsb-vulnerable-students_files/figure-html/under_18-1.png" width="672" />
 
 Or the *Under 6* rate by catchment.
 
-<img src="/posts/2017-10-15-vsb-vulnerable-students_files/figure-html/under_6-1.svg" width="672" />
+<img src="/posts/2017-10-15-vsb-vulnerable-students_files/figure-html/under_6-1.png" width="672" />
 
 # Comparing to SSI data
 It's a bit of a pain, but we can use [tabula](http://tabula.technology) to scrape out the number of SSI students from the [November 2015 report](https://www.vsb.bc.ca/sites/default/files/C3%20-%20Update%20on%20Elementary%20Meals%20Program%20-%20REVISED%20%28November%2015%2C%202015%29.pdf) and adjust the names of the schools to match the ones from the open data catalogue we have been working with.

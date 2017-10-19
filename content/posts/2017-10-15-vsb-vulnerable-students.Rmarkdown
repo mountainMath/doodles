@@ -8,8 +8,8 @@ categories:
   - Vancouver
 tags: []
 description: 'Counting children in poverty by school catchment area.'
-images: ["https://doodles.mountainmath.ca/posts/2017-10-15-vsb-vulnerable-students_files/figure-html/under_18-1.svg"]
-featured: 'under_18-1.svg'
+images: ["https://doodles.mountainmath.ca/posts/2017-10-15-vsb-vulnerable-students_files/figure-html/under_18-1.png"]
+featured: 'under_18-1.png'
 featuredalt: ""
 featuredpath: "/posts/2017-10-15-vsb-vulnerable-students_files/figure-html"
 linktitle: ''
@@ -191,7 +191,7 @@ ggplot(db_summary, aes(x=old_rate, y=young_rate)) +
 
 We can also get a geographic overview over the *Under 18* poverty rates by catchment.
 
-```{r under_18, echo=FALSE, dev='svg'}
+```{r under_18, echo=FALSE}
 plot_data <- inner_join(schools,db_summary,by="school")
 ggplot(plot_data) + geom_sf(aes(fill = child_rate),size=0.1) + theme_void() +
   scale_fill_viridis_c(na.value="grey", option="magma", labels=percent) +
@@ -201,7 +201,7 @@ ggplot(plot_data) + geom_sf(aes(fill = child_rate),size=0.1) + theme_void() +
 
 Or the *Under 6* rate by catchment.
 
-```{r under_6, echo=FALSE, dev='svg'}
+```{r under_6, echo=FALSE}
 ggplot(plot_data) + geom_sf(aes(fill = young_rate),size=0.1) + theme_void() +
   scale_fill_viridis_c(na.value="grey", option="magma", labels=percent) +
   labs(caption=caption2) +
