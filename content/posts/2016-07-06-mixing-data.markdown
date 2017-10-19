@@ -116,5 +116,5 @@ how many dwelling units the census places in an "Apartment, building that has fe
 
 <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script src="/lib/jquery.min.js" charset="utf-8"></script>
-<script src="/javascripts/colorbrewer.js" charset="utf-8"></script>
-<script src="/javascripts/school_bar_graph.js" charset="utf-8"></script>
+<script src="/js/colorbrewer.js" charset="utf-8"></script>
+<script src="/js/school_bar_graph.js" charset="utf-8"></script>

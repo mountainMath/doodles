@@ -19,6 +19,7 @@ type: "post"
 
 ```{r, include=FALSE}
 library(blogdown)
+library(knitr)
 knitr::render_markdown(TRUE)
 ```
 
@@ -142,7 +143,8 @@ Let's inspect the number of children in the offending CT to get an idea how it w
 na_rows <- data %>% as.data.frame %>% 
   filter(is.na(`0-4`) | is.na(`5-9`) | is.na(`10-14`)) %>%  select(c("GeoUID","year",age_groups))
 all_na <- na_rows %>%pull("GeoUID")
-data[data$GeoUID %in% all_na,] %>% as.data.frame %>% select(c("year",age_groups, "0-14"))
+data[data$GeoUID %in% all_na,] %>% as.data.frame %>% 
+  select(c("year",age_groups, "0-14")) %>% kable(format='html')
 data <- data %>% filter(!data$GeoUID %in% all_na)
 ```
 We see that there aren't many kids in this census tract, and there is not much movement in the total numbers between 2006 and 2016. Excluding this CT will not have much impact on the overall analysis.

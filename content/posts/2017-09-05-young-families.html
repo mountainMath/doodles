@@ -70,14 +70,83 @@ data=rbind(rbind(data_2016 %&gt;% select(vs), data_2011 %&gt;% select(vs)), data
 na_rows &lt;- data %&gt;% as.data.frame %&gt;% 
   filter(is.na(`0-4`) | is.na(`5-9`) | is.na(`10-14`)) %&gt;%  select(c(&quot;GeoUID&quot;,&quot;year&quot;,age_groups))
 all_na &lt;- na_rows %&gt;%pull(&quot;GeoUID&quot;)
-data[data$GeoUID %in% all_na,] %&gt;% as.data.frame %&gt;% select(c(&quot;year&quot;,age_groups, &quot;0-14&quot;))
-
-##   year 0-4 5-9 10-14 0-14
-## 1 2016  65  50    60  180
-## 2 2011  NA  NA    NA   NA
-## 3 2006  75  75    55  205
-
-data &lt;- data %&gt;% filter(!data$GeoUID %in% all_na)</code></pre>
+data[data$GeoUID %in% all_na,] %&gt;% as.data.frame %&gt;% 
+  select(c(&quot;year&quot;,age_groups, &quot;0-14&quot;)) %&gt;% kable(format=&#39;html&#39;)</code></pre>
+<table>
+<thead>
+<tr>
+<th style="text-align:left;">
+year
+</th>
+<th style="text-align:right;">
+0-4
+</th>
+<th style="text-align:right;">
+5-9
+</th>
+<th style="text-align:right;">
+10-14
+</th>
+<th style="text-align:right;">
+0-14
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+2016
+</td>
+<td style="text-align:right;">
+65
+</td>
+<td style="text-align:right;">
+50
+</td>
+<td style="text-align:right;">
+60
+</td>
+<td style="text-align:right;">
+180
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+2011
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+2006
+</td>
+<td style="text-align:right;">
+75
+</td>
+<td style="text-align:right;">
+75
+</td>
+<td style="text-align:right;">
+55
+</td>
+<td style="text-align:right;">
+205
+</td>
+</tr>
+</tbody>
+</table>
+<pre><code>data &lt;- data %&gt;% filter(!data$GeoUID %in% all_na)</code></pre>
 <p>We see that there aren’t many kids in this census tract, and there is not much movement in the total numbers between 2006 and 2016. Excluding this CT will not have much impact on the overall analysis.</p>
 <p>This can serve as a good reminder that census numbers are just estimates, the relevant global response rate for the City of Vancouver has been around 5% for all three censuses. That’s pretty good, but the response rate is not unbiased and may have a small effect on the analysis.</p>
 <p>As alluded to in the introduction, we have split CoV into two areas, which we refer to as “central” and “outer” regions. Census tracts change over time, so it’s always good to do a quick visual check what we got the split consistent over time, as well as remind ourselves what they are.</p>

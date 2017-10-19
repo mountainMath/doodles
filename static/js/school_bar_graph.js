@@ -136,8 +136,8 @@ function horBarGraph(selector,defaultOptionName) {
 }
 
 
-
+setTimeout(function(){
 horBarGraph('#schools',"University Hill Elem.");
-
+},500)
 
 

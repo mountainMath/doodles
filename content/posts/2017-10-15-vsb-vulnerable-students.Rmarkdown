@@ -1,0 +1,310 @@
+---
+title: VSB Vulnerable Students
+author: Jens von Bergmann
+date: '2017-10-15'
+slug: vsb-vulnerable-students
+categories:
+  - cancensus
+  - Vancouver
+tags: []
+description: 'Counting children in poverty by school catchment area.'
+images: ["https://doodles.mountainmath.ca/posts/2017-10-15-vsb-vulnerable-students_files/figure-html/under_18-1.svg"]
+featured: 'under_18-1.svg'
+featuredalt: ""
+featuredpath: "/posts/2017-10-15-vsb-vulnerable-students_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+Recently there was some discussion at my son's school about the hot lunch program, and who should pay for those who need a subsidy. Which made me curious how that works. Here is what I learned.
+
+# Student Vulnerability
+Before we can talk about the VSB meal program, we need to talk about *student vulnerability*. VSB's program concentrates its resource where the need is highest. Schools get ranked into tiers depending on the proportion of vulnerable students and categories and resources get attributed by tier. VSB uses the provincial Supplemental Security Income (SSI) data to determine the [number and proportion of *vulnerable* students](https://www.vsb.bc.ca/sites/default/files/C3%20-%20Update%20on%20Elementary%20Meals%20Program%20-%20REVISED%20%28November%2015%2C%202015%29.pdf).
+
+That is a reasonable approach, most importantly because it captures attributes of students actually attending the school as opposed to the properties of children in the catchment, some of which may attend other schools. It is not clear to me how well the match between SSI and VSB students is or can be done, this kind of record matching is bound to miss some case. [VSB correlated that metric with other demographic and school level indicator](https://www.vsb.bc.ca/sites/default/files/Final%20IC%20Revisioning%20Report%20February%202014%20with%20Appendices.pdf) to validate it. At the same time, demographics of vulnerable students can shift fairly fast in some schools, so VSB regularly checks the SSI numbers to ensure that resources keep getting to the schools most in need. As shifting resources from one school to another comes with a considerable amount of friction, VSB applies some multi-year smoothing on the data to avoid unnecessary shifts.
+
+However, it seems that not considering child poverty numbers is a fairly glaring omission in the VSB analysis. VSB did check for households with income under $30,000, but that seems like a very poor proxy as it is not adjusted by family size, does not separate out income of families with children from others and the VSB analysis accordingly only found a weak correlation to SSI. With fresh 2015/2016 data available we now can fill this gap.
+
+# Child Poverty By Catchment
+Let's look at child poverty by school catchment. Using `cancensus` that ties into our CensusMapper API this is fairly straightforward, we have to assemble the regions that make up VSB and load in the data. Without going into too much details, the census has two separate low income measures, [LIM-AT and LICO-AT](https://censusmapper.ca/maps/844). LICO-AT seems best suited for our needs. One problem is that only two age groups are available, *Under 6* and *Under 18*. *Under 6* has very little overlap with the elementary school population, whereas *Under 18* is a little too broad and risks including those students which live outside their parents household but not in student housing in their own private household. But by looking at the range between these two numbers we should get a good enough proxy for child poverty of elementary school children without having to go to a custom tabulation.
+
+```{r, include=FALSE}
+library(sf)
+library(ggplot2)
+library(dplyr)
+library(viridis)
+library(tidyr)
+library(scales)
+library(knitr)
+library(DT)
+'%nin%' <- Negate('%in%')
+caption1 <- "via Mountain Doodles, cancensus, Stats Canada"
+caption2 <- "via Mountain Doodles, cancensus, Stats Canada, Vancouver Open Data"
+caption3 <- "via Mountain Doodles, Vancouver Open Data,VSB"
+```
+
+```{r, message=FALSE, warning=FALSE}
+library(cancensus)
+rs=list(CT=c("9330069.01","9330069.02"), CSD=c("5915022","5915803"))
+vs=c("v_CA16_25","v_CA16_2513","v_CA16_2558","v_CA16_2573","v_CA16_2516","v_CA16_2561")
+data <- get_census(dataset='CA16', regions=rs, vectors=vs, 
+                   labels="short", geo_format='sf', level='DA') %>% 
+  rename(elementary_children = v_CA16_25,children = v_CA16_2513,
+         poor_children = v_CA16_2558, poverty_rate = v_CA16_2573,
+         young_children = v_CA16_2516, poor_young = v_CA16_2561) %>%
+  mutate(poverty_rate=poverty_rate/100)
+
+data %>% as.data.frame %>% 
+  select(children, elementary_children, poor_children) %>%
+  summarize_all(sum, na.rm=TRUE) %>% kable(format="html")
+```
+
+## Where are the poor children?
+
+```{r children, dev='svg'}
+ggplot(data) + geom_sf(aes(fill = poverty_rate),size=0.1) + 
+  scale_fill_viridis_c(na.value="grey", option="magma", labels=percent) +
+  labs(caption=caption1) +
+  theme_void()
+```
+
+# Matching with School Catchments
+```{r, include=FALSE}
+populate_custom_regions <- function(dat,custom_regions, column,use_centroids=TRUE){
+ if (use_centroids) {
+   dat$centroid <- st_transform(st_centroid(st_transform(dat$geometry,26910)),4326)
+   dat <- st_join(dat %>% st_set_geometry("centroid"),custom_regions %>% select(column)) %>%  st_set_geometry("geometry")
+ } else {
+   alert("not implemented yet")
+ }
+ missing <- st_intersection(dat[is.na(dat[[column]]),] %>% select_(paste0("-",column)),custom_regions) 
+ missing$area <- st_area(missing$geometry)
+ link <- missing %>% group_by(GeoUID) %>% filter(area == max(area)) %>% as.data.frame %>% select(c("GeoUID",column))
+ lookup <- setNames(link %>% pull(column),link$GeoUID)
+
+# set missing school data
+ dat[is.na(dat[[column]]),][[column]] = as.character(lookup[dat[is.na(dat[[column]]),]$GeoUID])
+ return(dat)
+}
+```
+
+We need the geographies of the school catchments. The [Vancouver Open Data Catalogue](http://data.vancouver.ca/datacatalogue/index.htm) has these, but unfortunately they are at least three years out of date as we have [noticed before](https://doodles.mountainmath.ca/blog/2016/07/06/mixing-data/). But this will do for our purposes, even though the catchments are wrong for UHill, the school my son is in and that triggered this post.
+
+```{r, include=FALSE}
+if (!file.exists("schools.zip")) {
+  download.file("ftp://webftp.vancouver.ca/OpenData/shape/shape_public_places.zip","schools.zip")
+  unzip("schools.zip",exdir="schools")
+}
+```
+
+```{r, message=FALSE, warning=FALSE}
+schools <- read_sf("schools/elementary_school_boundaries.shp") %>% 
+  st_transform(4326) %>% rename(school=NAME)
+
+data <- populate_custom_regions(data,schools,"school")
+  
+summary <- data %>% as.data.frame %>% group_by(school) %>% 
+  select(school, children, poor_children) %>% summarise_all(sum, na.rm=TRUE) %>% 
+  mutate(rate=poor_children/children) %>% arrange(desc(rate))
+```
+
+# Visual check on match
+It's a good idea to get visual feedback on how good our match of catchments with census areas is.
+
+```{r, echo=FALSE, dev='svg'}
+ggplot(data) + geom_sf(aes(fill = school),size=0.1) + 
+  labs(caption=caption2) +
+  theme_void() +
+  scale_fill_discrete(guide=FALSE) + geom_sf(data=schools, fill=NA)
+```
+
+Overall, this shows that Dissemination Area level data is suitable to match school catchment areas. We can further improve this by going to down dissemination blocks and estimating the population of children and children in poverty by distributing the higher level Dissemination Area data proportionally by population counts. This will in some cases not be entirely accurate, but in aggregate this should improve the overall accuracy of our estimates. Our `dotdensity` R package has the functionality to do this built in.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+db_data <- get_census(dataset='CA16', regions=rs, labels="short", geo_format='sf', level='DB')
+categories=c("children","elementary_children","poor_children","young_children","poor_young")
+library(dotdensity)
+db_data_sp=as(db_data,"Spatial")
+da_data_sp=as(data,"Spatial")
+db_data_sp@data <- dotdensity::dot_density.proportional_re_aggregate(
+  data=db_data_sp@data, parent_data=da_data_sp@data,
+  geo_match=setNames("GeoUID","DA_UID"), categories=categories)
+db_data <- st_as_sf(db_data_sp)
+
+db_data <- populate_custom_regions(db_data,schools,"school")
+
+db_summary <- db_data %>% as.data.frame %>% group_by(school) %>% 
+  select(school, children, poor_children, young_children, poor_young) %>% summarise_all(sum, na.rm=TRUE) %>% 
+  mutate(child_rate=poor_children/children, young_rate=poor_young/young_children,
+         old_children=children-young_children,poor_old=poor_children-poor_young,
+         old_rate=poor_old/old_children) %>% 
+  mutate(children=round(children), poor_children=round(poor_children),
+         poor_young=round(poor_young),young_children=round(young_children),
+         old_children=round(old_children),poor_old=round(poor_old))
+#db_summary %>% filter(is.na(school)) %>% kable(format='html')
+```
+
+
+
+```{r, echo=FALSE}
+ggplot(db_data) + geom_sf(aes(fill = school),size=0.1) + theme_void() +
+  labs(caption=caption2) +
+  scale_fill_discrete(guide=FALSE) + geom_sf(data=schools, fill=NA)
+```
+
+We see that the match is much improved, although this involved the minor assumption that children are uniformly distributed among the population in the overlap areas.
+
+# Poverty Rate by School Catchment
+Next we check the child poverty levels at the 10 schools with the highest rates, splitting the children under 18 into the *young* children under 6 and the *old* children 6 to 17.
+
+```{r}
+db_summary %>% arrange(desc(child_rate)) %>% top_n(10,child_rate) %>% kable(format='html')
+```
+
+A more comprehensive look is the following graph, where we order the schools according to the average of the *Under 6* and *Under 18* poverty rates.
+```{r, echo=FALSE, fig.height=10, dev='svg'}
+plot_data <- db_summary %>% 
+  mutate(`Under 18` = child_rate, `Under 6` = young_rate, avergage_rate=(`Under 18`+`Under 6`)/2) %>%
+  gather(key="Group", value="rate" ,c("Under 18","Under 6"))
+ggplot(plot_data , aes(x=reorder(school, avergage_rate), y=rate, fill=Group)) +
+  scale_y_continuous(labels=percent) + theme_bw() + 
+  labs(x="School Catchment",y="Child Poverty Rate") +
+  geom_bar(stat="identity",  position="dodge") + 
+  labs(caption=caption2) +
+  coord_flip() 
+```
+
+Generally, the *Under 6* and *Uner 18* poverty rates correlate quite well, which gives us confidence that the rates for the elementary school population in these groups will be quite similar. More formally, the correlation coefficient is `r round(cor(db_summary$child_rate,db_summary$young_rate),2)` and we can view the outliers in this scatter plot.
+
+```{r, include=FALSE}
+ggplot(db_summary, aes(x=old_rate, y=young_rate)) +
+    geom_point(shape=1) +
+    theme(legend.position="none") +
+    geom_smooth(method=lm) +
+  scale_x_continuous(labels=percent) +
+  scale_y_continuous(labels=percent) +
+  labs(caption=caption2) +
+  labs(x="6 to 17 Poverty",y="Under 6 Poverty") #+
+  #geom_text(data = filter(db_summary, abs(residuals)>0.075),aes(label=school), vjust=1.1)
+```
+
+
+We can also get a geographic overview over the *Under 18* poverty rates by catchment.
+
+```{r under_18, echo=FALSE, dev='svg'}
+plot_data <- inner_join(schools,db_summary,by="school")
+ggplot(plot_data) + geom_sf(aes(fill = child_rate),size=0.1) + theme_void() +
+  scale_fill_viridis_c(na.value="grey", option="magma", labels=percent) +
+  labs(caption=caption2) +
+  labs(fill="Under 18\npoverty rate")
+```
+
+Or the *Under 6* rate by catchment.
+
+```{r under_6, echo=FALSE, dev='svg'}
+ggplot(plot_data) + geom_sf(aes(fill = young_rate),size=0.1) + theme_void() +
+  scale_fill_viridis_c(na.value="grey", option="magma", labels=percent) +
+  labs(caption=caption2) +
+  labs(fill="Under 6\npoverty rate")
+```
+
+# Comparing to SSI data
+It's a bit of a pain, but we can use [tabula](http://tabula.technology) to scrape out the number of SSI students from the [November 2015 report](https://www.vsb.bc.ca/sites/default/files/C3%20-%20Update%20on%20Elementary%20Meals%20Program%20-%20REVISED%20%28November%2015%2C%202015%29.pdf) and adjust the names of the schools to match the ones from the open data catalogue we have been working with.
+```{r, message=FALSE, warning=FALSE}
+ssi <- readr::read_csv('../../static/data/tabula-C3 - Update on Elementary Meals Program - REVISED (November 15, 2015).csv')
+```
+
+The match between the two data sources is not perfect, and my knowledge about VSB schools is not good enough to fill in the gaps. The geographic dataset is quite old and for example doesn't distinguish between UHill Elementary and Norma Rose Point, so I pooled the SSI data for these. I also pools schools and their annexes, but there were still some schools left over without match.
+
+Missing from the SSI data were `r paste(unique(db_data$school[db_data$school %nin% ssi$school]),collapse=", ")`, and missing from the geographic school data were `r paste(unique(ssi[["School Name"]][ssi$school %nin% db_data$school]), collapse=", ")`.
+
+Some of the mismatch is due to the French Immersion schools that we don't consider there. Maybe someone with more experience can point me to how to further reconcile these two datasets. (And hopefully the geographic dataset can be updated to reflect recent changes.) For the remaining bulk of the schools for which we can match the data we can try to understand the relationship between child poverty rates and SSI.
+
+```{r}
+join_data <- left_join(db_summary,
+                       ssi %>% group_by(school) %>% 
+                         summarize(ssi=sum(`Approximate #s of students`),enrolment=sum(enrolment)),
+                       by="school") %>% 
+  filter(!is.na(child_rate),!is.na(ssi)) %>% mutate(ssi_rate=ssi/enrolment)
+```
+The correlation between the number of SSI students enrolled and either the number of children *Under 18* or *Under 6* in the catchment in poverty is surprisingly poor at `r round(cor(join_data$poor_children,join_data$ssi),2)` and `r round(cor(join_data$poor_young,join_data$ssi),2)`.
+
+We can go through the laborious work to hand-copy the enrolment numbers from the [scanned PDF in Appendix K of this report](http://www.vsb.bc.ca/sites/default/files/lrfp/2016/06/appendix-k-current-capacity-utilization-by-school.pdf) to convert the number of SSI students into percentages (not counting international students). The correlations of the *Under 18* and *Under 6* rates with the SSI rates are `r round(cor(join_data$child_rate,join_data$ssi_rate),2)` and `r round(cor(join_data$young_rate,join_data$ssi_rate),2)` which are much stronger. 
+
+```{r, include=FALSE}
+model <- lm(ssi_rate ~ old_rate + young_rate, join_data)
+model_old <- lm(ssi_rate ~ young_rate, join_data)
+model_young <- lm(ssi_rate ~ old_rate , join_data)
+model_child <- lm(ssi_rate ~ child_rate, join_data)
+join_data$residuals <- resid(model)
+join_data$rate <- fitted.values(model)
+join_data$child_residuals <- resid(model_child)
+join_data$young_residuals <- resid(model_young)
+join_data$old_residuals <- resid(model_old)
+```
+
+We are particularly interested in the outliers where the SSI rates and poverty rates don't match. First up the stronger correlation with the *Under 18* numbers.
+
+```{r, echo=FALSE}
+ggplot(join_data, aes(x=child_rate, y=ssi_rate)) +
+    geom_point(shape=1) +
+    theme(legend.position="none") +
+    geom_smooth(method=lm) +
+  scale_x_continuous(labels=percent) +
+  scale_y_continuous(labels=percent) +
+  labs(x="Under 18 Poverty",y="SSI Rate") +
+  labs(caption=caption2) +
+  geom_text(data = filter(join_data, abs(child_residuals)>0.2),aes(label=school), vjust=1.1)
+```
+
+The *Under 6* correlation shows a similar pattern, from which we again infer that the poverty rates for the 5 to 10 age group that we don't have available from the standard census release data will likely show similar results
+.
+```{r, echo=FALSE}
+ggplot(join_data, aes(x=young_rate, y=ssi_rate)) +
+    geom_point(shape=1) +
+    theme(legend.position="none") +
+    geom_smooth(method=lm) +
+  scale_x_continuous(labels=percent) +
+  scale_y_continuous(labels=percent) +
+  labs(x="Under 6 Poverty",y="SSI Rate") +
+  labs(caption=caption2) +
+  geom_text(data = filter(join_data, abs(child_residuals)>0.15),aes(label=school), vjust=1.1)
+```
+
+To get the best fit we can model the SSI rates on both the poverty rates for the *Under 6* and the *6 to 17* populations, and graph the SSI rates against the model fit.
+
+```{r under_18_fit, echo=FALSE}
+ggplot(join_data, aes(x=rate, y=ssi_rate)) +
+    geom_point(shape=1) +
+    theme(legend.position="none") +
+    geom_smooth(method=lm) +
+  scale_x_continuous(labels=percent) +
+  scale_y_continuous(labels=percent) +
+  labs(x="Fitted Poverty Rate",y="SSI Rate") +
+  labs(caption=caption2) +
+  geom_text(data = filter(join_data, abs(child_residuals)>0.15),aes(label=school), vjust=1.1)
+```
+
+The correlation of the SSI rates with the model fit increases to `r round(cor(join_data$rate,join_data$ssi_rate),2)`, but the general pattern of the outliers remains.
+
+To round things off, let's map the SSI rate.
+
+```{r under_6_fit, echo=FALSE, dev='svg'}
+plot_data2 <- left_join(schools,join_data,by="school")
+ggplot(plot_data2) + geom_sf(aes(fill = ssi_rate),size=0.1) + theme_void() +
+  scale_fill_viridis_c(na.value="grey", option="magma", labels=percent) +
+  labs(caption=caption3) +
+  labs(fill="SSI rate")
+```
+
+This nicely highlights the discrepancy from the poverty rates above.
+
+# Takeaway
+What is remarkable is that the worst outliers are the same, no matter if using the *Under 18*, *Under 6* or fitted model. This, together with the generally quite low correlations, suggests that the SSI data is missing some important aspects of poverty. 
+
+In particular, UHill Elementary and Maple Grove show high proportions of child poverty in their catchment that is not matched by SSI rates. At UHIll Elementary, this may be partially due to a large number of children with parents in subsidized graduate student housing that register with the highest child poverty rates, but may not qualify for SSI.
+
+There are a number of possible explanations for this, to dig deeper one should add other demographic variables to reproduce the somewhat opaque analysis done by VSB. It's fairly straightforward to adapt this analysis to include other census data using `cancensus` by downloading the [R notebook](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-10-15-vsb-vulnerable-students.Rmd) that built this post and reproduces the analysis, and one can add school level data by updating the [spreadsheet](/data/tabula-C3 - Update on Elementary Meals Program - REVISED (November 15, 2015).csv) that was scraped and manually enriched with enrolment data.
+
+
+
