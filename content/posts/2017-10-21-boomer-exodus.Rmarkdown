@@ -8,7 +8,6 @@ categories:
   - CensusMapper
   - Vancouver
 tags: []
-draft: true
 description: "Change in size of age groups vs net migration"
 featured: 'yvr_age_pyramids-1.png'
 images: ["https://doodles.mountainmath.ca/posts/2017-10-21-boomer-exodus_files/figure-html/yvr_age_pyramids-1.png"]
@@ -129,6 +128,6 @@ We see that each municipality has it's own demographic fingerprint in terms of t
 # Takeaway
 Change in size of age groups and net migration are two different concepts. They can align at times, essentially when the age distribution is uniform, but often don't. Looking at the Canada-wide change in the 40 to 44 year old age group 2006 to 2016, vs the net migration of the 40 to 44 year old cohort in 2006 compared to 2016 is a great example of that. The size of the age group shrank by 13.6%, but the the age cohort experienced a net in-migration of 4.6%.
 
-Want to refine this further? As always, the code that ran the numbers and made the graphs is embedded in this blog post. Just grab it from our [GitHub repo]() if you want to play with it.
+Want to refine this further? As always, the code that ran the numbers and made the graphs is embedded in this blog post. Just grab it from our [GitHub repo](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-10-21-boomer-exodus.Rmarkdown) if you want to play with it.
 
 
