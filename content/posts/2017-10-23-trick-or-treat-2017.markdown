@@ -20,7 +20,7 @@ In 2015 CensusMapper got launched onto the national stage with our Trick-or-Trea
 We again offer our standard Halloween trifecta: 
  <style>
  .thirds{
-  width:33%;
+  width:32%;
   margin:0;
  }
  .inline{
