@@ -17,7 +17,7 @@ type: "post"
 
 In 2015 CensusMapper got launched onto the national stage with our Trick-or-Treat maps that got viewed by 150,000 Canadians across the country within just three days. In 2016 we [updated our map with some predictive modeling](https://doodles.mountainmath.ca/blog/2016/10/21/trick-or-treat-2016/) as the 2011 data it was based on was already 5 years old. This year we got the fresh 2016 data that we are serving straight-up. 
 
-We again offer our standard Halloween trifecta: 
+We again offer our standard Halloween trifecta:
  <style>
  .thirds{
   width:32%;

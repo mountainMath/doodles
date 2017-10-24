@@ -17,7 +17,7 @@ type: "post"
 
 In 2015 CensusMapper got launched onto the national stage with our Trick-or-Treat maps that got viewed by 150,000 Canadians across the country within just three days. In 2016 we [updated our map with some predictive modeling](https://doodles.mountainmath.ca/blog/2016/10/21/trick-or-treat-2016/) as the 2011 data it was based on was already 5 years old. This year we got the fresh 2016 data that we are serving straight-up. 
 
-We again offer our standard Halloween trifecta: 
+We again offer our standard Halloween trifecta:
  <style>
  .thirds{
   width:32%;
@@ -28,11 +28,11 @@ We again offer our standard Halloween trifecta:
  }
  </style>
  
- {{< figure src="/images/tot_onslaught_2017.png" link="https://censusmapper.ca/maps/868" title="Trick-or-Treat Onslaugt" class="inline thirds">}}
+ {{< figure src="/images/tot_onslaught_2017.png" link="https://censusmapper.ca/maps/868" title="Trick-or-Treat Onslaught" class="inline thirds">}}
  {{< figure src="/images/tot_density_2017.png" link="https://censusmapper.ca/maps/869" title="Trick-or-Treat Density" class="inline thirds">}}
  {{< figure src="/images/tot_haunted_2017.png" link="https://censusmapper.ca/maps/870" title="Haunted Houses" class="inline thirds">}}
  
-These maps are of course interactive and Canada-wide, you can explore the country by zooming, panning, geo-locating, using the serach bar or the overview map in the top right to navigate across Canada. To share the window you are looking at just copy-paste the current URL of the map window. 
+These maps are of course interactive and Canada-wide, you can explore the country by zooming, panning, geo-locating, using the search bar or the overview map in the top right to navigate across Canada. To share the window you are looking at just copy-paste the current URL of the map window. 
 
 <div style="font-size:20px;font-weight:bold;text-align:center;">🎃Happy Halloween 2017!🎃 </div>
 <div style="text-align:center;margin-bottom:15px;">from the CensusMapper team</div>
@@ -61,7 +61,7 @@ and want to know how much candy to stock. Darker colours means you need more can
 
 * The <a class='halloween' href="https://censusmapper.ca/maps/869" target="_blank">Trick-or-Treat Density Map</a> estimates the number of children of prime trick-or-treat age per area, so the expected trick-or-treat foot traffic
 in each area. Use this map if you plan on taking your kids out trick-or-treating and want to make sure you find the area
-in your neighbourhood with the most kids out on the street. Darker colours mean more kids. <bf>Important:</bf> Remember that Trick-or-Treating is also about connecting with your neightbourhood, so we hope you won't use this to plan your cross-town drive-and-trick-or-treat trip but rather to discover new trick-or-treat density pockets in your own hood.
+in your neighbourhood with the most kids out on the street. Darker colours mean more kids. <bf>Important:</bf> Remember that Trick-or-Treating is also about connecting with your neighbourhood, so we hope you won't use this to plan your cross-town drive-and-trick-or-treat trip but rather to discover new trick-or-treat density pockets in your own hood.
 
 * The <a class='halloween' href="https://censusmapper.ca/maps/870" target="_blank">Haunted Houses Map</a> shows
 the houses that were occupied only by ghosts or *unusual residents* in May 2016. Ghosts and *unusual residents* tend
@@ -71,17 +71,17 @@ to be restless, and areas that were severely haunted a year ago might have under
 ## Toronto
 The prize for the most views of our Trick-or-Treat maps last year goes to Toronto, so here are quick-links for the Toronto area.
 
-{{< figure src="/images/tot_onslaught_tor_2017.png" link="https://censusmapper.ca/maps/868#12/43.6941/-79.4265" title="Trick-or-Treat Onslaugt" class="inline thirds">}}
+{{< figure src="/images/tot_onslaught_tor_2017.png" link="https://censusmapper.ca/maps/868#12/43.6941/-79.4265" title="Trick-or-Treat Onslaught" class="inline thirds">}}
  {{< figure src="/images/tot_density_tor_2017.png" link="https://censusmapper.ca/maps/869#12/43.6941/-79.4265" title="Trick-or-Treat Density" class="inline thirds">}}
  {{< figure src="/images/tot_haunted_tor_2017.png" link="https://censusmapper.ca/maps/870#12/43.6941/-79.4265" title="Haunted Houses" class="inline thirds">}}
 
 ## Calgary
-Calgary earns the prize of the most views per population last year, earning the title of "most scientific Hallowween preparation".
+Calgary earns the prize of the most views per population last year, earning the title of "most scientific Halloween preparation".
 
-{{< figure src="/images/tot_onslaught_cal_2017.png" link="https://censusmapper.ca/maps/868#12/51.0404/-114.0997" title="Trick-or-Treat Onslaugt" class="inline thirds">}}
+{{< figure src="/images/tot_onslaught_cal_2017.png" link="https://censusmapper.ca/maps/868#12/51.0404/-114.0997" title="Trick-or-Treat Onslaught" class="inline thirds">}}
  {{< figure src="/images/tot_density_cal_2017.png" link="https://censusmapper.ca/maps/869#12/51.0404/-114.0997" title="Trick-or-Treat Density" class="inline thirds">}}
  {{< figure src="/images/tot_haunted_cal_2017.png" link="https://censusmapper.ca/maps/870#12/51.0404/-114.0997" title="Haunted Houses" class="inline thirds">}}
 
 
 # The Future
-For a short second we toyed with the idea to start modeling the number of kids in 2017 based on our 2006 and 2016 data, as well as CMHC completion data. But we felt that the simplicity and transparency of serving straight-up 2016 census data outweights the benefits of having slightly more accurate data at the expense of complex algorithms. As we move further out from the 2016 census there will be plenty of opportunity to flex some serious CensusMapper muscle and dive deep into our modeling capabilities.
+For a short second we toyed with the idea to start modelling the number of kids in 2017 based on our 2006 and 2016 data, as well as CMHC completion data. But we felt that the simplicity and transparency of serving straight-up 2016 census data outweighs the benefits of having slightly more accurate data at the expense of complex algorithms. As we move further out from the 2016 census there will be plenty of opportunity to flex some serious CensusMapper muscle and dive deep into our modelling capabilities.
