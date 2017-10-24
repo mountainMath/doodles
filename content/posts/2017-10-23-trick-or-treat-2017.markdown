@@ -21,6 +21,7 @@ We again offer our standard Halloween trifecta:
  <style>
  .thirds{
   width:33%;
+  margin:0;
  }
  .inline{
   display:inline-block;
