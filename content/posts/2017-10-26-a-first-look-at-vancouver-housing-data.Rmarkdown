@@ -1,0 +1,413 @@
+---
+title: A First Look At Vancouver Housing Data
+author: Jens von Bergmann
+date: '2017-10-26'
+slug: a-first-look-at-vancouver-housing-data
+categories:
+  - cancensus
+  - CensusMapper
+  - Vancouver
+tags: []
+description: 'Making sense of the new census data.'
+featured: 'region_affordability-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2017-10-26-a-first-look-at-vancouver-housing-data_files/figure-html/region_affordability-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2017-10-26-a-first-look-at-vancouver-housing-data_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+The 2016 census data on housing got released yesterday. We had the data imported and available on CensusMapper by 10am yesterday morning, after a slight delay due to the 40GB SSD space on the server running out and requiring additional disk space to be mounted for the data import. Lots of people have already used CensusMapper to dive into the data, but I had only just now found some time to take a look myself. This is a descriptive overview as a first step toward understanding what is happening. As always, the code for the analysis and graphs is embedded in this post and the underlying R notebook can be [downloaded from GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-10-26-a-first-look-at-vancouver-housing-data.Rmarkdown).
+
+# The big question
+One of the most anticipated parts of the release was data on the *shelter cost to income ratio*. The key affordability measure in census data. The *shelter cost to income ratio* is computed at the individual household level, which sets it apart from most other affordability measures that operate on aggregate data. The measure published in the census is the proportion of the households that spends more than 30% of their (pre-tax) income on running shelter costs, and the data can also be split up for owner and tenant households separately.
+
+And the big surprise was that the affordability in the City of Vancouver improved by this measure. Yes, you heard that right, affordability improved when compared to 2006 or 2011. That had a lot of close observers perplexed as it seems to contradict the experience many people have on the ground.
+
+Cases like this exemplify why careful analysis is needed.
+
+# Improving Affordability
+To start things off let's look at the numbers. We will use `cancensus` to load the data. It's a little cumbersome since we have to request the data separately for each census year. Sadly don't have the resources available to enable querying variables across several census releases.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+library(cancensus)
+library(tidyverse)
+caption="StatCan census 2006, 2011 NHS, 2016 via cancensus & CensusMapper"
+format_percent <- function(x){return(paste0(round(x*100,1),"%"))}
+format_number <- function(x){return(format(x,big.mark = ","))}
+
+affordability_graph_for <- function(regions, text_size=4) {
+vectors_2016=c("v_CA16_4892","v_CA16_4899")
+vectors_2011=c("v_CA11N_2283","v_CA11N_2290")
+vectors_2006=c("v_CA06_2049","v_CA06_2051","v_CA06_2053","v_CA06_2056")
+data_2016=get_census("CA16",level="Regions",regions=regions,vectors=vectors_2016,labels="short") %>%
+  mutate(Owner=v_CA16_4892/100, Tenant=v_CA16_4899/100, Year=2016) 
+data_2011=get_census("CA11",level="Regions",regions=regions,vectors=vectors_2011,labels="short") %>%
+  mutate(Owner=v_CA11N_2283/100, Tenant=v_CA11N_2290/100, Year=2011) 
+data_2006=get_census("CA06",level="Regions",regions=regions,vectors=vectors_2006,labels="short") %>%
+  mutate(Owner=v_CA06_2056/v_CA06_2053, Tenant=v_CA06_2051/v_CA06_2049, Year=2006)
+
+data <- do.call(rbind,list(
+  data_2016 %>% select("Region Name", "Owner", "Tenant", "Year"),
+  data_2011 %>% select("Region Name", "Owner", "Tenant", "Year"),
+  data_2006 %>% select("Region Name", "Owner", "Tenant", "Year")
+                      )) %>% mutate(Region=`Region Name`) %>% 
+         gather(key="Tenure", value="Count",c("Owner","Tenant")) %>%
+         mutate(Year=factor(Year,levels=c(2006,2011,2016),ordered=TRUE))
+
+g1 <- ggplot(data, 
+       aes(x=factor(Year), y=Count, fill=Tenure)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x="Year", y="Share", title="Households spending 30% or more on shelter costs", caption=caption) +
+  geom_text(aes(label=format_percent(Count)),vjust=-0.5, position = position_dodge(width = 1), size=text_size) +
+  expand_limits(y=max(data$Count)*1.15) +
+  facet_wrap("Region",ncol=2) +
+  theme_bw()
+return(g1)
+}        
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.height=4, fig.width=7}
+region=list_census_regions('CA16', quiet=TRUE, use_cache = TRUE) %>%
+  filter(level=='CSD',name=='Vancouver') %>% as_census_region_list
+affordability_graph_for(region)
+```
+
+
+At first glance it looks like the share of owner and tenant households spending more than 30% of their income on shelter cost has increased between 2006 and 2011, and then dropped off by 2016. But we should remember that the 2011 data comes from the NHS, and unlike when dealing with the NHS income data that [performed admireably well for larger municipalities](https://doodles.mountainmath.ca/blog/2017/09/29/a-retrospective-look-at-nhs-income-data/), there is no reliable administrative data for this available that StatCan could have used in their post-processing to counter-act the NHS non-return bias as it was able to do for pure income data by comparing it to aggregate CRA data. It is quite possible that the 2011 NHS numbers somewhat over-estimate the proportion of households not meeting this affordability metric.
+
+But even ignoring the 2011 data, there has been a slight drop in both owner and tenant households spending 30% or more of their pre-tax income on running shelter costs. Which is really remarkable.
+
+As we dig deeper into this it is important to recall that just looking at median incomes is not sufficient for understanding affordability questions. We have to look at the change in the whole income distributions, [we have done in detail a month ago](https://doodles.mountainmath.ca/blog/2017/09/26/evolution-of-the-income-distribution/). We have seen that Vancouver lost households in all income groups below $60,000, and almost all gain occured in the $100,000 and over income bracket.
+
+# A deeper look at 2016 numbers
+To better understand how to interpret this we first look at some important contextual variables. 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+tenure_graph_for <- function(regions, text_size=3){
+vectors_2016=c("v_CA16_4836","v_CA16_4837","v_CA16_4838","v_CA16_4839")
+vectors_2011=c("v_CA11N_2252","v_CA11N_2253","v_CA11N_2254","v_CA11N_2255")
+vectors_2006=c("v_CA06_101","v_CA06_102","v_CA06_103","v_CA06_104")
+data_2016=get_census("CA16",level="Regions",regions=regions,vectors=vectors_2016,labels="short") %>%
+  mutate(All=v_CA16_4836, Owner=v_CA16_4837, Tenant=v_CA16_4838, Band=v_CA16_4839, Year=2016) 
+data_2011=get_census("CA11",level="Regions",regions=regions,vectors=vectors_2011,labels="short") %>%
+  mutate(All=v_CA11N_2252, Owner=v_CA11N_2253, Tenant=v_CA11N_2254, Band=v_CA11N_2255, Year=2011) 
+data_2006=get_census("CA06",level="Regions",regions=regions,vectors=vectors_2006,labels="short") %>%
+  mutate(All=v_CA06_101, Owner=v_CA06_102, Tenant=v_CA06_103, Band=v_CA06_104, Year=2006) 
+
+data <- do.call(rbind,list(
+  data_2016 %>% select("Region Name", "All", "Owner", "Tenant", "Band", "Year"),
+  data_2011 %>% select("Region Name", "All", "Owner", "Tenant", "Band", "Year"),
+  data_2006 %>% select("Region Name", "All", "Owner", "Tenant", "Band", "Year")
+                      )) %>% 
+  mutate(Region=`Region Name`, Owner=Owner/All,Tenant=Tenant/All, Band=Band/All) %>%
+  select(-All) %>%
+         gather(key="Tenure", value="Count",c("Owner", "Tenant")) %>%
+         mutate(Year=factor(Year,levels=c(2006,2011,2016),ordered=TRUE),
+                Tenure=factor(Tenure, levels=c("Owner", "Tenant", "Band"), ordered=TRUE))
+
+g1 <- ggplot(data , 
+       aes(x=factor(Year), y=Count, fill=Tenure)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x="Year", y="Share", title="Households By Tenure", caption=caption) +
+  geom_text(aes(label=format_percent(Count)),vjust=-0.5, position = position_dodge(width = 1), size=text_size) +
+  expand_limits(y=max(data$Count)*1.05) +
+  facet_wrap("Region",ncol=2) +
+  theme_bw()
+return(g1)
+}
+
+tenure_graph_for(region)
+```
+
+Both owner and tenant households have grown over the years, but the number of tenant households made a jump. This means that the relative composition of owner and tenant households has changed, with proportionally more households renting now. This could skew the income of tenant households higher.
+
+Next we look at subsidized housing, which is only available for the 2011 and 2016 years.
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+subsidized_graph_for <- function(regions, text_size=4) {
+vectors_2016=c("v_CA16_4897","v_CA16_4898")
+vectors_2011=c("v_CA11N_2288","v_CA11N_2289")
+data_2016=get_census("CA16",level="Regions",regions=regions,vectors=vectors_2016,labels="short") %>%
+  mutate(Subsidized=v_CA16_4898/100, Year=2016) 
+data_2011=get_census("CA11",level="Regions",regions=regions,vectors=vectors_2011,labels="short") %>%
+  mutate(Subsidized=v_CA11N_2289/100, Year=2011) 
+
+data <- do.call(rbind,list(
+  data_2016 %>% select("Region Name", "Subsidized", "Year"),
+  data_2011 %>% select("Region Name", "Subsidized", "Year")
+                      )) %>% 
+         mutate(Year=factor(Year,levels=c(2011,2016),ordered=TRUE),
+                Region=`Region Name`)
+g1 <- ggplot(data , 
+       aes(x=factor(Year), y=Subsidized)) +
+  geom_bar(stat="identity", fill="#40e0d0") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x="Year", y="Share", title="Tenant Households in Subsidized Housing", caption="StatCan census 2011 NHS, 2016 via cancensus & CensusMapper") +
+  geom_text(aes(label=format_percent(Subsidized)),vjust=-0.5, position = position_dodge(width = 1), size=text_size) +
+  expand_limits(y=max(data$Subsidized)*1.15) +
+  facet_wrap("Region",ncol=2) +
+  theme_bw()
+return(g1)
+}
+
+subsidized_graph_for(region)
+```
+
+We see that the share of tenant households in subsidized housing went. The overall number of subsidized units grew slightly, but to the number of tenant households grew faster. Overall this is unlikely to have a meaningful impact to explain the improvement in affordability we see in the data.
+
+Lastly we compare the change in the median multiple metric for owner and tenant households combined.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+multiple_graph_for <- function(regions, text_size=4) {
+vectors_2016=c("v_CA16_2397","v_CA16_4890","v_CA16_4894","v_CA16_4897","v_CA16_4901")
+vectors_2011=c("v_CA11N_2562","v_CA11N_2281","v_CA11N_2285","v_CA11N_2288","v_CA11N_2292")
+vectors_2006=c("v_CA06_2000","v_CA06_2049","v_CA06_2050","v_CA06_2053","v_CA06_2055")
+data_2016=get_census("CA16",level="Regions",regions=regions,vectors=vectors_2016,labels="short") %>%
+  mutate(Ratio=(v_CA16_4890*v_CA16_4894+v_CA16_4897*v_CA16_4901)/(v_CA16_4890+v_CA16_4897)*12/v_CA16_2397, Year=2016) 
+data_2011=get_census("CA11",level="Regions",regions=regions,vectors=vectors_2011,labels="short") %>%
+  mutate(Ratio=(v_CA11N_2281*v_CA11N_2285+v_CA11N_2288*v_CA11N_2292)/(v_CA11N_2281+v_CA11N_2288)*12/v_CA11N_2562, Year=2011) 
+data_2006=get_census("CA06",level="Regions",regions=regions,vectors=vectors_2006,labels="short") %>%
+  mutate(Ratio=(v_CA06_2049*v_CA06_2050+v_CA06_2053*v_CA06_2055)/(v_CA06_2049+v_CA06_2053)*12/v_CA06_2000, Year=2006) 
+
+data <- do.call(rbind,list(
+  data_2016 %>% select("Region Name", "Ratio", "Year"),
+  data_2011 %>% select("Region Name", "Ratio", "Year"),
+  data_2006 %>% select("Region Name", "Ratio", "Year")
+                      )) %>% mutate(Region=`Region Name`) %>% 
+         mutate(Year=factor(Year,levels=c(2006,2011,2016),ordered=TRUE))
+
+g1 <- ggplot(data, 
+       aes(x=factor(Year), y=Ratio)) +
+  geom_bar(stat="identity",position="dodge", fill="steelblue") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x="Year", title="Average Shelter cost to Median Income", caption=caption) +
+  geom_text(aes(label=format_percent(Ratio)),vjust=-0.5, position = position_dodge(width = 1), size=text_size) +
+  expand_limits(y=max(data$Ratio)*1.15) +
+  facet_wrap("Region",ncol=2) +
+  theme_bw()
+return(g1)
+} 
+
+multiple_graph_for(region)
+```
+
+This development in this graph, which is using a variant of the often cited median multiple metric, seems to contradict the shelter cost to income ratio in the first graph. Although this does not split out owner and tenant households separately, this seems to indicate that the answer to our question lies in a more detailed look at the income and rent distributions that is obscured by only focusing on medians.
+
+# Metro Vancouver
+To get more spatial context we look at the region more broadly.
+
+```{r region_affordability, echo=FALSE, fig.height=5, fig.width=7, message=FALSE, warning=FALSE}
+regions=list_census_regions('CA16', quiet=TRUE, use_cache = TRUE) %>%
+  filter(level=='CSD',CMA_UID=='59933') %>% top_n(6,pop) %>% as_census_region_list
+affordability_graph_for(regions,2.5)
+```
+
+We see that affordability by this measure hasn't gotten better in all municipalities in the region. Even if we ignore the 2011 NHS data, affordability decreased significantly in Coquitlam, Burnaby and Richmond.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.height=5, fig.width=7}
+tenure_graph_for(regions,2.5)
+```
+
+Looking at the split by tenure we see that the share of tenant households is up everywhere 2006 to 2016 except for Burnaby. The start contrast in share of tenant households in Vancouver compared to the rest of the region also becomes very clear.
+
+Next we compare the share of tenant households in subsidized housing.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.height=5, fig.width=7}
+subsidized_graph_for(regions,2.5)
+```
+
+This seems to indicate that the difference in affordability for tenant households can't be explained by different ratios of affordable housing.
+
+Lastly we compare the average shelter cost to median income ratio.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.height=5, fig.width=7}
+multiple_graph_for(regions,2.5)
+```
+
+Again, the development of the the median multiple metric is inconsistent with the shelter cost to income ratio computed at the individual level.
+
+# Shelter Cost, Income, Affordability, Tenure and Household Types in Metro Vancouver
+We want to gain a deeper understanding what affordability looks like when separated out by different variables in Metro Vancouver. Stats Canada has a custom tabulation available that can do exactly that.
+
+```{r, include=FALSE}
+options(custom_data_path="/Users/jens/.custom_data/")
+path=paste0(getOption("custom_data_path"),"98-400-X2016228_ENG_CSV/98-400-X2016228_English_CSV_data.csv")
+s=c("Less than 15%","15% to less than 30%","30% to less than 50%","50% to less than 100%","100%","Not applicable")
+
+data2 <- readr::read_csv(path, na=c("x", "F", "...", "..",NA), locale=readr::locale(encoding = "latin1")) %>%
+  rename(GeoUID = `GEO_CODE (POR)`,
+         si=`DIM: Shelter-cost-to-income ratio (9)`,
+         income=`DIM: Household total income groups (14)`,
+         hh_type=`DIM: Household type including census family structure (16)`,
+         sc=`DIM: Shelter cost (12)`,
+         `All Tenure`=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [1]: Total - Tenure including presence of mortgage payments and subsidized housing (Note: 5)`,
+         Owner=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [2]: Owner`,
+         `With Mortgage`=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [3]: With mortgage`,
+         `Without Mortgage`=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [4]: Without mortgage`,
+         Renter=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [5]: Renter`,
+         `Subsidized housing`=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [6]: Subsidized housing`,
+         `Not subsidized housing`=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [7]: Not subsidized housing`) %>%
+  filter(GeoUID %in% ("933")) %>%
+  gather(key="Tenure",value="Count",c("All Tenure","Owner","With Mortgage","Without Mortgage","Renter","Subsidized housing","Not subsidized housing")) %>%
+  select(GeoUID,GEO_NAME,si,income,hh_type,sc,Tenure,Count) %>%
+  group_by(GeoUID,GEO_NAME, income, hh_type, sc, Tenure, si) %>% 
+  mutate(ind = row_number()) %>%
+  spread(key=si,value=Count) %>%
+  mutate(`100%` = max(`50% or more` - `50% to less than 100%`,0)) %>%
+  gather(key="si", value="Count",c("Total - Shelter-cost-to-income ratio",s)) %>%
+  select(GeoUID,GEO_NAME,si,income,hh_type,sc,Tenure,Count) %>%
+  ungroup
+```
+
+At the CMA level we can slice the data in many interesting ways. First we stratify the data by income groups and detailed tenure information.
+```{r, echo=FALSE, fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+r=c("Under $10,000","$10,000 to $19,999","$20,000 to $29,999","$30,000 to $39,999","$40,000 to $49,999","$50,000 to $59,999","$60,000 to $69,999","$70,000 to $79,999", "$80,000 to $89,999","$90,000 to $99,999","$100,000 and over")
+d <-  data2 %>% 
+  filter(GeoUID %in% ("933"),
+         si %in% s,
+         sc=="Total - Shelter cost",
+         income %in% r,
+         hh_type=="Total - Household type including census family structure")
+
+ggplot(d %>%
+         mutate(income=factor(income, levels=r,ordered=TRUE),
+                si=factor(si,levels=rev(s),ordered=TRUE)) 
+         ,aes(x=income,y=Count,fill=si)) +
+  geom_bar(stat="identity", position="fill") +
+  scale_y_continuous(labels=scales::comma) + 
+  scale_fill_viridis_d(option="inferno",name="Shelter to Income") + 
+  facet_wrap("Tenure",ncol=2) +
+  labs(y="", x="Income Bracket",title="Metro Vancouver Shelter Cost to Income Ratios by Tenure", caption=caption) +
+    coord_flip() #theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+As expected, affordability improves with growing income. When keyed by income, tenant households fair better than owner households for incomes above $40,000, although owner households have a larger share falling below the 15% cutoff with the exception of the bracket over $100,000. Owner households are not uniform though, when split by those having a mortgage and those that don't it becomes apparent that owner households with a mortgage are the most strained group.
+
+Next we look at the data by shelter cost and tenure.
+
+```{r, echo=FALSE, fig.height=8, fig.width=12, message=FALSE, warning=FALSE, dev="svg"}
+scl=c("Less than $500","$500 to $749","$750 to $999" ,"$1,000 to $1,249", "$1,250 to $1,499", "$1,500 to $1,999", "$2,000 to $2,499", "$2,500 to $2,999", "$3,000 or more")
+d <-  data2 %>% 
+  filter(GeoUID %in% ("933"),
+         si %in% s,
+         sc=="Total - Shelter cost",
+         income %in% ("Total - Total income of household"))
+
+ggplot(d %>%
+         mutate(sc=factor(sc, levels=scl,ordered=TRUE),
+                si=factor(si,levels=rev(s),ordered=TRUE)) 
+         ,aes(x=hh_type,y=Count,fill=si)) +
+  geom_bar(stat="identity", position="fill") +
+  scale_y_continuous(labels=scales::comma) + 
+  scale_fill_viridis_d(option="inferno",name="Shelter to Income") + 
+  facet_wrap("Tenure",ncol=2) +
+  labs(y="", x="Household Type",title="Metro Vancouver Shelter Cost to Income Ratios by Tenure", caption=caption) +
+    coord_flip() 
+```
+
+We see that affordability generally decreases with rising shelter costs, although this relationship seems less clear for subsidized tenant households.
+
+
+Lastly we key the data by household type.
+
+```{r, echo=FALSE, fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+scl=c("Less than $500","$500 to $749","$750 to $999" ,"$1,000 to $1,249", "$1,250 to $1,499", "$1,500 to $1,999", "$2,000 to $2,499", "$2,500 to $2,999", "$3,000 or more")
+d <-  data2 %>% 
+  filter(GeoUID %in% ("933"),
+         si %in% s,
+         sc %in% scl,
+         income %in% ("Total - Total income of household"),
+         hh_type=="Total - Household type including census family structure")
+
+ggplot(d %>%
+         mutate(sc=factor(sc, levels=scl,ordered=TRUE),
+                si=factor(si,levels=rev(s),ordered=TRUE)) 
+         ,aes(x=sc,y=Count,fill=si)) +
+  geom_bar(stat="identity", position="fill") +
+  scale_y_continuous(labels=scales::comma) + 
+  scale_fill_viridis_d(option="inferno",name="Shelter to Income") + 
+  facet_wrap("Tenure",ncol=2) +
+  labs(y="", x="Shelter Cost",title="Metro Vancouver Shelter Cost to Income Ratios by Tenure", caption=caption) +
+    coord_flip() #theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+We see a fairly uniform picture, with one-person, lone-parent and non-census-family households struggling a little more and multiple census family households showing higher levels of affordability. This may well be due to coops being generally classified as multi-family households.
+
+# City of Vancouver
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+path3=paste0(getOption("custom_data_path"),"98-400-X2016229_ENG_CSV/98-400-X2016229_English_CSV_data.csv")
+s3=c("Less than 30%","30% to less than 100%","100%","Not applicable")
+
+data3 <- readr::read_csv(path3, na=c("x", "F", "...", "..",NA)) %>%
+  rename(GeoUID = `GEO_CODE (POR)`,
+         si=`DIM: Shelter-cost-to-income ratio (5A)`,
+         hh_type=`DIM: Household type including census family structure (9)`,
+         `All Tenure`=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [1]: Total - Tenure including presence of mortgage payments and subsidized housing (Note: 4)`,
+         Owner=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [2]: Owner`,
+         `With Mortgage`=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [3]: With mortgage`,
+         `Without Mortgage`=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [4]: Without mortgage`,
+         Renter=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [5]: Renter`,
+         `Subsidized housing`=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [6]: Subsidized housing`,
+         `Not subsidized housing`=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [7]: Not subsidized housing`) %>%
+  gather(key="Tenure",value="Count",c("All Tenure","Owner","With Mortgage","Without Mortgage","Renter","Subsidized housing","Not subsidized housing")) %>%
+  select(GeoUID,GEO_NAME,si,hh_type,Tenure,Count) %>%
+  group_by(GeoUID, hh_type, Tenure, si) %>% 
+  mutate(ind = row_number()) %>%
+  spread(key=si,value=Count) %>%
+  rename(`Less than 30%`=`Spending less than 30% of income on shelter costs`) %>%
+  mutate(`100%` = `Spending 30% or more of income on shelter costs` - `30% to less than 100%`) %>%
+  gather(key="si", value="Count",c("Total - Shelter-cost-to-income ratio",s3)) %>%
+  select(GeoUID,GEO_NAME,si,hh_type,Tenure,Count) %>%
+  ungroup
+
+```
+
+Let's focus back to the municipal level and understand how the makeup of households by tenure and and household type influences affordability. We changed the colours to avoid confusion that the 50% cutoff scale is not available in this data.
+
+```{r, echo=FALSE, fig.height=8, fig.width=12, message=FALSE, warning=FALSE, dev="svg"}
+
+ggplot(data3 %>% 
+         filter(GeoUID %in% region,
+                si %in% s3) %>%
+         mutate(si=factor(si,levels=rev(s3),ordered=TRUE))
+         ,aes(x=hh_type,y=Count,fill=si)) +
+  geom_bar(stat="identity", position="fill") +
+  scale_y_continuous(labels=scales::comma) + 
+  scale_fill_viridis_d(option="viridis",name="Shelter to Income") + 
+  facet_wrap("Tenure",ncol=2) +
+  labs(y="", x="Household Type",title="Shelter Cost to Income Ratios by Tenure", caption=caption) +
+  coord_flip() 
+```
+
+When split by household type the data very much reflects the general situation in Metro Vancouver.
+
+
+Comparing across municipalities in Metro Vancouver we can see how affordability breaks down by detailed tenure type.
+
+```{r, echo=FALSE, fig.height=5, fig.width=8, message=FALSE, warning=FALSE, dev="svg"}
+
+ggplot(data3 %>% 
+         filter(GeoUID %in% regions$CSD,
+         si %in% s3,
+         hh_type=="Total - Household type including census family structure") %>%
+         mutate(si=factor(si,levels=rev(s3),ordered=TRUE)) 
+         ,aes(x=GEO_NAME,y=Count,fill=si)) +
+  geom_bar(stat="identity", position="fill") +
+  scale_y_continuous(labels=scales::comma) + 
+  scale_fill_viridis_d(option="viridis",name="Shelter to Income") + 
+  facet_wrap("Tenure",ncol=2) +
+  labs(y="", x="Municipality",title="Shelter Cost to Income Ratios by Tenure", caption=caption) +
+  coord_flip() 
+```
+
+Again, the patters are quite similar across the region when split by detailed tenure.
+
+# Takeaway
+From this descriptive overview there are no clear indicators why the affordability metric for Vancouver improved. The increase in tenant households, and with it possibly an improved mix of high income household among tenants may have contributed.
+
+The discrepancy when comparing to the median multiple metric seems to indicate that the solution to the paradox lies in a more careful analysis of the development of the income and rent distributions, as well as how these two are matched up. 
+
+If I get around to it I might try and unpack other aspects of this story. If anyone else would like to pick this up, the R notbook that built this [can be found on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-10-26-a-first-look-at-vancouver-housing-data.Rmarkdown).
