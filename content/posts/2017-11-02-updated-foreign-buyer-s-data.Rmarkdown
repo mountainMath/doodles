@@ -138,3 +138,6 @@ ggplot(data_2017 %>%
 ```
 
 The municipalities that got added have around 5% share of foreign buyers, with Saanich registering higher. Apart from the spike in relative median transaction values for Surrey that we have already seen above we also notice a spike in high-value foreign buyer transactions in Saanich around February. Other than that, median purchase price by foreign buyers seems to be in line with overall median purchase prices.
+
+
+As always, the R Notbook that built this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-11-02-updated-foreign-buyer-s-data.Rmarkdown) for those interested in playing with it or looking at different aspects of the data. We plan on occausional update posts as new data becomes available and we notice interesting new trends. We doubt we will be this on a monthly basis, so [download the R Notebook]((https://github.com/mountainMath/doodles/blob/master/content/posts/2017-11-02-updated-foreign-buyer-s-data.Rmarkdown)) if you want more frequent updates.
