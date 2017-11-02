@@ -1,0 +1,151 @@
+---
+title: Playing with Medians
+author: Jens von Bergmann
+date: '2017-11-01'
+slug: medians
+categories:
+  - cancensus
+  - CensusMapper
+tags: []
+description: 'Why overly focussing on medians is dangerous.'
+featured: 'income-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2017-11-01-medians_files/figure-html/income-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2017-11-01-medians_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+I want do a short post to gently remind people of pitfalls when overly relying on medians for understanding complex issues. Medians are useful because they take a complex distribution and break it down into a single, simple to understand number. This works well as long as this does not mask other aspects of the distribution that are important in the context it is used.
+
+A good example for the dangers of overly relying on medians is the ["median multiple"](https://censusmapper.ca/maps/897) metric that gets used a lot, the median dwelling value divided by the median household income in an area. I have [talked about this before](https://doodles.mountainmath.ca/blog/2016/09/14/measuring-housing-affordability/) but want to give some more general context to illustrate some pitfalls more directly.
+
+# Median Household Income
+When comparing median household incomes across regions it is very important to pay attention to the significant confounding variables involved. The variance in median income when restricted to various household types is huge as can easily be observed when [interactively filtering by various household types](https://censusmapper.ca/maps/838). And those differences are persistent across geographic regions. What that means is that a significant determinant of the median overall household income in a region is the composition of households in that region.
+
+# A Tale of Two Cities
+A good example of this is median household incomes in the City of Vancouver vs the City of Toronto. As has been reported repeatedly, the City of Toronto has higher median household income than the City of Vancouver. And while this was a reasonable way to summarize the income situation in 2005, it is misleading in the context of 2015. People that have been paying close attention to these issues will be nodding their heads and don't need to read on. For the others this needs a more detailed and clear explanation.
+
+# Simpson's Paradox
+To start off, let me explain what the problem is. Median household incomes are higher in Toronto than they are in Vancouver, so how can saying this be misleading?
+
+One-person households and two-or-more person households have very different income profiles. We can compare median incomes separately for these groups. If we do that we find that City of Vancouver has higher median household income for one-person households as well as for two-or-more person households when compared to the City of Toronto. How can that be? Vancouver has a much higher proportion of one-person households, which tend to have significantly lower incomes. This is the classical Simpson's Paradox.
+
+Taking a more comprehensive look, let's use `cancensus` to pull a number of relevant median income metrics for 2005/2006, 2010/2011 and 2015/2016 and compare how they changed over time.
+
+```{r, include=FALSE}
+library(tidyverse)
+library(cancensus)
+caption="StatCan census via cansim and CensusMapper"
+format_currency <- function(x){return(paste0("$",format(x,big.mark = ",")))}
+```
+```{r, include=FALSE}
+data_2016 <- get_census(dataset='CA16', regions=list(CSD=c("5915022","3520005")),
+                        vectors=c("v_CA16_2397","v_CA16_2400","v_CA16_2403","v_CA16_2447","v_CA16_2451","v_CA16_2455"),
+                        labels="short", geo_format=NA, level='Regions') %>% 
+  mutate(Year="2015/2016") %>% 
+  rename(`Median Household Income`=v_CA16_2397,
+         `Median 1 Person Household Income`=v_CA16_2400,
+         `Median 2+ Person Household Income`=v_CA16_2403,
+         `Median Family Income`=v_CA16_2447,
+         `Median Couple Family`=v_CA16_2451,
+         `Median Couple Family with Children`=v_CA16_2455
+         )
+data_2011 <- get_census(dataset='CA11', regions=list(CSD=c("5915022","3520005")),
+                        vectors=c("v_CA11N_2562","v_CA11N_2567","v_CA11N_2572","v_CA11N_2456","v_CA11N_2462","v_CA11N_2468"), 
+                        labels="short", geo_format=NA, level='Regions') %>% 
+  mutate(Year="2010/2011") %>% 
+  rename(`Median Household Income`=v_CA11N_2562,
+         `Median 1 Person Household Income`=v_CA11N_2567,
+         `Median 2+ Person Household Income`=v_CA11N_2572,
+         `Median Family Income`=v_CA11N_2456,
+         `Median Couple Family`=v_CA11N_2462,
+         `Median Couple Family with Children`=v_CA11N_2468
+         )
+data_2006 <- get_census(dataset='CA06', regions=list(CSD=c("5915022","3520005")),
+                        vectors=c("v_CA06_2000","v_CA06_2015","v_CA06_1802","v_CA06_1809"), 
+                        labels="short", geo_format=NA, level='Regions') %>% 
+  mutate(Year="2005/2006") %>% 
+  rename(`Median Household Income`=v_CA06_2000,
+         `Median 1 Person Household Income`=v_CA06_2015,
+         `Median Family Income`=v_CA06_1802,
+         `Median Couple Family`=v_CA06_1809
+         ) %>% 
+  mutate(
+         `Median 2+ Person Household Income`=NA,
+         `Median Couple Family with Children`=NA
+         )
+
+categories=c("Median Household Income","Median 1 Person Household Income","Median 2+ Person Household Income","Median Family Income","Median Couple Family","Median Couple Family with Children")
+
+data <- do.call(rbind,list(
+  data_2016 %>% select("Year", "Region Name",categories),
+  data_2011 %>% select("Year","Region Name",categories),
+  data_2006 %>% select("Year","Region Name",categories)
+  ))
+```
+
+```{r income, echo=FALSE, fig.height=4, fig.width=9}
+plot_data <- data %>% 
+  gather(key="Type", value="Median Income", categories) %>%
+  rename(City=`Region Name`) %>%
+  mutate(`Household Type` = paste0(Type," ",City)) %>%
+  mutate(Year=factor(Year,levels=c("2005/2006","2010/2011","2015/2016"), ordered=TRUE))
+ggplot(plot_data, aes(x=Year, y=`Median Income`, group=`Household Type`, color=Type, shape=City, linetype=City, linewidth=2)) +
+  scale_color_brewer(palette = "Set2") +
+  scale_y_continuous(labels=format_currency) +
+  geom_line() + geom_point() +
+  labs(title="Median Income Measures", caption=caption) +
+      theme_bw()
+```
+
+Some metrics aren't available for 2005/2006, but the overall picture becomes very clear. We see that in 2005/2006 Toronto had higher median incomes in all of these metrics, but by 2015/2016 only the median household income is higher in Toronto, and Vancouver scores higher in all finer income groups.
+
+Different household composition seems to be the missing confounding factor, let's pull these numbers to confirm this.
+
+```{r, include=FALSE}
+data2_2016 <- get_census(dataset='CA16', regions=list(CSD=c("5915022","3520005")),
+                        vectors=c("v_CA16_418","v_CA16_419"),
+                        labels="short", geo_format=NA, level='Regions') %>% 
+  mutate(Year="2016") %>% 
+  mutate(`1 Person Households`=v_CA16_419/v_CA16_418)
+data2_2011 <- get_census(dataset='CA11', regions=list(CSD=c("5915022","3520005")),
+                        vectors=c("v_CA11F_209","v_CA11F_210"), 
+                        labels="short", geo_format=NA, level='Regions') %>% 
+  mutate(Year="2011") %>% 
+  mutate(`1 Person Households`=v_CA11F_210/v_CA11F_209)
+data2_2006 <- get_census(dataset='CA06', regions=list(CSD=c("5915022","3520005")),
+                        vectors=c("v_CA06_128","v_CA06_129"), 
+                        labels="short", geo_format=NA, level='Regions') %>% 
+  mutate(Year="2006") %>% 
+  mutate(`1 Person Households`=v_CA06_129/v_CA06_128)
+
+data2 <- do.call(rbind,list(
+  data2_2016 %>% select("Year", "Region Name","1 Person Households"),
+  data2_2011 %>% select("Year","Region Name","1 Person Households"),
+  data2_2006 %>% select("Year","Region Name","1 Person Households")
+  ))
+```
+
+```{r households, echo=FALSE, fig.height=4, fig.width=9}
+plot_data2 <- data2 %>%
+  rename(City=`Region Name`) %>%
+  mutate(Year=factor(Year,levels=c("2006","2011","2016"), ordered=TRUE))
+ggplot(plot_data2, aes(x=Year, y=`1 Person Households`, group=`City`, shape=City, linetype=City, linewidth=2)) +
+  scale_color_brewer(palette = "Set1") +
+  geom_line() + geom_point() +
+  scale_y_continuous(labels=scales::percent) +
+  expand_limits(y = 0) +
+  labs(title="Share of 1 Person Households", caption=caption) +
+      theme_bw()
+```
+
+The difference is not huge, but enough to flip the overall median income ranking and cause the paradox.
+
+# Linking Incomes and Housing Cost
+One reason why this is especially important is the recent shelter cost to income numbers. In Vancouver [the proportion of households that spend 30% or more of their income on shelter costs has dropped](http://doodles.mountainmath.ca/blog/2017/10/26/a-first-look-at-vancouver-housing-data/). The same still holds when looking at tenant and owner households separately. But the "median multiple" metric has increased from 13.3 in 2005/2006 to 13.4 in 2010/2011 and 16.9 in 2015/2016. The median multiple is a poor metric for many reasons, not least because it computes affordability using aggregate data instead of individual level data. Just like incomes, housing prices vary on a distribution and depend strongly on external variables like size, number of bedrooms and housing type. The individual level income-to-shelter data shows that the median multiple misses some important confounding factors, just like in the above income example. What are these? I am not sure. But this is an important question that deserves further attention.
+
+# Takeaway
+The takeaway is that while overall median household incomes in the City of Toronto are higher than in the City of Vancouver, this masks that the opposite is true when comparing similar households. And is masks that over the course of the past ten years Vancouver has overtaken Toronto when comparing similar households. Which is quite remarkable in it's own right.
+
+We can dig deeper into this by looking at the whole income distribution, and how it changed over time. We have [done this for Vancouver](http://doodles.mountainmath.ca/blog/2017/09/26/evolution-of-the-income-distribution/) where we showed how the drop in low income households and gain of households in the top income bracket was more pronounced in the City of Vancouver than in other regions in Metro Vancouver or the country-wide movement. It would be interesting to reproduce this for the City of Toronto, and also to dig deeper to understand to what extent low income earners got pushed out of the City of Vancouver, to what extent salaries increased across the board and to what extent this was aided by higher labour force participation of households members. The census data release later this month can speak to that.
