@@ -1,5 +1,5 @@
 ---
-title: Updated Foreign Buyer’s Data
+title: Updated Foreign Buyers Data
 author: Jens von Bergmann
 date: '2017-11-02'
 slug: updated-foreign-buyer-s-data
