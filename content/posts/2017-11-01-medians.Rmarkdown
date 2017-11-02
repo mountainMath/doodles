@@ -31,7 +31,7 @@ To start off, let me explain what the problem is. Median household incomes are h
 
 One-person households and two-or-more person households have very different income profiles. We can compare median incomes separately for these groups. If we do that we find that City of Vancouver has higher median household income for one-person households as well as for two-or-more person households when compared to the City of Toronto. How can that be? Vancouver has a much higher proportion of one-person households, which tend to have significantly lower incomes. This is the classical Simpson's Paradox.
 
-Taking a more comprehensive look, let's use `cancensus` to pull a number of relevant median income metrics for 2005/2006, 2010/2011 and 2015/2016 and compare how they changed over time.
+Taking a more comprehensive look, let's use `cancensus` to pull a number of relevant median income metrics for 2005-2006, 2010-2011 and 2015-2016 and compare how they changed over time.
 
 ```{r, include=FALSE}
 library(tidyverse)
@@ -39,7 +39,7 @@ library(cancensus)
 caption="StatCan census via cansim and CensusMapper"
 format_currency <- function(x){return(paste0("$",format(x,big.mark = ",")))}
 ```
-```{r, include=FALSE}
+```{r, message=FALSE, warning=FALSE, include=FALSE}
 data_2016 <- get_census(dataset='CA16', regions=list(CSD=c("5915022","3520005")),
                         vectors=c("v_CA16_2397","v_CA16_2400","v_CA16_2403","v_CA16_2447","v_CA16_2451","v_CA16_2455"),
                         labels="short", geo_format=NA, level='Regions') %>% 
@@ -85,7 +85,7 @@ data <- do.call(rbind,list(
   ))
 ```
 
-```{r income, echo=FALSE, fig.height=4, fig.width=9}
+```{r income, echo=FALSE, fig.height=4, fig.width=9, message=FALSE, warning=FALSE}
 plot_data <- data %>% 
   gather(key="Type", value="Median Income", categories) %>%
   rename(City=`Region Name`) %>%
@@ -99,11 +99,11 @@ ggplot(plot_data, aes(x=Year, y=`Median Income`, group=`Household Type`, color=T
       theme_bw()
 ```
 
-Some metrics aren't available for 2005/2006, but the overall picture becomes very clear. We see that in 2005/2006 Toronto had higher median incomes in all of these metrics, but by 2015/2016 only the median household income is higher in Toronto, and Vancouver scores higher in all finer income groups.
+Some metrics aren't available for 2005-2006, but the overall picture becomes very clear. We see that in 2005-2006 Toronto had higher median incomes in all of these metrics, but by 2015-2016 only the median household income is higher in Toronto, and Vancouver scores higher in all finer income groups.
 
 Different household composition seems to be the missing confounding factor, let's pull these numbers to confirm this.
 
-```{r, include=FALSE}
+```{r, message=FALSE, warning=FALSE, include=FALSE}
 data2_2016 <- get_census(dataset='CA16', regions=list(CSD=c("5915022","3520005")),
                         vectors=c("v_CA16_418","v_CA16_419"),
                         labels="short", geo_format=NA, level='Regions') %>% 
@@ -127,7 +127,7 @@ data2 <- do.call(rbind,list(
   ))
 ```
 
-```{r households, echo=FALSE, fig.height=4, fig.width=9}
+```{r households, echo=FALSE, fig.height=4, fig.width=9, message=FALSE, warning=FALSE}
 plot_data2 <- data2 %>%
   rename(City=`Region Name`) %>%
   mutate(Year=factor(Year,levels=c("2006","2011","2016"), ordered=TRUE))
@@ -149,3 +149,5 @@ One reason why this is especially important is the recent shelter cost to income
 The takeaway is that while overall median household incomes in the City of Toronto are higher than in the City of Vancouver, this masks that the opposite is true when comparing similar households. And is masks that over the course of the past ten years Vancouver has overtaken Toronto when comparing similar households. Which is quite remarkable in it's own right.
 
 We can dig deeper into this by looking at the whole income distribution, and how it changed over time. We have [done this for Vancouver](http://doodles.mountainmath.ca/blog/2017/09/26/evolution-of-the-income-distribution/) where we showed how the drop in low income households and gain of households in the top income bracket was more pronounced in the City of Vancouver than in other regions in Metro Vancouver or the country-wide movement. It would be interesting to reproduce this for the City of Toronto, and also to dig deeper to understand to what extent low income earners got pushed out of the City of Vancouver, to what extent salaries increased across the board and to what extent this was aided by higher labour force participation of households members. The census data release later this month can speak to that.
+
+As always, the R Notebook underlying this post [lives on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-11-01-medians.Rmarkdown). Feel free to download it to reproduce the analysis and adapt it for your purposes.
