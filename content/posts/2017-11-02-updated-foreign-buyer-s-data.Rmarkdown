@@ -19,7 +19,7 @@ type: "post"
 After the BC government stopped publishing foreign buyer's data after May this year it reversed course and gave the data out to media outlets earlier this week. It started being released to the general public only earlier today, with the complete data becoming available around noon today.
 
 # The Data
-There is a number of metrics in the data, the one we will focus on is the share, median dollar value and total dollar volume of foreign buyer purchases. The dataset comes in two parts, one for 2016 data and one for 2017 data. Sadly the two datasets are based on slightly different regions, use different spellings and have some other minor compatibility issues.
+There is a number of metrics in the data, the one we will focus on is the share, median dollar value and total dollar volume of foreign buyer purchases. The dataset comes in two parts, one for 2016 data and one for 2017 data. Sadly the two datasets are based on slightly different regions, use different spellings and have some other minor compatibility issues. We show data for all transactions, residential and non-residential.
 
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
 library(tidyverse)
@@ -33,9 +33,9 @@ if (!file.exists(paste0(base,"municipalmonthly2016.csv"))) {
   download.file("https://catalogue.data.gov.bc.ca/dataset/9c9b8d35-d59b-436a-a350-f581ea71a798/resource/6abca1b9-2eab-4d0d-8350-d27d69af3258/download/municipal-monthly.csv",paste0(base,"municipalmonthly2016.csv"))
 }
 
-data_2016 <- readr::read_csv(paste0(base,"municipalmonthly2016.csv"))
+data_2016 <- readr::read_csv(paste0(base,"municipalmonthly2016.csv")) %>%
+  rename(tot_mkt_trans=no_mkt_trans) 
 data_2017 <- readr::read_csv(paste0(base,"municipalmonthly2017.csv")) %>%
-  rename(no_mkt_trans=tot_mkt_trans) %>%
   mutate(trans_period=paste0(Year,"-",stringr::str_pad(Month, 2, pad = "0"),"-01")) %>% select(-Year,-Month)
 
 
@@ -78,18 +78,18 @@ plot_options=list(
 Comparing data through all the datasets is tedious, so we only run the full timelines for data that is easy to compare.
 
 ```{r transactions, echo=FALSE, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
-ggplot(data %>% mutate(rate=no_foreign/no_resid_trans)) +
+ggplot(data %>% mutate(rate=no_foreign/tot_mkt_trans)) +
   plot_options +
   scale_y_continuous(labels=scales::percent) +
   labs(y="Share of foreign buyer transactions", 
-       title="Share of Residential Transactions Made by Foreign Buyers")
+       title="Share of Transactions Involving Foreign Buyers")
 ```
 
 ```{r, echo=FALSE, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 ggplot(data %>% mutate(rate=sum_FMV_foreign)) +
   plot_options +
   scale_y_continuous(labels=function(x){return(paste0("$",round(x/1000000),"M"))}) +
-  labs(y="", title="Total Dollar Volume of Residential Foreign Buyer Transactions")
+  labs(y="", title="Total Dollar Volume of Foreign Buyer Transactions")
 ```
 
 
@@ -104,16 +104,16 @@ ggplot(data %>% mutate(rate=md_FMV_foreign/md_FMV)) +
 What we see is that the share of foreign transactions briefly spiked in the time frame where the foreign buyer's tax got announced, likely because sales were being rushed through before the deadline. Sadly we don't have robust measurements of pre-tax sales volumes, we see that the post tax share and dollar volumes are quite volatile. It is difficult to discern clear trends in the share of foreign buyers, other than 10% appearing to roughly be the cap for Burnaby and Richmond, and 5% for Vancouver and Surrey. There are significant spikes in the total foreign transaction volumes, as well as the relative median transaction price, indicating that at times foreign purchases skew high. Apart from the occasional spikes it appears that median purchase prices of foreign buyers are roughly in line with overall median prices.
 
 # A closer look at 2017 Data
-We take a closer look at the top 8 municipalities in terms to total transaction values by foreign buyers in 2017 thus far. Data is not available for all months due to at times small number of transactions. Next to the municipalities we already looked at above this selection criterion also yields Coquitlam, Victoria, Saanich and the Township of Langley.
+We take a closer look at the top 8 municipalities in terms to total transaction values involving foreign buyers in 2017 thus far. Data is not available for all months due to at times small number of transactions. Next to the municipalities we already looked at above this selection criterion also yields Coquitlam, Victoria, Saanich and the Township of Langley.
 
 ```{r, echo=FALSE, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 ggplot(data_2017 %>% 
          filter(Municipality %in% top_2017) %>% 
-         mutate(rate=no_foreign/no_resid_trans)) +
+         mutate(rate=no_foreign/tot_mkt_trans)) +
   plot_options +
   scale_y_continuous(labels=scales::percent) +
   labs(y="Share of foreign buyer transactions", 
-       title="Share of Residential Transactions Made by Foreign Buyers")
+       title="Share of Transactions Involving Foreign Buyers")
 ```
 
 
@@ -123,7 +123,7 @@ ggplot(data_2017 %>%
          mutate(rate=sum_FMV_foreign)) +
   plot_options +
   scale_y_continuous(labels=function(x){return(paste0("$",round(x/1000000),"M"))}) +
-  labs(y="", title="Total Dollar Volume of Residential Foreign Buyer Transactions")
+  labs(y="", title="Total Dollar Volume of Foreign Buyer Transactions")
 ```
 
 
@@ -137,7 +137,7 @@ ggplot(data_2017 %>%
        title="Relative Value of Median Foreign Buyer Transaction")
 ```
 
-The municipalities that got added have around 5% share of foreign buyers, with Saanich registering higher. Apart from the spike in relative median transaction values for Surrey that we have already seen above we also notice a spike in high-value foreign buyer transactions in Saanich around February. Other than that, median purchase price by foreign buyers seems to be in line with overall median purchase prices.
+The municipalities that got added have around 5% share of foreign buyers, with Saanich registering higher. Apart from the spike in relative median transaction values for Surrey that we have already seen above we also notice a spike in high-value foreign buyer transactions in Saanich around February. Other than that, median purchase price involving foreign buyers seems to be in line with overall median purchase prices.
 
 
 As always, the R Notebook that built this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-11-02-updated-foreign-buyer-s-data.Rmarkdown) for those interested in playing with it or looking at different aspects of the data. We plan on occasional update posts as new data becomes available and we notice interesting new trends. We doubt we will be this on a monthly basis, so [download the R Notebook]((https://github.com/mountainMath/doodles/blob/master/content/posts/2017-11-02-updated-foreign-buyer-s-data.Rmarkdown)) if you want more frequent updates.
