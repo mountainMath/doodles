@@ -1,0 +1,113 @@
+---
+title: Renting in Toronto
+author: Jens von Bergmann
+date: '2017-11-07'
+slug: renting-in-toronto
+categories:
+  - craigslist
+  - cmhc
+tags: []
+description: 'How much space to you get for $1500 in Toronto.'
+images: ["https://doodles.mountainmath.ca/posts/2017-11-07-renting-in-toronto_files/figure-html/rental_treemap-1.png"]
+featured: 'rental_treemap-1.png'
+#featuredalt: ""
+featuredpath: "/posts/2017-11-07-renting-in-toronto_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+Earlier today I came across [Gil Meslin's tweet](https://twitter.com/g_meslin/status/927681384835141632) suggesting to reproduce [this rent graph](https://twitter.com/simongerman600/status/927587422149447681) for neighbourhoods in Toronto. <a href="https://twitter.com/simongerman600/status/927587422149447681" target="_blank"><img src="https://pbs.twimg.com/media/DN9z1-jWkAcqLAw.jpg", style="width:50%;float:right;margin-left=10px;"/></a>
+
+I agree that this would be fun to do. All it requires is mixing the Toronto neighbourhoods with renal listings data, which I happen to have handy. So time to get working.
+
+# Neighbourhoods
+To do this we need to grab the Toronto neighbourhoods [which can be found on Toronto's open data website](https://www1.toronto.ca/wps/portal/contentonly?vgnextoid=04b489fe9c18b210VgnVCM1000003dd60f89RCRD).
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(sf)
+library(knitr)
+library(treemap)
+
+map_opts <- list(
+    theme_void(),
+    theme(
+    panel.grid.major = element_line(colour = 'transparent')
+    )
+)
+```
+
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+base=getOption("custom_data_path")
+nbhd_path=paste0(base,"neighbourhoods_planning_areas_wgs84/NEIGHBORHOODS_WGS84.shp")
+if (!file.exists(nbhd_path)) {
+  download.file("http://opendata.toronto.ca/gcc/neighbourhoods_planning_areas_wgs84.zip", "neighbourhoods_planning_areas_wgs84.zip")
+  unzip("neighbourhoods_planning_areas_wgs84.zip",exdir = paste0(base,"/neighbourhoods_planning_areas_wgs84"))
+}
+```
+
+```{r, echo=FALSE, fig.height=2, fig.width=3}
+nbhds <- read_sf(nbhd_path) %>% st_transform(4326) %>%
+  mutate(AREA_NAME=gsub("( \\(\\d+\\))$","",AREA_NAME))
+ggplot(nbhds) +geom_sf() + map_opts
+```
+
+# Rental Listings Data
+With that in hand, we need to turn to rental data. The tweet is asking what property we can "get", for that we should use *turnover* rents, so how much people would likely have to pay if they wanted to rent today. We turn to scrapes of a popular rental listings platform to answer that, while broadening our time frame to the past 3 months to make sure we get a decent sample. The per square foot price skews lower for higher bedroom listings, so we restrict ourselves to studios, 1 or 2 bedroom listings.
+
+```{r, message=FALSE, warning=FALSE}
+library(rental)
+listings <- get_listings("2017-08-06","2017-11-06",st_union(nbhds$geometry),beds=c("0","1","2"),filter = 'unfurnished')
+listings %>% as.data.frame %>% group_by(beds) %>% summarize(count=n()) %>% kable
+```
+
+Next we sort the listings into their neighbourhoods and compute some quantities of interest, including rent per square foot and the average size of the unit we can expect to rent for CA$1,500 per month.
+
+```{r, message=FALSE, warning=FALSE}
+nbhd_rpsf <- st_join(listings,nbhds) %>% as.data.frame %>% 
+  group_by(AREA_NAME) %>% 
+  summarize(count=n(), rpsf=mean(price/size, na.rm=TRUE)) %>%
+  mutate(size_for_1500=round(1500/rpsf))
+```
+
+# Rental Tree Map
+Perfect, all that's left to do is to make a tree map graph for the neighbourhoods, restricting ourselves to the ones with at least 100 listings.
+
+```{r rental_treemap, echo=FALSE, message=FALSE, warning=FALSE}
+tree_data <-nbhd_rpsf %>% filter(count>=100) %>% #top_n(30,count)
+  mutate(main=paste0(floor(size_for_1500/100),"xx"),
+         label=paste0(AREA_NAME,"\n",size_for_1500,"sf"))
+tree_data$scaled <- (tree_data$size_for_1500-min(tree_data$size_for_1500)) /
+  (max(tree_data$size_for_1500)-min(tree_data$size_for_1500))
+
+  treemap(tree_data, 
+        index="label",
+        #index=c("main","label"),
+        #fontsize.labels=c(0,12),
+        #bg.labels="#cccccc",
+        vSize= "size_for_1500", 
+        vColor= "scaled", 
+        type="manual",
+        palette=viridis::viridis(nrow(tree_data)),
+        #algorithm="pivotSize",
+        algorithm='squarified',
+        sortID="scaled",
+        title="Average size (sf) of rental property for $1,500/month",
+        fontsize.title = 14,
+        position.legend = 'none')
+
+```
+
+# Geographic Distribution
+To round things up we quickly map the data to see the geographic distribution, where we map all neighbourhoods with at least 10 data points.
+
+```{r rental_map, echo=FALSE}
+geo_data <- left_join(nbhds,nbhd_rpsf %>% filter(count>=10), by="AREA_NAME")
+ggplot(geo_data, aes(fill=size_for_1500)) +
+  scale_fill_viridis_c(name="Size (sf)") +
+  labs(title="Average size (sf) of rental property for $1,500/month") +
+  geom_sf() + map_opts
+```
+
+As always, the R Notebook that generated this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-11-07-renting-in-toronto.Rmarkdown). Unfortunately in this case it requires access to non-public listings data, so the reproducibility of the post is limited to people with access to rental data of some sort that will have to substitute their own `get_listings` logic.

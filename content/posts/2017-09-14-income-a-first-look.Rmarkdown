@@ -130,7 +130,7 @@ graph_distributions_for_year <- function(year) {
                      quiet=TRUE) %>% top_n(topn,Population)
   
   # Rename census variables with the more detailed names above
-  categories <- census_vectors(data)
+  categories <- label_vectors(data)
   names(data)[grep("v_", names(data))] <- categories$Detail
   
   categories <- hh_distribution %>% pull("label")
