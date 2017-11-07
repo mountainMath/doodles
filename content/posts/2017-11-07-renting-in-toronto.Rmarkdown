@@ -92,7 +92,7 @@ tree_data$scaled <- (tree_data$size_for_1500-min(tree_data$size_for_1500)) /
         #algorithm="pivotSize",
         algorithm='squarified',
         sortID="scaled",
-        title="Average size (sf) of rental property for $1,500/month",
+        title="Average size (sf) of Toronto rental property for $1,500/month",
         fontsize.title = 14,
         position.legend = 'none')
 
@@ -105,7 +105,7 @@ To round things up we quickly map the data to see the geographic distribution, w
 geo_data <- left_join(nbhds,nbhd_rpsf %>% filter(count>=10), by="AREA_NAME")
 ggplot(geo_data, aes(fill=size_for_1500)) +
   scale_fill_viridis_c(name="Size (sf)") +
-  labs(title="Average size (sf) of rental property for $1,500/month") +
+  labs(title="Average size (sf) of Toronto rental property for $1,500/month") +
   geom_sf() + map_opts
 ```
 
