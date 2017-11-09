@@ -9,9 +9,9 @@ categories:
 tags: []
 description: 'Incomes are complex.'
 images: ["https://doodles.mountainmath.ca/posts/2017-09-14-income-a-first-look_files/figure-html/income_dist_2016-1.png"]
-#featured: 'graph-1.png'
+featured: 'income_dist_2016-1.png'
 featuredalt: ""
-#featuredpath: "/posts/2017-09-05-young-families_files/figure-html"
+featuredpath: "/posts/2017-09-14-income-a-first-look_files/figure-html"
 linktitle: ''
 type: "post"
 ---
@@ -160,7 +160,7 @@ graph_distributions_for_year <- function(year) {
 }
 ```
 Let's go beyond the medians and look at distributions. Let's compare how the top 15 municipalities in Metro Vancouver stack up. We will hide code (it is on [GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-09-14-income-a-first-look.Rmarkdown)] if you are interested in playing with it), but simply grab the relevant data and graph it.
-```{r income_dist_2016, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+```{r income_dist_2016, fig.height=5.2, fig.width=9, message=FALSE, warning=FALSE}
 graph_distributions_for_year(2016)
 ```
 
