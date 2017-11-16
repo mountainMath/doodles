@@ -62,7 +62,34 @@ OpenStreetMap editor. There you can add the newest separated bike lane or make o
 up for an account). It will take between 1 to 5 hours for changes to go live on our map, and the changes you make will
 also be available to any other app relying on OpenStreetMap data.
 
+<style>
+.axis {
+  font: 10px sans-serif;
+}
 
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.bar {
+  fill: steelblue;
+}
+
+.bar:hover {
+  fill: brown;
+}
+
+.color-bar:hover {
+  fill: grey;
+}
+</style>
 
 <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script src="/lib/jquery.min.js" charset="utf-8"></script>
