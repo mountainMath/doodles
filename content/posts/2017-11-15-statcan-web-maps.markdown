@@ -8,10 +8,10 @@ categories:
   - cancensus
 tags: []
 description: "Welcome to the world of web mapping!"
-#featured: 'transactions-1.png'
-#images: ["https://doodles.mountainmath.ca/posts/2017-11-02-updated-foreign-buyer-s-data_files/figure-html/transactions-1.png"]
+featured: 'statcan_web_map.png'
+images: ["https://doodles.mountainmath.ca/images/statcan_web_map.png"]
 featuredalt: ""
-#featuredpath: "/posts/2017-11-02-updated-foreign-buyer-s-data_files/figure-html"
+featuredpath: "/images/"
 linktitle: ''
 type: "post"
 ---
