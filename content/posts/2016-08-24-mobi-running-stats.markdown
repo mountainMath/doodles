@@ -262,9 +262,10 @@ d3.json(data_url, function(error, json) {
 
 var numberFormatter=d3.format(",");
 var dateFormatter=function(d){return d};//d3.time.format("%a %I%p");//d3.time.format("%a %H:%M"); //d3.format(",");
-
-bar_graph(d3.select("#graph_daily"),false,dateFormatter,numberFormatter);
-bar_graph(d3.select("#graph_hourly"),false,dateFormatter,numberFormatter);
+setTimeout(function(){
+  bar_graph(d3.select("#graph_daily"),false,dateFormatter,numberFormatter);
+  bar_graph(d3.select("#graph_hourly"),false,dateFormatter,numberFormatter);
+},500)
 
 //graphBikeStation('#station_graph_os',1);
 </script>
