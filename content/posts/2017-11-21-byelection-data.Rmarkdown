@@ -1,0 +1,121 @@
+---
+title: Byelection Data
+author: Jens von Bergmann
+date: '2017-11-21'
+slug: byelection-data
+categories:
+  - Vancouver
+tags: []
+description: "Results by voting place."
+featured: 'vote_geography-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2017-11-21-byelection-data_files/figure-html/vote_geography.png-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2017-11-21-byelection-data_files/figure-html/"
+linktitle: ''
+type: "post"
+---
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(sf)
+library(readr)
+library(cancensus)
+```
+
+The election data got posted on the [Vancouver Open Data website](http://data.vancouver.ca/datacatalogue/municipalElectionResults.htm) so we decided to take a very quick peek at how the candidates fared by polling station. Citizens can vote at any station they want, so there is are no voting districts. But proximity to home is probably a large factor in determining where people vote, although some may choose locations close to work or somewhere else convenient. For anyone that wants to refine the analysis, the R Notebook that generated this post [lives on GitHub]((https://github.com/mountainMath/doodles/blob/master/content/posts/2017-11-21-byelection-data.Rmarkdown))
+
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+custom_data_path=getOption("custom_data_path")
+candidates <- c("BREMNER, Hector\n(NPA)",
+                "CARDONA, Diego\n(Vision Vancouver)",
+                "DUNSDON, Mary Jean \"Watermelon\"\n(Sensible Vancouver)",
+                "FRY, Pete\n(Green Party)",
+                "GRAVES, Judy\n(OneCity)",
+                "LEE, Gary",
+                "MURPHY, Damian J.\n",
+                "SWANSON, Jean\n",
+                "WASILENKOFF, Joshua\n")
+voting_results <- read_csv(paste0(custom_data_path,"/2017By-electionResults/2017By-electionResultsCouncillor.csv"))
+voting_results <- voting_results[-1,]
+voting_places <- read_csv(paste0(custom_data_path,"/2017By-electionResults/voting_places_2017.csv")) %>% 
+  st_as_sf(coords=c("Longitude","Latitude")) %>%
+  mutate(`Voting Place ID`=as.character(`Voting Place ID`)) %>% st_set_crs(4326) %>% st_transform(4269)
+
+no_votes=voting_results %>%
+  gather(key="Candidate", value="Count",candidates) %>%
+  mutate(Count=as.numeric(Count)) %>% 
+  group_by(`Voting Place`) %>% summarize(Count=sum(Count)) %>% filter(Count==0) %>% pull("Voting Place")
+
+voting_results <- voting_results %>%
+                           gather(key="Candidate", value="Count",candidates) %>%
+                           mutate(Candidate=sub("\n","",Candidate),
+                                  Count=as.numeric(Count)) %>%
+                          filter(!(`Voting Place` %in% no_votes))
+
+voting_data <- right_join(voting_places,
+                          voting_results,
+                          by="Voting Place ID")
+```
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+vd <- voting_data %>% filter(!is.na(Count)) %>% select(`Voting Place`,Candidate,Count) %>%
+  mutate(Count=as.integer(Count)) %>%
+  arrange(desc(Count)) %>%
+  mutate(rn = row_number())
+
+winner <- vd %>% group_by(`Voting Place`) %>% top_n(1,Count)
+winner_list <- setNames(winner$Candidate,winner$`Voting Place`)
+
+candidate_order=voting_data %>% filter(`Voting Place` == "Total") %>% arrange(Count) %>% pull(Candidate)
+colors=setNames(rev(RColorBrewer::brewer.pal(length(candidate_order),"Set1")),candidate_order)
+
+voting_data <- voting_data %>% 
+  mutate(winner=winner_list[`Voting Place`],
+         Candidate=factor(Candidate,levels=candidate_order,ordered=TRUE))
+voting_results <- voting_results %>% 
+  mutate(winner=winner_list[`Voting Place`],
+         Candidate=factor(Candidate,levels=candidate_order,ordered=TRUE))
+```
+
+# Vote split by Voting Place
+This graph gives an overview how the votes were split at each individual polling station.
+
+```{r, echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
+ggplot(voting_results %>% 
+         filter(!is.na(Count),`Voting Place` != "Total")
+       , aes(x=`Voting Place`,y=Count,fill=Candidate, group=Candidate)) +
+    geom_bar(position = "fill", stat = "identity") +
+  scale_fill_manual(values=colors) +
+    scale_y_continuous(labels = scales::percent) + 
+  theme_bw() + coord_flip()
+```
+
+# Most Votes by Voting Place
+For each voting place we looked at who got the most votes and plotted the result on a map to get an overview of the geographic distribution.
+
+
+
+```{r vote_geography, echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
+rs=list(CT=c("9330069.01","9330069.02"), CSD=c("5915022","5915803"))
+data <- get_census(dataset='CA16', regions=rs, labels="short", geo_format='sf', level='Regions') %>%
+  st_transform(4269)
+
+plot_data <- voting_data %>% 
+         filter(Candidate==winner) %>%
+         mutate(size=Count/10) %>% st_as_sf
+ggplot(data) +
+  geom_sf(fill="#dddddd",color="grey") +
+  geom_sf(data=plot_data, aes(color=winner, size=size)) +
+  scale_color_manual(values=colors, name="Most Votes") +
+  guides(size=FALSE) + 
+  theme_minimal() +
+  theme(axis.text = element_blank(), 
+        axis.title = element_blank(), 
+        axis.ticks = element_blank(),
+        panel.grid.major = element_line(colour = "white"), 
+        panel.grid.minor = element_line(colour = "white"),
+        panel.background = element_blank(), 
+        axis.line = element_blank())
+
+```
