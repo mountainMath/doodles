@@ -60,7 +60,7 @@ basemap + geom_sf(data=cmas, color=cma_color,fill=cma_color) + lambert
 
 This leaves us with 6 regions, namely 
 
->  Montréal, Calgary, Toronto, Vancouver, Edmonton, Ottawa - Gatineau
+>  Calgary, Toronto, Vancouver, Edmonton, Ottawa - Gatineau, Montréal
 
 To keep things simple for use we use employment growth as a proxy for job growth. And let's use 2006 and 2011 numbers since 2016 numbers aren't out yet and we are too lazy to look up the CANSIM statistics. The [CensusMapper API tool](https://censusmapper.ca/api) makes it straight forward to locate the relevant variables and copy-paste the `cancensus` data import call, or we can use the `cancensus` search function.
 

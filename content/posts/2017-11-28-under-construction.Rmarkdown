@@ -1,0 +1,254 @@
+---
+title: Under Construction
+author: Jens von Bergmann
+date: '2017-11-28'
+slug: under-construction
+categories:
+  - cmhc
+tags: []
+description: "We have record under construction, but we also have record length of construction."
+featured: 'all_normalized-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2017-11-28-under-construction_files/figure-html/all_normalized-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2017-11-28-under-construction_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+Currently we are at record levels of dwelling units under construction in Metro Vancouver. At the same time, we are also at record timelines from building start to completion. Those two are of course related in that the more projects are being worked on simultaneously, the harder it is to find and coordinate all the labour and materials to finish the projects. There are other reasons too for escalating construction times. We are building taller projects than we used too, more of it is concrete than there used to be. Single detached construction times are probably lengthened by increasingly larger and more elaborate single family homes.
+
+Recently our current record under construction inventory has received a lot of attention as an indication of future completions. But just looking at under construction can give us misleading messages about what to expect. To get a cleaner idea we should normalize by the average duration construction. For example, if the under construction inventory is 10 times what is normal, but completion times are also 10 times what's normal, then the expected rate of completions is no different than the normal.
+
+
+## Under Construction
+```{r, include=FALSE}
+library(tidyverse)
+library(cmhc)
+library(DescTools)
+cma="Vancouver"
+types <- c("Single","Semi-Detached","Row","Apartment","All")
+
+under_construction <- get_cmhc(cmhc_timeseries_params(table_id = cmhc_table_list["Scss Under Construction Time Series"], geography_id = cmhc_geography_list[cma])) %>% 
+  mutate(Date=as.Date(paste0("01 ",X1),format("%d %b %Y")),
+         Series="Under Construction")
+
+construction_duration <- get_cmhc(cmhc_timeseries_params(table_id = cmhc_table_list["Scss Length of Construction Time Series"], geography_id = cmhc_geography_list[cma])) %>% 
+  mutate(Date=as.Date(paste0("01 ",X1),format("%d %b %Y"))) %>%
+  mutate(
+    Single=ifelse(Single==0,NA,Single),
+    `Semi-Detached`=ifelse(`Semi-Detached`==0,NA,`Semi-Detached`),
+    Row=ifelse(Row==0,NA,Row),
+    Apartment=ifelse(Apartment==0,NA,Apartment),
+    All=ifelse(All==0,NA,All),
+    Series="Construction Duration"
+         )
+
+completions=get_cmhc(cmhc_timeseries_params(table_id = cmhc_table_list["Scss Completions Time Series"], geography_id = cmhc_geography_list[cma])) %>% 
+  mutate(Date=as.Date(paste0("01 ",X1),format("%d %b %Y")),
+             Series="Completions")
+starts=get_cmhc(cmhc_timeseries_params(table_id = cmhc_table_list["Scss Starts Time Series"], geography_id = cmhc_geography_list[cma])) %>% 
+  mutate(Date=as.Date(paste0("01 ",X1),format("%d %b %Y")),
+             Series="Starts")
+
+d <- inner_join(under_construction,construction_duration, by="X1") %>% 
+  mutate(Date=Date.x,
+         Series="Normalized Under Construction") 
+
+for(type in types){
+  t1=paste0(type,".x")
+  t2=paste0(type,".y")
+  d[[type]]=d[[t1]]/d[[t2]]
+}
+
+data <- do.call(rbind, list(
+  under_construction %>% gather(key="Type",value="Units",types) %>% select("Date","Type","Units","Series"),
+  construction_duration %>% gather(key="Type",value="Units",types) %>% select("Date","Type","Units","Series"),
+  d %>% gather(key="Type",value="Units",types) %>% select("Date","Type","Units","Series"),
+  completions %>% gather(key="Type",value="Units",types) %>% select("Date","Type","Units","Series"),
+  starts %>% gather(key="Type",value="Units",types) %>% select("Date","Type","Units","Series")
+))
+
+
+my_theme <- list(
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)),
+  geom_line(alpha=0.5),
+  geom_smooth(span=0.15, level=0.99),
+  theme_bw()
+)
+```
+
+```{r under_construction, echo=FALSE, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+ggplot(data=data %>% filter(Series=="Under Construction"), 
+       aes(x=Date, y=Units, group=Type, color=Type)) +
+  ggtitle(paste0(cma," CMA Under Construction")) + 
+  my_theme
+```
+
+
+## Length of Construction
+The length under construction is the mean duration projects completed in a given month took to complete.
+
+```{r length_of_construction, echo=FALSE, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+ggplot(data %>% filter(Series=="Construction Duration"), 
+       aes(x=Date, y=Units, group=Type, color=Type)) +
+  ggtitle(paste0(cma," CMA Length of Construction")) +
+  my_theme + 
+  labs(y="Months")
+```
+
+We right away notice a gap in the data for 1991 and 1992. This won't bother us too much, but will make some of our estimates later on less accurate for the relevant time frames.
+
+Up until 2002 it took about 6 months to complete a single family home in Metro Vancouver, by now it takes about a year. Row/Townhouses have traded places with single family homes now as the product that completes fasted these days.
+
+The increase in construction times around 2002 coincides with the increase in apartment construction, and the construction time lengthened for all product types in a similar fashion. That suggests that the primary cause of increased construction time is a labour shortage in the construction sector and not just the trend toward concrete and taller buildings.
+
+
+# Normalized under Construction
+To understand the relationship of under construction inventory to completions we normalize the under construction volume by simply dividing by the length of construction for projects completing that month, and compare that to completions by type.
+
+```{r normalized_under_construction, echo=FALSE, fig.height=5, fig.width=10, message=FALSE, warning=FALSE}
+ggplot(data %>% filter(Series %in% c("Normalized Under Construction","Completions"), Type != "All") %>%
+                   mutate(Series=ifelse(Series=="Normalized Under Construction",
+                               "Under Construction\n(Normalized by\nLength of Construction)",
+                               Series)), 
+       aes(x=Date, y=Units, color=Series)) +
+  facet_wrap("Type", scales="free_y", nrow=2) +
+  ggtitle(paste0(cma," CMA Normalized (by Length of Construction) Under Construction")) + 
+  my_theme
+```
+
+The match is decent, but it is noticeably off. One reason is that there is a time lag between mid construction and completion, but we don't account for that when sloppily normalize the under construction inventory by the construction duration of the buildings that completed that month.
+
+# Adding some time-shifts
+We can get a little more fancy by shifting the time component of the construction duration by half the length of the duration. That way we shift the under construction duration from the time of completion to mid-construction, which should give a better fit.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+# method 1
+library(zoo)
+construction_duration2 <- construction_duration %>%
+  gather(key="Type",value="Units",types) %>%
+  filter(!is.na(Units)) %>%
+  mutate(Date=AddMonths(Date,-Units/2)) %>%
+  spread(key="Type",value="Units") %>%
+  select(types,"Date") %>%
+  group_by(Date) %>%
+  summarize_all(mean,na.rm=TRUE)
+
+missing_months=setdiff(construction_duration$Date %>% strftime,construction_duration2$Date %>% strftime) %>% as.Date
+sub_rows= construction_duration %>% 
+  select("Date",types) %>%
+  filter(Date %in% missing_months) %>% 
+  mutate(Single=NA,
+         `Semi-Detached`=NA,
+         Row=NA,
+         Apartment=NA,
+         All=NA)
+construction_duration2 <- rbind(construction_duration2,sub_rows) %>% 
+  filter(Date %in% construction_duration$Date) %>%
+  arrange(Date)
+
+last_date=construction_duration2$Date %>% tail(1)
+
+for (type in types) {
+  construction_duration2[[type]][is.nan(construction_duration2[[type]])] <- NA
+  value <- construction_duration %>% select("Date",type)  %>%
+    filter(Date >= AddMonths(last_date,-6)) %>% pull(type) %>% mean
+  construction_duration2[[type]][construction_duration2$Date==last_date] <- value
+}
+
+construction_duration3 <- construction_duration2 %>% select(types) %>% na.approx %>% as.data.frame
+construction_duration3$Date <- construction_duration2$Date
+
+d <- inner_join(under_construction,construction_duration3, by="Date") %>% 
+  mutate(Series="Normalized Under Construction 2") 
+
+for(type in types){
+  t1=paste0(type,".x")
+  t2=paste0(type,".y")
+  d[[type]]=d[[t1]]/d[[t2]]
+}
+
+data <- data %>% rbind(d %>% gather(key="Type",value="Units",types) %>% select("Date","Type","Units","Series"))
+
+```
+
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+# method 2
+# alternative and more pedestrian approach
+last_row=construction_duration %>% tail(1)
+max_date=AddMonths(construction_duration$Date %>% tail(1),-(last_row %>% select(types) %>% max))
+summary <- construction_duration %>% select(types) %>% summarize_all(mean,na.rm=TRUE)
+construction_duration4 <- construction_duration %>% mutate(Date=AddMonths(Date,- summary[type]))
+missing_months=setdiff(construction_duration$Date %>% strftime,construction_duration4$Date %>% strftime) %>% as.Date
+sub_rows= construction_duration %>% 
+  select("Date",types) %>%
+  filter(Date %in% missing_months) %>% 
+  mutate(Single=last_row$Single,
+         `Semi-Detached`=last_row$`Semi-Detached`,
+         Row=last_row$Row,
+         Apartment=last_row$Apartment,
+         All=last_row$All)
+construction_duration4 <- rbind(construction_duration4 %>% select(names(sub_rows)),sub_rows) %>%
+    mutate(Single=ifelse(Date>max_date & is.na(Single),last_row$Single,Single),
+         `Semi-Detached`=ifelse(Date>max_date & is.na(Single),last_row$`Semi-Detached`,`Semi-Detached`),
+         Row=ifelse(Date>max_date & is.na(Single),last_row$Row,Row),
+         Apartment=ifelse(Date>max_date & is.na(Single),last_row$Apartment,Apartment),
+         All=ifelse(Date>max_date & is.na(Single),last_row$All,All)) %>%
+  filter(Date %in% construction_duration$Date) %>%
+  arrange(Date)
+
+
+d <- inner_join(under_construction,construction_duration4, by="Date") %>% 
+  mutate(Series="Normalized Under Construction 3") 
+
+for(type in types){
+  t1=paste0(type,".x")
+  t2=paste0(type,".y")
+  d[[type]]=d[[t1]]/d[[t2]]
+}
+
+data <- data %>% rbind(d %>% gather(key="Type",value="Units",types) %>% select("Date","Type","Units","Series"))
+
+```
+
+
+This will inevitably leave us with some missing values here and there as the shifts in time are not uniform. And for the most recent dates we don't have anything to shift from, since we don't know the construction duration of the projects currently under construction that will complete in the future. We will interpolate the intermittent missing values linearly and extrapolate the values at the end by just using the average completion duration for the most recent six months.
+
+```{r normalized_under_construction_2, fig.height=5, fig.width=10, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data %>% filter(Series %in% c("Normalized Under Construction 2","Completions"), Type != "All") %>%
+          mutate(Series=ifelse(Series=="Normalized Under Construction 2",
+                               "Under Construction\n(Normalized by Time-Lagged\nLength of Construction)",
+                               Series)), 
+       aes(x=Date, y=Units, color=Series)) +
+  facet_wrap("Type", scales="free_y", nrow=2) +
+  ggtitle(paste0(cma," CMA Normalized (by Length of Construction) Under Construction")) + 
+  my_theme
+```
+
+We see that the match with the completions data has improved somewhat. But the part that we are most interested in, the most recent normalized under construction for Apartments, we still see a big gap between current completions and our normalized under construction.
+
+That means we should expect the average construction duration to increase further, which will bring out normalized under construction closer to the completion curve.
+
+Finally, zooming in on the composite metric for all product types, we see clearly that the total under construction inventory right now is at historic heights, barring dramatic increases in construction duration.
+
+```{r all_normalized, echo=FALSE, fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+ggplot(data %>% filter(Series %in% c("Normalized Under Construction 2"), Type == "All") %>%
+         mutate(Series="Under Construction\n(Normalized by Time-Lagged\nLength of Construction)"), 
+       aes(x=Date, y=Units, color=Series)) +
+  facet_wrap("Type", scales="free_y", nrow=2) +
+  ggtitle(paste0(cma," CMA Normalized Under Construction")) + 
+  my_theme
+```
+
+But the under construction inventory, when normalized as expected monthly output based on completion times, does not look as extreme as the unnormalized graph at the very top. So more supply is coming, but don't be mislead by not accounting for the effect of longer construction times.
+
+```{r completions, eval=FALSE, fig.height=5, fig.width=9, message=FALSE, warning=FALSE, include=FALSE}
+ggplot(data %>% filter(Series %in% c("Completions","Starts"), Type != "All"), 
+       aes(x=Date, y=Units, color=Series)) +
+  facet_wrap("Type", scales="free_y", nrow=2) +
+  ggtitle(paste0(cma," CMA Completions and Starts")) + 
+  my_theme
+```
+
+As always, the R notbook that generated this post lives [on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-11-28-under-construction.Rmarkdown), download it to reproduce the analysis, check how exactly it was done or make changes.
