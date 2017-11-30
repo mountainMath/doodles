@@ -1,0 +1,133 @@
+---
+title: Journey To Work
+author: Jens von Bergmann
+date: '2017-11-29'
+slug: journey-to-work
+categories:
+  - cancensus
+  - CensusMapper
+tags: []
+description: "We have record under construction, but we also have record length of construction."
+featured: 'same_muni-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2017-11-29-journey-to-work_files/figure-html/same_muni-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2017-11-29-journey-to-work_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+The last larger dump of census data arrived today with lots of interesting variables. We wanted to have a quick look at commuting data.
+
+```{r, include=FALSE}
+library(tidyverse)
+library(sf)
+library(cancensus)
+format_number=function(x){return(format(x,big.mark=","))}
+format_percent=function(x){return(paste0(round(x*100,1),"%"))}
+```
+
+
+# Journey to Work
+Journey to work data tells us about where people work relative to where they live.  
+```{r, include=FALSE}
+custom_path=getOption('custom_data_path')
+path=paste0(custom_path,"98-400-X2016325_ENG_CSV/98-400-X2016325_English_CSV_data.csv")
+if (!file.exists(path)) {
+  # download file
+}
+city="5915022" # City of Vancouver
+journey_data <- read_csv(path) %>%
+  mutate(Count=`Dim: Sex (3): Member ID: [1]: Total - Sex`,
+         Home=paste0(GEO_NAME," (",CSD_TYPE_NAME,")"), 
+         Work=paste0(GEO_NAME_1," (",CSD_TYPE_NAME_1,")"),
+         Home_GeoUID=`GEO_CODE (POR)`,
+         Work_GeoUID=`GEO_CODE (POW)`) %>%
+  select(Home_GeoUID,Work_GeoUID,Home,Work,Count)
+destination_data <- journey_data %>% 
+  filter(Work_GeoUID==city) %>%
+  mutate(GeoUID=as.character(Home_GeoUID))
+origin_data <- journey_data %>%   
+  filter(Home_GeoUID==city) %>%
+  mutate(GeoUID=as.character(Work_GeoUID))
+
+destination_working=sum(destination_data$Count)
+origin_working=sum(origin_data$Count)
+home_working=destination_data %>% filter(GeoUID==city) %>% pull(Count)
+
+geos=get_census(dataset='CA16', regions=list(CMA="59933"), vectors=c("v_CA16_5780","v_CA16_5777"), geo_format="sf", level="CSD", labels="short")
+
+destination_geos <- left_join(geos, destination_data, by="GeoUID")
+origin_geos <- left_join(geos, origin_data, by="GeoUID")
+origin_metro=sum(destination_geos$Count)
+destination_metro=sum(origin_geos$Count)
+
+my_theme <- list(
+  theme_minimal(),
+  theme(axis.text = element_blank(), 
+        axis.title = element_blank(), 
+        axis.ticks = element_blank(),
+        panel.grid.major = element_line(colour = "white"), 
+        panel.grid.minor = element_line(colour = "white"),
+        panel.background = element_blank(), 
+        axis.line = element_blank())
+)
+```
+
+We first look at what proportion of the population of Metro Vancouver municpalities lives in the same community that they work in.
+```{r same_muni, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(geos %>% mutate(share=ifelse(v_CA16_5777>=50,v_CA16_5780/v_CA16_5777,NA))) +
+  geom_sf(aes(fill=share)) +
+  scale_fill_viridis_c(labels=scales::percent, name="Share of Workers", option="magma") +
+  labs(title="Share of Workers Working in the Same Municipality the Live in") +
+  my_theme
+```
+
+On CensusMapper we have an [interactive Canada-wide map for that](https://censusmapper.ca/maps/978). As the central municipality, the City of Vancouver has the highest proportion of residents that work in the same community that they live in. Let's take a deeper look at the commute patters for workers that work in the City of Vancouver, as well as those that live there.
+
+Overall there are `r format_number(destination_working)` people working in the City of Vancouver, `r format_number(home_working)` of which (`r format_percent(home_working/destination_working)`) are living in the City of Vancouver and the rest commuting in from outside the city. Most of these come from within Metro Vancouver, but `r format_number(destination_working-origin_metro)`, or `r format_percent((destination_working-origin_metro)/destination_working)`, are coming from outside of Metro Vancouver.
+
+The top 15 trip to work destinations outside of the City of Vancouver for workers living inside the city are
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(destination_data %>% filter(GeoUID != city) %>% top_n(15, Count),
+         aes(y=Count, x=reorder(Home, Count))) +
+  geom_bar(stat="identity", fill='steelblue') +
+  labs(title="Commuters commuting into City of Vancouver", x="Home Community", y="Number") + 
+  coord_flip() +
+  theme_minimal()
+```
+
+We can also map Metro Vancouver comunities by what proportion of City of Vancouver workers live there.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(destination_geos %>% mutate(share=ifelse(GeoUID==city,NA,Count/destination_working))) +
+  geom_sf(aes(fill=share)) +
+  scale_fill_viridis_c(labels=scales::percent, name="Share of Workers") +
+  labs(title="Workers working in the City of Vancouver by Place of Residence Outside the City") +
+  my_theme
+```
+
+
+# Reverse Commuting
+Next we look at reverse commuting, that is what municipalities the `r format_number(origin_working-home_working)` among the `r format_number(origin_working)` workers (`r format_percent((origin_working-home_working)/origin_working)`) living in the City of Vancouver that work outside the city work it.
+
+The top 15 trip to work origins outside of the City of Vancouver are
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(origin_data %>% filter(GeoUID != city) %>% top_n(15, Count),
+         aes(y=Count, x=reorder(Work, Count))) +
+  geom_bar(stat="identity", fill='brown') +
+  labs(title="Commuters commuting out of City of Vancouver", x="Work Community", y="Number") + 
+  coord_flip() +
+  theme_minimal()
+```
+
+We can also map Metro Vancouver comunities by what proportion of City of Vancouver workers live there.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(origin_geos %>% mutate(share=ifelse(GeoUID==city,NA,Count/origin_working))) +
+  geom_sf(aes(fill=share)) +
+  scale_fill_viridis_c(labels=scales::percent, name="Share of Workers", option="plasma") +
+  labs(title="Workers living in the City of Vancouver by Place of Work outside the City") +
+  my_theme
+```
+
+I think it would be nice to have some interactive and animated maps that allow one to explore commuting patterns. But this will have to wait for another day. As always, the underlying R Notebook that generated this post lives [on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-11-29-journey-to-work.Rmarkdown) for anyone interested in reproducing or adapting this post for a different region or elaborating on it in other ways.
