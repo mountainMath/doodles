@@ -7,7 +7,7 @@ categories:
   - cancensus
   - CensusMapper
 tags: []
-description: "We have record under construction, but we also have record length of construction."
+description: "City of Vancouver commuting and reverse commuting."
 featured: 'same_muni-1.png'
 images: ["https://doodles.mountainmath.ca/posts/2017-11-29-journey-to-work_files/figure-html/same_muni-1.png"]
 featuredalt: ""
