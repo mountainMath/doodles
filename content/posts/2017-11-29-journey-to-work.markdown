@@ -50,4 +50,14 @@ We can also map Metro Vancouver comunities by what proportion of City of Vancouv
 
 <img src="/posts/2017-11-29-journey-to-work_files/figure-html/unnamed-chunk-6-1.png" width="672" />
 
+# The Flow
+
+
+Another way to look at the commute data within Metro Vancouver is to make a chord diagram to show the flow of commuters within and between municipalities. To keep things managable we contain ourselves with the 13 most commuter-heavy communities.
+
+
+<iframe seamless src="/widgets/d1.html" width="100%" height="700"></iframe>
+
+
+
 I think it would be nice to have some interactive and animated maps that allow one to explore commuting patterns. But this will have to wait for another day. As always, the underlying R Notebook that generated this post lives [on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-11-29-journey-to-work.Rmarkdown) for anyone interested in reproducing or adapting this post for a different region or elaborating on it in other ways.
