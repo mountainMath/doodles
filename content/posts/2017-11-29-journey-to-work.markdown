@@ -8,10 +8,10 @@ categories:
   - CensusMapper
 tags: []
 description: "City of Vancouver commuting and reverse commuting."
-featured: 'same_muni-1.png'
-images: ["https://doodles.mountainmath.ca/posts/2017-11-29-journey-to-work_files/figure-html/same_muni-1.png"]
+featured: 'van_commute.png'
+images: ["https://doodles.mountainmath.ca/images/van_commute.png"]
 featuredalt: ""
-featuredpath: "/posts/2017-11-29-journey-to-work_files/figure-html"
+featuredpath: "/images/"
 linktitle: ''
 type: "post"
 ---

@@ -8,10 +8,10 @@ categories:
   - CensusMapper
 tags: []
 description: "City of Vancouver commuting and reverse commuting."
-featured: 'same_muni-1.png'
-images: ["https://doodles.mountainmath.ca/posts/2017-11-29-journey-to-work_files/figure-html/same_muni-1.png"]
+featured: 'van_commute.png'
+images: ["https://doodles.mountainmath.ca/images/van_commute.png"]
 featuredalt: ""
-featuredpath: "/posts/2017-11-29-journey-to-work_files/figure-html"
+featuredpath: "/images/"
 linktitle: ''
 type: "post"
 ---
@@ -162,15 +162,15 @@ all_names=lapply(all_ids, function(x){
   return(name)
   })
 names_table=setNames(all_names,all_ids)
-chord_matrix <- xtabs(Count~Home+Work, chord_data %>% select(Work, Home, Count))
+chord_matrix <- xtabs(Count~Work+Home, chord_data %>% select(Work, Home, Count))
 
 row_names=rownames(chord_matrix)
 col_names=colnames(chord_matrix)
 for (id in missing_home) {
-  chord_matrix <- rbind(chord_matrix,rep_len(0,ncol(chord_matrix)))
+  chord_matrix <- cbind(chord_matrix,rep_len(0,nrow(chord_matrix)))
 }
 for (id in missing_work) {
-  chord_matrix <- cbind(chord_matrix,rep_len(0,nrow(chord_matrix)))
+  chord_matrix <- rbind(chord_matrix,rep_len(0,ncol(chord_matrix)))
 }
 rownames(chord_matrix) <- c(row_names,as.vector(unlist(lapply(missing_home,function(x){unlist(names_table[x])}))))
 colnames(chord_matrix) <- c(col_names,as.vector(unlist(lapply(missing_work,function(x){unlist(names_table[x])}))))
