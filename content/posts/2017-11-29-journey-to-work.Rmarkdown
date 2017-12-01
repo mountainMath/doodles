@@ -33,7 +33,7 @@ Journey to work data tells us about where people work relative to where they liv
 custom_path=getOption('custom_data_path')
 path=paste0(custom_path,"98-400-X2016325_ENG_CSV/98-400-X2016325_English_CSV_data.csv")
 if (!file.exists(path)) {
-  # download file
+  # download file from http://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=111332&OFT=CSV
 }
 city="5915022" # City of Vancouver
 journey_data <- read_csv(path) %>%
@@ -214,6 +214,6 @@ d1
 <script src="/widgets/d1_files/d3/d3.min.js" ></script>
 <script src="/widgets/d1_files/d3-tip/index.js"  ></script>
 
-Originally I wanted this as interactive diagram, but could not figure out how to include html widgets into my blog setup. It works when I run it locally, but not when . So a static images it is.
+~~Originally I wanted this as interactive diagram, but could not figure out how to include html widgets into my blog setup. So a static images it is.~~ Ok, I hacked my blog to include the interactive widget.
 
 I think it would be nice to have some interactive and animated maps that allow one to explore commuting patterns. But this will have to wait for another day. As always, the underlying R Notebook that generated this post lives [on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-11-29-journey-to-work.Rmarkdown) for anyone interested in reproducing or adapting this post for a different region or elaborating on it in other ways.
