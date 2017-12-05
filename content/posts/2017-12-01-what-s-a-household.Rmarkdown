@@ -1,0 +1,606 @@
+---
+title: What’s a Household?
+author: Jens von Bergmann
+date: '2017-12-01'
+slug: what-s-a-household
+categories:
+  - CensusMapper
+  - cancensus
+tags: []
+description: "What kind of households does Vancouver have?"
+featured: 'hh_by_age-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2017-12-01-what-s-a-household_files/figure-html/hh_by_age-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2017-12-01-what-s-a-household_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+Recently there has been a lot of talk about households, and how they match up with dwelling units. So it's probably a good idea to take a closer look at what a household is. 
+
+Apart from better understanding what a household is, I want to also dig deeper into how people live in households. Part of my motivation is to start to understand latant demand in our housing market, some of which may come from suppressed household formation. As a starting point for this I want to better understant "complex" household types that may strive to "simplify", to put it in language introduced further down. There are many confounding factors for "complex" household types that we would have to account for in order to move from the simple enumeration of household types that we do in this post toward using this to derive estimates for latant demand of suppressed household formation. So this post is more of an inventory of household types and their intersection with dwellings, and does not (yet) make any statements about latant demand.
+
+But let's start of with the census definition of a household. And also touch on what a dwelling unit is. Dwellings are simpler, so we will do that first.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+format_number <- function(x){format(x,big.mark=",")}
+format_percent <- function(x){paste0(round(x*100,1),"%")}
+comparables=c("933","462","505","535","825","835")
+tenure_vars <- c("Total - Tenure","Owner","Renter","Band housing")
+suitability_types <- c("Suitable", "One bedroom shortfall", "Two bedroom shortfall", "Three or more bedroom shortfall")
+suitability_colors <- setNames(c(RColorBrewer::brewer.pal(3,"Greens")[2], RColorBrewer::brewer.pal(4,"Reds")[2:4]),suitability_types)
+key_households = c(5,6,7,10,11,12,13,15,16)
+key_names = c("One couple census family without other\npersons in the household without children",
+              "One couple census family without other\npersons in the household with children",
+              "One lone-parent census family without\nother persons in the household",
+              "One couple census family with other\npersons in the household without children",
+              "One couple census family with other\npersons in the household with children",
+              "One lone-parent census family with\nother persons in the household",
+              "Multiple-census-family household",
+              "One person household",
+              "Two-or-more person\nnon-census-family household")
+key_household_names=setNames(key_names,key_households)
+key_household_colors = setNames(c("Simple","Simple","Simple","Complex","Complex","Complex","Complex","Simple","Complex"),key_households)
+trad_colors= RColorBrewer::brewer.pal(5,"Blues")[2:5]
+complex_colors= RColorBrewer::brewer.pal(6,"Reds")[2:6]
+key_household_color_values = setNames(c(trad_colors[1:3],complex_colors[1:4],trad_colors[4],complex_colors[5]),key_households)
+```
+
+
+# Dwellings
+The census splits dwelling units into "private" and "collective" dwellings. Most of the time when referencing census data we only talk about "private dwellings", including in (almost) news accounts on this. The regular census profiles for regions across Canada do not include any information about collective dwellings, and only include information on the age of the population in collective dwellings (aka "institutional residents"). This can lead to interesting statistics, like [Dissemination Block 59150946003 on UBC campus](https://censusmapper.ca/maps/591#18/49.26150/-123.25649), that reports 890 people living there in 0 (private) dwelling units.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+path=paste0(getOption('custom_data_path'),"/98-400-X2016012_ENG_CSV/98-400-X2016012_English_CSV_data.csv")
+if (!file.exists(path)) {
+# download csv at http://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=109649&OFT=CSV
+}
+dwelling_types <- read_csv(path) %>% rename(GeoUID=`GEO_CODE (POR)`, year=CENSUS_YEAR, name=GEO_NAME)
+names(dwelling_types) <- sub(" \\(Note: \\d+\\)","",sub("Dim: Dwellings occupied by usual residents and population in dwellings \\(6\\): Member ID: \\[\\d+\\]: ","",names(dwelling_types)))
+
+vancouver_dwellings_types <- dwelling_types %>% filter(GeoUID=="933")
+
+```
+
+We can [map the number of people living in collective housing](https://censusmapper.ca/maps/772) by simply subtracting the people in private households by the total population. That gives us an idea of the scale and distribution of institutional residents, 2.1% of the population in the City of Vancouver lived in collective dwellings in 2016. This can lead to confusions when people estimate household size, where one needs to be careful to properly match up populations and dwellings. In particular, regularly people naively divide the standard population (which counts all people) by dwellings (which only counts private dwellings), but this gives incorrect results.
+
+# Households
+Which brings us to households. For the census a households is exactly the same as a dwelling that is "occupied by usual residents". As a reminder, these are dwellings that are used as primary residences. The basic idea is that the census should count people and households only once. Just like with dwellings, in most cases the census only refers to “private households”, which often gets shortened to just “households” when we talk about these. There are comparatively few collective households, so the confusion this might cause is not very large.
+
+Overall in Metro Vancouver we have `r format_number(vancouver_dwellings_types[["Population in private dwellings"]])` usual residents living in `r format_number(vancouver_dwellings_types[["Private dwellings occupied by usual residents"]])` private households and `r format_number(vancouver_dwellings_types[["Population in collective dwellings"]])` usual residents living in `r format_number(vancouver_dwellings_types[["Collective dwellings occupied by usual residents"]])` collective dwellings.
+
+As a hypothetical (but realistic) example consider a student attending university at UBC and renting a basement suite in the City of Vancouver during the semester. While our student lived in Vancouver during the census (assuming the student stuck around a couple of weeks after the end of the spring semester and was still in Vancouver during the census), the student thinks of the suite as their temporary residence and their parent's place as their permanent residents. So the student would get recorded at their parent's residence and count as a person in their parent's household, and the suite in Vancouver would get recorded as not "occupied by usual residents".
+
+In short, in the census a "household" is a dwelling unit used as permanent residence. This is a fine, but important, distinction of how we usually think of households. Colloquially we often equate households with "families" living together or "unattached individuals" living alone.
+
+
+If we just naively match (private) households with (private) dwelling units, we are only looking at how many dwellings get used as primary residences but we ignore how people live together. For the rest of this post we want to take a deeper look at the types of households and how people live together, with a focus on Vancouver but at times bringing in other regions for more context.
+
+
+## Types of private Households
+Which brings us to the question of what a "household" is in terms of the living arrangements of the people in a household. The census distinguishes a range of (private) household types:
+
+* census family households
+  - one census family only households
+  - one census family household with additional persons
+  - multiple family households (with or without additional persons)
+* non census family households
+  - one person non census family households
+  - two or more person non census family households
+  
+To understand what that means we need to understand what a census family us. A "census family" consists of a couple (married or common law) with or without children, or a lone parent with children at home. Families can have two generations related by blood or adoption or marriage/common law at most, so if a couple lives in a household with their children and grandchildren or they live with their child with their married or common law spouse also present, that would count as more than one census family. (However, grandparents living with grandchildren without the parents of the grandchildren present also counts as a census family.) 
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+path=paste0(getOption('custom_data_path'),"/98-400-X2016226_ENG_CSV/98-400-X2016226_English_CSV_data.csv")
+if (!file.exists(path)) {
+# download csv at http://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=109649&OFT=CSV
+}
+household_types <- read_csv(path) 
+names(household_types)= sub("Dim: Tenure \\(4\\): Member ID: \\[\\d+]: ", "", names(household_types))
+
+household_types <- household_types %>%
+  rename(GeoUID=`GEO_CODE (POR)`,name=GEO_NAME,
+         Condo.Status=`DIM: Condominium status (3)`,
+         Household.type.names=`DIM: Household type including census family structure (16)`,
+         Household.type=`Member ID: Household type including census family structure (16)`,
+         Age=`DIM: Age of primary household maintainer (15)`,
+         Structural.type.of.dwelling=`DIM: Structural type of dwelling (10)`) %>%
+  gather(key="Tenure",value="Count",tenure_vars) %>%
+  select(GeoUID,name,Condo.Status,Household.type,Household.type.names,Age,Structural.type.of.dwelling,Tenure,Count)
+
+
+vancouver_households_types <- household_types %>% filter(GeoUID=="933") %>%
+  filter(Condo.Status == "Total - Condominium status", 
+         Age == "Total - Age of primary household maintainer",
+         Tenure == "Total - Tenure",
+         Structural.type.of.dwelling == "Total - Structural type of dwelling") %>% 
+  select(-Condo.Status,-Structural.type.of.dwelling, -Age, -Tenure) %>% filter(!grepl("Total",Household.type))
+
+
+```
+
+
+```{r household_types, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+plot_data <- vancouver_households_types %>% 
+  filter(Household.type %in% key_households) %>%
+  mutate(Household.type.names = factor(as.character(key_household_names[as.character(Household.type)]), levels=rev(key_names)),
+         trad=as.character(key_household_colors[as.character(Household.type)]))
+
+ggplot(plot_data, aes(x=Household.type.names, y=Count, fill=as.factor(Household.type))) +
+  geom_bar(stat="identity") +
+  theme_bw() +
+  scale_y_continuous(labels = scales::comma) +
+  scale_fill_manual(name="",values=key_household_color_values) +
+  labs(title="Metro Vancouver Household Types", x="Household Type", y="Number of Households") +
+  guides(fill=FALSE) +
+  coord_flip()
+
+complex_count=plot_data %>% filter(trad == "Complex") %>% pull(Count) %>% sum
+```
+
+Here we distinguish "simple" household types which are what we generally think of when we hear people say "household", and "complex" household types, that is household constellations that don't fit the traditional picture of either a single person living alone, or a family living together. In total there are `r format_number(complex_count)` "complex" households in Metro Vancouver. Families living together includes cases where grandparents, children and grandchildren living in the same household, as well as co-housing unrelated families with or without children. One couple census family households without children may be an evolution of a two-or-more person non-census family households (aka roommates) where two people in the household form a common law or married couple.
+
+To understand how Vancouver fits in we can compare the distribution with other regions.
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+
+plot_data <- household_types %>% filter(GeoUID %in% c("933","462","505","535","825","835")) %>%
+  filter(Condo.Status == "Total - Condominium status", 
+         Age == "Total - Age of primary household maintainer",
+         Tenure == "Total - Tenure",
+         Structural.type.of.dwelling == "Total - Structural type of dwelling") %>% 
+  select(-Condo.Status,-Structural.type.of.dwelling, -Age, -Tenure) %>% filter(!grepl("Total",Household.type)) %>%
+  filter(Household.type %in% key_households) %>%
+  mutate(Household.type = factor(Household.type, levels=rev(as.character(key_households))))
+
+ggplot(plot_data, aes(x=name, y=Count, fill=as.factor(Household.type))) +
+  geom_bar(stat="identity", position="fill") +
+  theme_bw() +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(name="Household Type", values=key_household_color_values, labels=key_household_names,guide = guide_legend(reverse=TRUE)) +
+  labs(title="Household Types", x="Household Type", y="Share of Households") +
+  coord_flip() +
+  theme(legend.key.size = unit(2, 'lines'))
+```
+
+We see that Calgary and Edmonton have a relative strong share of two-or-more person non-census-family households (several unrelated people sharing a household). In Vancouver and Toronto we see a strong share of one couple census families with other persons in the household without children, as well as multiple census family households. These are household types that are often quite similar to several unrelated people sharing a household, but in a more advanced stage in live where family formation starts to happen and some of the people living together are common law or married couples.
+
+To understand this a little better we throw in the age of the household maintainer.
+
+```{r hh_by_age, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+
+plot_data <- household_types %>% filter(GeoUID %in% c("933","462","505","535","825","835")) %>%
+  filter(Condo.Status == "Total - Condominium status", 
+         #Age == "Total - Age of primary household maintainer",
+         Tenure == "Total - Tenure",
+         Structural.type.of.dwelling == "Total - Structural type of dwelling") %>% 
+  select(-Condo.Status,-Structural.type.of.dwelling, -Tenure) %>% filter(!grepl("Total",Household.type)) %>%
+  filter(Household.type %in% key_households,
+         !grepl("Total",Age)) %>%
+  mutate(Household.type = factor(Household.type, levels=rev(as.character(key_households))))
+
+ggplot(plot_data, aes(x=Age, y=Count, fill=as.factor(Household.type))) +
+  geom_bar(stat="identity", position="fill") +
+  theme_bw() +
+  facet_wrap("name") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(name="Household Type", values=key_household_color_values, labels=key_household_names,guide = guide_legend(reverse=TRUE)) +
+  labs(title="Household Types by Age of Household Maintainer", x="Household Type", y="Share of Households") +
+  coord_flip() +
+  theme(legend.key.size = unit(2, 'lines'))
+```
+
+Keying by age shows that Calgary and Edmonton's higher share of two-or-more persons non-census family households is due to these cities having a higher share of the population in the younger age groups where this household type arrangement is more common.
+
+We can re-order the graph to better compare regions for each age group.
+```{r, echo=FALSE, fig.height=7, fig.width=9, message=FALSE, warning=FALSE}
+
+plot_data <- household_types %>% filter(GeoUID %in% comparables) %>%
+  filter(Condo.Status == "Total - Condominium status", 
+         #Age == "Total - Age of primary household maintainer",
+         Tenure == "Total - Tenure",
+         Structural.type.of.dwelling == "Total - Structural type of dwelling") %>% 
+  select(-Condo.Status,-Structural.type.of.dwelling, -Tenure) %>% filter(!grepl("Total",Household.type)) %>%
+  filter(Household.type %in% key_households,
+         !grepl("Total",Age)) %>%
+  mutate(Household.type = factor(Household.type, levels=rev(as.character(key_households))))
+
+ggplot(plot_data, aes(x=name, y=Count, fill=as.factor(Household.type))) +
+  geom_bar(stat="identity", position="fill") +
+  theme_bw() +
+  facet_wrap("Age", ncol=3) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(name="Household Type", values=key_household_color_values, labels=key_household_names,guide = guide_legend(reverse=TRUE)) +
+  labs(title="Household Types by Age of Household Maintainer", x="Household Type", y="Share of Households") +
+  coord_flip() +
+  theme(legend.key.size = unit(2, 'lines'))
+```
+
+We clearly see how family formation happens very early in Edmonton and Calgary, who also build up a relatively thick portion of family households with other persons in the household or multi-family households early on. Vancouver and Toronto overtake the two Alberta cities when household maintainers are in their 30s and continue to lead in that segment from that age on.
+
+To complete this section we show the percentages of each household type per Metro Region.
+```{r, include=FALSE}
+hh_data <- household_types %>% filter(GeoUID %in% c("933","462","505","535","825","835")) %>%
+  filter(Condo.Status == "Total - Condominium status", 
+         Age == "Total - Age of primary household maintainer",
+         Tenure == "Total - Tenure",
+         Structural.type.of.dwelling == "Total - Structural type of dwelling") %>% 
+  select(-Condo.Status,-Structural.type.of.dwelling, -Age, -Tenure) %>% filter(!grepl("Total",Household.type)) %>%
+  filter(Household.type %in% key_households) %>%
+  mutate(Household.type = factor(Household.type, levels=rev(as.character(key_households)))) %>%
+  select(-Household.type.names) %>%
+  spread(key=Household.type,value=Count) %>%
+  mutate(total=`5`+`6`+`7`+`10`+`11`+`12`+`13`+`15`+`16`,
+         pct_5=format_percent(`5`/total),
+         pct_6=format_percent(`6`/total),
+         pct_7=format_percent(`7`/total),
+         pct_10=format_percent(`10`/total),
+         pct_11=format_percent(`11`/total),
+         pct_12=format_percent(`12`/total),
+         pct_13=format_percent(`13`/total),
+         pct_15=format_percent(`15`/total),
+         pct_16=format_percent(`16`/total)
+) %>% select(name, pct_5,pct_6,pct_7,pct_10,pct_11,pct_12,pct_13,pct_15,pct_16)
+
+hh_data %>% knitr::kable(col.names =c("Metro Area",as.character(key_household_names)))
+
+```
+
+# Adults Children Living with Parents
+Another interesting setup to look at is adult children living with parents. In our above data these can show up by simply having thicker bands of census families with children at home, but it can also manifest itself as thicker multi-family households in case the children themselves have formed their own family that lives together with the parent family. We have an [interactive CensusMapper map to explore the proportion of 25 to 29 year olds living with parents in each region](https://censusmapper.ca/maps/928) that allows to better understand the geographic distribution.
+
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+path=paste0(getOption('custom_data_path'),"/98-400-X2016028_ENG_CSV/98-400-X2016028_English_CSV_data.csv")
+if (!file.exists(path)) {
+# download csv at http://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=109649&OFT=CSV
+}
+adults_family <- read_csv(path) %>% 
+  rename(GeoUID=`GEO_CODE (POR)`,
+         name=GEO_NAME,
+         year=`DIM: Census year (2)`, 
+         Family.characteristic=`DIM: Family characteristics of adults (11)`, 
+         sex=`DIM: Sex (3)` ) %>% filter(GeoUID %in% comparables)
+
+ages=names(adults_family)[grep("Dim: Age \\(16\\): Member ID: \\[\\d+\\]: ",names(adults_family))]
+ages=sub("Dim: Age \\(16\\): Member ID: \\[\\d+\\]: ", "",ages)
+names(adults_family)= sub("Dim: Age \\(16\\): Member ID: \\[\\d+\\]: ", "", names(adults_family))
+key_ages=ages[4:16]
+
+adults_family <- adults_family %>%
+  gather(key="Age",value="Count",ages) %>%
+  select(GeoUID,name,year,Family.characteristic,sex,Age,Count)
+```
+
+We will focus on children above the age of 25 living with parents.
+
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+plot_data <- adults_family %>%
+  filter(GeoUID=="933", sex=="Total - Sex", 
+         Family.characteristic=="Children in census families (as in sons, daughters or grandchildren)",
+         Age %in% key_ages) %>%
+  mutate(year=factor(year, levels=c(2011,2016)),
+         Age=factor(Age, levels=rev(key_ages)))
+
+ggplot(plot_data, aes(x=year, y=Count, fill=Age)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_fill_viridis_d() +
+  labs(title="Metro Vancouver Adults by Age Living with Parents as Children or Grandchildren", x="Year", y="Number of Adults") +
+  theme_bw()
+```
+
+We see that the total number of Adults aged 25 and over living with their parents has increased between 2011 and 2016. But so has the overall population. A better way to compare through the years is by looking at the share of the population in each age bracket that lives with their parents.
+
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+ratio_ages <- key_ages[1:9]
+
+total_data <- adults_family %>%
+  filter(GeoUID=="933", sex=="Total - Sex", 
+         Family.characteristic=="Total - Family characteristics of adults (restricted to persons aged 15 and over)",
+         Age %in% key_ages) %>%
+  mutate(year=factor(year, levels=c(2011,2016)),
+         Age=factor(Age, levels=rev(key_ages)))
+
+ratio_data <- rbind(total_data,plot_data) %>% spread(key="Family.characteristic",value="Count") %>%
+  mutate(ratio=`Children in census families (as in sons, daughters or grandchildren)`/`Total - Family characteristics of adults (restricted to persons aged 15 and over)`) %>% filter(Age %in% ratio_ages)
+
+
+
+ggplot(ratio_data, aes(x=year, y=ratio)) +
+  geom_bar(stat="identity", fill="brown") +
+  facet_wrap("Age",ncol=3) +
+  scale_y_continuous(labels =scales::percent) +
+  coord_flip() +
+  labs(title="Metro Vancouver Share of Adults by Age Living with Parents as Children or Grandchildren", x="Year", y="Share of Adults by Age Bracket") +
+  theme_bw()
+```
+
+This shows that there have been increases in the share in every age bracket. We want to visualize the percentage increase for easier comparability, where we leave out the age groups starting at 55 to avoid issues with small denominators.
+
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+increase_data <- ratio_data %>% 
+  filter(Age %in% key_ages[1:6]) %>%
+  select(year, Age, ratio) %>% 
+  spread(key="year", value=ratio) %>% 
+  mutate(increase=`2016`/`2011`-1) 
+
+ggplot(increase_data, aes(x=Age, y=increase)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  scale_y_continuous(labels =scales::percent) +
+  coord_flip() +
+  labs(title="Metro Vancouver Percentage Increase in the Share of Adults by Age Living with Parents as Children or Grandchildren", x="Year", y="Percentage Increase in Share of Adults by Age Bracket") +
+  theme_bw()
+```
+
+We see that the increase happened through the board, but the increase in the share of 35 to 39 year olds is particularly pronounced at the 35 to 39 year old age group, where the share increased from `r format_percent(filter(increase_data,Age=="35 to 39 years")[["2011"]])` in 2011 to `r format_percent(filter(increase_data,Age=="35 to 39 years")[["2016"]])` in 2016.
+
+We can also compare the shares of adults living with their parents across regions.
+
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+
+plot_data <- adults_family %>%
+  filter(GeoUID %in% comparables, sex=="Total - Sex", 
+         Family.characteristic=="Children in census families (as in sons, daughters or grandchildren)",
+         Age %in% key_ages,
+         year==2016) %>%
+  mutate(Age=factor(Age, levels=rev(key_ages)))
+total_data <- adults_family %>%
+  filter(GeoUID %in% comparables, sex=="Total - Sex", 
+         Family.characteristic=="Total - Family characteristics of adults (restricted to persons aged 15 and over)",
+         Age %in% key_ages,
+         year==2016) %>%
+  mutate(Age=factor(Age, levels=rev(key_ages)))
+
+ratio_data <- rbind(total_data,plot_data) %>% spread(key="Family.characteristic",value="Count") %>%
+  mutate(ratio=`Children in census families (as in sons, daughters or grandchildren)`/`Total - Family characteristics of adults (restricted to persons aged 15 and over)`) %>% filter(Age %in% ratio_ages)
+
+
+
+ggplot(ratio_data, aes(x=name, y=ratio)) +
+  geom_bar(stat="identity", fill="brown") +
+  facet_wrap("Age",ncol=3) +
+  scale_y_continuous(labels =scales::percent) +
+  coord_flip() +
+  scale_fill_viridis_d() +
+  labs(title="Share of Adults by Age Living with Parents as Children or Grandchildren", x="Year", 
+       y="Share of Adults by Age Bracket") +
+  theme_bw()
+```
+
+Metro Toronto and Metro Vancouver stand out as having higher shares for all age groups. We [know that ethnic origin, immigration status and languge spoken at home are significant confounding variables](https://www.statcan.gc.ca/pub/75-006-x/2016001/article/14639-eng.htm), and that Vancouver and Toronto have higher shares of the population in these groups. It would be useful to come back at some point and refine the analysis to control for these factors.
+
+# Bedrooms
+Another way to look at matching people with dwellings is by bedrooms.
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+path=paste0(getOption('custom_data_path'),"/98-400-X2016219_ENG_CSV/98-400-X2016219_English_CSV_data.csv")
+if (!file.exists(path)) {
+#download csv from http://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=110564&OFT=CSV
+}
+bedrooms <- read_csv(path)
+names(bedrooms)= sub("Dim: Tenure \\(4\\): Member ID: \\[\\d+]: ", "", names(bedrooms))
+tenure_vars <- c("Total - Tenure","Owner","Renter","Band housing")
+bedrooms <- bedrooms %>% 
+  rename(GeoUID=`GEO_CODE (POR)`,name=GEO_NAME,
+         Condo.Status=`DIM: Condominium status (3)`,
+         Household.size=`DIM: Household size (8)`,
+         Number.of.bedrooms=`DIM: Number of bedrooms (6)`,
+         Structural.type.of.dwelling=`DIM: Structural type of dwelling (10)`) %>%
+  gather(key="Tenure", value="Count",tenure_vars) %>%
+  select(GeoUID,name,Condo.Status,Household.size,Number.of.bedrooms,Tenure,Count) %>%
+  mutate(Number.of.bedrooms=ifelse(Number.of.bedrooms=="No bedrooms", "Studio",Number.of.bedrooms))
+
+bedroom_vars=c("Studio", "1 bedroom", "2 bedrooms", "3 bedrooms","4 or more bedrooms")
+household_vars=c("1 person","2 persons","3 persons","4 persons","5 or more persons")
+```
+
+
+Let's take a look of the (occupied private) building stock by number of bedrooms and see by how many people they are used.
+```{r bedrooms_total, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+plot_data <- bedrooms %>% 
+  filter(GeoUID=='933') %>%
+  filter(Condo.Status=="Total - Condominium status",
+         #Household.size=="Total - Household size",
+         Tenure=="Total - Tenure") %>% select(-Condo.Status, -Tenure) %>%
+  filter(!grepl("Total",Household.size),!grepl("Number",Household.size),!grepl("Average",Household.size),
+         !grepl("Total",Number.of.bedrooms)) %>%
+    mutate(Number.of.bedrooms=factor(Number.of.bedrooms,levels=bedroom_vars, ordered=TRUE))
+ggplot(plot_data, aes(x=Number.of.bedrooms,y=Count,fill=Household.size)) +
+  geom_bar(stat='identity') +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_viridis_d(option="magma", name="Household Size") +
+  labs(title="Metro Vancouver, Household size by Number of Bedrooms", x="Number of Bedrooms",y="Number of Households") +
+  theme_bw() +
+  coord_flip()
+```
+
+
+
+```{r bedrooms_percent, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+ggplot(plot_data, aes(x=Number.of.bedrooms,y=Count,fill=Household.size)) +
+  geom_bar(stat='identity', position="fill") +
+  scale_fill_viridis_d(option="magma", name="Household Size") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Metro Vancouver, Household size by Number of Bedrooms", x="Number of Bedrooms",y="Share of Households") +
+  theme_bw() +
+  coord_flip()
+```
+
+The first thing we can do is count the number of spare bedrooms in the region. We can do this in two ways, once assuming each person in the household gets their own bedroom, and once assuming that, unless it's a studio apartment, two people in the household will share a bedroom and everyone else gets their own bedroom. We can also compute the inverse, the number of bedrooms missing if we wanted that every household had at least enough bedrooms so that every person could have their own bedroom, with the exception of two people per household that can share a bedroom in a non-studio unit.
+
+```{r, include=FALSE}
+bedroom_map=setNames(c(0, 1, 2, 3,4),bedroom_vars)
+household_map=setNames(c(1, 2, 3,4,5),household_vars)
+
+hh_br_data <- plot_data %>% 
+  mutate(hh=as.numeric(household_map[Household.size]),
+         br=as.numeric(bedroom_map[Number.of.bedrooms]),
+         br1=ifelse(br==0,1,br),
+         diff=br1-hh,
+         diff1=ifelse(hh>1 & br>0,br-hh+1,br-hh),
+         extra=ifelse(diff>0,diff,0) * Count,
+         extra1=ifelse(diff1>0,diff1,0) * Count,
+         crowded=ifelse(diff1<0,-diff1,0) * Count)
+
+hh_br_data %>% select(extra,extra1,crowded) %>% summarize_all(sum) %>% 
+  knitr::kable(col.names =c("Extra Bedrooms","Extra Bedrooms 2", "Missing Bedrooms"))
+
+```
+
+Some people might take that to claim that we don't need to build more bedrooms, it is clear that we have an oversupply of bedrooms in the region.
+
+
+## Crowded Housing
+We can further dive into the question of households that may be missing bedrooms by considering the people in the household in more detail. The National Occupancy Standard (NOS) is, for better or worse, a metric that attempts to measure pressure households feel to upgrade their number of bedrooms. A dwelling unit is deemed suitable under NOS if every household member has their own bedroom, with the exception that couples may share a bedroom, as well as two children if they are under the age of 5 or of the same sex and under the age of 18. We should remember that this is a subjective measure, and the pressure experienced by individual households to upgrade their housing will vary greatly depending on their cultural background. Browsing through our [interactive housing Suitability map on CensusMapper](https://censusmapper.ca/maps/883) we recognize some overlap of areas with high proportion of households not meeting NOS with areas that have higher proportions of immigrant households, but there are also counter-examples.
+
+
+```{r, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+path=paste0(getOption('custom_data_path'),"/98-400-X2016030_ENG_CSV/98-400-X2016030_English_CSV_data.csv")
+if (!file.exists(path)) {
+# download csv at http://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=109649&OFT=CSV
+}
+adults_in_families <- read_csv(path) %>% 
+  filter(`DIM: Sex (3)`=="Total - Sex") %>% 
+  rename(name=GEO_NAME,GeoUID=`GEO_CODE (POR)`, family_type=`DIM: Family characteristics of adults (11)`)
+adults_in_families <- adults_in_families %>% select(GeoUID, family_type, name, grep("Dim: Age",names(adults_in_families)))
+names(adults_in_families) <- sub("Dim: Age \\(16\\): Member ID: \\[\\d+\\]: ","",names(adults_in_families))
+age_vars=setdiff(names(adults_in_families),c("GeoUID","name","family_type"))
+
+adults_in_families <- adults_in_families %>% gather(key="Age",value="Count", age_vars) %>%
+  mutate(Age=factor(Age,levels=age_vars))
+```
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+#path=paste0(getOption('custom_data_path'),"/98-400-X2016231_ENG_CSV/98-400-X2016231_English_CSV_data.csv")
+path=paste0(getOption('custom_data_path'),"/98-400-X2016223_ENG_CSV/98-400-X2016223_English_CSV_data.csv")
+if (!file.exists(path)) {
+#download csv from http://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=110566&OFT=CSV
+}
+# save data for regions of interest to speed up process
+if (file.exists("suitability_cache.RData")) {
+  load("suitability_cache.RData")
+} else {
+  suitability <- read_csv(path) 
+  names(suitability)= sub("Dim: Tenure \\(4\\): Member ID: \\[\\d+]: ", "", names(suitability))
+  suitability <- suitability %>%
+  mutate(GeoUID=`GEO_CODE (POR)`,
+         name=GEO_NAME,
+         Number.of.rooms = `DIM: Number of rooms (12)`,
+         Suitability=`DIM: Housing suitability (6)`,
+         Household.size=`DIM: Household size (8)`,
+         Number.of.persons.per.room=`DIM: Number of persons per room (5)`,
+         Number.of.bedrooms=`DIM: Number of bedrooms (6)`,
+         Household.type=`Member ID: Household type including census family structure (16)`,
+         Household.type.name=`DIM: Household type including census family structure (16)`
+         ) %>%
+  gather(key="Tenure", value="Count",tenure_vars) %>%
+      filter(GeoUID %in% comparables,
+         Number.of.persons.per.room == "Total - Number of persons per room",
+         Number.of.rooms == "Total - Number of rooms",
+         Number.of.bedrooms == "Total - Number of bedrooms",
+         Household.size == "Total - Household size") %>% 
+  select(GeoUID,name,Suitability, Household.type,Household.type.name,Tenure,Count)
+
+  save(suitability, file="suitability_cache.RData")
+}
+
+```
+
+We can try to understand the number of households not meeting NOS, and their bedroom shortfalls in order to meet NOS, keyed by household type.
+
+```{r, echo=FALSE, fig.height=7, fig.width=9, message=FALSE, warning=FALSE}
+plot_data <- suitability %>% filter(GeoUID == "933") %>%
+  filter(Tenure == "Total - Tenure") %>%
+  #select(-Number.of.persons.per.room, -Number.of.bedrooms, -Tenure, -Household.size) %>% 
+  filter(Suitability %in% suitability_types,
+         Household.type %in% key_households) %>%
+  mutate(Household.type = factor(Household.type, levels=rev(as.character(key_households))),
+         Suitability = factor(Suitability, levels=rev(suitability_types)))
+
+ggplot(plot_data, aes(x=Household.type, y=Count, fill=Suitability)) +
+  geom_bar(stat="identity") +#, position="fill") +
+  theme_bw() +
+  scale_x_discrete(labels=key_household_names) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_fill_manual(name="Household Type", values=suitability_colors,guide = guide_legend(reverse=TRUE)) +
+  labs(title="Household Types by Suitability", x="Household Type", y="Number of Households") +
+  coord_flip() +
+  theme(legend.key.size = unit(2, 'lines'))
+```
+
+One-person household of course meet NOS in all cases, couple without children households meet NOS unless they inhabit a studio apartment. We can normalize this as a share of households by household type and compare across metro regions.
+
+```{r, echo=FALSE, fig.height=7, fig.width=9, message=FALSE, warning=FALSE}
+plot_data <- suitability %>% filter(GeoUID %in% comparables) %>%
+  filter(Tenure == "Total - Tenure") %>% 
+  select(-Number.of.persons.per.room,-Number.of.bedrooms, -Tenure, -Household.size) %>% 
+  filter(Suitability %in% suitability_types,
+         Household.type %in% key_households) %>%
+  mutate(Household.type = factor(Household.type, levels=rev(as.character(key_households))),
+         Suitability = factor(Suitability, levels=rev(suitability_types)))
+
+ggplot(plot_data, aes(x=Suitability, y=Count, fill=as.factor(Household.type))) +
+  geom_bar(stat="identity", position="fill") +
+  theme_bw() +
+  facet_wrap("name", ncol=3) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(name="Household Type", values=key_household_color_values, labels=key_household_names,
+                    guide = guide_legend(reverse=TRUE)) +
+  labs(title="Household Types by Suitability", x="Housing Suitability (NOS)", y="Share of Households") +
+  coord_flip() +
+  theme(legend.key.size = unit(2, 'lines'))
+```
+
+It is interesting to see that Montréal takes the lead of high proportion of NOS households for some household types, but overall Toronto and Vancouver have a higher share of households not meeting NOS compared to Montreal as the following table shows.
+
+```{r, echo=FALSE, fig.height=7, fig.width=9, message=FALSE, warning=FALSE}
+plot_data <- suitability %>% filter(GeoUID %in% comparables) %>%
+  filter(Tenure == "Total - Tenure") %>% 
+  select(-Tenure) %>% 
+  filter(Suitability %in% suitability_types,
+         Household.type %in% key_households) %>%
+  mutate(Household.type = factor(Household.type, levels=rev(as.character(key_households))),
+         Suitability = factor(Suitability, levels=rev(suitability_types)))
+
+summary <- plot_data %>% 
+  select(name,Suitability,Count) %>% 
+  mutate(unsuitable=ifelse(Suitability=="Suitable",0,Count)) %>% 
+  group_by(name) %>% 
+  summarize(total=sum(Count), unsuitable=sum(unsuitable)) %>%
+  mutate(ratio=format_percent(unsuitable/total),
+         total=format_number(total),
+         unsuitable=format_number(unsuitable))
+
+summary %>% knitr::kable(col.names =c("Metro Area","Total Households", "Households not meeting NOS", "Share of Households not meeting NOS"))
+```
+
+Lastly we want to take a quick look at how housing suitability wrt NOS is effected by tenure.
+
+```{r, echo=FALSE, fig.height=7, fig.width=9, message=FALSE, warning=FALSE}
+plot_data <- suitability %>% filter(GeoUID == "933") %>%
+  filter(Tenure != "Total - Tenure",
+         Tenure != "Band housing") %>% 
+  filter(Suitability %in% suitability_types,
+         Household.type %in% key_households) %>%
+  mutate(Household.type = factor(Household.type, levels=rev(as.character(key_households))),
+         Suitability = factor(Suitability, levels=rev(suitability_types)))
+
+ggplot(plot_data, aes(x=Household.type, y=Count, fill=as.factor(Suitability))) +
+  geom_bar(stat="identity", position="fill") +
+  theme_bw() +
+  facet_wrap("Tenure", ncol=2) +
+  scale_x_discrete(labels=key_household_names) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(name="Suitability (NOS)", values=suitability_colors,
+                    guide = guide_legend(reverse=TRUE)) +
+  labs(title="Metro Vancouver Household Types by Suitability and Tenure", x="Household Type", y="Share of Households") +
+  coord_flip() +
+  theme(legend.key.size = unit(2, 'lines'))
+```
+
+As expected, renter households tend to be more squeezed for housing. We already saw that renter households tend to have fewer spare bedrooms, this confirms that renter households also are more likely to not meet NOS.
+
+# Next Steps
+This concludes our first exploration into household types and how how they relate to dwellings. We would like to quantify the latant demand due to household suppression, where for example adults over the age of 25 living with parents would like to move out and form their own household, or multiple cenusus family households would like to split up and live separately. In order to do that we should take a careful look at possible confounding factors like ethnic origigin, and more thoroughly compare living arrangements through space and across different regions in Canada. We will leave this more elaborate analysis for another day.
+
+As always, the underlying R Notebook that generated this post lives [on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-12-01-what-s-a-household.Rmarkdown) for anyone interested in reproducing or adapting this post for a different region or elaborating on it in other ways.
