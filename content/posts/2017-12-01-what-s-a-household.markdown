@@ -118,13 +118,21 @@ Another way to look at matching people with dwellings is by bedrooms.
 Let's take a look of the (occupied private) building stock by number of bedrooms and see by how many people they are used.
 <img src="/posts/2017-12-01-what-s-a-household_files/figure-html/bedrooms_total-1.png" width="864" />
 
-
+For more context we can compare this to other metropolitan reginos and express the household sizes as shares instead of absolute numbers.
 
 <img src="/posts/2017-12-01-what-s-a-household_files/figure-html/bedrooms_percent-1.png" width="864" />
 
-The first thing we can do is count the number of spare bedrooms in the region. We can do this in two ways, once assuming each person in the household gets their own bedroom, and once assuming that, unless it's a studio apartment, two people in the household will share a bedroom and everyone else gets their own bedroom. We can also compute the inverse, the number of bedrooms missing if we wanted that every household had at least enough bedrooms so that every person could have their own bedroom, with the exception of two people per household that can share a bedroom in a non-studio unit.
+The first thing we can do is count the number of spare bedrooms in the region. We can do this in two ways, once assuming each person in the household gets their own bedroom, and once assuming that, unless it's a studio apartment, two people in the household will share a bedroom and everyone else gets their own bedroom. In our total bedroom count we count any dwelling unit with more than 4 bedrooms as only 4 bedrooms, so we undercount bedrooms. Similarly, we count households with more than 5 people as 5 person households. These 4 bedroom and 5 people per household cutoffs are due to data availablity and may skew the results a little. [Nathan Lauster computed the bedroom shortfall using PUMF data for 2011](https://homefreesociology.wordpress.com/2017/09/27/empty-bedrooms/) which is a coarser subsample but has a finer breakdown by bedroom types.
 
 
+|Metro Region      |Total Bedrooms (inc. Studio) |Extra Bedrooms |Share |Extra Bedrooms 2 |Share |
+|:-----------------|:----------------------------|:--------------|:-----|:----------------|:-----|
+|Calgary           |1,505,750                    |317,615        |21.1% |589,690          |39.2% |
+|Edmonton          |1,439,330                    |319,805        |22.2% |578,670          |40.2% |
+|Montréal          |4,210,715                    |795,130        |18.9% |1,523,630        |36.2% |
+|Ottawa - Gatineau |1,472,655                    |327,260        |22.2% |597,240          |40.6% |
+|Toronto           |5,785,040                    |975,275        |16.9% |1,920,350        |33.2% |
+|Vancouver         |2,432,615                    |421,055        |17.3% |827,800          |34%   |
 
 Some people might take that to claim that we don't need to build more bedrooms, it is clear that we have an oversupply of bedrooms in the region.
 

@@ -387,7 +387,7 @@ bedrooms <- bedrooms %>%
          Number.of.bedrooms=`DIM: Number of bedrooms (6)`,
          Structural.type.of.dwelling=`DIM: Structural type of dwelling (10)`) %>%
   gather(key="Tenure", value="Count",tenure_vars) %>%
-  select(GeoUID,name,Condo.Status,Household.size,Number.of.bedrooms,Tenure,Count) %>%
+  select(GeoUID,name,Condo.Status,Household.size,Number.of.bedrooms,Tenure,Structural.type.of.dwelling,Count) %>%
   mutate(Number.of.bedrooms=ifelse(Number.of.bedrooms=="No bedrooms", "Studio",Number.of.bedrooms))
 
 bedroom_vars=c("Studio", "1 bedroom", "2 bedrooms", "3 bedrooms","4 or more bedrooms")
@@ -398,8 +398,9 @@ household_vars=c("1 person","2 persons","3 persons","4 persons","5 or more perso
 Let's take a look of the (occupied private) building stock by number of bedrooms and see by how many people they are used.
 ```{r bedrooms_total, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
 plot_data <- bedrooms %>% 
-  filter(GeoUID=='933') %>%
+  filter(GeoUID == "933") %>%
   filter(Condo.Status=="Total - Condominium status",
+         Structural.type.of.dwelling=="Total - Structural type of dwelling",
          #Household.size=="Total - Household size",
          Tenure=="Total - Tenure") %>% select(-Condo.Status, -Tenure) %>%
   filter(!grepl("Total",Household.size),!grepl("Number",Household.size),!grepl("Average",Household.size),
@@ -409,26 +410,36 @@ ggplot(plot_data, aes(x=Number.of.bedrooms,y=Count,fill=Household.size)) +
   geom_bar(stat='identity') +
   scale_y_continuous(labels=scales::comma) +
   scale_fill_viridis_d(option="magma", name="Household Size") +
-  labs(title="Metro Vancouver, Household size by Number of Bedrooms", x="Number of Bedrooms",y="Number of Households") +
+  labs(title="Household size by Number of Bedrooms", x="Number of Bedrooms",y="Number of Households") +
   theme_bw() +
   coord_flip()
 ```
 
-
+For more context we can compare this to other metropolitan reginos and express the household sizes as shares instead of absolute numbers.
 
 ```{r bedrooms_percent, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+plot_data <- bedrooms %>% 
+  filter(GeoUID %in% comparables) %>%
+  filter(Condo.Status=="Total - Condominium status",
+         Structural.type.of.dwelling=="Total - Structural type of dwelling",
+         #Household.size=="Total - Household size",
+         Tenure=="Total - Tenure") %>% select(-Condo.Status, -Tenure) %>%
+  filter(!grepl("Total",Household.size),!grepl("Number",Household.size),!grepl("Average",Household.size),
+         !grepl("Total",Number.of.bedrooms)) %>%
+    mutate(Number.of.bedrooms=factor(Number.of.bedrooms,levels=bedroom_vars, ordered=TRUE))
 ggplot(plot_data, aes(x=Number.of.bedrooms,y=Count,fill=Household.size)) +
   geom_bar(stat='identity', position="fill") +
   scale_fill_viridis_d(option="magma", name="Household Size") +
+  facet_wrap("name", ncol=3) +
   scale_y_continuous(labels=scales::percent) +
   labs(title="Metro Vancouver, Household size by Number of Bedrooms", x="Number of Bedrooms",y="Share of Households") +
   theme_bw() +
   coord_flip()
 ```
 
-The first thing we can do is count the number of spare bedrooms in the region. We can do this in two ways, once assuming each person in the household gets their own bedroom, and once assuming that, unless it's a studio apartment, two people in the household will share a bedroom and everyone else gets their own bedroom. We can also compute the inverse, the number of bedrooms missing if we wanted that every household had at least enough bedrooms so that every person could have their own bedroom, with the exception of two people per household that can share a bedroom in a non-studio unit.
+The first thing we can do is count the number of spare bedrooms in the region. We can do this in two ways, once assuming each person in the household gets their own bedroom, and once assuming that, unless it's a studio apartment, two people in the household will share a bedroom and everyone else gets their own bedroom. In our total bedroom count we count any dwelling unit with more than 4 bedrooms as only 4 bedrooms, so we undercount bedrooms. Similarly, we count households with more than 5 people as 5 person households. These 4 bedroom and 5 people per household cutoffs are due to data availablity and may skew the results a little. [Nathan Lauster computed the bedroom shortfall using PUMF data for 2011](https://homefreesociology.wordpress.com/2017/09/27/empty-bedrooms/) which is a coarser subsample but has a finer breakdown by bedroom types.
 
-```{r, include=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 bedroom_map=setNames(c(0, 1, 2, 3,4),bedroom_vars)
 household_map=setNames(c(1, 2, 3,4,5),household_vars)
 
@@ -437,13 +448,23 @@ hh_br_data <- plot_data %>%
          br=as.numeric(bedroom_map[Number.of.bedrooms]),
          br1=ifelse(br==0,1,br),
          diff=br1-hh,
-         diff1=ifelse(hh>1 & br>0,br-hh+1,br-hh),
+         total=br1 * Count,
+         diff1=ifelse(hh>1 & br>0,br-hh+1,br1-hh),
          extra=ifelse(diff>0,diff,0) * Count,
          extra1=ifelse(diff1>0,diff1,0) * Count,
          crowded=ifelse(diff1<0,-diff1,0) * Count)
 
-hh_br_data %>% select(extra,extra1,crowded) %>% summarize_all(sum) %>% 
-  knitr::kable(col.names =c("Extra Bedrooms","Extra Bedrooms 2", "Missing Bedrooms"))
+hh_br_data %>% select(name, total, extra,extra1,crowded) %>% group_by(name) %>% summarize_all(sum) %>% 
+  mutate(epct=format_percent(extra/total),
+         epct1=format_percent(extra1/total),
+         mpct=format_percent(crowded/total),
+         total=format_number(total),
+         extra=format_number(extra),
+         extra1=format_number(extra1),
+         crowded=format_number(crowded)
+         ) %>%
+  select(name, total, extra,epct,extra1,epct1) %>% 
+  knitr::kable(col.names =c("Metro Region","Total Bedrooms (inc. Studio)","Extra Bedrooms","Share","Extra Bedrooms 2","Share"))
 
 ```
 
