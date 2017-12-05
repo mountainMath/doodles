@@ -481,7 +481,7 @@ if (file.exists("suitability_cache.RData")) {
   load("suitability_cache.RData")
 } else {
   suitability <- read_csv(path) 
-  names(suitability)= sub("Dim: Tenure \\(4\\): Member ID: \\[\\d+]: ", "", names(suitability))
+  names(suitability)= sub("Dim: Tenure \\(4\\): Member ID: \\[\\d+\\]: ", "", names(suitability))
   suitability <- suitability %>%
   mutate(GeoUID=`GEO_CODE (POR)`,
          name=GEO_NAME,
@@ -533,7 +533,7 @@ One-person household of course meet NOS in all cases, couple without children ho
 ```{r, echo=FALSE, fig.height=7, fig.width=9, message=FALSE, warning=FALSE}
 plot_data <- suitability %>% filter(GeoUID %in% comparables) %>%
   filter(Tenure == "Total - Tenure") %>% 
-  select(-Number.of.persons.per.room,-Number.of.bedrooms, -Tenure, -Household.size) %>% 
+  select(-Tenure) %>% 
   filter(Suitability %in% suitability_types,
          Household.type %in% key_households) %>%
   mutate(Household.type = factor(Household.type, levels=rev(as.character(key_households))),

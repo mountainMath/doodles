@@ -150,12 +150,12 @@ It is interesting to see that Montréal takes the lead of high proportion of NOS
 
 |Metro Area        |Total Households |Households not meeting NOS |Share of Households not meeting NOS |
 |:-----------------|:----------------|:--------------------------|:-----------------------------------|
-|Calgary           |NA               |NA                         |NA%                                 |
-|Edmonton          |NA               |NA                         |NA%                                 |
-|Montréal          |NA               |NA                         |NA%                                 |
-|Ottawa - Gatineau |NA               |NA                         |NA%                                 |
-|Toronto           |NA               |NA                         |NA%                                 |
-|Vancouver         |NA               |NA                         |NA%                                 |
+|Calgary           |519,685          |23,650                     |4.6%                                |
+|Edmonton          |502,145          |26,920                     |5.4%                                |
+|Montréal          |1,727,300        |97,580                     |5.6%                                |
+|Ottawa - Gatineau |535,510          |22,075                     |4.1%                                |
+|Toronto           |2,135,915        |205,425                    |9.6%                                |
+|Vancouver         |960,900          |70,370                     |7.3%                                |
 
 Lastly we want to take a quick look at how housing suitability wrt NOS is effected by tenure.
 
