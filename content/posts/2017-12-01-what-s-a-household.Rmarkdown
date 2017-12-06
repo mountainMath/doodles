@@ -18,7 +18,7 @@ type: "post"
 
 Recently there has been a lot of talk about households, and how they match up with dwelling units. So it's probably a good idea to take a closer look at what a household is. 
 
-Apart from better understanding what a household is, I want to also dig deeper into how people live in households. Part of my motivation is to start to understand latant demand in our housing market, some of which may come from suppressed household formation. As a starting point for this I want to better understant "complex" household types that may strive to "simplify", to put it in language introduced further down. There are many confounding factors for "complex" household types that we would have to account for in order to move from the simple enumeration of household types that we do in this post toward using this to derive estimates for latant demand of suppressed household formation. So this post is more of an inventory of household types and their intersection with dwellings, and does not (yet) make any statements about latant demand.
+Apart from better understanding what a household is, I want to also dig deeper into how people live in households. Part of my motivation is to start to understand latent demand in our housing market, some of which may come from suppressed household formation. As a starting point for this I want to better understand "complex" household types that may strive to "simplify", to put it in language introduced further down. There are many confounding factors for "complex" household types that we would have to account for in order to move from the simple enumeration of household types that we do in this post toward using this to derive estimates for latent demand of suppressed household formation. So this post is more of an inventory of household types and their intersection with dwellings, and does not (yet) make any statements about latent demand.
 
 But let's start of with the census definition of a household. And also touch on what a dwelling unit is. Dwellings are simpler, so we will do that first.
 
@@ -415,7 +415,7 @@ ggplot(plot_data, aes(x=Number.of.bedrooms,y=Count,fill=Household.size)) +
   coord_flip()
 ```
 
-For more context we can compare this to other metropolitan reginos and express the household sizes as shares instead of absolute numbers.
+For more context we can compare this to other metropolitan regions and express the household sizes as shares instead of absolute numbers.
 
 ```{r bedrooms_percent, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
 plot_data <- bedrooms %>% 
@@ -437,7 +437,7 @@ ggplot(plot_data, aes(x=Number.of.bedrooms,y=Count,fill=Household.size)) +
   coord_flip()
 ```
 
-The first thing we can do is count the number of spare bedrooms in the region. We can do this in two ways, once assuming each person in the household gets their own bedroom, and once assuming that, unless it's a studio apartment, two people in the household will share a bedroom and everyone else gets their own bedroom. In our total bedroom count we count any dwelling unit with more than 4 bedrooms as only 4 bedrooms, so we undercount bedrooms. Similarly, we count households with more than 5 people as 5 person households. These 4 bedroom and 5 people per household cutoffs are due to data availablity and may skew the results a little. [Nathan Lauster computed the bedroom shortfall using PUMF data for 2011](https://homefreesociology.wordpress.com/2017/09/27/empty-bedrooms/) which is a coarser subsample but has a finer breakdown by bedroom types.
+The first thing we can do is count the number of spare bedrooms in the region. We can do this in two ways, once assuming each person in the household gets their own bedroom, and once assuming that, unless it's a studio apartment, two people in the household will share a bedroom and everyone else gets their own bedroom. In our total bedroom count we count any dwelling unit with more than 4 bedrooms as only 4 bedrooms, so we undercount bedrooms. Similarly, we count households with more than 5 people as 5 person households. These 4 bedroom and 5 people per household cutoffs are due to data availability and may skew the results a little. [Nathan Lauster computed the bedroom shortfall using PUMF data for 2011](https://homefreesociology.wordpress.com/2017/09/27/empty-bedrooms/) which is a coarser subsample but has a finer breakdown by bedroom types.
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 bedroom_map=setNames(c(0, 1, 2, 3,4),bedroom_vars)
@@ -622,6 +622,6 @@ ggplot(plot_data, aes(x=Household.type, y=Count, fill=as.factor(Suitability))) +
 As expected, renter households tend to be more squeezed for housing. We already saw that renter households tend to have fewer spare bedrooms, this confirms that renter households also are more likely to not meet NOS.
 
 # Next Steps
-This concludes our first exploration into household types and how how they relate to dwellings. We would like to quantify the latant demand due to household suppression, where for example adults over the age of 25 living with parents would like to move out and form their own household, or multiple cenusus family households would like to split up and live separately. In order to do that we should take a careful look at possible confounding factors like ethnic origigin, and more thoroughly compare living arrangements through space and across different regions in Canada. We will leave this more elaborate analysis for another day.
+This concludes our first exploration into household types and how how they relate to dwellings. We would like to quantify the latent demand due to household suppression, where for example adults over the age of 25 living with parents would like to move out and form their own household, or multiple census family households would like to split up and live separately. In order to do that we should take a careful look at possible confounding factors like ethnic origin, and more thoroughly compare living arrangements through space and across different regions in Canada. We will leave this more elaborate analysis for another day.
 
 As always, the underlying R Notebook that generated this post lives [on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-12-01-what-s-a-household.Rmarkdown) for anyone interested in reproducing or adapting this post for a different region or elaborating on it in other ways.
