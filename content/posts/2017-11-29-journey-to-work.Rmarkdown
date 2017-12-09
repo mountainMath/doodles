@@ -35,7 +35,12 @@ path=paste0(custom_path,"98-400-X2016325_ENG_CSV/98-400-X2016325_English_CSV_dat
 if (!file.exists(path)) {
   # download file from http://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=111332&OFT=CSV
 }
-city="5915022" # City of Vancouver
+cma_name="Vancouver"
+city_name="Vancouver"
+city_label="the City of Vancouver"
+cma <- list_census_regions('CA16') %>% filter(level=="CMA", name==cma_name) %>% pull(region)
+city <- list_census_regions('CA16') %>% filter(level=="CSD", name==city_name) %>% pull(region)
+
 journey_data <- read_csv(path) %>%
   mutate(Count=`Dim: Sex (3): Member ID: [1]: Total - Sex`,
          Home=paste0(GEO_NAME," (",CSD_TYPE_NAME,")"), 
@@ -54,7 +59,7 @@ destination_working=sum(destination_data$Count)
 origin_working=sum(origin_data$Count)
 home_working=destination_data %>% filter(GeoUID==city) %>% pull(Count)
 
-geos=get_census(dataset='CA16', regions=list(CMA="59933"), vectors=c("v_CA16_5780","v_CA16_5777"), geo_format="sf", level="CSD", labels="short")
+geos=get_census(dataset='CA16', regions=list(CMA=cma), vectors=c("v_CA16_5780","v_CA16_5777"), geo_format="sf", level="CSD", labels="short")
 
 destination_geos <- left_join(geos, destination_data, by="GeoUID")
 origin_geos <- left_join(geos, origin_data, by="GeoUID")
@@ -91,7 +96,7 @@ The top 15 trip to work destinations outside of the City of Vancouver for worker
 ggplot(destination_data %>% filter(GeoUID != city) %>% top_n(15, Count),
          aes(y=Count, x=reorder(Home, Count))) +
   geom_bar(stat="identity", fill='steelblue') +
-  labs(title="Commuters commuting into City of Vancouver", x="Home Community", y="Number") + 
+  labs(title=paste0("Commuters commuting into ",city_label), x="Home Community", y="Number") + 
   coord_flip() +
   theme_minimal()
 ```
@@ -102,7 +107,7 @@ We can also map Metro Vancouver communities by what proportion of City of Vancou
 ggplot(destination_geos %>% mutate(share=ifelse(GeoUID==city,NA,Count/destination_working))) +
   geom_sf(aes(fill=share)) +
   scale_fill_viridis_c(labels=scales::percent, name="Share of Workers") +
-  labs(title="Workers working in the City of Vancouver by Place of Residence Outside the City") +
+  labs(title=paste0("Workers working in ",city_label," by Place of Residence Outside the City")) +
   my_theme
 ```
 
@@ -115,7 +120,7 @@ The top 15 trip to work origins outside of the City of Vancouver are
 ggplot(origin_data %>% filter(GeoUID != city) %>% top_n(15, Count),
          aes(y=Count, x=reorder(Work, Count))) +
   geom_bar(stat="identity", fill='brown') +
-  labs(title="Commuters commuting out of City of Vancouver", x="Work Community", y="Number") + 
+  labs(title=paste0("Commuters commuting out of ",city_label), x="Work Community", y="Number") + 
   coord_flip() +
   theme_minimal()
 ```
@@ -126,7 +131,7 @@ We can also map Metro Vancouver communities by what proportion of City of Vancou
 ggplot(origin_geos %>% mutate(share=ifelse(GeoUID==city,NA,Count/origin_working))) +
   geom_sf(aes(fill=share)) +
   scale_fill_viridis_c(labels=scales::percent, name="Share of Workers", option="plasma") +
-  labs(title="Workers living in the City of Vancouver by Place of Work outside the City") +
+  labs(title=paste0("Workers living in ",city_label," by Place of Work outside the City")) +
   my_theme
 ```
 

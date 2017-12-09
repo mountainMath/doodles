@@ -38,9 +38,10 @@ library(tidyverse)
 library(cancensus)
 caption="StatCan census via cansim and CensusMapper"
 format_currency <- function(x){return(paste0("$",format(x,big.mark = ",")))}
+regions=list(CSD=c("5915022","3520005"))
 ```
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
-data_2016 <- get_census(dataset='CA16', regions=list(CSD=c("5915022","3520005")),
+data_2016 <- get_census(dataset='CA16', regions=regions,
                         vectors=c("v_CA16_2397","v_CA16_2400","v_CA16_2403","v_CA16_2447","v_CA16_2451","v_CA16_2455"),
                         labels="short", geo_format=NA, level='Regions') %>% 
   mutate(Year="2015/2016") %>% 
@@ -51,7 +52,7 @@ data_2016 <- get_census(dataset='CA16', regions=list(CSD=c("5915022","3520005"))
          `Median Couple Family`=v_CA16_2451,
          `Median Couple Family with Children`=v_CA16_2455
          )
-data_2011 <- get_census(dataset='CA11', regions=list(CSD=c("5915022","3520005")),
+data_2011 <- get_census(dataset='CA11', regions=regions,
                         vectors=c("v_CA11N_2562","v_CA11N_2567","v_CA11N_2572","v_CA11N_2456","v_CA11N_2462","v_CA11N_2468"), 
                         labels="short", geo_format=NA, level='Regions') %>% 
   mutate(Year="2010/2011") %>% 
@@ -62,7 +63,7 @@ data_2011 <- get_census(dataset='CA11', regions=list(CSD=c("5915022","3520005"))
          `Median Couple Family`=v_CA11N_2462,
          `Median Couple Family with Children`=v_CA11N_2468
          )
-data_2006 <- get_census(dataset='CA06', regions=list(CSD=c("5915022","3520005")),
+data_2006 <- get_census(dataset='CA06', regions=regions,
                         vectors=c("v_CA06_2000","v_CA06_2015","v_CA06_1802","v_CA06_1809"), 
                         labels="short", geo_format=NA, level='Regions') %>% 
   mutate(Year="2005/2006") %>% 
