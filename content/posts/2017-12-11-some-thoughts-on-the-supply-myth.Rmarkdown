@@ -1,0 +1,626 @@
+---
+title: Some Thoughts on the “Supply Myth"
+author: Jens von Bergmann
+date: '2017-12-11'
+slug: some-thoughts-on-the-supply-myth
+categories:
+  - cancensus
+  - CensusMapper
+  - cmhc
+  - Vancouver
+  - Empty Homes
+tags: []
+description: "The never ending discussion."
+featured: 'sd_duplex-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2017-12-11-some-thoughts-on-the-supply-myth_files/figure-html/sd_duplex-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2017-12-11-some-thoughts-on-the-supply-myth_files/figure-html/"
+linktitle: ''
+type: "post"
+---
+
+Smarter people than I have already responded to the recent furor about [John Rose's working paper](http://www.kpu.ca/sites/default/files/The%20Housing%20Supply%20Myth%20Report%20John%20Rose.pdf), which is (part of?) the result of one year of research on affordability by the author, arguing that Vancouver has no supply problem. Most notably Nathan Lauster in a series of blog posts [taking a look at the theoretical framework and methods used](https://homefreesociology.wordpress.com/2017/11/29/notes-on-the-myth-of-housing-supply/) and [running some numbers himself](https://homefreesociology.wordpress.com/2017/11/30/overbuilding-vs-undercounting/). I don't have much to add to the first post, which took the time to highlight some of the useful demand measures that are either already implemented or currently under discussion and makes the point that the idea that we have enough housing in Vancouver, especially enough rental housing, requires an extraordinarily strong argument in the face of sub 1% rental vacancy rates. And the arguments made were weak at best.
+
+The second post digs into some of the census data issues that the working paper had, and introduces construction and demolition data as another measure to contrast and contextualize changes in the census methods, which is interesting. It seems that in the evening blog post writing some of the numbers may have gotten mixed up, which should not distract from the larger critique presented. 
+
+In this post I would like to,
+
+1. add some thoughts on "supply",
+2. put this discussion on a reproducible and transparent footing by providing the code to (re-) produce the results of the working paper,
+3. expand on Lauster's work on comparing census with completions data, and
+4. digging a bit deeper into the effects of the change in dwelling enumeration between 2001 and 2006.
+
+# Supply
+In the context of housing supply is a word that is stretched quite far these days, denoting anything between the classical economics
+
+> A supply of something is an amount of it which someone has or which is available for them to use. [Oxford English Dictionary](https://www.collinsdictionary.com/dictionary/english/supply)
+
+to just meaning an existing (or sometimes an under construction or just permitted) housing unit.
+
+The economics definition is useful because it is clearly defined and there is a strong relationship between the supply-demand balance and prices, on the ownership as well as the rental market.
+
+### Ownership
+For the ownership market in Vancouver the interplay of the supply-demand balance with prices has been expertly visualized by [YVR Housing Analyst](https://twitter.com/YVRHousing) and is summarized in this tweet
+
+{{<tweet 940663306511048705>}}
+
+and [a blog post](http://housing-analysis.blogspot.ca/2017/04/vancouver-teranet-hpi-and-inventory.html). The upshot is that price change is driven by months of inventory. (And yes, this is more than just a correlation.)
+
+### Rental Market
+I don't have quite as clean an analysis to offer for the renter market, partially because I only have annual vacancy rate data. But here too we can observe the interplay between supply-demand, measured by the vacancy rate, and year-over-year (nominal) fixed-sample rent increases.
+
+```{r setup, 	message = FALSE, warning = FALSE, include = FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+library(tidyverse)
+library(cmhc)
+library(cancensus)
+library(CANSIM2R)
+format_percent <- function(x){paste0(round(x*100,1),"%")}
+```
+
+
+```{r, echo=FALSE, fig.height=8, fig.width=9, message=FALSE, warning=FALSE}
+vacancy_rent_table_for <- function(geography,geography_type="CMA"){
+  #print(geography)
+  region_params=cmhc_region_params(geography = geography,type=geography_type)
+  params=cmhc_timeseries_params(table_id = cmhc_table_list["Rms Vacancy Rate Time Seris"],region=region_params)
+  dat_vacancy=get_cmhc(params)
+  title_x=attr(dat_vacancy,"title")
+  dat_vacancy <- dat_vacancy %>% 
+    select("X1","Total") %>%
+    #mutate(Total=as.numeric(as.character(Total))/100) %>%
+    rename(vacancy_rate=Total, X=X1)
+  params=cmhc_timeseries_params(table_id = cmhc_table_list["Rms Rent Change Time Seris"],region=region_params)
+  dat_rent_change=get_cmhc(params)
+  title_y=attr(dat_rent_change,"title")
+  dat_rent_change <- dat_rent_change %>%
+    select("X1","Total") %>%
+    #mutate(Total=as.numeric(as.character(Total))/100) %>%
+    rename(rent_change=Total, X=X1)
+  dat=inner_join(dat_vacancy,dat_rent_change,by="X") %>% rename(Year=X)
+  attr(dat,"region")=paste0(geography," ",geography_type)
+  attr(dat,"labels")=c(title_x,title_y)
+  return(dat)
+}
+
+names=c("Toronto","Vancouver","Calgary","Ottawa","Winnipeg","Victoria")
+cmhc=bind_rows(lapply(names,function(x){return(vacancy_rent_table_for(x,"CMA")) %>% mutate(city=x)}))  %>% 
+  # Gather into tidy long format
+  gather(key = "Series", value = "Rate",vacancy_rate:rent_change) %>%
+  # Tidy up the names and variables
+  mutate(
+    Series = case_when(
+    .$Series == "vacancy_rate" ~ "Vacancy Rate",
+    .$Series == "rent_change" ~ "Rent Change"),
+    Year = as.Date(paste0(Year," 01"),format="%Y %B %d"),
+    Rate=Rate/100)
+
+ggplot(cmhc, aes(x = Year, y = Rate, color = Series)) +
+  geom_hline(yintercept = 0,color="black") +
+  #geom_hline(yintercept = 0.05,color="red") +
+  geom_line() + 
+  geom_point() +
+  facet_wrap("city", ncol=2) + 
+  labs(title="Vacancy Rate vs Change in Rent", 
+       subtitle ="Select Cities",
+       caption="Source: CMHC Rms") +
+  scale_y_continuous(labels = scales::percent) +
+  xlab("") +
+  scale_x_date(breaks = seq(as.Date("1990-10-01"), as.Date("2017-10-01"), by="2 years"), 
+    date_labels=format("%b %Y")) +
+  scale_color_manual(labels = c("% Rent Change\n(fixed sample)","Vacancy Rate"), values = c("darkgreen", "steelblue"), name = "") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Here we can clearly see how vacancy rates drive fixed-sample rent increases.
+
+## Supply in the Working Paper
+
+The working paper indirectly defines "supply" as a housing unit that is not used as a primary residence. So a housing unit that is for sale and empty, for rent and empty, occupied temporarily by someone (e.g. a student who thinks of their parent's place as their permanent residence), a vacation property or a unit left empty for shorter periods of time (in between moving) or for longer periods of time, or a newly constructed housing unit that has not been moved in yet. It excludes units for sale if someone still lives in them.
+
+This somewhat unorthodox definition of supply is then put in relation to "affordability" for aspiring owner households, that is the change in home prices. I am not sure that's a particularly useful way to to approach this. The working paper then looks at the change in "supply" between 2001 and 2016 and the change in "affordability" between these years. The author notes that Vancouver registers as both, strong in increase of "supply" and strong decrease in "affordability", and concludes that this provides proof against calls for adding "supply" (which in context of this conclusion seems to be re-defined more generally as "housing units") to aid "affordability".
+
+## Dwellings, not occupied by usual residents
+This is again all about the evergreen topic of [private dwellings, not occupied by usual residents](https://censusmapper.ca/maps/584) that many people, [including myself](https://urbanarium.org/city-debate-7-vacancy-tax-will-work-video), have talked about over the years. Vancouver does have a somewhat elevated rate of these dwelling units, and there are several good measures underway to incentivize a better use of the existing stock. The City of Vancouver has enacted the Empty Homes Tax, and the province is (hopefully?) still mulling over including the [BC Housing Affordability Fund](http://www.housingaffordability.org) into it's upcoming provincial budget.
+
+That said, the rate of private dwelling units that are not occupied by usual residents (or non-primary residences for short) can't be pushed down to zero. There will always be a base vacancy rate just for moving friction, similar to the unemployment rate or the job vacancy rate never hitting zero. Then there will always be "temporary" residents, with temporary foreign workers and students listing their parent's residence (or not sticking around for the census after the end of the semester) being examples. Getting a third of these units into use as primary residences would be a worthwhile, yet ambitious goal.
+
+## Why do we add dwellings?
+The author also seems to suggest that the only reason to add dwelling units is to lower prices. While adding dwelling units will under (almost) all realistic conditions lower prices (at least in the sub market in which they are added), that certainly is not the only reason to add dwelling units. Adding dwellings is first and foremost about accommodating people.
+
+There are many people that want to live in our region, some that are currently living here and that have a hard time to find a place to rent, some that want to move here but can't find adequate housing options. With the rental vacancy rate now for many years below 1% in the region, and a record job vacancy rate that climbed to 4% in the past quarter, the pressure on the existing stock is building. And it's the lower income people that tend to get pushed out when the higher income people compete for the same stock. As the centre of the region, the City of Vancouver is feeling the strongest pressure, and we have seen how [low income people get pushed out of the city and people pile on in the top income bracket](https://doodles.mountainmath.ca/blog/2017/09/26/evolution-of-the-income-distribution/) between the past three censuses. In that time the City of Vancouver has overtaken the City of Toronto in terms of incomes [if measured apples-to-apples](https://doodles.mountainmath.ca/blog/2017/11/01/medians/). The rest of Metro Vancouver has not yet seen that strong of a reaction in the data, but as housing prices and rent increases ripple outward through the region the pressure is building everywhere.
+
+
+
+# Reproducible and Transparent Numbers
+
+The other issue with the paper is the data. We all know that affordability has gotten worse in Vancouver, and the last thing we need is yet another faulty metric to show this. The main metric being used by Rose is net new dwellings by net new households between 2001 and 2016 for several Canadian CMAS. I have a couple of questions about the metric. Why start in 2001 and not, say 1996 or 2006? Why focus on private households and not e.g. family units? After all [households can be quite complex](https://doodles.mountainmath.ca/blog/2017/12/01/what-s-a-household/), especially in Vancouver and Toronto that have high rates of certain types of "advanced roommate" type households and saw the share of adult children living with their parents growing. And why choose "private dwellings occupied by usual residents" (aka private households) instead of "occupied private dwellings"? It is not clear to me why a dwelling unit that's occupied by a temporary worker should be treated the same way as an empty unit. Or a private dwelling unit that was occupied by one or several students that stuck around until the census after the end of the semester but still think of their parent's house as their "permanent" residence.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+get_2001_for <- function(geo_uid,use_cache=TRUE){
+  cache_file=paste0(getOption("custom_data_path"),"2001_",geo_uid,".csv")
+  if (!file.exists(cache_file) | !use_cache) {
+    pr_code=substr(geo_uid,1,2)
+    geo1="CSD"
+    code1=geo_uid
+    if (nchar(geo_uid)==5) {
+      geo1="CMA"
+      code1=paste0(substr(geo_uid,3,20),"__")
+    } else if (nchar(geo_uid)==3) {
+      geo1="CMA"
+      code1=paste0(geo_uid,"__")
+      pr_code="35"
+    }
+    path=paste0("http://www12.statcan.gc.ca/english/profil01/CP01/Details/Toolbar_DownloadCSV.cfm?Lang=E&Geo1=",geo1,"&Code1=",code1,"&Geo2=PR&Code2=",pr_code,"&Data=Count&SearchText=vancouver&SearchType=Begins&SearchPR=01&B1=All")
+    download.file(path,cache_file)
+  }
+  read_csv(cache_file,skip=1)
+}
+
+get_2001_dwellings_for <- function(geo_uid,use_cache=TRUE){
+  cache_file=paste0(getOption("custom_data_path"),"2001_dwellings_",geo_uid,".csv")
+  if (!file.exists(cache_file) | !use_cache) {
+    geo_list <- list(
+      "59933"="431656",
+      "35539"="431593",
+      "24462"="431565",
+      "505"="431576",
+      "48825"="431637",
+      "48835"="431640",
+      "24421"="431549",
+      "46602"="431620",
+      "35537"="431592",
+      "35541"="431594",
+      "35535"="431591",
+      "12205"="431526",
+      "35532"="431590",
+      "59935"="431658",
+      "35555"="431601",
+      "35559"="431604",
+      "47725"="431629",
+      "47705"="431625",
+      "24433"="431552",
+      "10001"="431517"
+      )
+    print(geo_uid)
+    path=paste0("http://www12.statcan.gc.ca/English/census01/products/standard/themes/File.cfm?S=0&LANG=E&A=R&PID=59162&GID=",geo_list[geo_uid],"&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0&OFT=CSV")
+    download.file(path,cache_file)
+  }
+  read_csv(cache_file,skip=2)
+}
+
+
+
+dwelling_to_household_growth_for <- function(geo_uid){
+  type=ifelse(nchar(geo_uid)<=5,"CMA","CSD")
+  data_2001 <- get_2001_for(geo_uid,use_cache = TRUE)
+  regions=setNames(as.list(geo_uid), type)
+  data_2006 <- get_census('CA06',regions = regions,
+                          vectors=c("v_CA06_2000","v_CA06_1741","v_CA06_2054"),
+                          labels="short", geo_format=NA, level='Regions')
+  data_2011 <- get_census('CA11',regions = regions,
+                          vectors=c("v_CA11N_2562","v_CA11N_2456","v_CA11N_2287"),
+                          labels="short", geo_format=NA, level='Regions')
+  data_2016 <- get_census('CA16',regions = regions,
+                          vectors=c("v_CA16_2397","v_CA16_2447","v_CA16_4896"),
+                          labels="short", geo_format=NA, level='Regions')
+  tibble(GeoUID=geo_uid,
+         dw_2016=data_2016$Dwellings,
+         hh_2016=data_2016$Households,
+         hh_income_2016=data_2016$v_CA16_2397,
+         fam_income_2016=data_2016$v_CA16_2447,
+         avg_dw_value_2016=data_2016$v_CA16_4896,
+         dw_2011=data_2011$Dwellings,
+         hh_2011=data_2011$Households,
+         hh_income_2011=data_2011$v_CA11N_2562,
+         fam_income_2011=data_2011$v_CA11N_2456,
+         avg_dw_value_2011=data_2011$v_CA11N_2287,
+         dw_2006=data_2006$Dwellings,
+         hh_2006=data_2006$Households,
+         hh_income_2006=data_2006$v_CA06_2000,
+         fam_income_2006=data_2006$v_CA06_1741,
+         avg_dw_value_2006=data_2006$v_CA06_2054,
+         dw_2001=filter(data_2001,LINE=="Total private dwellings")$TOTAL ,
+         hh_2001=filter(data_2001,LINE=="Total - All private households")$TOTAL,
+         hh_income_2001=filter(data_2001,LINE=="Median household income; 2000 ($) - All households")$TOTAL,
+         fam_income_2001=filter(data_2001,LINE=="Median family income; 2000 ($) - All census families")$TOTAL,
+         avg_dw_value_2001=filter(data_2001,LINE=="Average value of dwelling ($)")$TOTAL
+           )
+}
+
+dwelling_types_for <- function(geo_uid){
+  type=ifelse(nchar(geo_uid)<=5,"CMA","CSD")
+  data_2001 <- get_2001_dwellings_for(geo_uid,use_cache = TRUE)
+  regions=setNames(as.list(geo_uid), type)
+  
+  data_2016 <- get_census('CA16',regions = regions,
+                          vectors=c("v_CA16_409","v_CA16_414"),
+                          labels="short", geo_format=NA, level='Regions')
+  data_2011 <- get_census('CA11',regions = regions,
+                          vectors=c("v_CA11F_200","v_CA11F_206"),
+                          labels="short", geo_format=NA, level='Regions')
+  
+  data_2006 <- get_census('CA06',regions = regions,
+                          vectors=c("v_CA06_120","v_CA06_123"),
+                          labels="short", geo_format=NA, level='Regions')
+  tibble(GeoUID=geo_uid,
+         year=c("2001","2001","2006","2006","2011","2011","2016","2016"),
+         type=c("Single Detached","Duplex","Single Detached","Duplex","Single Detached","Duplex","Single Detached","Duplex"),
+         count=c(filter(data_2001,`Structural Type of Dwelling (9)`=="Single-detached house")$`Total - Tenure`,
+                 filter(data_2001,`Structural Type of Dwelling (9)`=="Apartment, detached duplex")$`Total - Tenure`,
+                 data_2006$v_CA06_120,
+                 data_2006$v_CA06_123,
+                 data_2011$v_CA11F_200,
+                 data_2011$v_CA11F_206,
+                 data_2016$v_CA16_409,
+                 data_2016$v_CA16_414
+                 )
+         )
+}
+
+
+
+graph_options <- list(
+  theme_bw(),
+  theme(axis.text.x=element_text(angle=60,hjust=1)),
+  scale_y_continuous(limits=c(1,1.3),oob=scales::squish),
+  geom_text(aes(label=round(hh_dw,2)), vjust=-1,size=3,color="black"),
+  labs(title="Net New Dwellings per Net New Households, Mixed Boundaries", x="CMA", y="Ratio")
+)
+graph_options2 <- list(
+    theme_bw(),
+  theme(axis.text.x=element_text(angle=60,hjust=1)),
+  scale_fill_discrete(name="Year",labels=list(med_avg_mult_2001="2001",
+                                              med_avg_mult_2006="2006",
+                                              med_avg_mult_2011="2011",
+                                              med_avg_mult_2016="2016")),
+  #scale_y_continuous(limits=c(0,15.5)),
+  #geom_text(aes(label=round(ratio,1)), vjust=-1,size=3,color="black",position = position_dodge(width = 1)),
+  labs(title="Average Dwelling Values per Median Household Income", x="CMA", y="Ratio")
+)
+```
+
+So let's run the numbers. Unfortunately I don't have 2001 numbers in CensusMapper, but it's easy enough to pull the data for the 20 most populous (using 2016 population numbers) CMAs for 2001 and 2016 and perform two subtractions and one division. In the interest of transparency and reproducibility, the code for all graphs is included in the R Notebook that built this post and [lives on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-12-11-some-thoughts-on-the-supply-myth.Rmarkdown) as regular readers probably already guessed.
+
+```{r dw_per_hh_mixed_geos, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+cmas <- list_census_regions('CA16') %>% filter(level=="CMA") %>% top_n(20,pop)
+data <- do.call(rbind,apply(cmas,1,function(cma){
+  dwelling_to_household_growth_for(as.character(cma["region"])) %>% 
+    mutate(name=as.character(cma["name"]))
+})) 
+plot_data <- data %>%
+  mutate(hh_dw=(dw_2016-dw_2001)/(hh_2016-hh_2001),
+         name=factor(name,levels=cmas %>% arrange(pop) %>% pull(name) %>% rev,ordered=TRUE))
+
+ggplot(plot_data,aes(x=name,y=hh_dw)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  graph_options
+```
+
+# Changing metrics
+While it was easy to compute it, the metric itself has two big issues. Nathan Lauster already pointed out one of them, that the [census changed the way it counted dwelling units between 2001 and 2006](http://www12.statcan.gc.ca/census-recensement/2006/ref/rp-guides/housing-logement-eng.cfm#comparability), with the net effect of discovering suites. That adds to the count of dwelling units in 2006 compared to 2001 without new dwellings being produced. At the same time the census would also discover more households, in this case occupied suites, that were already present in 2001 but not counted then. In order to say that this change does not bias the analysis one would have to argue that suites are just as likely to be occupied by usual residents as other building types, which is probably not true. We will dig deeper into this question toward the end of the post.
+
+In the meantime it would probably be prudent to add in data for the intermediate years 2006 and 2011 to see how this plays out over the years. One would expect the effect of the change in methods to be bigger in metropolitan areas with more suites, like in Vancouver.
+
+```{r uo_mixed_geos2, echo=FALSE, fig.height=7, fig.width=9, message=FALSE, warning=FALSE}
+plot_data <- data %>%
+  mutate(`2001`=1-hh_2001/dw_2001,
+         `2006`=1-hh_2006/dw_2006,
+         `2011`=1-hh_2011/dw_2011,
+         `2016`=1-hh_2016/dw_2016) %>%
+  gather(key="Year",value="Rate",c("2001","2006","2011","2016")) %>%
+  mutate(Year=factor(Year, levels=c("2001","2006","2011","2016"), ordered=TRUE))
+ggplot(plot_data ,aes(x=Year,y=Rate)) +
+  facet_wrap("name",ncol=3) +
+  geom_bar(stat="identity",fill="steelblue")  +
+  theme_bw() +
+  scale_y_continuous(labels=scales::percent, limits=c(0,0.15)) +
+  geom_text(aes(label=format_percent(Rate)), vjust=-0.7,size=3,color="black") +
+  labs(title="Share of Non-primary Residence Dwellings", x="Year (Mixed Boundaries)", y="Ratio")
+
+```
+
+Here we see, as Nathan Lauster already pointed out, that the majority of the change in non-primary residence private dwellings in Vancouver (and some other regions) occurred between 2001 and 2006. Showing the change by using "net new dwellings by net new households" emphasizes that. But we prefer to show things this way, which brings us to the next issue with the metric used in the working paper.
+
+# Changing CMAs
+The other problem with the comparison is that for many CMAs the difference in the count of dwelling units (or of households) is not the same thing as "net new dwellings". That's because CMAs aren't monolithic things that exist through time, they change. CMA boundaries can get adjusted between censuses, and many of the listed CMAs have. Which makes it hard to make sense out of what these numbers actually mean. Comparing across census years is hard [as we have explained in detail before](https://doodles.mountainmath.ca/blog/2017/03/22/comparing-censuses/) and typically requires a lot more work than just a little arithmetic with a couple of numbers. For example, the population within Montréal's 2016 CMA boundaries grew by 4.2% between 2011 and 2016, but if we naively take the populations in the 2016 CMA boundaries in 2016 and compare it to the population in the 2011 CMA boundaries in 2011 we would think it grew by 7.2%.
+
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+library(sf)
+m2 <- get_census(dataset="CA11", regions=list(CMA="24462"), geo_format="sf", level='Regions') %>% 
+  mutate(year="2011") %>% select(year)
+m3 <- get_census(dataset="CA16", regions=list(CMA="24462"), geo_format="sf", level='Regions') %>% 
+  mutate(year="2016") %>% select(year)
+ggplot(do.call(rbind, list(m2,m3))) +
+  geom_sf(fill="darkgrey") +
+  theme_void()+
+  facet_wrap("year",nrow=1) +
+  labs(title="Montréal CMA Boundaries")
+```
+
+We don't have 2001 data in CensusMapper, which makes it a little more work to pull the proper numbers for all CMAs than we are willing to put in for an evening blog post. But we chose London CMA because of it's simplicity to work out the effect of using proper boundaries on the metric from Rose's working paper.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+geo_uid="35555"
+data_2001 <- get_2001_for(geo_uid)
+
+data_2016 <- get_census(dataset='CA16', regions=list(CSD=c("3539036","3539027","3539033","3534020","3534021","3534024","3539015")), vectors=c("v_CA16_401","v_CA16_404","v_CA16_405"), labels="short", geo_format=NA, level='Regions') %>%
+  summarize(GeoUID=geo_uid,Households=sum(Households),Dwellings=sum(Dwellings))
+d1 <- tibble(GeoUID=geo_uid,
+             dw_2001=filter(data_2001,LINE=="Total private dwellings")$TOTAL,
+             hh_2001=filter(data_2001,LINE=="Total - All private households")$TOTAL,
+             dw_2016=data_2016$Dwellings,
+             hh_2016=data_2016$Households) %>%
+    mutate(name="London 2011 boundaries") %>%
+    select(name,dw_2001, hh_2001, dw_2016, hh_2016) %>%
+    mutate(hh_dw=(dw_2016-dw_2001)/(hh_2016-hh_2001))
+
+  d2 <- dwelling_to_household_growth_for(geo_uid) %>%
+    mutate(name="London mixing boundaries") %>%
+    select(name,dw_2001, hh_2001, dw_2016, hh_2016) %>%
+    mutate(hh_dw=(dw_2016-dw_2001)/(hh_2016-hh_2001))
+
+  
+  
+  csds=c("3539036","3539027","3539033","3534020","3539015","3539047","3534021","3534024")
+  d3 <- do.call(rbind,lapply(csds,function(geo_uid){dwelling_to_household_growth_for(as.character(geo_uid))})) %>%
+    select(dw_2001, hh_2001, dw_2016, hh_2016) %>% 
+    summarize_all(sum) %>%  
+    mutate(hh_dw=(dw_2016-dw_2001)/(hh_2016-hh_2001)) %>%
+    mutate(name="London 2016 boundaries") %>%
+    select(name,dw_2001, hh_2001, dw_2016, hh_2016) %>%
+    mutate(hh_dw=(dw_2016-dw_2001)/(hh_2016-hh_2001))
+
+  
+data2 <- do.call(rbind,list(d1,d2,d3))
+
+data2 %>% select(name,hh_dw) %>% knitr::kable(col.names=c("CMA / Method","Net New Dwellings per Net New Household"),digits=2)
+```
+
+The difference is not large, but noticeable. It is not clear to me how this will play out in some of the other regions, but one should probably work this out in detail if one wanted to do this properly.
+
+
+
+# Median Multiples
+While we are at it, we should probably also look at the "affordability" metric that was used. Median multiples is
+probably my least favourite among the affordability metrics, but it somehow won't die. The metric can have some value, but there are lots of issues when using it to compare across regions or time. Among the issues is that household composition [can significantly skew the metric](https://doodles.mountainmath.ca/blog/2017/11/01/medians/), that it is taken at the ecological level and can point in the opposite direction as individual level metrics [like we have shown happened in Vancouver](https://doodles.mountainmath.ca/blog/2017/10/26/a-first-look-at-vancouver-housing-data/), that it ignores tenant households and differences in the share of tenant households, and many more. If one insists on this kind of metric I think family income is probably better suites than household income. It might also make sense to view renter and owner households separately and use separate income numbers for these.
+
+It took a bit of debugging to figure out that the working paper used the average owner-occupied dwelling values by median household incomes as a metric as opposed to average dwelling value by average incomes as it claimed. The metric is a little funky, but here are the results and the code to reproduce it for added transparency so that the next person doesn't have to go around guessing at how things are computed. In the working paper this was compared against data from Demographia (can't believe people actually use that data for things other than click bait), so we decided to lend a helping hand and add in the consistent metric for 2016. And we threw in the intermediate years too for added context. 
+
+```{r med_multiple, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+plot_data <- data %>% 
+  mutate(med_avg_mult_2001=avg_dw_value_2001/hh_income_2001,
+         med_avg_mult_2006=avg_dw_value_2006/hh_income_2006,
+         med_avg_mult_2011=avg_dw_value_2011/hh_income_2011,
+         med_avg_mult_2016=avg_dw_value_2016/hh_income_2016) %>%
+  gather(key="med_avg_mult",value="ratio",c(med_avg_mult_2001,med_avg_mult_2006,med_avg_mult_2011,med_avg_mult_2016))
+ggplot(plot_data, aes(x=name,y=ratio, fill=med_avg_mult, group=med_avg_mult)) +
+  geom_bar(stat="identity",position="dodge") + graph_options2
+```
+
+It's very clear that Vancouver stands out, and we have seen countless graphs of this type before. The changing CMA boundaries over time is much less of an issue for this graph, it could even be considered a feature and not a bug. Growing the CMA will typically deliver an affordability boost as more outlying municipalities tend to have less expensive housing. But metropolitan boundaries are derived from commuting patterns, so it properly adjusts the metropolitan area to the given context each census year (or with a 5 year lag). As a footnote, Metro Vancouver is at a disadvantage here as the existence of the Abbotsford-Mission CMA directly to the east prevents it from growing. We will leave the details of this for another post.
+
+```{r med_multiple2, eval=FALSE, fig.width=9, message=FALSE, warning=FALSE, include=FALSE}
+plot_data <- data %>% 
+  mutate(med_avg_mult_2001=avg_dw_value_2001/fam_income_2001,
+         med_avg_mult_2006=avg_dw_value_2006/fam_income_2006, 
+         med_avg_mult_2011=avg_dw_value_2011/fam_income_2011, 
+         med_avg_mult_2016=avg_dw_value_2016/fam_income_2016) %>%
+  gather(key="med_avg_mult",value="ratio",c(med_avg_mult_2001,med_avg_mult_2016))
+ggplot(plot_data, aes(x=name,y=ratio, fill=med_avg_mult, group=med_avg_mult)) +
+  geom_bar(stat="identity",position="dodge") +
+    theme_bw() +
+  theme(axis.text.x=element_text(angle=60,hjust=1)) +
+  scale_fill_discrete(name="Year",labels=list(med_avg_mult_2001="2001",med_avg_mult_2016="2016")) +
+  scale_y_continuous(limits=c(0,15.5)) +
+  geom_text(aes(label=round(ratio,1)), vjust=-1,size=3,color="black",position = position_dodge(width = 1)) +
+  labs(title="Average Dwelling Values per Median Family Income", x="CMA", y="Ratio")
+```
+
+Using more appropriate measure like family income or owner household income will soften the growth in the multiples metric somewhat, as will using median dwelling values instead of averages. For example, just using median multiples [pegs Vancouver at a ratio of 11 in 2016](https://censusmapper.ca/maps/897), using median family incomes to median owner-occupied dwelling values Vancouver [sits at 8.7](https://censusmapper.ca/maps/944). But while the exact ratios depend highly on the metric, the general trends remain the same. Vancouver is an outlier. 
+
+# Construction Data
+One interesting addition of Nathan Lauster that spiked our interest was folding in construction data. In principle that's a great way to cross check the dwelling growth hypothesis, but we also need demolition data to make this work. And demolition data is in short demand, CANSIM 026-0012 publishes data up to 1999. I seem to remember that i is still collecting that data, but it stopped publishing it due to quality concerns and is thus of little use for our time frame. Lauster took demolition data for the [Metro Vancouver Housing Data Book](http://www.metrovancouver.org/services/regional-planning/PlanningPublications/MV_Housing_Data_Book.pdf). 
+
+This is a similar approach as taking in the IMF working paper [Gauging Housing Supply in Canada: A Stock Approach](https://www.imf.org/external/pubs/ft/wp/2015/wp15128.pdf) which uses a some more robust methodology for understanding housing stock in relation to households and "excess supply", which Rose's working paper may benefit from. In particular the IMF paper takes care to recognize the existence of an "equilibrium or normal vacancy rate" for a given market and "excess occupancy" (or the reverse thereof) that stems from unexpected patterns in household formation, some of which we have [highlighted earlier](https://doodles.mountainmath.ca/blog/2017/12/01/what-s-a-household/).
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+completions_for_cma <- function(cma_name) {
+get_cmhc(cmhc_timeseries_params(table_id = cmhc_table_list["Scss Completions Time Series"], 
+                                geography_id = cmhc_geography_list[cma_name])) %>% 
+  mutate(Date=as.Date(paste0("01 ",X1),format("%d %b %Y")),
+             CMA=cma_name)
+}
+
+completions_data <- do.call(rbind,lapply(names,function(x){completions_for_cma(as.character(x))}))
+
+
+```
+
+Let's first look at City of Vancouver data and see how completions have evolved over time.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(completions_data %>% filter(CMA=="Vancouver"), aes(x=Date,y=All)) +
+  #geom_bar(stat="identity") +
+  geom_smooth(span=0.15, level=0.99) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title="Vancouver CMA completions", y="Number of Units")
+```
+
+We can average the data over the census periods in question, starting at May in 2001 to April 2016, inclusive.
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+cutoffs=c(as.Date("2001-05-01"),as.Date("2006-05-01"),as.Date("2011-05-01"),as.Date("2016-05-01"))
+cmhc_plot_data <- completions_data %>% 
+  filter(Date>=cutoffs[1] & Date < cutoffs[length(cutoffs)]) %>%
+  mutate(lustrum=ifelse(Date < cutoffs[2],"2001-2006",ifelse(Date<cutoffs[3],"2006-2011","2011-2016"))) %>%
+  group_by(CMA,lustrum) %>% 
+  summarize(All=sum(All, na.rm=TRUE))
+
+ggplot(cmhc_plot_data %>% filter(CMA=="Vancouver") , aes(x=lustrum,y=All)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  theme_bw() +
+  labs(title="Vancouver CMA Completions", y="Number of Units", x="Census Period")
+```
+
+We can quickly check how completions have varied across select metro areas and through time.
+
+```{r, echo=FALSE}
+ggplot(cmhc_plot_data, aes(x=lustrum,y=All)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  theme_bw() +
+  facet_wrap("CMA",ncol=2,scales = "free_y") +
+  labs(title="Select CMA Completions", y="Number of Units", x="Census Period")
+```
+
+Next we need to fold in demolitions. For the city of Vancouver we can eyeball the number of demolitions using the Metro Vancouver Housing Databook for the periods of interest. It will be more work to assemble this for other metropolitan areas.
+
+```{r, echo=FALSE}
+demo_data=tibble(lustrum=c("2001-2006","2006-2011","2011-2016"),All=c(2400,2500,3100),CMA="Vancouver")
+ggplot(demo_data %>%
+         filter(CMA=="Vancouver") %>%
+         group_by(CMA,lustrum) %>% 
+           summarize(All=sum(All, na.rm=TRUE))
+       , aes(x=lustrum,y=All)) +
+  geom_bar(stat="identity", fill="brown") +
+  theme_bw() +
+  labs(title="Vancouver CMA Demolitions", y="Number of Units", x="Census Period")
+```
+
+The difference is the net new dwellings. We should caution that tracking demolitions and additions like suite conversions is hard, so there are quite likely some issue with this kind of data too that are worth exploring further.
+
+```{r net_new, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+vancouver_data <- data %>% filter(name=="Vancouver")
+census_net_new=c(
+  "2001-2006"=vancouver_data$dw_2006-vancouver_data$dw_2001,
+  "2006-2011"=vancouver_data$dw_2011-vancouver_data$dw_2006,
+  "2011-2016"=vancouver_data$dw_2016-vancouver_data$dw_2011)
+net_new <- inner_join(cmhc_plot_data %>% filter(CMA=="Vancouver"), demo_data , by=c("CMA","lustrum")) %>%
+  mutate(CMHC=All.x -All.y, Census=census_net_new[lustrum]) %>%
+  gather(key="Method",value="Units",c("CMHC","Census"))
+
+ggplot(net_new, aes(x=lustrum,y=Units, fill=Method)) +
+  geom_bar(stat="identity", position="dodge") +
+  theme_bw() +
+  labs(title="Vancouver CMA Net New Dwellings", y="Number of Units", x="Census Period")
+```
+
+The 2006 to 2016 data is consistent with our suspicion that we are under-counting demolitions, the 2001 to 2006 data is consistent with Nathan Lauster's observation that the census got a lot better at counting units during that time frame, the census "counted" `r format(filter(net_new,lustrum=="2001-2006",Method=="Census")$Units - filter(net_new,lustrum=="2001-2006",Method=="CMHC")$Units,big.mark=",")` more new units than CMHC minus demolition data did, and chances are good that the gap is bigger if our suspicion is right that we under-count demolitions.
+
+# Single Detached and Duplex
+To understand better how the change in dwelling enumeration methods has effected the dwelling counts between 2001 and 2006 we can compare the change in single detached and duplex dwelling over the years. First we take a look at the duplex units.
+
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+data_dw <- do.call(rbind,apply(cmas,1,function(cma){
+  dwelling_types_for(as.character(cma["region"])) %>% 
+    mutate(name=as.character(cma["name"]))
+})) 
+
+dwellings <- do.call(rbind,lapply(cmas$region,function(geo_uid){
+  c=filter(data,GeoUID==geo_uid) %>% select(GeoUID,dw_2001,dw_2006,dw_2011,dw_2016)
+  tibble(GeoUID=c$GeoUID,year=c("2001","2006","2011","2016"),dw=c(c$dw_2001,c$dw_2006,c$dw_2011,c$dw_2016))
+}))
+
+data_merged <- inner_join(data_dw,dwellings,by=c("GeoUID","year")) %>%
+  mutate(pct_count=count/dw) 
+sdd_colours <- setNames(RColorBrewer::brewer.pal(2,"Set2"),c("Single Detached","Duplex"))
+ggplot(data_merged %>% filter(type=="Duplex"),aes(x=year,y=count)) +
+  geom_bar(stat="identity", fill=sdd_colours["Duplex"]) +
+  theme_bw() +
+  scale_y_continuous(labels=scales::comma) +
+  facet_wrap("name",ncol=4, scales="free_y") +
+  labs(title="Occupied Duplex Units",x="Year",y="Number of Units")
+
+```
+
+We can see that the number of duplex units increased significantly in many of the metropolitan areas. As the census reference materials state, this is likely due to homes that were classified as single detached in 2001 being classified as duplexes in 2006. So let's view this in perspective to single detached homes.
+
+```{r sd_duplex, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+
+ggplot(data_merged,aes(x=year,y=count, fill=type)) +
+  geom_bar(stat="identity") +
+  theme_bw() +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(name="Structural Type",values=sdd_colours) +
+  facet_wrap("name",ncol=4, scales="free_y") +
+  labs(title="Occupied Single Detached and Duplex Units",x="Year",y="Number of Units")
+
+```
+
+The number of single family homes has been continuously increasing over the years in all metropolitan areas, with the exception of Vancouver and Victoria. The number of single family homes can increase because of more single family homes getting built, or because the CMA expands between censuses. This decrease in single detached homes in the census counts in Vancouver is well known and generally attributed to the census finding existing suites, so reclassifying a single detached unit as two duplex units, as well as single detached homes being converted to duplexes.
+  
+There is a number of variables moving at the same time, so this needs some closer analysis. If we assume for now that all single detached and duplex units are occupied, then the number of single family homes plus half the number of duplex units equals the number of lots with single detached or duplex homes on them. 
+
+
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+plot_data2 <- data_merged %>% 
+  select("name","year","type","count") %>%
+  spread(key="type",value="count") %>%
+  group_by(name,year) %>%
+  summarize(Duplex=sum(Duplex,na.rm=TRUE),`Single Detached`=sum(`Single Detached`,na.rm=TRUE)) %>%
+  mutate(lots=`Single Detached` + round(Duplex/2))
+ggplot(plot_data2,aes(x=year,y=lots)) +
+  geom_bar(stat="identity", fill="brown") +
+  theme_bw() +
+  scale_y_continuous(labels=scales::comma) +
+  facet_wrap("name",ncol=4, scales="free_y") +
+  labs(title="Single Detached and Duplex Lots, Assuming All Units are Occupied",x="Year",y="Number of Units")
+```
+
+What we see in Vancouver, and to a lesser extent in Victoria, is that the total number of these lots is decreasing under our assumption. And quite substantially so, by `r format(filter(plot_data2,name=="Vancouver",year==2001)$lots-filter(plot_data2,name=="Vancouver",year==2006)$lots,big.mark=",")` in Vancouver and `r format(filter(plot_data2,name=="Victoria",year==2001)$lots-filter(plot_data2,name=="Victoria",year==2006)$lots,big.mark=",")` in Victoria. There are several possible explanations for this:
+
+* the number of lots with single detached or duplexes decreased, 
+* the census found homes with more than one suite that will then be classified as "apartment, fewer than five stories", 
+* there is a big change in units not occupied by usual residents among these, 
+* suites are much more likely to be not occupied by usual residents. 
+
+It is likely a combinations of all of them, but it seems reasonable to hypothesize that the last option, namely that suites are much more likely to be classified as not occupied by usual residents, is responsible for a bulk of that drop. If it were to account for all of the drop we would have `r format(filter(plot_data2,name=="Vancouver",year==2001)$lots-filter(plot_data2,name=="Vancouver",year==2006)$lots,big.mark=",")` suites that are not occupied by usual residents, accounting for almost all of the difference in dwelling growth 2001 to 2006 derived from census vs CMHC construction/demolition data. And this is still ignoring the possibility that the number of lots dedicated to single detached and duplex homes has increased in Metro Vancouver over that time period, which would further narrow the gap.
+
+Another way to cross-check these assumptions is to check how many of these duplex units were owner-occupied vs renter-occupied. In Vancouver duplex units aren't stratified except maybe in exceptional cases. (What is commonly referred to as "duplex" is classified as "semi-detached" in the census.) That means that we would generally expect at least as many units to be renter-occupied as there are owner-occupied if there was no strong bias for unoccupied suites.
+
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+get_tenure_for<- function(geo_uid,tenure=0){
+cache_file=paste0(getOption("custom_data_path"),"2006_tenure_",geo_uid,"_",tenure,".csv")
+if (!file.exists(cache_file)) {
+  path=paste0("http://www12.statcan.gc.ca/census-recensement/2006/dp-pd/tbt/File.cfm?S=0&LANG=E&A=R&PID=89060&GID=764018&D1=7&D2=",tenure,"&D3=0&D4=0&D5=0&D6=0&OFT=CSV")
+    download.file(path,cache_file)
+}
+read_csv(cache_file,skip=4)
+}
+geo_uid="59933"
+tenure1 <- rbind(get_tenure_for(geo_uid,1) %>% mutate(Tenure="Owner"), get_tenure_for(geo_uid,2)  %>% mutate(Tenure="Renter") )%>% 
+    filter(`Period of construction (11)`=="Total - Period of construction") %>%
+    mutate(GeoUID=geo_uid,Count=`Total - Condition of dwelling`) %>% 
+      select(GeoUID,Tenure,Count)
+
+tenure2 <- get_2001_dwellings_for(geo_uid) %>% filter(`Structural Type of Dwelling (9)`=="Apartment, detached duplex") 
+
+tenure <- rbind(tenure1 %>% mutate(Year="2006"),
+                tenure2 %>% rename(Owner=Owned,Renter=Rented) %>% 
+                  mutate(GeoUID=geo_uid,Year="2001") %>% select(GeoUID,Owner,Renter,Year) %>%
+                  gather(key="Tenure",value="Count",c(Owner,Renter))) 
+
+ggplot(tenure, aes(x=Year,y=Count, fill=Tenure)) +
+  geom_bar(stat="identity") +
+  theme_bw() +
+  scale_fill_brewer(palette = "Set3") +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Occupied Duplex Units",y="Number of Units")
+```
+
+But of the `r format(sum(tenure$Count),big.mark=",")` occupied duplex units in Vancouver in 2006 there were `r format(filter(tenure,Tenure=="Owner")$Count,big.mark=",")` owner-occupied duplex units and `r format(filter(tenure,Tenure=="Renter")$Count,big.mark=",")` tenant-occupied ones. This compares to`r format(tenure2$Owned,big.mark=",")` owner-occupied duplex units and `r format(tenure2$Rented,big.mark=",")` tenant-occupied ones in 2001. In summary this is strongly suggesting that a very large number of those newly discovered suites were classified as not occupied by usual residents, explaining pretty much all of the gap between CMHC and census dwelling counts, as well as the jump in units not occupied by usual residents.
+
+To erase all doubt, it would be very helpful to have data on the structural type of dwellings that are not occupied by usual residents. In principle that data should be available to StatCan, and I have asked StatCan for it a couple of months ago without success. This probably requires a concerted effort to find out if it is available and obtain it if it is.
+
+# Upshot
+To be useful, Rose's working paper needs ... lots of work. 
+
+* The way the word "supply" is used should get clarified, and ideally moved more in line with standard literature. 
+* The issue with the change in enumeration of dwellings needs to be dealt with, using construction and demolition data is one approach, and understanding the changes in more detail by looking at the structural type variable and ideally by getting information on the structural type of units not occupied by usual residents would help. 
+* The issue with changing CMA boundaries needs to be dealt with, as it stands the "net new dwellings per net new household" metric does not make sense for many CMAs.
+* Some of the choices made need to be better explained, I suspect that there is no good reason why Rose chose to use "not occupied by usual residents" instead of simply "unoccupied" as the base of his measure, the language in the paper certainly suggests that Rose wanted to use the latter. I may be guessing wrong, but either way it needs better explanation.
+* A clearer statement of what the paper is trying to show, I am missing a hypothesis that the working paper is trying to reject, and a way to quantify that.
+
+Overall I would also appreciate a more transparent work practice that makes it easier to reproduce results and build on it. This post is build from an R Notebook [that lives on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-12-11-some-thoughts-on-the-supply-myth.Rmarkdown) and is easily reproducible. If anyone has a different idea how to analyse the data it should be easy to adapt this for their own purposes. Life is too short for everyone to work on their own walled-off arena and leave everyone else guessing at what they did.
+
+
