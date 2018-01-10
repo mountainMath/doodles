@@ -120,7 +120,7 @@ plot_data$date_string <- factor(plot_data$date_string, levels=plot_data$date_str
  
 ggplot(plot_data,
        aes(x=date_string,y=TRAFFIC_COUNT,fill=type)) +
-  geom_bar(stat="identity", position="identity", alpha=0.3) +
+  geom_bar(stat="identity", position="identity", alpha=0.5) +
   scale_fill_manual(values=c(school="red",work="blue")) +
   scale_y_continuous(labels = scales::comma) +
   scale_x_discrete(breaks=c("Tue 09:00","Tue 15:00","Wed 09:00","Wed 15:00","Thu 09:00","Thu 15:00")) +
@@ -137,7 +137,7 @@ plot_data2 <- plot_data %>% mutate(day_string = sub("Tue |Wed |Thu ","",date_str
 
 ggplot(plot_data2,
        aes(x=day_string,y=TRAFFIC_COUNT,fill=type)) +
-  geom_bar(stat="identity", position="identity", alpha=0.3) +
+  geom_bar(stat="identity", position="identity", alpha=0.5) +
   scale_fill_manual(values=c(school="red",work="blue")) +
   scale_y_continuous(labels = scales::comma) +
   scale_x_discrete(breaks=c("09:00","15:00")) +
@@ -225,7 +225,7 @@ plot_data$date_string <- factor(plot_data$date_string, levels=plot_data$date_str
   
 ggplot(plot_data,
        aes(x=date_string,y=TRAFFIC_COUNT,fill=type)) +
-  geom_bar(stat="identity", position="identity", alpha=0.3) +
+  geom_bar(stat="identity", position="identity", alpha=0.5) +
   scale_fill_manual(values=c(school="red",work="blue")) +
   scale_y_continuous(labels = scales::comma) +
   scale_x_discrete(breaks=c("Tue 09:00","Tue 15:00","Wed 09:00","Wed 15:00","Thu 09:00","Thu 15:00")) +
@@ -244,7 +244,7 @@ plot_data2 <- plot_data %>% mutate(day_string = sub("Tue |Wed |Thu ","",date_str
 
 ggplot(plot_data2,
        aes(x=day_string,y=TRAFFIC_COUNT,fill=type)) +
-  geom_bar(stat="identity", position="identity", alpha=0.3) +
+  geom_bar(stat="identity", position="identity", alpha=0.5) +
   scale_fill_manual(values=c(school="red",work="blue")) +
   scale_y_continuous(labels = scales::comma) +
   scale_x_discrete(breaks=c("09:00","15:00")) +
