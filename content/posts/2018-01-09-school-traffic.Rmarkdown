@@ -1,0 +1,263 @@
+---
+title: School Traffic
+author: Jens von Bergmann
+date: '2018-01-09'
+slug: school-traffic
+categories:
+  - Surrey
+  - Transportation
+tags: []
+description: "Measuring dropoff and pickup traffic."
+featured: 'proximity-graph-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2018-01-09-school-traffic_files/figure-html/proximity-graph-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2018-01-09-school-traffic_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(sf)
+library(jsonlite)
+library(ggmap)
+```
+
+School has started, and with it debate about people driving their kids to and from school is flaring up. And again people are questioning how much traffic is caused by this. As someone who bikes to school with his son every day I am keenly aware of the traffic mess around schools. But since I choose not to drive regularly, I don't have a feeling for broader traffic patterns on non-school days to compare this too. 
+
+But who needs anecdata when we have actual data on this: counts from traffic light induction loops. While the City of Vancouver has been talking for more than a year to make this data available, [Surrey](http://data.surrey.ca/dataset/traffic-loop-count) has been at it for about a year now (big thanks!), and we have [played with that data a while back](https://doodles.mountainmath.ca/blog/2016/03/27/surrey-traffic-loop-counts/). It seems however that the Surrey Open Data API changed since then and the interactive map from last year is not pulling in live data any more. Instead of updating the old map I thought my time is better spent in doing something new.
+
+There are still lots of challenges when using loop counts for answering questions about school traffic, but it's a great resource to ground the discussion on. But it is also a resource that I admittedly have not spent much time with, and that will need some work to better understand the data quirks and issues. But not better way to get started with this than doing an exploratory blog post!
+
+# Induction Loops
+Most people will recognized induction loops as the circular (or rectangular) cutouts in the road close to the stop line of traffic lights that detect if cars are waiting to make a turn. The loops emit an RF frequency which will induce a current in nearby metal objects, e.g. a car sitting on top, which in turn will induce a magnetic field that will induce a current in the induction loop. Which enables the induction loop to detect the presence of metal objects: motor vehicles in most cases.
+
+Surrey publishes (a selection of?) traffic loop counts on their Open Data website, about 1/3 of which have been geocoded so we know where they are. 
+
+```{r, include=FALSE}
+loop_location_cache=paste0(getOption("cache_path"),"surrey_loop_locations.Rda")
+if (!file.exists(loop_location_cache)) {
+  url="http://gis.surrey.ca:8080/fmedatastreaming/TrafficLoopCount/TrafficLoops.fmw"
+  surrey_loop_locations=read_sf(url) 
+  surrey_loop_locations <- surrey_loop_locations %>% cbind(st_coordinates(surrey_loop_locations$geometry)) 
+  save(surrey_loop_locations,file=loop_location_cache)
+} else {
+  load(loop_location_cache)
+}
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+base <- get_map("Surrey, Canada", zoom=11, source = "stamen", maptype = "toner", crop = T)
+
+ggmap(base) +
+  geom_point(data=surrey_loop_locations , aes(x=X, y=Y), shape=21, size=2, color="red") +
+  labs(title=paste0("Surrey Traffic Loop Locations (",format(nrow(surrey_loop_locations),big.mark = ","),")")) +
+  theme_void()
+
+```
+
+
+# Counts
+We compare traffic counts for a regular work day before and after school starts. To this end we use the start of the summer semester as a test, mostly because we don't have enough data for the beginning of the spring term and because we don't have good comparables for non-school days over the winter break.
+
+One issue is that the data is surprisingly volatile. To overcome this we average over Tue, Wed, Thu for three weeks prior to school start this summer compared to three weeks after school start. This should give us a first approximation of how traffic changes between school and non-school days, with the understanding that some of the difference may be due to more people being on vacation during non-school days and that there is a fair amount of children being driven to camps instead of schools during non-school days.
+
+```{r, include=FALSE}
+loop_counts_for_day <- function(day,day2=NA){
+  if (is.na(day2)) {day2=day}
+  cache_file=paste0(getOption("cache_path"),"surrey_loop_counts",day,"_",day2,".Rda")
+  if (file.exists(cache_file)) {
+    load(cache_file)
+  } else {
+    url=paste0("http://gis.surrey.ca:8080/fmedatastreaming/TrafficLoopCount/TrafficLoopCounts.fmw?startdatetime=",day,"T00:00:00&enddatetime=",day2,"T23:59:59")
+    surrey_loop_counts <- fromJSON(url)
+    save(surrey_loop_counts,file = cache_file)
+  }
+  return(surrey_loop_counts)
+}
+
+surrey_loop_counts_workweek <- do.call(rbind,list(
+  loop_counts_for_day("2017-08-29","2017-08-31"),
+  loop_counts_for_day("2017-08-22","2017-08-24"),
+  loop_counts_for_day("2017-08-15","2017-08-17")
+))
+surrey_loop_counts_schoolweek <- do.call(rbind,list(
+  loop_counts_for_day("2017-09-05","2017-09-07"),
+  loop_counts_for_day("2017-09-12","2017-09-14"),
+  loop_counts_for_day("2017-09-19","2017-09-21")
+))
+
+surrey_loop_counts <- rbind(surrey_loop_counts_workweek %>% mutate(type="work"),
+                            surrey_loop_counts_schoolweek %>% mutate(type="school")) %>%
+  mutate(date=as.POSIXct(DATETIME, format="%Y-%m-%dT%H:%M:%S-07"))
+```
+
+
+```{r, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+ggplot(surrey_loop_counts,
+       aes(x=date,y=TRAFFIC_COUNT,fill=type)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=c(school="red",work="blue")) +
+  scale_y_continuous(labels = scales::comma) +
+  facet_wrap("type",scales="free_x") +
+  labs(title="Surrey Traffic Loop Counts", x="Time", y="Count",fill="Type") +
+  theme_bw()
+
+```
+
+
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+plot_data <- surrey_loop_counts %>%
+  mutate(date_string = format(date,"%a %H:%M")) %>%
+  group_by(date_string,type) %>% 
+  summarize(TRAFFIC_COUNT=sum(TRAFFIC_COUNT)/3) %>%
+  mutate(date_order = sub("Tue ","2:",sub("Wed ","3:",sub("Thu ","4:",date_string)))) %>%
+  ungroup()
+
+plot_data$date_string <- factor(plot_data$date_string, levels=plot_data$date_string[order(plot_data$date_order)] %>% unique)
+ 
+ 
+ggplot(plot_data,
+       aes(x=date_string,y=TRAFFIC_COUNT,fill=type)) +
+  geom_bar(stat="identity", position="identity", alpha=0.3) +
+  scale_fill_manual(values=c(school="red",work="blue")) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_discrete(breaks=c("Tue 09:00","Tue 15:00","Wed 09:00","Wed 15:00","Thu 09:00","Thu 15:00")) +
+  labs(title="Surrey Traffic Loop Counts", x="Time", y="Count",fill="Type") +
+  theme_bw()
+```
+
+The data still shows substantial volatility even after averaging over three weeks, but there appears to be a consistent uptick in traffic associated with pickup times on school days, as well as increased traffic volumes within an hour before dropoff time. We can further average over the three weekdays to get a cleaner picture.
+
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+plot_data2 <- plot_data %>% mutate(day_string = sub("Tue |Wed |Thu ","",date_string)) %>%
+  ungroup %>% group_by(day_string,type) %>% 
+  summarize(TRAFFIC_COUNT=sum(TRAFFIC_COUNT)/3) 
+
+ggplot(plot_data2,
+       aes(x=day_string,y=TRAFFIC_COUNT,fill=type)) +
+  geom_bar(stat="identity", position="identity", alpha=0.3) +
+  scale_fill_manual(values=c(school="red",work="blue")) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_discrete(breaks=c("09:00","15:00")) +
+  labs(title="Surrey Traffic Loop Counts", x="Time of Day", y="Count",fill="Type") +
+  theme_bw()
+```
+
+Without diving deeper into the changes in traffic patterns that are not associated with the start of the school year it is hard to make definite claims. The spike at pickup time around 3pm seems to correlate very well with the hypothesis of increased school traffic, but that argument seems a little harder for the morning spike that occurs quite a bit earlier than the 9am dropoff time.
+
+We will have to dig a little deeper to tie this to school traffic.
+
+# Schools
+If change in traffic has anything to do with schools it stands to reason that on balance the change will be more pronounced in proximity to schools. So let's load in the school data.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+schools_cache_file=paste0(getOption("cache_path"),"surrey_schools.Rda")
+if (!file.exists(schools_cache_file)) {
+  url="http://cosmos.surrey.ca/geo_ref/Images/OpenDataArchives/Schools_JSON.zip"
+  zip_file=paste0(getOption("cache_path"),"surrey_schools.zip")
+  download.file(url,zip_file)
+  path=utils::unzip(zip_file,exdir=getOption("cache_path"))
+  file.remove(zip_file)
+  surrey_schools <- read_sf(path) %>% st_transform(4326)
+  file.remove(path)
+  surrey_schools <- surrey_schools %>% cbind(st_coordinates(surrey_schools %>% st_centroid)) 
+  sizes=read_csv("http://data.surrey.ca/dataset/fa402532-3a19-4913-affc-97b67a13d7e9/resource/2772a558-ce8b-4d70-82b1-4f50f12438e9/download/surreyschoolclasssize2017.csv") %>% filter(SCHOOL_YEAR=="2016/2017")
+  surrey_schools$SCHOOL_NAME <- sub(" School$","",surrey_schools$NAME)
+  surrey_schools <- left_join(surrey_schools,sizes %>% select(SCHOOL_NAME,TOTAL_CLASSES),by="SCHOOL_NAME")
+  save(surrey_schools,file = schools_cache_file)
+} else {
+  load(schools_cache_file)  
+}
+
+surrey_schools <- surrey_schools %>% filter(FACILITY_SUBTYPE %in% c("Elementary","Secondary","Private"))
+
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+base <- get_map("Surrey, Canada", zoom=11, source = "stamen", maptype = "toner", crop = T)
+
+ggmap(base) +
+  geom_point(data=surrey_schools , aes(x=X, y=Y), shape=21, size=2, color="blue") +
+  labs(title="Surrey School Locations") +
+  theme_void()
+
+```
+
+With this we can divide traffic loops into two groups, one within 200m of a school and the other more than 200m away from schools. We could choose a softer cutoff strategy or run a more broad analysis using school proximity, and we probably also should account for school enrolment, but that gets complex fast and won't fit into my evening blog post time budget.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+weight_function <- function(x){exp(-x/1000)}
+
+distances <- st_distance(surrey_loop_locations,surrey_schools %>% st_centroid)
+
+surrey_loop_locations$min_distance <- apply(distances,1,min)
+
+surrey_loop_locations <- surrey_loop_locations %>% mutate(near_school=min_distance<=200)
+
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+base <- get_map("Surrey, Canada", zoom=11, source = "stamen", maptype = "toner", crop = T)
+
+ggmap(base) +
+  geom_point(data=surrey_loop_locations , aes(x=X, y=Y,color=near_school), shape=21, size=2) +
+  labs(title="Surrey Traffic Loop Locations", color="Close to School") +
+  theme_void()
+
+```
+
+Armed with this data we can run our analysis separately for the two types of traffic loops. One issue is that it appears that only about 1/3 traffic loops are geocoded, so we are ignoring the (majority of) traffic loops for which we don't have geographic information.
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+surrey_loop_counts2 <- left_join(surrey_loop_counts,surrey_loop_locations %>% as.tibble %>% select(LOOP_ID,near_school), by="LOOP_ID") %>% filter(!is.na(near_school))
+
+plot_data <- surrey_loop_counts2 %>%
+  mutate(date_string = format(date,"%a %H:%M")) %>%
+  group_by(date_string,type,near_school) %>% 
+  summarize(TRAFFIC_COUNT=sum(TRAFFIC_COUNT)/3) %>%
+  mutate(date_order = sub("Tue ","2:",sub("Wed ","3:",sub("Thu ","4:",date_string)))) %>%
+  ungroup()
+
+plot_data$date_string <- factor(plot_data$date_string, levels=plot_data$date_string[order(plot_data$date_order)] %>% unique)
+  
+ggplot(plot_data,
+       aes(x=date_string,y=TRAFFIC_COUNT,fill=type)) +
+  geom_bar(stat="identity", position="identity", alpha=0.3) +
+  scale_fill_manual(values=c(school="red",work="blue")) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_discrete(breaks=c("Tue 09:00","Tue 15:00","Wed 09:00","Wed 15:00","Thu 09:00","Thu 15:00")) +
+  labs(title="Surrey Traffic Loop Counts", x="Time", y="Count",fill="Type") +
+  facet_wrap("near_school", scales="free_y", ncol=1,
+             labeller = as_labeller(c("TRUE" = "Close to School","FALSE"="Not Close to School"))) +
+  theme_bw()
+```
+
+What we see here is that while the effect seems more pronounced close to school on Tuesdays and Wednesdays, the reverse appears to be true on Thursdays.
+
+```{r proximity-graph, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+plot_data2 <- plot_data %>% mutate(day_string = sub("Tue |Wed |Thu ","",date_string)) %>%
+  ungroup %>% group_by(day_string,type,near_school) %>% 
+  summarize(TRAFFIC_COUNT=sum(TRAFFIC_COUNT)/3) 
+
+ggplot(plot_data2,
+       aes(x=day_string,y=TRAFFIC_COUNT,fill=type)) +
+  geom_bar(stat="identity", position="identity", alpha=0.3) +
+  scale_fill_manual(values=c(school="red",work="blue")) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_discrete(breaks=c("09:00","15:00")) +
+  labs(title="Surrey Traffic Loop Counts", x="Time of Day", y="Count",fill="Type") +
+  facet_wrap("near_school", scales="free_y", ncol=1,
+             labeller = as_labeller(c("TRUE" = "Close to School","FALSE"="Not Close to School"))) +
+  theme_bw()
+
+```
+
+Aggregating over all three workdays we see however that the spikes during school days do correlate with proximity to the school. So we do feel that this preliminary analysis verifies with some confidence that there is indeed a measurable uptick in traffic that can be associated to school dropoff traffic. Again, it is hard to quantify this in light of the noise in the data and that our control period likely also contains dropoff and pickup traffic to camps, some of which are also located at schools.
+
+# Summary
+It appears that an increase in school-related traffic can be seen in traffic loop data, and it would be worthwhile to refine the methods and explore this more thoroughly. As always, the code to reproduce this analysis is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-01-09-school-traffic.Rmarkdown) for anyone interested in reproducing or refining the methods.
+
+An obvious way to extend this is to compare instructional to non-instructional days, as well as to refine the association of traffic loops with schools and also account for school enrolment.
