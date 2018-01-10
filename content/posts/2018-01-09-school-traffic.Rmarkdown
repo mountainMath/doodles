@@ -145,7 +145,7 @@ ggplot(plot_data2,
   theme_bw()
 ```
 
-Without diving deeper into the changes in traffic patterns that are not associated with the start of the school year it is hard to make definite claims. The spike at pickup time around 3pm seems to correlate very well with the hypothesis of increased school traffic, but that argument seems a little harder for the morning spike that occurs quite a bit earlier than the 9am dropoff time.
+Without diving deeper into the changes in traffic patterns that are not associated with the start of the school year it is hard to make definite claims. The spike at pickup time around 3pm seems to correlate very well with the hypothesis of increased school traffic, but that argument seems a little harder for the morning spike that occurs <strike>quite a bit earlier than the 9am dropoff time</strike> slightly earlier than the Surrey schools dropoff time that varies between 8:30 and 9:00 am as [Chad Skelton pointed out](https://twitter.com/chadskelton/status/950989370462420993), who also notes classes are out already at 2:30pm at some schools.
 
 We will have to dig a little deeper to tie this to school traffic.
 
