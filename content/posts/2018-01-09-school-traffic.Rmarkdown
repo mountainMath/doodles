@@ -90,6 +90,7 @@ surrey_loop_counts_schoolweek <- do.call(rbind,list(
 
 surrey_loop_counts <- rbind(surrey_loop_counts_workweek %>% mutate(type="work"),
                             surrey_loop_counts_schoolweek %>% mutate(type="school")) %>%
+  filter(LOOP_ID %in% surrey_loop_locations$LOOP_ID) %>%
   mutate(date=as.POSIXct(DATETIME, format="%Y-%m-%dT%H:%M:%S-07"))
 ```
 
@@ -210,7 +211,8 @@ ggmap(base) +
 
 ```
 
-Armed with this data we can run our analysis separately for the two types of traffic loops. One issue is that it appears that only about 1/3 traffic loops are geocoded, so we are ignoring the (majority of) traffic loops for which we don't have geographic information.
+Armed with this data we can run our analysis separately for the two types of traffic loops.
+
 ```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
 surrey_loop_counts2 <- left_join(surrey_loop_counts,surrey_loop_locations %>% as.tibble %>% select(LOOP_ID,near_school), by="LOOP_ID") %>% filter(!is.na(near_school))
 

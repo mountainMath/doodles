@@ -71,7 +71,8 @@ With this we can divide traffic loops into two groups, one within 200m of a scho
 
 <img src="/posts/2018-01-09-school-traffic_files/figure-html/unnamed-chunk-10-1.png" width="672" />
 
-Armed with this data we can run our analysis separately for the two types of traffic loops. One issue is that it appears that only about 1/3 traffic loops are geocoded, so we are ignoring the (majority of) traffic loops for which we don't have geographic information.
+Armed with this data we can run our analysis separately for the two types of traffic loops.
+
 <img src="/posts/2018-01-09-school-traffic_files/figure-html/unnamed-chunk-11-1.png" width="864" />
 
 What we see here is that while the effect seems more pronounced close to school on Tuesdays and Wednesdays, the reverse appears to be true on Thursdays.
