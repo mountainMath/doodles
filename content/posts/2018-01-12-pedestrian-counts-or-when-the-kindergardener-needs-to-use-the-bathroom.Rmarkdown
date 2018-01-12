@@ -1,0 +1,268 @@
+---
+title: Pedestrian counts, or when the kindergardener needs to use the bathroom
+author: Jens von Bergmann
+date: '2018-01-12'
+slug: pedestrian-counts-or-when-the-kindergardener-needs-to-use-the-bathroom
+categories:
+  - Surrey
+  - Transportation
+tags: []
+description: "Beg buttons."
+featured: 'proximity-graph-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2018-01-12-pedestrian-counts-or-when-the-kindergardener-needs-to-use-the-bathroom_files/figure-html/proximity-graph-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2018-01-12-pedestrian-counts-or-when-the-kindergardener-needs-to-use-the-bathroom_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(sf)
+library(jsonlite)
+library(ggmap)
+```
+
+Two days ago [we took a first look at motor vehicle traffic counts](https://doodles.mountainmath.ca/blog/2018/01/09/school-traffic/), now it is time to turn to pedestrian lights. Everyone knows the "beg buttons" that pedestrians need to push for the pedestrian signal to turn green. If you forget to push the pedestrian light might stay red even if parallel motor vehicle traffic has a green light, all in the name of efficiency of motor vehicle traffic.
+
+# Beg buttons
+The only good thing about beg buttons is that they leave data traces, and we want to see if we can extract useful information from them. But there are some challenges. Unlike the traffic light induction loops, the beg buttons don't count pedestrians. They count "begs". So the kindergardener that really needs to use the bathroom and keeps "begging" in half-second intervals will easy register upward of 100 begs in the system, while the 50 zen-like people lining up at the light where only the first one registered a single beg counts as 1. Some of these issues could be resolved with fine temporal resolution of the data, but [Surrey's data](http://data.surrey.ca/dataset/traffic-loop-count) comes aggregated to 15 minute intervals. That still gives us some way to account for the kindergardener hopping from one leg to the other by making some assumptions about signal cycle frequency and capping the counts. So let's see where this gets us.
+
+# Begs
+One good thing about blog posts is that more knowledgeable people than me add information. [Chad Skelton added information about school start and end times](https://twitter.com/chadskelton/status/950989370462420993), and the friendly folks at [Surrey Open Data](https://twitter.com/SurreyOpenData) hooked me up with their traffic engineer in charge of the data who explained to me how to extract the beg button data. We will gloss over the details, if you need to know you are probably better served to [look at the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-01-12-pedestrian-counts-or-when-the-kindergardener-needs-to-use-the-bathroom.Rmarkdown) than to read through my ramblings.
+```{r, include=FALSE}
+loop_location_cache=paste0(getOption("cache_path"),"surrey_loop_locations.Rda")
+if (!file.exists(loop_location_cache)) {
+  url="http://gis.surrey.ca:8080/fmedatastreaming/TrafficLoopCount/TrafficLoops.fmw"
+  surrey_loop_locations=read_sf(url) 
+  surrey_loop_locations <- surrey_loop_locations %>% cbind(st_coordinates(surrey_loop_locations$geometry)) 
+  save(surrey_loop_locations,file=loop_location_cache)
+} else {
+  load(loop_location_cache)
+}
+
+```
+
+
+```{r, include=FALSE}
+loop_counts_for_day <- function(day,day2=NA){
+  if (is.na(day2)) {day2=day}
+  cache_file=paste0(getOption("cache_path"),"surrey_loop_counts",day,"_",day2,".Rda")
+  if (file.exists(cache_file)) {
+    load(cache_file)
+  } else {
+    url=paste0("http://gis.surrey.ca:8080/fmedatastreaming/TrafficLoopCount/TrafficLoopCounts.fmw?startdatetime=",day,"T00:00:00&enddatetime=",day2,"T23:59:59")
+    surrey_loop_counts <- fromJSON(url)
+    save(surrey_loop_counts,file = cache_file)
+  }
+  return(surrey_loop_counts)
+}
+
+# pedestrian signals are the ones ending in 25 through 28
+pedestrian <- function(data){
+  filter(data,grepl("-25$|-26$|-27$|-28$",LOOP_ID))
+}
+
+surrey_loop_counts_workweek <- do.call(rbind,list(
+  loop_counts_for_day("2017-08-29","2017-08-31"),
+  loop_counts_for_day("2017-08-22","2017-08-24"),
+  loop_counts_for_day("2017-08-15","2017-08-17")
+))
+surrey_loop_counts_schoolweek <- do.call(rbind,list(
+  loop_counts_for_day("2017-09-05","2017-09-07"),
+  loop_counts_for_day("2017-09-12","2017-09-14"),
+  loop_counts_for_day("2017-09-19","2017-09-21")
+))
+
+surrey_loop_counts <- rbind(surrey_loop_counts_workweek %>% mutate(type="work"),
+                            surrey_loop_counts_schoolweek %>% mutate(type="school")) %>%
+  pedestrian %>%
+  mutate(date=as.POSIXct(DATETIME, format="%Y-%m-%dT%H:%M:%S-07"),
+         main_id=gsub("-.+$","",LOOP_ID))
+```
+
+
+Using the same methods as in our [previous post](https://doodles.mountainmath.ca/blog/2018/01/09/school-traffic/) we take begs from Tue, Wed, Thu for three weeks prior and post school start this past summer.
+
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+plot_data <- surrey_loop_counts %>%
+  mutate(date_string = format(date,"%a %H:%M")) %>%
+  group_by(date_string,type) %>% 
+  summarize(TRAFFIC_COUNT=sum(TRAFFIC_COUNT)/3) %>%
+  mutate(date_order = sub("Tue ","2:",sub("Wed ","3:",sub("Thu ","4:",date_string)))) %>%
+  ungroup()
+
+plot_data$date_string <- factor(plot_data$date_string, levels=plot_data$date_string[order(plot_data$date_order)] %>% unique)
+ 
+ 
+ggplot(plot_data,
+       aes(x=date_string,y=TRAFFIC_COUNT,fill=type)) +
+  geom_bar(stat="identity", position="identity", alpha=0.5) +
+  scale_fill_manual(values=c(school="red",work="blue")) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_discrete(breaks=c("Tue 09:00","Tue 15:00","Wed 09:00","Wed 15:00","Thu 09:00","Thu 15:00")) +
+  labs(title="Surrey Pedestrian Begs", x="Time", y="Begs",fill="Type") +
+  theme_bw()
+```
+
+The difference between the days before and after the start of school is quite pronounced, we average further over the three weekdays to get a cleaner picture.
+
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+plot_data2 <- plot_data %>% mutate(day_string = sub("Tue |Wed |Thu ","",date_string)) %>%
+  ungroup %>% group_by(day_string,type) %>% 
+  summarize(TRAFFIC_COUNT=sum(TRAFFIC_COUNT)/3) 
+
+ggplot(plot_data2,
+       aes(x=day_string,y=TRAFFIC_COUNT,fill=type)) +
+  geom_bar(stat="identity", position="identity", alpha=0.5) +
+  scale_fill_manual(values=c(school="red",work="blue")) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_discrete(breaks=c("09:00","15:00")) +
+  labs(title="Surrey Pedestrian Begs", x="Time of Day", y="Begs",fill="Type") +
+  theme_bw()
+```
+
+The start of school stands out even more in pedestrian begs than in motor vehicle traffic, although the overall numbers are much smaller. The spikes around the school start time, which is between 8:30am to 9am depending on the school, as well as around pickup time, which varies between 2:30pm and 3pm, are very visible.
+
+# Schools
+Just like before we want to refine this by adding in proximity to schools as another variable.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+schools_cache_file=paste0(getOption("cache_path"),"surrey_schools.Rda")
+if (!file.exists(schools_cache_file)) {
+  url="http://cosmos.surrey.ca/geo_ref/Images/OpenDataArchives/Schools_JSON.zip"
+  zip_file=paste0(getOption("cache_path"),"surrey_schools.zip")
+  download.file(url,zip_file)
+  path=utils::unzip(zip_file,exdir=getOption("cache_path"))
+  file.remove(zip_file)
+  surrey_schools <- read_sf(path) %>% st_transform(4326)
+  file.remove(path)
+  surrey_schools <- surrey_schools %>% cbind(st_coordinates(surrey_schools %>% st_centroid)) 
+  sizes=read_csv("http://data.surrey.ca/dataset/fa402532-3a19-4913-affc-97b67a13d7e9/resource/2772a558-ce8b-4d70-82b1-4f50f12438e9/download/surreyschoolclasssize2017.csv") %>% filter(SCHOOL_YEAR=="2016/2017")
+  surrey_schools$SCHOOL_NAME <- sub(" School$","",surrey_schools$NAME)
+  surrey_schools <- left_join(surrey_schools,sizes %>% select(SCHOOL_NAME,TOTAL_CLASSES),by="SCHOOL_NAME")
+  save(surrey_schools,file = schools_cache_file)
+} else {
+  load(schools_cache_file)  
+}
+
+surrey_schools <- surrey_schools %>% filter(FACILITY_SUBTYPE %in% c("Elementary","Secondary","Private"))
+
+```
+
+
+
+We divide beg buttons into two groups, one within 200m of a school and the other more than 200m away from schools. 
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+weight_function <- function(x){exp(-x/1000)}
+
+distances <- st_distance(surrey_loop_locations,surrey_schools %>% st_centroid)
+
+surrey_loop_locations$min_distance <- apply(distances,1,min)
+
+surrey_loop_locations <- surrey_loop_locations %>% mutate(near_school=min_distance<=200)
+
+# use the first part of the loop id to get rough locations
+rough_locations <- surrey_loop_locations %>% mutate(main_id=gsub("-.+$","",LOOP_ID))
+rough_locations <- rough_locations[!duplicated(rough_locations$main_id),]
+
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+base <- get_map("Surrey, Canada", zoom=11, source = "stamen", maptype = "toner", crop = T)
+
+ggmap(base) +
+  geom_point(data=rough_locations , aes(x=X, y=Y,color=near_school), shape=21, size=2) +
+  labs(title="Surrey Beg Button Locations", color="Close to School") +
+  theme_void()
+
+```
+
+Armed with this data we can run our analysis separately for the two types of beg buttons.
+
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+surrey_loop_counts2 <- left_join(surrey_loop_counts,rough_locations %>% as.tibble %>% select(main_id,near_school), by="main_id") %>% filter(!is.na(near_school))
+
+plot_data <- surrey_loop_counts2 %>%
+  mutate(date_string = format(date,"%a %H:%M")) %>%
+  group_by(date_string,type,near_school) %>% 
+  summarize(TRAFFIC_COUNT=sum(TRAFFIC_COUNT)/3) %>%
+  mutate(date_order = sub("Tue ","2:",sub("Wed ","3:",sub("Thu ","4:",date_string)))) %>%
+  ungroup()
+
+plot_data$date_string <- factor(plot_data$date_string, levels=plot_data$date_string[order(plot_data$date_order)] %>% unique)
+  
+ggplot(plot_data,
+       aes(x=date_string,y=TRAFFIC_COUNT,fill=type)) +
+  geom_bar(stat="identity", position="identity", alpha=0.5) +
+  scale_fill_manual(values=c(school="red",work="blue")) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_discrete(breaks=c("Tue 09:00","Tue 15:00","Wed 09:00","Wed 15:00","Thu 09:00","Thu 15:00")) +
+  labs(title="Surrey Pedestrian Begs", x="Time", y="Begs",fill="Type") +
+  facet_wrap("near_school", scales="free_y", ncol=1,
+             labeller = as_labeller(c("TRUE" = "Close to School","FALSE"="Not Close to School"))) +
+  theme_bw()
+```
+
+For all weekdays we see that the spike in begs is significantly more pronounced in proximity to schools.
+
+```{r proximity-graph, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+plot_data2 <- plot_data %>% mutate(day_string = sub("Tue |Wed |Thu ","",date_string)) %>%
+  ungroup %>% group_by(day_string,type,near_school) %>% 
+  summarize(TRAFFIC_COUNT=sum(TRAFFIC_COUNT)/3) 
+
+ggplot(plot_data2,
+       aes(x=day_string,y=TRAFFIC_COUNT,fill=type)) +
+  geom_bar(stat="identity", position="identity", alpha=0.5) +
+  scale_fill_manual(values=c(school="red",work="blue")) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_discrete(breaks=c("09:00","12:00","15:00")) +
+  labs(title="Surrey Pedestrian Begs", x="Time of Day", y="Begs",fill="Type") +
+  facet_wrap("near_school", scales="free_y", ncol=1,
+             labeller = as_labeller(c("TRUE" = "Close to School","FALSE"="Not Close to School"))) +
+  theme_bw()
+
+```
+
+Aggregating over all three workdays we also notice a another distinct peak between 11am and 12pm. It is less pronounced than the dropoff and pickup peaks and we have no intuition what might cause this, but maybe someone else knows.
+
+# Filtering out the urgency
+So far we have only looked at the total number of begs, it's time that we alleviate the problem of the kindergardener in need for a bathroom. The maximum begs in a 15 minute window in our dataset is `r surrey_loop_counts$TRAFFIC_COUNT %>% max()` begs. We feel the pain of the kid that pushed that button and sincerely hope they reached the bathroom in time. The data mess this caused is fairly simple to deal with in comparison. [NACTO pegs the ideal traffic cycle length in an urban setting at 60 to 90 seconds](https://nacto.org/publication/urban-street-design-guide/intersection-design-elements/traffic-signals/signal-cycle-lengths/), so let's just assume that the signal cycle length is 1 minute. That means if you just missed the green light, you will have to wait a minute for the next green. So our 15 minute window has at most 15 green phases. Then we can transform our unit of "begs" to an estimated number of "pedestrian crossing cycles", that is cycles where at least one (and possibly more than one) pedestrian is crossing by capping the number of begs to 15. In other words, assuming a 1 minute signal length we are trying to count our 50 zen-like people the same way as the kindergardener in need of urgent relief.
+
+
+```{r, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+
+plot_data <- surrey_loop_counts2 %>%
+  mutate(TRAFFIC_COUNT=ifelse(TRAFFIC_COUNT>15,15,TRAFFIC_COUNT)) %>%
+  mutate(date_string = format(date,"%a %H:%M")) %>%
+  group_by(date_string,type,near_school) %>% 
+  summarize(TRAFFIC_COUNT=sum(TRAFFIC_COUNT)/3) %>%
+  mutate(date_order = sub("Tue ","2:",sub("Wed ","3:",sub("Thu ","4:",date_string)))) %>%
+  ungroup()
+
+plot_data$date_string <- factor(plot_data$date_string, levels=plot_data$date_string[order(plot_data$date_order)] %>% unique)
+plot_data <- plot_data %>%
+  mutate(day_string = sub("Tue |Wed |Thu ","",date_string)) %>%
+  ungroup %>% group_by(day_string,type,near_school) %>% 
+  summarize(TRAFFIC_COUNT=sum(TRAFFIC_COUNT)/3) 
+
+ggplot(plot_data,
+       aes(x=day_string,y=TRAFFIC_COUNT,fill=type)) +
+  geom_bar(stat="identity", position="identity", alpha=0.5) +
+  scale_fill_manual(values=c(school="red",work="blue")) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_discrete(breaks=c("09:00","15:00")) +
+  labs(title="Surrey Pedestrian Cycles", x="Time of Day", y="Cycles",fill="Type") +
+  facet_wrap("near_school", scales="free_y", ncol=1,
+             labeller = as_labeller(c("TRUE" = "Close to School","FALSE"="Not Close to School"))) +
+  theme_bw()
+```
+
+So even just looking at (an estimate of) pedestrian cycles we notice an uptick during school days, that is more pronounced closer to schools.
+
+# Summary
+The great news is that children still walk to school! The number might be lower than we would like, but it's big enough to show up in data. And the relative effect is larger than the one in motor vehicle traffic, which probably means that generally we drive too much.
+
+As always, the code to reproduce this analysis is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-01-12-pedestrian-counts-or-when-the-kindergardener-needs-to-use-the-bathroom.Rmarkdown) for anyone interested in reproducing or refining the methods.
