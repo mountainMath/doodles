@@ -304,7 +304,7 @@ What is remarkable is that the worst outliers are the same, no matter if using t
 
 In particular, UHill Elementary and Maple Grove show high proportions of child poverty in their catchment that is not matched by SSI rates. At UHIll Elementary, this may be partially due to a large number of children with parents in subsidized graduate student housing that register with the highest child poverty rates, but may not qualify for SSI.
 
-There are a number of possible explanations for this, to dig deeper one should add other demographic variables to reproduce the somewhat opaque analysis done by VSB. It's fairly straightforward to adapt this analysis to include other census data using `cancensus` by downloading the [R notebook](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-10-15-vsb-vulnerable-students.Rmd) that built this post and reproduces the analysis, and one can add school level data by updating the [spreadsheet](/data/tabula-C3 - Update on Elementary Meals Program - REVISED (November 15, 2015).csv) that was scraped and manually enriched with enrolment data.
+There are a number of possible explanations for this, to dig deeper one should add other demographic variables to reproduce the somewhat opaque analysis done by VSB. It's fairly straightforward to adapt this analysis to include other census data using `cancensus` by downloading the [R notebook](https://github.com/mountainMath/doodles/blob/master/content/posts/2017-10-15-vsb-vulnerable-students.Rmarkdown) that built this post and reproduces the analysis, and one can add school level data by updating the [spreadsheet](/data/tabula-C3 - Update on Elementary Meals Program - REVISED (November 15, 2015).csv) that was scraped and manually enriched with enrolment data.
 
 
 

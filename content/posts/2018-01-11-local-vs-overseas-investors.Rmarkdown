@@ -1,0 +1,253 @@
+---
+title: Local vs Overseas Investors
+author: Jens von Bergmann
+date: '2018-01-11'
+slug: local-vs-overseas-investors
+categories:
+  - Vancouver
+  - cancensus
+tags: []
+description: 'Counting children in poverty by school catchment area.'
+images: ["https://doodles.mountainmath.ca/posts/2018-01-11-local-vs-overseas-investors_files/figure-html/local_overseas-1.png"]
+featured: 'local_overseas-1.png'
+featuredalt: ""
+featuredpath: "/posts/2018-01-11-local-vs-overseas-investors_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+Nathan Lauster just opened up an interesting way to look at CHSP data -- by folding in the SFS. I have [played with SFS data in the past](https://twitter.com/vb_jens/status/846951173177442308) but it clearly is time to revisit this and reproduce Lauster's numbers. Let's also fold in census estimates for that to see how these numbers match up.
+
+```{r, include=FALSE}
+library(tidyverse)
+library(CANSIM2R)
+library(cancensus)
+format_currency_billions <- function(x){paste0("$",format(x/1000000000,big.mark = ","),"BN")}
+```
+
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+chsp_data_1 <- getCANSIM("0350001",showLabels = FALSE,raw=TRUE) %>% mutate(Value=as.numeric(Value))
+sfs_data <- getCANSIM("2050002",raw=TRUE,showLabels = FALSE) %>% 
+  mutate(Value = as.numeric(Value)) %>% 
+  type_convert(locale=locale(encoding="Windows-1254")) # yes, CANSIM seriously doesn't use UTF-8!!!
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+sfs_primary_values <- sfs_data %>% filter(grepl("Vancouver|Toronto",GEO),
+                                 AGE=="All ages",
+                                 FAMILY=="Economic families and persons not in an economic family",
+                                 CHAR=="Total values",
+                                 Ref_Date=="2016",
+                                 FINANCE=="Principal residence") %>%
+  select(GEO,INT,Value) %>%
+  mutate(Value=Value*1E6,
+         GEO=sub(",.+$","",GEO),
+         INT=recode(INT,`Lower bound of a 95% confidence interval (x 1,000,000)`="lower",
+                          `Upper bound of a 95% confidence interval (x 1,000,000)`="upper",
+                          `Estimate (x 1,000,000)`="Estimate"),
+         type="SFS") 
+
+library(cancensus)
+census_values <- get_census(dataset='CA16', regions=list(CMA=c("59933","35535")), vectors=c("v_CA16_4890","v_CA16_4896"), labels="short", geo_format=NA, level='Regions') %>% 
+  mutate(Value=v_CA16_4890*v_CA16_4896, 
+         GEO=gsub(" \\(.+\\)$","",`Region Name`),
+         INT="Estimate",
+         type="Census")  %>% 
+  select(GEO,INT,Value,type)
+
+plot_data <- rbind(sfs_primary_values,census_values) %>%
+  group_by(GEO) %>% spread(key="INT", value="Value")
+
+ggplot(plot_data,aes(x=GEO,y=Estimate, fill=type)) +
+  geom_bar(stat="identity", position="dodge") +
+  scale_y_continuous(labels=format_currency_billions) +
+  geom_errorbar(aes(ymin=lower, ymax=upper),
+                  size=.3,    # Thinner lines
+                  width=.2, position=position_dodge(.9)) +
+  labs(title="Residential Properties",
+       x="CMA",
+       y="Total Property Value",
+       fill="Data Source")
+```
+
+For Metro Vancouver the data matches up quite nicely, giving us some confidence that these estimates could be useful to combine with the CHSP data. For Toronto the census estimates are outside of the 95% confidence interval of the SFS data. This will be hard to resolve without taking a deep dive into the SFS methods.
+
+Now to the exciting part: comparing this to CHSP estimates.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+chsp_data <- chsp_data_1 %>% filter(grepl("metropolitan",GEO)) %>%
+  filter(NOO=="Total, all owner categories", 
+         EST=="Total value (dollars)",
+         RES != "Total, all residency status categories", 
+         TYPE=="Total, all property types") %>%
+  mutate(GEO=sub(",.+$","",GEO),
+         type="CHSP",
+         INT="Estimate") %>%
+  select(GEO,type,RES,INT,Value)
+plot_data <- do.call(rbind,list(sfs_primary_values %>% mutate(RES="Resident"),
+                                             census_values %>% mutate(RES="Resident"),
+                                             chsp_data)) %>%
+  group_by(GEO) %>% spread(key="INT", value="Value")
+
+
+ggplot(plot_data,aes(x=type,y=Estimate, fill=RES)) +
+  geom_bar(stat="identity", position="stack") +
+  scale_y_continuous(labels=format_currency_billions) +
+  geom_errorbar(aes(ymin=lower, ymax=upper),
+                  size=.3,    # Thinner lines
+                  width=.2, position=position_dodge(.9)) +
+  facet_wrap("GEO") +
+  labs(title="Primary Residence Total Value",
+       x="CMA",
+       y="Total Property Value",
+       fill="Resident Status")
+
+```
+
+For Vancouver, where we have a little more confidence in the data with the SFS and Census tracking closely, we can combine the estimates to arrive at Lauster's graph.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+sfs_estimates <- sfs_primary_values %>% filter(INT=="Estimate")
+chsp_res1_data <- chsp_data %>% filter(RES=="Resident") %>% mutate(
+  Value=ifelse(GEO=="Vancouver",
+                     (census_values$Value[census_values$GEO=="Vancouver"]+sfs_estimates$Value[sfs_estimates$GEO=="Vancouver"])/2,
+                     (census_values$Value[census_values$GEO=="Toronto"]+sfs_estimates$Value[sfs_estimates$GEO=="Toronto"])/2),
+  RES="Resident owner-occupier")
+chsp_res2_data <- chsp_data %>% filter(RES=="Resident") %>% mutate(
+  Value=ifelse(GEO=="Vancouver",
+                     Value-chsp_res1_data$Value[chsp_res1_data$GEO=="Vancouver"],
+                     Value-chsp_res1_data$Value[chsp_res1_data$GEO=="Toronto"]),
+  RES="Local speculator")
+
+
+
+plot_data <- do.call(rbind,list(chsp_data %>% filter(RES=="Non-resident") %>% mutate(RES="Overseas speculator"),
+                                chsp_res1_data,
+                                chsp_res2_data)) %>%
+  mutate(RES=factor(RES,levels=rev(c("Resident owner-occupier","Local speculator","Overseas speculator")),ordered=TRUE))
+
+
+ggplot(plot_data,aes(x=GEO,y=Value, fill=RES)) +
+  geom_bar(stat="identity", position="stack") +
+  scale_y_continuous(labels=format_currency_billions) +
+  scale_fill_brewer(palette = "Set2") + 
+  labs(title="Residence Properties Total Value",
+       x="CMA",
+       y="Total Property Value",
+       fill="Data Source")
+
+```
+
+Again, we have higher confidence in the Vancouver estimates compared to the Toronto estimates.
+
+We can repeat the same analysis based on number of properties instead of total value, this may remove some of the problems we have been facing.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+
+sfs_primary_counts <- sfs_data %>% filter(grepl("Vancouver|Toronto",GEO),
+                                 AGE=="All ages",
+                                 FAMILY=="Economic families and persons not in an economic family",
+                                 CHAR=="Number holding asset or debt (number x 1,000)",
+                                 Ref_Date=="2016",
+                                 FINANCE=="Principal residence") %>%
+  select(GEO,INT,Value) %>%
+  mutate(Value=Value*1E3,
+         GEO=sub(",.+$","",GEO),
+         INT=recode(INT,`Lower bound of a 95% confidence interval`="lower",
+                          `Upper bound of a 95% confidence interval`="upper"),
+         type="SFS") 
+
+library(cancensus)
+census_counts <- get_census(dataset='CA16', regions=list(CMA=c("59933","35535")), vectors=c("v_CA16_4890","v_CA16_4896"), labels="short", geo_format=NA, level='Regions') %>% 
+  mutate(Value=v_CA16_4890, 
+         GEO=gsub(" \\(.+\\)$","",`Region Name`),
+         INT="Estimate",
+         type="Census")  %>% 
+  select(GEO,INT,Value,type)
+
+plot_data <- rbind(sfs_primary_counts,census_counts) %>%
+  group_by(GEO) %>% spread(key="INT", value="Value")
+
+ggplot(plot_data,aes(x=GEO,y=Estimate, fill=type)) +
+  geom_bar(stat="identity", position="dodge") +
+  scale_y_continuous(labels=scales::comma) +
+  geom_errorbar(aes(ymin=lower, ymax=upper),
+                  size=.3,    # Thinner lines
+                  width=.2, position=position_dodge(.9)) +
+  labs(title="Residential Properties",
+       x="CMA",
+       y="Number of Properties",
+       fill="Data Source")
+```
+
+We see that the numbers match better, with both estimates within the SFS confidence interval. So let's add in the CHSP data.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+chsp_counts <- chsp_data_1 %>% filter(grepl("metropolitan",GEO)) %>%
+  filter(NOO=="Total, all owner categories", 
+         EST=="Number",
+         RES != "Total, all residency status categories", 
+         TYPE=="Total, all property types") %>%
+  mutate(GEO=sub(",.+$","",GEO),
+         type="CHSP",
+         INT="Estimate") %>%
+  select(GEO,type,RES,INT,Value)
+plot_data <- do.call(rbind,list(sfs_primary_counts %>% mutate(RES="Resident"),
+                                             census_counts %>% mutate(RES="Resident"),
+                                             chsp_counts)) %>%
+  group_by(GEO) %>% spread(key="INT", value="Value")
+
+
+ggplot(plot_data,aes(x=type,y=Estimate, fill=RES)) +
+  geom_bar(stat="identity", position="stack") +
+  scale_y_continuous(labels=scales::comma) +
+  geom_errorbar(aes(ymin=lower, ymax=upper),
+                  size=.3,    # Thinner lines
+                  width=.2, position=position_dodge(.9)) +
+  facet_wrap("GEO") +
+  labs(title="Residential Properties",
+       x="CMA",
+       y="Number of Properties",
+       fill="Data Source")
+
+```
+
+
+
+```{r local_overseas, echo=FALSE, message=FALSE, warning=FALSE}
+sfs_estimates <- sfs_primary_counts %>% filter(INT=="Estimate")
+chsp_res1_counts <- chsp_counts %>% filter(RES=="Resident") %>% mutate(
+  Value=ifelse(GEO=="Vancouver",
+                     (census_counts$Value[census_counts$GEO=="Vancouver"]+sfs_estimates$Value[sfs_estimates$GEO=="Vancouver"])/2,
+                     (census_counts$Value[census_counts$GEO=="Toronto"]+sfs_estimates$Value[sfs_estimates$GEO=="Toronto"])/2),
+  RES="Resident owner-occupier")
+chsp_res2_counts <- chsp_counts %>% filter(RES=="Resident") %>% mutate(
+  Value=ifelse(GEO=="Vancouver",
+                     Value-chsp_res1_counts$Value[chsp_res1_counts$GEO=="Vancouver"],
+                     Value-chsp_res1_counts$Value[chsp_res1_counts$GEO=="Toronto"]),
+  RES="Local speculator")
+
+
+
+plot_data <- do.call(rbind,list(chsp_counts %>% filter(RES=="Non-resident") %>% mutate(RES="Overseas speculator"),
+                                chsp_res1_counts,
+                                chsp_res2_counts)) %>%
+  mutate(RES=factor(RES,levels=rev(c("Resident owner-occupier","Local speculator","Overseas speculator")),ordered=TRUE))
+
+
+ggplot(plot_data,aes(x=GEO,y=Value, fill=RES)) +
+  geom_bar(stat="identity", position="stack") +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_brewer(palette = "Set2") + 
+  labs(title="Residential Properties",
+       x="CMA",
+       y="Number of Properties",
+       fill="Data Source")
+
+```
+
+Again, these estimates probably aren't terribly precise, but probably good enough to push out some graphs. Matching different data sources is hard and I should probably put in a little more work to cross-check things.
+
+As always the R notbook that built this post [lives on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-01-11-local-vs-overseas-investors.Rmarkdown), feel free to download and adapt it for your purposes.
