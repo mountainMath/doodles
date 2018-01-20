@@ -7,7 +7,7 @@ categories:
   - Vancouver
   - cancensus
 tags: []
-description: 'Counting children in poverty by school catchment area.'
+description: 'Creative uses of non-resident owner data.'
 images: ["https://doodles.mountainmath.ca/posts/2018-01-11-local-vs-overseas-investors_files/figure-html/local_overseas-1.png"]
 featured: 'local_overseas-1.png'
 featuredalt: ""
@@ -246,7 +246,7 @@ ggplot(plot_data,aes(x=GEO,y=Value, fill=RES)) +
   labs(title="Residential Properties",
        x="CMA",
        y="Number of Properties",
-       fill="Data Source")
+       fill="Owner")
 
 ```
 
