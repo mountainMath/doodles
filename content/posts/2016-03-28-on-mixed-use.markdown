@@ -8,7 +8,7 @@ categories:
 slug: on-mixed-use
 author: Jens von Bergmann
 tags: []
-description: 'Adding mode share to our TOD map.'
+description: 'How mixed use redevelopment can lower overall property taxes.'
 featured: 'tax_density_mixed_use.png'
 images: ["https://doodles.mountainmath.ca/images/tax_density_mixed_use.png"]
 featuredalt: ""
