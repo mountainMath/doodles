@@ -6,7 +6,7 @@ slug: real-estate-industry
 categories:
   - CANSIM
 tags: []
-description: 'Digging through the data dictionaries to figure out what people are saying.'
+description: 'Trying to catch up with everyone else in understanding the residential real estate industry.'
 images: ["https://doodles.mountainmath.ca/posts/2018-02-01-real-estate-industry_files/figure-html/real_industry_gdp-1.png"]
 featured: 'real_industry_gdp-1.png'
 featuredalt: ""
