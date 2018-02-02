@@ -1,0 +1,282 @@
+---
+title: Real Estate Industry
+author: Jens von Bergmann
+date: '2018-02-01'
+slug: real-estate-industry
+categories:
+  - CANSIM
+tags: []
+description: 'Digging through the data dictionaries to figure out what people are saying.'
+images: ["https://doodles.mountainmath.ca/posts/2018-02-01-real-estate-industry_files/figure-html/real_industry_gdp-1.png"]
+featured: 'real_industry_gdp-1.png'
+featuredalt: ""
+featuredpath: "/posts/2018-02-01-real-estate-industry_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 8
+)
+library(tidyverse)
+library(CANSIM2R)
+share_plot_options <- list(
+  theme_bw(),
+  geom_bar(stat="identity",position="stack"),
+  scale_y_continuous(labels=scales::percent,name="Share of GSP"),
+  labs(x="Region", caption="CANSIM 379-0030"),
+  coord_flip()
+)
+```
+
+I keep seeing people circulate claims of the type: The Real Estate Industry makes up x% of British Columbia's GDP, and apparently I am the last person left that doesn't know what that actually means. So I decided it's time for me to catch up. Yesterday I saw a chart that came with a source, a good opportunity to sit down and reproduce it to figure out  what the "Real Estate Industry" is, or in this case how to measure the "Addiction to Housing Boom".
+
+{{< tweet 958850995211051008 >}}
+
+To be clear, I don't expect to get a crystal clear answer about this, just a better idea what everyone is talking about. It seems to me that we are interested in economic activity associated with residential housing construction, as well as realtor and broker activity and residential real-estate related financial activity.
+
+
+# CANSIM 379-0028
+To see what's in that CANSIM table, we load the data and zoom in the year that we are interested in, remove the grouped categories so that we get a clean split of the individual categories in the dataset.
+```{r, fig.width=9}
+data1 <- getCANSIM("3790028",raw=TRUE) %>% 
+  mutate(Value=as.numeric(Value)/100.0) %>%
+  filter(NAICS != "All industries")
+naics_categories <- c("Goods-producing industries","Service-producing industries","Industrial production","Information and communication technology sector","Energy sector")
+
+
+ggplot(data1 %>% filter(Ref_Date=="2015",!(NAICS %in% naics_categories)),aes(x=GEO,y=Value,fill=NAICS)) +
+  share_plot_options +
+  labs(title="GDP by NAICS 2015",caption="CANSIM 379-0028")
+```
+
+The first thing we notice that the dataset does not have data for Canada overall, and that can't be reconstructed or computed from the dataset since it only contains shares and not totals. So clearly CANSIM 379-0028 was not the source for this data, or at least not the only source.
+
+Next, we need to decided what industries are meant by "Housing Construction and Real Estate". Looking at the options we guess "Construction" and "Real estate and rental and leasing".
+```{r}
+constr_real <- c("Construction","Real estate and rental and leasing")
+ggplot(data1 %>% filter(Ref_Date=="2015",(NAICS %in% constr_real)),aes(x=GEO,y=Value,fill=NAICS)) +
+  share_plot_options +
+  labs(title="GDP by real estate related NAICS 2015",caption="CANSIM 379-0028")
+```
+
+So far so good, but the numbers don't match. Welcome to my world of shitty data forensics, trying to figure out what some graph that got quoted without context is actually showing.
+
+So CANSIM 379-0028 was a dead lead, and I am still no smarter. Time to look for data that is better suited for our question.
+
+# CANSIM 379-0030
+To get a finer cut at these categories we use CANSIM 379-0030. The first step is to reproduce the data we have already seen. This table has the added advantage of also containing dollar values, so we can also compute the data for Canada overall. And since we have newer data for 2016, let's use that.
+
+
+```{r}
+data2 <- getCANSIM("3790030",raw=TRUE, showLabels = FALSE) %>% 
+  filter(VALUE=="Chained (2007) dollars") %>%
+  mutate(NAICS=sub(" \\(x 1,000,000\\)$","",NAICS)) %>%
+  rename(Year=Ref_Date) %>%
+  select(Year,GEO,NAICS,Value) %>%
+  mutate(Value=as.numeric(Value)) %>%
+  mutate(Value=ifelse(grepl(" \\(x 1,000,000\\)$",NAICS),Value*1000000,Value))
+
+canada <- data2 %>% group_by(Year,NAICS) %>% summarize(Value=sum(Value,na.rm=TRUE)) %>% mutate(GEO="Canada")
+data2 <- bind_rows(data2,canada)
+
+data2_totals <- data2 %>% filter(NAICS=="All industries") %>% rename(Total=Value) %>% select(-NAICS)
+geo_levels <- data2_totals %>% group_by(GEO) %>% summarize(Total=sum(Total,na.rm=TRUE)) %>% arrange(Total) %>% pull(GEO)
+data2 <- left_join(data2,data2_totals,by=c("GEO","Year")) %>%
+   mutate(Share=Value/Total,
+          GEO=factor(GEO,levels=geo_levels)) %>%
+  mutate(NAICS=recode(NAICS,"Lessors of non-financial intangible assets (except copyrighted works)"="Lessors of non-financial intangible\nassets (except copyrighted works)",
+                      "Offices of real estate agents and brokers and activities related to real estate"="Offices of real estate agents and brokers\nand activities related to real estate",
+                      "Rental and leasing services (except automotive equipment)"="Rental and leasing services\n(except automotive equipment)"))
+```
+
+
+```{r}
+naics_basic <- c("Construction","Real estate and rental and leasing")
+naics_construction <- c(
+  "Residential building construction",
+  "Non-residential building construction",
+  "Engineering construction",
+  "Repair construction",
+  "Other activities of the construction industry")
+naics_constr_transpo <- c(
+  "Transportation engineering construction",
+  "Oil and gas engineering construction",
+  "Electric power engineering construction",
+  "Communication engineering construction",
+  "Other engineering construction")
+naics_real_all <- c("Real estate",
+                "Rental and leasing services",
+                "Lessors of non-financial intangible\nassets (except copyrighted works)" 
+)
+
+naics_real <- c(
+                "Lessors of real estate",
+                "Owner-occupied dwellings",
+                "Offices of real estate agents and brokers\nand activities related to real estate"
+)
+
+naics_rental <- c("Automotive equipment rental and leasing",
+                "Rental and leasing services\n(except automotive equipment)")
+
+ordered_naics_levels <- function(data,categories){
+  data %>%  
+  filter(Year=="2016",  NAICS %in% categories) %>%
+  group_by(NAICS) %>%
+  summarize(Value=sum(Value)) %>%
+  arrange(Value) %>%
+  pull(NAICS)
+}
+
+plot_data_for <- function(data,categories,year=NA) {
+  plot_data <- data %>%  filter(NAICS %in% categories)
+  if (!is.na(year)) plot_data <- plot_data %>% filter(Year == year)
+  plot_data %>% mutate(NAICS=factor(NAICS,levels=ordered_naics_levels(plot_data,categories)))
+}
+
+reverse_geo_levels <- function(data) {
+  data %>% mutate(GEO=factor(GEO,levels=rev(levels(data$GEO))))
+}
+
+
+ggplot(plot_data_for(data2,constr_real,2016), aes(x=GEO,y=Share,fill=NAICS)) +
+  share_plot_options +
+  labs(title="GDP by real estate related NAICS 2016")
+```
+
+Always good to see we get the same numbers as from the other table (except we chose to use newer data for this plot). Now let's dive in a little more and decompose these two categories to better understand what's captured under "Construction" and "Real estate and rental and leasing".
+
+```{r}
+ggplot(plot_data_for(data2,c(naics_construction,naics_real_all),2016),
+       aes(x=GEO,y=Share,fill=NAICS)) +
+  share_plot_options +
+    labs(title="GDP by real estate related NAICS 2016")
+
+```
+
+We immediately notice the biggest contributor, "Real Estate", which we want to understand better.
+
+```{r}
+ggplot(plot_data_for(data2,naics_real,2016),
+       aes(x=GEO,y=Share,fill=NAICS)) +
+  share_plot_options +
+  labs(title="Subcomponents of \"Real estate\" 2016")
+
+```
+
+
+The largest chunk of that is "Owner-occupied dwellings", which is just imputed rent. The number 2 item is rent, and we see the relative sizes of the "Owner-occupied dwellings" and "Lessors of real estate" vary by province according to the proportion of the households that rents, with 80% in Nunavut renting vs only 23% in Newfoundland and Labrador.
+
+Next up is "Engineering construction", which is also worth splitting up further.
+
+```{r}
+ggplot(plot_data_for(data2,naics_constr_transpo,2016),
+       aes(x=GEO,y=Share,fill=NAICS)) +
+  share_plot_options +
+    labs(title="Subcomponents of \"Engineering construction\" 2016")
+
+```
+
+Rental and leasing services captures "Consumer goods rental", "General rental centres	General rental centres", and "Commercial and industrial machinery and equipment rental and leasing".
+
+We can put all sub-categories into a grand overview.
+
+```{r}
+
+naics_leaves_nreal <- c(
+  "Transportation engineering construction",
+  "Oil and gas engineering construction",
+  "Electric power engineering construction",
+  "Communication engineering construction",
+  "Other engineering construction",
+  "Other activities of the construction industry",
+  "Automotive equipment rental and leasing",
+  "Rental and leasing services\n(except automotive equipment)",
+  "Lessors of non-financial intangible\nassets (except copyrighted works)"
+)
+naics_leaves_real <- c(
+  "Residential building construction",
+  "Repair construction",
+  "Lessors of real estate",
+  "Owner-occupied dwellings",
+  "Offices of real estate agents and brokers\nand activities related to real estate"
+)
+
+
+ggplot(plot_data_for(data2,c(naics_leaves_nreal,naics_leaves_real),2016),
+       aes(x=GEO,y=Share,fill=NAICS)) +
+  share_plot_options +
+    labs(title="GDP by real estate related NAICS 2016")
+```
+
+# Residential Real Estate Industry
+Many of these categories have nothing to do with the residential real estate industry, we need to narrow things down a bit.
+
+```{r real_industry_gdp}
+ggplot(plot_data_for(data2,naics_leaves_real,2016),
+       aes(x=GEO,y=Share,fill=NAICS)) +
+  share_plot_options +
+  labs(title="Residential real estate related categoires, 2016")
+```
+
+This almost reproduces the numbers from the graph we started with, but even if we select 2015 we still overshoot by a couple percent. I will leave it to someone else to dig deeper into what categories exactly were used, or if there are other possible issues. There may be an argument to remove "Repair construction" from the list, but that won't help with matching the numbers either.
+```{r, eval=FALSE, include=FALSE}
+plot_data_for(data2,naics_leaves_real,2015) %>% 
+  group_by(GEO) %>% 
+  summarize(Share=sum(Share))
+```
+
+
+If we want to take a narrower view we can focus in on the core aspects of what people usually associate with the "Residential Real Estate Industry", construction of residential buildings and agents and brokers.
+```{r}
+naics_core_real <- c(
+  "Residential building construction",
+  "Offices of real estate agents and brokers\nand activities related to real estate"
+)
+naics_core_real_levels <- ordered_naics_levels(data2,naics_core_real)
+
+ggplot(plot_data_for(data2,naics_core_real,2016),
+       aes(x=GEO,y=Share,fill=NAICS)) +
+  share_plot_options
+```
+
+We clearly see that British Columbia stands out with exceeding 5% of GDP attributed to this narrow view on the residential real estate industry.
+
+# Timelines
+While we are at it we might as well look into timelines. To keep things simple we start out with our narrower view of the Real Estate Industry from the last graph.
+
+```{r}
+share_facet_options <- list(
+  geom_area(stat="identity",position="stack"),
+  scale_y_continuous(labels=scales::percent,name="Share"),
+  theme_bw(),
+  facet_wrap("GEO"),
+  labs(title="Share of GDP",caption="CANSIM 379-0030")
+)
+
+ggplot(plot_data_for(data2,naics_core_real) %>% reverse_geo_levels, aes(x=Year,y=Share,fill=NAICS)) +
+  share_facet_options +
+    theme(legend.position="bottom")
+```
+
+If we were interested in the broader category including the big-ticket items of rent and imputed rent we can see how those have evolved over time.
+
+```{r}
+ggplot(plot_data_for(data2,naics_leaves_real) %>% reverse_geo_levels, aes(x=Year,y=Share,fill=NAICS)) +
+  share_facet_options +
+    theme(legend.position="bottom")
+```
+
+# Takeaway
+These numbers depend to a high degree on what's included and what is not. The "Residential Real Estate Industry" is complex and hard to pin down. But we can make some assumptions and get some answer. We can compare across provinces and across time.
+
+An important takeaway that the biggest ticket item in the numbers that get ferreted around is imputed rent. Homeowners are certainly a big part of the real estate industrial complex, and the ones that have been the main profiteers from Vancouver's crazy market.
+
+Rent is the second biggest single ticket item, although Residential construction and real estate agents and brokers combined eclipse it in British Columbia.
+
+British Columbia certainly has a higher share of GDP from residential real estate related activities than the other provinces, no matter if sliced narrowly or more widely. I would be grateful if people making a point about this would link back to what they include and the data they use to that laymen like me know what is actually being talked about. My way of doing this is, as always, [providing the code that made the analysis](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-02-01-real-estate-industry.Rmarkdown).
+
