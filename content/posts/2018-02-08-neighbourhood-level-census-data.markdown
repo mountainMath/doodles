@@ -45,8 +45,7 @@ As quirky as this is, the issues aren't that big and I wrote a quick import func
 Before we get started we should explain another quirk/feature of the data. The City of Vancouver assumes various roles within Musqueam 2, e.g. policing and some public infrastructure. I am not entirely sure what the exact relationship is (and would appreciate some pointers to a good summary), but for our case at hand it means that Musqueam 2 is included in the Dunbar-Southlands neighbourhood (but not in the City of Vancouver total that's also included in the datasets). So summing data over all neighbourhoods comes up with a larger total than taking the CoV numbers, the difference being the counts from Musqueam 2. Something to be aware of.
 
 # Children under 15
-
-Let's load in the data and search for the variables we are interested in. To start off, we will look at the population of children below the age of 15. Most of the work is locating the variables of interest.
+Let's load in the data and search for the variables we are interested in. To start off, we will look at the population of children below the age of 15. Most of the work is locating the variables of interest. We have done a [similar analysis before](https://doodles.mountainmath.ca/blog/2017/09/05/young-families/) looking at finer age brackets but broader regions for the 2006, 2011 and 2016 censuses.
 
 
 <img src="/posts/2018-02-08-neighbourhood-level-census-data_files/figure-html/children_change-1.png" width="864" />
