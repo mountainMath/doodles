@@ -458,4 +458,111 @@ ggplot(data_geo,aes(fill=Change_d)) +
 
 This shows a strong imbalance in which neighbourhoods have added renter households over this 15 year time period, with some neighbourhoods even losing renter households, in particular Strathcona and Grandview Woodlands.
 
+# Update (Feb 9, 2018)
+I was told that the drop in the number of rental households in some areas could have been contributed to by re-classification of housing from private to collective dwellings, in particular SROs and senior housing. According to the [census dictionary](http://www12.statcan.gc.ca/english/census01/Products/Reference/dict/dwe002.htm) SROs and senior homes should have generally been classified as collective dwellings, but that's a judgement call. We have [seen before](http://127.0.0.1:4321/blog/2017/12/11/some-thoughts-on-the-supply-myth/) that comparisons across time can be tricky as changes in definitions and enumeration methods can have large impacts. I have learned to appreciate all these little quirks in the census data and am grateful when people point me to any that I missed.
+
+The City did not pull data on the number of collective dwellings, so we can't directly test this. But we do have data on the number of people in collective dwellings and use that as a proxy.
+
+```{r, fig.width=9}
+#find_cov_variables(data_2001,"number of persons in private households") # search for the variables we are interested in
+data_2001 <- data_2001 %>%
+  mutate(Population=`v_2001_1: Total population by sex and age groups - 100% data`,
+         Population_private=`v_2001_1087: Total number of persons in private households`)
+
+#find_cov_variables(data_2006,"number of persons in private households") # search for the variables we are interested in
+data_2006 <- data_2006 %>%
+  mutate(Population=`v_2006_2: Male & Female, Total`,
+         Population_private=`v_2006_1642: Total number of persons in private households`)
+
+#find_cov_variables(data_2016,"number of persons in private households")
+data_2016 <- data_2016 %>%
+    mutate(Population=`v_2016_1: Total - Age groups and average age of the population - 100% data`,
+           Population_private=`v_2016_156: Number of persons in private households`)
+
+pop_names=c("NAME","Year","Population","Population_private")
+
+data <- bind_rows(data_2001 %>% select(pop_names),data_2006 %>% select(pop_names),data_2016 %>% select(pop_names)) %>%
+  mutate(Collective=Population-Population_private) %>%
+  mutate(Rent_d = cut(Collective,c(-Inf,0,50,100,250,500,1000,2000,Inf)))
+
+```
+
+```{r, fig.width=9,, fig.height=9}
+data_geo <- data %>%
+  inner_join(get_neighbourhood_geos()  %>% prettify_neighbourhood_geos(vancouver),by="NAME") %>% st_as_sf
+centroids <- data_geo %>%
+  as.data.frame %>% mutate(geometry=st_centroid(data_geo$geometry)) %>%
+  st_as_sf %>%
+  cbind(., st_coordinates(.)) %>%
+  st_set_geometry(NULL)
+
+ggplot(data_geo,aes(fill=Rent_d)) + 
+  geom_sf(data=vancouver,fill="lightgrey") +
+  geom_sf() + 
+  geom_sf(data=vancouver,fill="transparent",linetype="dotted") +
+  geom_text(data=centroids,
+                  aes(label = format(Collective,big.mark=","), x = X, y = Y),
+                  #aes(label = paste0(NAME,"\n",format_percent(Renters)), x = X, y = Y),
+                  size=3,color="brown") +
+  facet_wrap("Year",ncol=2) +
+  map_theme +
+  scale_fill_brewer(palette="Blues",direction = 1,guide=FALSE) +
+  labs(title="Number of People in Collective Dwellings",caption="Canada Census 2016, 2006 and 2001 via CoV Open Data")
+
+```
+
+Looking at the total number of people in collective we immediately notice some data quirks in the 2001 and 2006 data. To assess the number of people in collective dwellings we took the total population in each area and subtracted the number of people in private dwellings. This procedure could yield small negative numbers in some cases due to random rounding, but the -105 and -45 we see in 2001 and 2006 should not be able to happen. So these estimates have some problems that we don't fully understand and thus should be treated with caution.
+
+Ignoring these issues we notice that indeed there was a sizable increase in the population in collective dwellings in downtown and Strathcona that could have confounded our change in renter households. To zoom in on that we map the change in people in collective dwellings, understanding that these estimates have some problems.
+
+
+```{r, fig.height=8, fig.width=9}
+
+plot_data <- data %>% as.data.frame %>% select(NAME,Year,Collective) %>%
+  mutate(Year=paste0("Renters_",Year)) %>%
+  spread(key="Year",value="Collective") %>% 
+  mutate(Change=Renters_2016-Renters_2001,
+         Change1=Renters_2006-Renters_2001,
+         Change2=Renters_2016-Renters_2006) %>%
+  mutate(trend=sign(Change)>0) 
+
+#quantile(plot_data$Change)
+data_geo <- plot_data  %>%
+  mutate(Change_d = cut(`Change`,c(-Inf,-2000,-1000,-500,-250,-50,50,250,500,1000,2000,Inf))) %>%
+  inner_join(get_neighbourhood_geos()  %>% prettify_neighbourhood_geos(vancouver),by="NAME") %>% st_as_sf
+centroids <- data_geo %>%
+  as.data.frame %>% mutate(geometry=st_centroid(data_geo$geometry)) %>%
+  st_as_sf %>%
+  cbind(., st_coordinates(.)) %>%
+  st_set_geometry(NULL)
+
+change_names <- levels(data_geo$Change_d)
+change_colors <- set_names(RColorBrewer::brewer.pal(length(change_names),"BrBG"),change_names)
+
+label_colors = set_names(
+  c("white","white","black","black","black","black","black","black","black","white","white"),
+  change_names)
+
+
+
+ggplot(data_geo,aes(fill=Change_d)) + 
+  geom_sf(data=vancouver,fill="lightgrey") +
+  geom_sf() + 
+  geom_sf(data=vancouver,fill="transparent",linetype="dotted") +
+  geom_text(data=centroids,
+                  aes(label = NAME, x = X, y = Y,color=Change_d),
+                  size=1.5,nudge_y=150) +
+  geom_text(data=centroids,
+                  aes(label = format(Change,big.mark=","), x = X, y = Y,color=Change_d),size=5,nudge_y=-250) +
+  scale_fill_manual(values = change_colors,guide=FALSE) +
+  scale_color_manual(values = label_colors,guide=FALSE) +
+  labs(title="Total Change in Population in Collective Dwellings 2001 - 2016",
+       caption="Canada Census 2016 and 2001 via CoV Open Data") +
+  map_theme
+
+```
+
+This map is counting people, comparing back to our map of the change in renter households above we notice that the drop in renter households in Strathcona could indeed be due to re-classification of private dwellings to collective dwellings.
+
+
 As always, the code that made these graphs is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-02-08-neighbourhood-level-census-data.Rmarkdown). This should make it easy for others to jump in and map or analyse different aspects of the neighbourhood level data. Curious to see what interesting things other come up with.

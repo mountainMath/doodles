@@ -84,4 +84,23 @@ Lastly we can also look at the total change in renter households in each area.
 
 This shows a strong imbalance in which neighbourhoods have added renter households over this 15 year time period, with some neighbourhoods even losing renter households, in particular Strathcona and Grandview Woodlands.
 
+# Update (Feb 9, 2018)
+I was told that the drop in the number of rental households in some areas could have been contributed to by re-classification of housing from private to collective dwellings, in particular SROs and senior housing. According to the [census dictionary](http://www12.statcan.gc.ca/english/census01/Products/Reference/dict/dwe002.htm) SROs and senior homes should have generally been classified as collective dwellings, but that's a judgement call. We have [seen before](http://127.0.0.1:4321/blog/2017/12/11/some-thoughts-on-the-supply-myth/) that comparisons across time can be tricky as changes in definitions and enumeration methods can have large impacts. I have learned to appreciate all these little quirks in the census data and am grateful when people point me to any that I missed.
+
+The City did not pull data on the number of collective dwellings, so we can't directly test this. But we do have data on the number of people in collective dwellings and use that as a proxy.
+
+
+
+<img src="/posts/2018-02-08-neighbourhood-level-census-data_files/figure-html/unnamed-chunk-13-1.png" width="864" />
+
+Looking at the total number of people in collective we immediately notice some data quirks in the 2001 and 2006 data. To assess the number of people in collective dwellings we took the total population in each area and subtracted the number of people in private dwellings. This procedure could yield small negative numbers in some cases due to random rounding, but the -105 and -45 we see in 2001 and 2006 should not be able to happen. So these estimates have some problems that we don't fully understand and thus should be treated with caution.
+
+Ignoring these issues we notice that indeed there was a sizable increase in the population in collective dwellings in downtown and Strathcona that could have confounded our change in renter households. To zoom in on that we map the change in people in collective dwellings, understanding that these estimates have some problems.
+
+
+<img src="/posts/2018-02-08-neighbourhood-level-census-data_files/figure-html/unnamed-chunk-14-1.png" width="864" />
+
+This map is counting people, comparing back to our map of the change in renter households above we notice that the drop in renter households in Strathcona could indeed be due to re-classification of private dwellings to collective dwellings.
+
+
 As always, the code that made these graphs is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-02-08-neighbourhood-level-census-data.Rmarkdown). This should make it easy for others to jump in and map or analyse different aspects of the neighbourhood level data. Curious to see what interesting things other come up with.
