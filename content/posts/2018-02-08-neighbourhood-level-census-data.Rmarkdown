@@ -456,7 +456,7 @@ ggplot(data_geo,aes(fill=Change_d)) +
 ```
 
 
-This shows a strong imbalance in which neighbourhoods have added renter households over this 15 year time period, with some neighbourhoods even losing renter households, in particular Strathcona and Grandview Woodlands.
+This shows a strong imbalance in which neighbourhoods have added renter households over this 15 year time period, with some neighbourhoods even losing renter households, in particular <strike>Strathcona</strike> (see update below) and Grandview Woodlands.
 
 # Update (Feb 9, 2018)
 I was told that the drop in the number of rental households in some areas could have been contributed to by re-classification of housing from private to collective dwellings, in particular SROs and senior housing. According to the [census dictionary](http://www12.statcan.gc.ca/english/census01/Products/Reference/dict/dwe002.htm) SROs and senior homes should have generally been classified as collective dwellings, but that's a judgement call. We have [seen before](http://127.0.0.1:4321/blog/2017/12/11/some-thoughts-on-the-supply-myth/) that comparisons across time can be tricky as changes in definitions and enumeration methods can have large impacts. I have learned to appreciate all these little quirks in the census data and am grateful when people point me to any that I missed.
