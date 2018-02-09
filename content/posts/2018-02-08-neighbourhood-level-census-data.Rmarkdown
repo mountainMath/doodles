@@ -1,0 +1,462 @@
+---
+title: Neighbourhood Level Census Data
+author: Jens von Bergmann
+date: '2018-02-08'
+slug: neighbourhood-level-census-data
+categories:
+  - cancensus
+  - CensusMapper
+  - Vancouver
+tags: []
+description: 'The value of stable geographies.'
+images: ["https://doodles.mountainmath.ca/posts/2018-02-08-neighbourhood-level-census-data_files/figure-html/children_change-1.png"]
+featured: 'children_change-1.png'
+featuredalt: ""
+featuredpath: "/posts/2018-02-08-neighbourhood-level-census-data_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 9
+)
+library(tidyverse)
+library(sf)
+library(ggrepel)
+library(cancensus)
+```
+
+```{r}
+map_theme=list(
+  theme_bw(),
+  theme(axis.title.x=element_blank(),
+      axis.text.x=element_blank(),
+      axis.ticks.x=element_blank(),
+      axis.title.y=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+      panel.grid.major = element_line(colour = "transparent"))
+)
+```
+
+
+The neighbourhood level custom tab the City of Vancouver pulls for every census has arrived on the open data portal today. We have not worked much with that data because the 2011 dataset excluded the NHS, but it's worth revisiting with the 2016 data now available. (Hopefully the 2011 NHS data will get retroactively added, it's a bit of a shame that it's missing and CoV return rates were quite reasonable.)
+
+The neighbourhood level data adds to the generally available census data in two ways:
+
+* It enables easy comparisons through time, since the neighbourhood geographies have been stable (whereas there have been changes to the census regions within the City of Vancouver between each of the censuses).
+* It gives a finer breakup of the City into regions with recognizable names. That makes it easy to utilize the data for non-map based visualizations and analysis.
+
+# The Data
+While a small dataset, getting it into working condition can be a bit of a pain. 
+
+* The data comes transposed from the usual format census data is delivered in and that is useful for analysis. 
+* The data comes in windows-1252 encoding instead of more universal formats like UTF.
+* The data is formatted as text, with comma thousand separators that need to be stripped and converted to numeric format.
+* Some of the region names are not consistent over time.
+* Some inconsistencies in the row and column naming.
+
+As quirky as this is, the issues aren't that big and I wrote a quick import function a while back that works for all four available datasets (and only needed minimal tweaking for the 2016 data). And yes, the code is [included in the blog post](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-02-08-neighbourhood-level-census-data.Rmarkdown) in case others want to save themselves some pain.
+
+```{r}
+# some convenience functions to access CoV census data
+# deals with issues like windows-1252 encoding (yes, not UTF) and
+# numbers formatted with commas (yes, not kidding about that)
+# and awkward transposition with variables as rows
+#
+# set option("custom_data_path"="<local path to store city census data>")
+
+# load neighbourhood data
+get_neighbourhood_geos <- function(){
+  geo_data_url="ftp://webftp.vancouver.ca/OpenData/shape/local_area_boundary_shp.zip"
+  nbhd_path=paste0(getOption("custom_data_path"),"local_area_boundary_shp")
+  if(!file.exists(nbhd_path)){
+    mkdir(nbhd_path)
+    download_path=tempfile()
+    download.file(geo_data_url,destfile=download_path)
+    utils::unzip(download_path,exdir=nbhd_path)
+  }
+  sf::read_sf(paste0(nbhd_path,"/local_area_boundary.shp"))
+}
+
+prettify_neighbourhood_geos <- function(nbhds,clip){
+  nbhds <- nbhds %>% st_as_sf  %>% st_transform(st_crs(nbhds)$epsg)%>% st_as_sf
+  clip <- clip %>% st_as_sf  %>% st_transform(st_crs(nbhds)$epsg)%>% st_as_sf
+  pretty_nbhds <- st_intersection(nbhds, clip)
+  pretty_nbhds$geometry[pretty_nbhds$NAME=="Dunbar-Southlands"]=nbhds$geometry[nbhds$NAME=="Dunbar-Southlands"]
+  pretty_nbhds %>% st_as_sf
+}
+
+# load and parse census data for a given year
+get_cov_census_data <- function(year,use_cache=TRUE){
+  base_name="CensusLocalAreaProfiles"
+  year_name=paste0(base_name,year,".csv")
+  path=paste0(getOption("custom_data_path"),year_name)
+  if (!use_cache | !file.exists(path)) {
+    base_data_url="ftp://webftp.vancouver.ca/opendata/csv/"
+    destfile=tempfile()
+    download.file(paste0(base_data_url,year_name),destfile=destfile)
+    data <- read_csv(destfile,skip=4,locale=locale(encoding = "windows-1252"),na=c(NA,"..","F")) %>%
+      mutate(IDX = 1:n())
+    if (!("ID" %in% names(data))) {
+      data <- data %>% mutate(ID=IDX)
+    }
+    if (!("Variable" %in% names(data))) {
+      data <- data %>% rename(Variable=X1)
+    }
+    n<- names(data)[!grepl("^X",names(data))]
+    data <- data %>% 
+      select(n) %>% 
+      mutate(Variable=ifelse(is.na(ID),paste0("filler_",IDX),paste0("v_",year,"_",ID,": ",Variable))) %>%
+      select(-IDX,-ID)
+    unlink(destfile)
+    dd <- data %>% as.data.frame()
+    row.names(dd)=dd$Variable
+    d <- t(dd %>% select(-Variable))
+    region_names <- rownames(d)
+    transposed_data <- as.tibble(d) %>%
+      dplyr::mutate_all(dplyr::funs(parse_number)) %>%
+      mutate(NAME=case_when(
+        grepl("CSD",region_names) ~ "City of Vancouver",
+        grepl("CMA",region_names) ~ "Metro Vancouver",
+        TRUE ~ region_names), Year=year)
+    write_csv(transposed_data,path=path)
+  }
+  data <- read_csv(path)
+      # %>% inner_join(get_neighbourhood_geos(),by="NAME")
+}
+
+get_all_census_data <- function(){
+  bind_rows(get_census_data(2001),get_census_data(2006),get_census_data(2011))
+}
+
+find_cov_variables <- function(data,search_string){
+  names(data)[grepl(search_string,names(data),ignore.case = TRUE)]
+}
+
+format_percent <- function(x){paste0(round(x*100,1),"%")}
+
+```
+
+Before we get started we should explain another quirk/feature of the data. The City of Vancouver assumes various roles within Musqueam 2, e.g. policing and some public infrastructure. I am not entirely sure what the exact relationship is (and would appreciate some pointers to a good summary), but for our case at hand it means that Musqueam 2 is included in the Dunbar-Southlands neighbourhood (but not in the City of Vancouver total that's also included in the datasets). So summing data over all neighbourhoods comes up with a larger total than taking the CoV numbers, the difference being the counts from Musqueam 2. Something to be aware of.
+
+# Children under 15
+
+Let's load in the data and search for the variables we are interested in. To start off, we will look at the population of children below the age of 15. Most of the work is locating the variables of interest.
+```{r}
+vancouver <- get_census("CA16",regions=list(CSD="5915022"),geo_format = "sf",level = "Regions")
+data_2001 <- get_cov_census_data(2001)
+data_2006 <- get_cov_census_data(2006)
+data_2011 <- get_cov_census_data(2011)
+data_2016 <- get_cov_census_data(2016)
+```
+
+```{r children_change, fig.height=8, fig.width=9}
+vars_2001 <- find_cov_variables(data_2001,"0 - 4$|5 - 9$|10 - 14$")
+vars_2006 <- find_cov_variables(data_2006,"0 to 4 years$|5 to 9 years$|10 to 14 years$")[1:3]
+vars_2011 <- find_cov_variables(data_2011,"0 to 4 years$|5 to 9 years$|10 to 14 years$")[1:3]
+vars_2016 <- find_cov_variables(data_2016,"0 to 14 years$")[1]
+
+data <- bind_rows(
+                data_2001 %>%  mutate(Children = rowSums(.[vars_2001],na.rm=TRUE)) %>% select(NAME,Year,Children),
+                data_2006 %>%  mutate(Children = rowSums(.[vars_2006],na.rm=TRUE)) %>% select(NAME,Year,Children),
+                data_2011 %>%  mutate(Children = rowSums(.[vars_2011],na.rm=TRUE)) %>% select(NAME,Year,Children),
+                data_2016 %>%  mutate(Children = rowSums(.[vars_2016],na.rm=TRUE)) %>% select(NAME,Year,Children)
+                ) %>% 
+  mutate(Year=paste0("Children ",Year)) %>%
+  spread(key="Year",value="Children") %>%
+  mutate(`Change 2001-2016`=`Children 2016`-`Children 2001`,
+         `Change 2001-2006`=`Children 2006`-`Children 2001`,
+         `Change 2006-2011`=`Children 2011`-`Children 2006`,
+         `Change 2011-2016`=`Children 2016`-`Children 2011`) 
+
+#quantile(data$`Change 2001-2016`, na.rm=TRUE)
+breaks=c(-Inf,-1000,-750,-500,-250,-50,50,250,500,750,1000,Inf)
+labels=c("Below -1000","-1000 to -750","-750 to -500","-500 to -250","-250 to -50","-50 to 50","50 to 250","250 to 500","500 to 750","750 to 1000","Over 1000")
+data <- data %>% mutate(ccd=cut(`Change 2001-2016`,breaks=breaks,labels=labels))
+ccd_colors=set_names(RColorBrewer::brewer.pal(length(labels),"PiYG"),labels)
+label_colors = set_names(
+  c("white","black","black","black","black","black","black","black","black","black","white"),
+  labels)
+
+data_geo <- data %>%
+  inner_join(get_neighbourhood_geos()  %>% prettify_neighbourhood_geos(vancouver),by="NAME") %>% st_as_sf
+centroids <- data_geo %>%
+  as.data.frame %>% mutate(geometry=st_centroid(data_geo$geometry)) %>%
+  st_as_sf %>%
+  cbind(., st_coordinates(.)) %>%
+  st_set_geometry(NULL)
+
+
+
+ggplot(data_geo, aes(fill=ccd)) +
+  geom_sf(data=vancouver,fill="lightgrey") +
+  geom_sf() + 
+  geom_sf(data=vancouver,fill="transparent",linetype="dotted") +
+  scale_fill_manual(values=ccd_colors,name="") +
+  map_theme +
+  scale_color_manual(values = label_colors,guide=FALSE) +
+  labs(title="Change in the number of Children under 15 between 2001 and 2016",
+       caption="Canada Census 2016, 2011, 2006 and 2001 via CoV Open Data") +
+  geom_text(data=centroids,
+                  aes(label = NAME, x = X, y = Y,color=ccd),
+                  size=2.5,nudge_y=150) +
+  geom_text(data=centroids,
+                  aes(label = format(Change.2001.2016,big.mark=","), x = X, y = Y,color=ccd),size=5,nudge_y=-250)
+```
+
+This gives a very vivid view of the changing landscape of children in the City, with only Downtown, Kitsilano, Fairview and the West End adding significant number of children and massive drops in the more eastern neighbourhoods.
+
+To better understand the trend over time we can view the change in 5-year steps.
+```{r, fig.height=9, fig.width=9}
+periods <- c("Change 2001-2006","Change 2006-2011","Change 2011-2016")
+breaks=c(-Inf,-1000,-750,-500,-250,-50,50,250,500,750,1000,Inf)
+labels=c("Below -1000","-1000 to -750","-750 to -500","-500 to -250","-250 to -50","-50 to 50","50 to 250","250 to 500","500 to 750","750 to 1000","Over 1000")
+plot_data <- data %>% 
+  gather(key="Period",value="Number",periods) %>%
+  mutate(ccd=cut(Number,breaks=breaks,labels=labels))
+total_change <- plot_data %>% filter(!grepl("Vancouver",NAME)) %>% group_by(Period) %>% summarize(Number=sum(Number))
+titles <- setNames(paste0(periods," (",total_change$Number," total)"),periods)
+ccd_colors=set_names(RColorBrewer::brewer.pal(length(labels),"PiYG"),labels)
+label_colors = set_names(
+  c("white","black","black","black","black","black","black","black","black","black","white"),
+  labels)
+
+data_geo <- plot_data %>%
+  inner_join(get_neighbourhood_geos()  %>% prettify_neighbourhood_geos(vancouver),by="NAME") %>% st_as_sf
+centroids <- data_geo %>%
+  as.data.frame %>% mutate(geometry=st_centroid(data_geo$geometry)) %>%
+  st_as_sf %>%
+  cbind(., st_coordinates(.)) %>%
+  st_set_geometry(NULL)
+
+
+
+ggplot(data_geo, aes(fill=ccd)) +
+  geom_sf(data=vancouver,fill="lightgrey") +
+  geom_sf() + 
+  geom_sf(data=vancouver,fill="transparent",linetype="dotted") +
+  scale_fill_manual(values=ccd_colors,name="") +
+  map_theme +
+  facet_wrap("Period",ncol=2,labeller = as_labeller(titles)) +
+  scale_color_manual(values = label_colors,guide=FALSE) +
+  labs(title="Change in the number of Children under 15",
+       caption="Canada Census 2016, 2011, 2006 and 2001 via CoV Open Data") +
+  # geom_text(data=centroids,
+  #                 aes(label = NAME, x = X, y = Y,color=ccd),
+  #                 size=2.5,nudge_y=150) +
+  geom_text(data=centroids,
+                  aes(label = format(Number,big.mark=","), x = X, y = Y,color=ccd),size=4)
+
+```
+
+We see that between 2001 and 2006 the number of children in the neighbourhoods overall increased substantially, decreased dramatically between 2006-2011 and moderately decreased again 2011-2016. The general trend was that children were added in the central areas and dropped elsewhere. 
+
+# Renters
+Rates of renters by neighbourhoods has been in the news lately, so we can use the opportunity to refine some of the numbers and add temporal data to understand the development over time. For this we will have to skip 2011 since the City did not provide the NHS data at the neighbourhood level.
+
+```{r, fig.width=9}
+#find_cov_variables(data_2001,"Rent") # search for the variables we are interested in
+data_2001 <- data_2001 %>%
+  mutate(Renter_num=`v_2001_1222: Rented`,
+         Total_tenure=`v_2001_1220: Total number of occupied private dwellings by tenure`)
+
+#find_cov_variables(data_2006,"Tenant") # search for the variables we are interested in
+data_2006 <- data_2006 %>%
+  mutate(Renter_num=`v_2006_1950: Tenant-occupied private non-farm, non-reserve dwellings`,
+         Total_tenure=`v_2006_1949: Total number of non-farm, non-reserve private dwellings occupied by usual residents`)
+
+#find_cov_variables(data_2016,"Rent")
+data_2016 <- data_2016 %>%
+    mutate(Renter_num=`v_2016_4020: Renter`,
+           Total_tenure=`v_2016_4018: Total - Private households by tenure - 25% sample data`)
+
+rent_names=c("NAME","Year","Renter_num","Total_tenure")
+
+data <- bind_rows(data_2001 %>% select(rent_names),data_2006 %>% select(rent_names),data_2016 %>% select(rent_names)) %>%
+  mutate(Renters=Renter_num/Total_tenure) %>%
+  mutate(Rent_d = cut(Renters,c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9)))
+
+```
+
+
+```{r, fig.width=9,, fig.height=9}
+data_geo <- data %>%
+  inner_join(get_neighbourhood_geos()  %>% prettify_neighbourhood_geos(vancouver),by="NAME") %>% st_as_sf
+centroids <- data_geo %>%
+  as.data.frame %>% mutate(geometry=st_centroid(data_geo$geometry)) %>%
+  st_as_sf %>%
+  cbind(., st_coordinates(.)) %>%
+  st_set_geometry(NULL)
+
+ggplot(data_geo,aes(fill=Rent_d)) + 
+  geom_sf(data=vancouver,fill="lightgrey") +
+  geom_sf() + 
+  geom_sf(data=vancouver,fill="transparent",linetype="dotted") +
+  geom_text(data=centroids,
+                  aes(label = paste0(format_percent(Renters)), x = X, y = Y),
+                  #aes(label = paste0(NAME,"\n",format_percent(Renters)), x = X, y = Y),
+                  size=3,color="darkblue") +
+  facet_wrap("Year",ncol=2) +
+  map_theme +
+  scale_fill_brewer(palette="Reds",direction = 1,guide=FALSE) +
+  labs(title="Share of Households that Rent",caption="Canada Census 2016, 2006 and 2001 via CoV Open Data")
+
+```
+
+
+```{r, eval=FALSE, include=FALSE}
+data %>% as.data.frame %>% select(NAME,Year,Renters) %>% 
+  mutate(Renters=paste0(round(Renters*100,1),"%")) %>%
+  spread(key="Year",value="Renters") %>% 
+  rename(`Renters 2001`=`2001`,`Renters 2006`=`2006`) %>% 
+  knitr::kable()
+```
+
+
+
+```{r, fig.height=7, fig.width=9, include=FALSE}
+plot_data <- data %>% as.data.frame %>% select(NAME,Year,Renters) %>%
+  mutate(Year=paste0("Renters_",Year)) %>%
+  spread(key="Year",value="Renters") %>% 
+  mutate(Change=Renters_2016-Renters_2001,
+         Change1=Renters_2006-Renters_2001,
+         Change2=Renters_2016-Renters_2006) %>%
+  mutate(trend=sign(Change)>0) %>%
+  mutate(col1=as.character(sign(Change1)*ifelse(abs(Change1)>0.01,1,0)),
+         col2=as.character(sign(Change2)*ifelse(abs(Change2)>0.01,1,0)))
+
+ch_cols=list("1"="darkgreen","0"="black","-1"="darkred")
+
+
+ggplot(plot_data %>% filter(!grepl("Vancouver",NAME))) + 
+  geom_segment(aes(x="2001",xend="2006",y=Renters_2001,yend=Renters_2006,color=col1),size=.75) +
+  geom_segment(aes(x="2006",xend="2016",y=Renters_2006,yend=Renters_2016,color=col2),size=.75) +
+  theme_bw() +
+  scale_color_manual(values=ch_cols,guide=FALSE) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(x="Year",y="Share of Renter Households",caption="Canada Census 2016, 2006 and 2001 via CoV Open Data") +
+  geom_text_repel(aes(label = NAME, x = "2016", y = Renters_2016),
+                  nudge_x = 20,size=4,color="darkblue",direction="y")
+
+```
+
+To better understand the trends over time we can graph the development. The red dots indicate the 2001 share, green the 2016 share with the 2006 share in black. Trend lines in red indicate a decreasing trend, the ones in green an increasing trend.
+```{r,fig.width=9}
+
+library(ggalt)
+ggplot(plot_data, aes(y = NAME, x= Renters_2001, xend = Renters_2016)) + 
+  geom_dumbbell(data = plot_data[plot_data$trend == TRUE,],size = 1.25, color = "#80cdc1",
+                colour_x = "#a6611a", colour_xend = "#018571",
+                size_x = 2.25, size_xend = 2,
+                dot_guide = TRUE, dot_guide_size = 0.10,
+                show.legend = TRUE) + 
+  geom_dumbbell(data = plot_data[plot_data$trend == FALSE,],
+                size = 1.25, color = "#dfc27d",
+                colour_x = "#a6611a", colour_xend = "#018571",
+                size_x = 2.25, size_xend = 2,
+                dot_guide = TRUE, dot_guide_size = 0.10,
+                show.legend = TRUE) +
+  geom_point(aes_string(y = "NAME", x= "Renters_2006"),color="darkblue") +
+  scale_y_discrete(name="", limits = factor((plot_data %>% arrange(desc(Renters_2016)))$NAME , ordered=TRUE)) +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title = "Renter Households in CoV neighbourhoods 2001 to 2016", x="Share of Renter Households",
+       caption="Canada Census 2016, 2006 and 2001 via CoV Open Data") +
+  theme_minimal()
+```
+
+We can map the overall percentage change to get an idea of the geographic distribution of the change in share of renter households.
+```{r, fig.height=8, fig.width=9}
+
+
+data_geo <- plot_data %>% 
+  mutate(Change_d = cut(`Change`,c(-0.15,-0.1,-0.075,-0.05,-0.025,-0.01,0.01,0.025,0.05,0.065,0.1,0.15))) %>%
+  inner_join(get_neighbourhood_geos()  %>% prettify_neighbourhood_geos(vancouver),by="NAME") %>% st_as_sf
+centroids <- data_geo %>%
+  as.data.frame %>% mutate(geometry=st_centroid(data_geo$geometry)) %>%
+  st_as_sf %>%
+  cbind(., st_coordinates(.)) %>%
+  st_set_geometry(NULL)
+
+change_names <- levels(data_geo$Change_d)
+change_colors <- set_names(RColorBrewer::brewer.pal(length(change_names),"PRGn"),change_names)
+
+label_colors = set_names(
+  c("white","white","black","black","black","black","black","black","black","white","white"),
+  change_names)
+
+
+
+ggplot(data_geo,aes(fill=Change_d)) + 
+  geom_sf(data=vancouver,fill="lightgrey") +
+  geom_sf() + 
+  geom_sf(data=vancouver,fill="transparent",linetype="dotted") +
+  geom_text(data=centroids,
+                  #aes(label = paste0(format_percent(Change)), x = X, y = Y),
+                  aes(label = NAME, x = X, y = Y,color=Change_d),
+                  size=2.5,nudge_y=150) +
+  geom_text(data=centroids,
+                  aes(label = format_percent(Change), x = X, y = Y,color=Change_d),size=5,nudge_y=-250) +
+  scale_fill_manual(values = change_colors,guide=FALSE) +
+  scale_color_manual(values = label_colors,guide=FALSE) +
+  labs(title="Percentage Point Change of Households that Rent 2001 - 2016",
+       caption="Canada Census 2016 and 2001 via CoV Open Data") +
+  map_theme
+
+```
+
+Lastly we can also look at the total change in renter households in each area.
+```{r, fig.height=8, fig.width=9}
+
+plot_data <- data %>% as.data.frame %>% select(NAME,Year,Renter_num) %>%
+  mutate(Year=paste0("Renters_",Year)) %>%
+  spread(key="Year",value="Renter_num") %>% 
+  mutate(Change=Renters_2016-Renters_2001,
+         Change1=Renters_2006-Renters_2001,
+         Change2=Renters_2016-Renters_2006) %>%
+  mutate(trend=sign(Change)>0) 
+
+#quantile(plot_data$Change)
+data_geo <- plot_data  %>%
+  mutate(Change_d = cut(`Change`,c(-Inf,-2000,-1000,-500,-250,-50,50,250,500,1000,2000,Inf))) %>%
+  inner_join(get_neighbourhood_geos()  %>% prettify_neighbourhood_geos(vancouver),by="NAME") %>% st_as_sf
+centroids <- data_geo %>%
+  as.data.frame %>% mutate(geometry=st_centroid(data_geo$geometry)) %>%
+  st_as_sf %>%
+  cbind(., st_coordinates(.)) %>%
+  st_set_geometry(NULL)
+
+change_names <- levels(data_geo$Change_d)
+change_colors <- set_names(RColorBrewer::brewer.pal(length(change_names),"PRGn"),change_names)
+
+label_colors = set_names(
+  c("white","white","black","black","black","black","black","black","black","white","white"),
+  change_names)
+
+
+
+ggplot(data_geo,aes(fill=Change_d)) + 
+  geom_sf(data=vancouver,fill="lightgrey") +
+  geom_sf() + 
+  geom_sf(data=vancouver,fill="transparent",linetype="dotted") +
+  geom_text(data=centroids,
+                  aes(label = NAME, x = X, y = Y,color=Change_d),
+                  size=1.5,nudge_y=150) +
+  geom_text(data=centroids,
+                  aes(label = format(Change,big.mark=","), x = X, y = Y,color=Change_d),size=5,nudge_y=-250) +
+  scale_fill_manual(values = change_colors,guide=FALSE) +
+  scale_color_manual(values = label_colors,guide=FALSE) +
+  labs(title="Total Change of Households that Rent 2001 - 2016",
+       caption="Canada Census 2016 and 2001 via CoV Open Data") +
+  map_theme
+
+```
+
+
+This shows a strong imbalance in which neighbourhoods have added renter households over this 15 year time period, with some neighbourhoods even losing renter households, in particular Strathcona and Grandview Woodlands.
+
+As always, the code that made these graphs is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-02-08-neighbourhood-level-census-data.Rmarkdown). This should make it easy for others to jump in and map or analyse different aspects of the neighbourhood level data. Curious to see what interesting things other come up with.
