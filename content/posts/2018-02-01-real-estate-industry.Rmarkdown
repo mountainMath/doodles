@@ -75,11 +75,11 @@ To get a finer cut at these categories we use CANSIM 379-0030. The first step is
 ```{r}
 data2 <- getCANSIM("3790030",raw=TRUE, showLabels = FALSE) %>% 
   filter(VALUE=="Chained (2007) dollars") %>%
-  mutate(NAICS=sub(" \\(x 1,000,000\\)$","",NAICS)) %>%
   rename(Year=Ref_Date) %>%
   select(Year,GEO,NAICS,Value) %>%
   mutate(Value=as.numeric(Value)) %>%
-  mutate(Value=ifelse(grepl(" \\(x 1,000,000\\)$",NAICS),Value*1000000,Value))
+  mutate(Value=ifelse(grepl(" \\(x 1,000,000\\)$",NAICS),Value*1000000,Value)) %>%
+  mutate(NAICS=sub(" \\(x 1,000,000\\)$","",NAICS))
 
 canada <- data2 %>% group_by(Year,NAICS) %>% summarize(Value=sum(Value,na.rm=TRUE)) %>% mutate(GEO="Canada")
 data2 <- bind_rows(data2,canada)

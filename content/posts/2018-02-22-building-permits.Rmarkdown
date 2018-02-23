@@ -1,0 +1,357 @@
+---
+title: Building Permits
+author: Jens von Bergmann
+date: '2018-02-22'
+slug: building-permits
+categories:
+  - Vancouver
+tags: []
+description: 'Trawling through permit data.'
+images: ["https://doodles.mountainmath.ca/posts/2018-02-22-building-permits_files/figure-html/sfh-demos-1.png"]
+featured: 'sfh-demos-1.png'
+featuredalt: ""
+featuredpath: "/posts/2018-02-22-building-permits_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 9
+)
+library(tidyverse)
+library(cancensus)
+library(sf)
+library(cancensusHelpers)
+```
+
+
+
+```{r}
+geocode <- function(data,address_field="addressString") {
+  # api_key <- getOption("bc_geocoder_api_key") Not needed apparently
+  base_url="https://apps.gov.bc.ca/pub/geocoder/addresses.csv"
+  matchPrecision <- 'SITE, UNIT, CIVIC_NUMBER, INTERSECTION, BLOCK'
+  for (i in 1:nrow(data)) {
+    address_string=data[[address_field]][i]
+    address_string=paste0(sub(",$","",sub(" #\\d+.*,",",",sub(" Vancouver.*$","",address_string))),", Vancouver, BC")
+    query=list(addressString=address_string,
+               localities="Vancouver",
+               matchPrecision=matchPrecision,
+               provinceCode="BC")
+    response<-httr::GET(base_url,query=query)
+    if (response$status_code==200) {
+      suppressMessages(suppressWarnings(r <- read_csv(response$content)))
+      data$X[i]=r$X
+      data$Y[i]=r$Y
+      data$score[i]=r$score
+      data$matchPrecision[i]=r$matchPrecision
+      data$usedAddressString[i]=address_string
+    }
+    if (i %% 100 ==0 ) print(paste0("Done with ",i,"/",nrow(data)))
+  }
+  data
+}
+
+get_permit_data<-function(year){
+  path <- paste0(getOption("custom_data_path"),"building_permits_",year,".csv")
+  if (!file.exists(path)) {
+    download.file("ftp://webftp.vancouver.ca/OpenData/DBL/",year,"_Issued_Building_permits.csv",destfile =path)
+    read_csv(path) %>%
+      mutate(addressString=ADDRESS) %>%
+      mutate(namedLocation=sub(" - .*$","",addressString)) %>%
+      mutate(addressString=sub("^.+ - ","",addressString)) %>% 
+      mutate(addressString=sub(" #\\d+.*,","",addressString)) %>%
+      geocode %>% write_csv(path) # geocode. Takes some time...
+  }
+  read_csv(path) %>% 
+    st_as_sf( coords = c("X", "Y"),  crs = 4326) %>%
+    mutate(`Specific Use`=recode(`SPECIFIC USE CATEGORY / CATEGORIES`,
+                                 `1FD`="One-Family Dwelling",
+                                 `1FD w/ Sec Suite`="One-Family Dwelling w/Sec Suite",
+                                 `1FD w/ Family Suite`="One-Family Dwelling w/Sec Suite",
+                                 `One-family Dwelling w/Sec Suite`="One-Family Dwelling w/Sec Suite"))
+}
+
+get_zoning_data<-function(){
+  zoning_path <- paste0(getOption("custom_data_path"),"zoning_districts_shp/zoning_districts.shp")
+  if (!file.exists(zoning_path)) {
+    temp=tempfile()
+    download.file("ftp://webftp.vancouver.ca/OpenData/shape/zoning_districts_shp.zip",destfile = temp)
+    utils::unzip(temp,exdir = paste0(getOption("custom_data_path"),"zoning_districts_shp"))
+  }
+  read_sf(zoning_path)
+}
+
+bar_theme <- list(
+  theme_bw(),
+  coord_flip(),
+  labs(title="2017 Building Permits",caption="CoV Open Data"),
+  geom_bar(stat="identity")
+)
+
+```
+
+The City of Vancouver has [put up building permit data](http://data.vancouver.ca/datacatalogue/issuedBuildingPermits.htm) yesterday, and [Aaron Licker](https://twitter.com/LGeospatial) swiftly took a look at the data and teased out some interesting bits.
+{{< tweet 966469537909493760 >}}
+
+We have been asking for this data for quite a while, so we had to take a look too. We wrapped the nasty download, geocoding and general data wrangling into convenience functions, so importing the data into a tidy data frame is pretty simple now.
+
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+# Vancouver City Outline
+vancouver <- get_census(dataset='CA16', regions=list(CSD="5915022"), labels="detailed", 
+                        geo_format='sf', level='Regions')
+# Grab Zoning data and clip to outline
+zoning_data <-get_zoning_data() %>% st_transform(st_crs(vancouver)$epsg) %>% 
+  st_intersection(vancouver %>% select())
+# Grab and geocode building permits and join with zoning data
+building_permits <- get_permit_data(2017) %>% st_join(zoning_data)
+```
+
+To start off we take a look at what's in the dataset
+```{r, echo=TRUE}
+plot_data <- building_permits %>% 
+  group_by(`TYPE OF WORK`,`PROPERTY USE`) %>% summarize(Count=n())
+ggplot(plot_data, aes(x=`TYPE OF WORK`,y=Count,fill=`PROPERTY USE`)) +
+  bar_theme 
+```
+
+# Deomlitions (and Abatements)
+Looks pretty good. Following Aaron's footsteps we take a closer look at Demolitions. And throw in Abatements too. Which leads us to our first question. Where are we going with this? What we are really interested in is understanding teardowns, we have had a long fascination with that topic, in fact the first post on this blog was in interactive teardown predictor map, that we have since greatly improved, worked into [an interactive data story](https://mountainmath.ca/teardowns) and further extended by using this to understand the trade offs of embodied vs operating carbon in Vancouver's Single Family Zoning.
+
+When working on understanding teardowns we tried to obtain demolition data from the City, but were unsuccessful. So we used new buildings as a proxy, while having to be aware that there were a couple of greenfield developments in our time frame (Hello Deering Island!) where new builts may not have been preceded by a teardown. This new dataset adds that missing link, but right now it is only available for 2017 onward.
+
+But we have to be careful with this dataset too, it only contains information about demolition permits, but it does not speak to whether the building in question was actually torn down. There have been prominent cases in the news where buildings were spared even though a demolition permit was issued. But buildings that do get torn down will have a demolition permit issues, and if a new building goes up on that lot we can take that as confirmation that the demolition permit was followed by an actual demolition. This dataset on it's own only contains building permit data, so again we don't know if the building permitted was actually built, but assessment data is available to confirm a new built.
+
+In short, what this dataset adds is that it narrows time frames, gives an earlier indication of what might happen and adds some detail that is otherwise not publicly available, like if a new building or a teardown come with permitted suites and for what lots laneway house permits were issues.
+
+In this post we will take the permit data as a proxy for what actually happened, so we treat a demolition permit as a demolition, and a building permit as a new built. One complication is that the same building may have several building permits, or a demolition permit and an abatement permit. So when reporting numbers we will have to make sure we don't double-count. Our convention for this post is that if a demolition and an abatement happened, we treat that as a single demolition and no abatement. And if a new built and an addition happened, we treat that as a single new built.
+
+```{r}
+demo_data <- building_permits %>% filter(`TYPE OF WORK` %in% c("Salvage and Abatement","Demolition / Deconstruction")) %>%
+  mutate(order=ifelse(`TYPE OF WORK`=="Demolition / Deconstruction",0,1)) %>%
+  arrange(order) %>%
+  distinct(usedAddressString, .keep_all=TRUE) %>%
+  mutate(`TYPE OF WORK`=factor(`TYPE OF WORK`,levels=c("Salvage and Abatement","Demolition / Deconstruction")))
+plot_data <-demo_data %>%
+  group_by(CATEGORY,`TYPE OF WORK`) %>% summarize(count=n())
+ggplot(plot_data, aes(x=CATEGORY,y=count,fill=`TYPE OF WORK`)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  theme_bw() +
+  labs(title="Demolitions and Abatements in 2017",caption="CoV Open Data",x="Zone Catagory",y="Count", fill="Type")
+```
+
+
+The geographic distributions shows that demolitions are concentrated in the Single Family (RS) neighbourhoods.
+```{r}
+base_map <- ggplot(vancouver) +
+  geom_sf() +
+  map_theme +
+  labs(caption="CoV Open Data")
+```
+  
+  
+```{r, echo=TRUE}
+base_map + 
+  geom_sf(data=demo_data, aes(color=`TYPE OF WORK`) ,size=0.3) +
+  labs(title="Demolitions and Abatements in 2017")
+```
+
+
+We narrow down our focus to these areas and look at what kind of buildings get torn down or abated.
+
+```{r, echo=TRUE}
+plot_data <- demo_data %>% filter(CATEGORY=="One-Family Dwelling",`PROPERTY USE`=="Dwelling Uses")
+base_map +
+  geom_sf(data=plot_data, aes(color=`Specific Use`) ,size=0.3) +
+  labs(title="Demolitions and Abatements in 2017",caption="CoV Open Data", color="Type")
+```
+
+
+To better understand the change in the building stock we want to look at the overall count in permits in more detail.
+
+```{r permit-counts}
+main_types=c("Salvage and Abatement","Addition / Alteration","Demolition / Deconstruction","New Building")
+main_specific_use=c("One-Family Dwelling","One-Family Dwelling w/Sec Suite","Laneway House")
+
+plot_data <- building_permits %>% 
+  filter(CATEGORY=="One-Family Dwelling",
+         `PROPERTY USE`=="Dwelling Uses",
+         `TYPE OF WORK` %in% main_types) %>%
+  mutate(`Specific Use`=ifelse(`Specific Use` %in% main_specific_use,`Specific Use`,"Other")) %>%
+  mutate(`Specific Use`=factor(`Specific Use`,levels=rev(c(main_specific_use,"Other")))) %>%
+  mutate(Value=as.numeric(gsub("\\$|,","",`PROJECT VALUE`))) %>%
+  distinct(usedAddressString,`TYPE OF WORK`,.keep_all=TRUE) %>%
+  group_by(`TYPE OF WORK`,`Specific Use`) %>% 
+  summarize(Count=n(),Value=sum(Value,na.rm=TRUE))
+
+ggplot(plot_data, aes(x=`TYPE OF WORK`,y=Count,fill=`Specific Use`)) +
+  geom_bar(stat="identity",position="stack") +
+  labs(title="2017 Permits, Dwelling Uses in RS",caption="CoV Open Data",fill="Type") + 
+  scale_y_continuous(labels=scales::comma) +
+  coord_flip()
+```
+
+```{r}
+lw<-filter(plot_data,`TYPE OF WORK`=="New Building",`Specific Use`=="Laneway House")$Count
+sd<-filter(plot_data,`TYPE OF WORK`=="New Building",`Specific Use`=="One-Family Dwelling")$Count
+sd_s<-filter(plot_data,`TYPE OF WORK`=="New Building",`Specific Use`=="One-Family Dwelling w/Sec Suite")$Count
+d_sd<-filter(plot_data,`TYPE OF WORK`=="Demolition / Deconstruction",`Specific Use`=="One-Family Dwelling")$Count
+d_sd_s<-filter(plot_data,`TYPE OF WORK`=="Demolition / Deconstruction",`Specific Use`=="One-Family Dwelling w/Sec Suite")$Count
+```
+
+
+We see that Laneway Houses are a net add to the overall building stock, with `r lw` permits issued. The total number of demolition permits for Single Family Homes is about the same as the number of demolition permits, but the new builts have a higher proportion of permitted suites at `r format_percent(sd_s/(sd+sd_s))` compared to `r format_percent(d_sd_s/(d_sd+d_sd_s))` in demolitions. But we should remember that there are a lot of unpermitted suites in Vancouver. 
+
+# Estimating secondary suites in Vancouver
+Estimating secondary suites relies on exploiting the different ways to count housing units between BC Assessment and the census. BC Assessment counts properties, so for our purposes lots with single family homes on them. For us that means lots with either a single detached house, or ones with a single detached house with a permitted suite on them. There are roughly 75k of these in Vancouver.
+
+We have explained the [census categories for dwellings before](https://doodles.mountainmath.ca/blog/2018/01/25/empty-suites/), to match these we start by counting up the single detached houses (so un-suited) houses the census found. There were 41,330 occupied single detached homes, 290 occupied by temporary or foreign residents and 1,955 unoccupied ones, adding up to a total of 43,575 single detached houses. The census counts laneway houses as their own single detached house. The city does not release up-to-date counts on laneway houses, CMHC counted 1,668 completed laneway houses before May 2016. Permit data by the city suggests that this is an under-count, but we will just go with that number for now, partially accounting for the census not finding all of these.
+
+In conjunction that means that the census found 41,907 single family lots with no secondary suite, which leaves us with 33,093 single family lots that do have at least one secondary suite. This comes out to be 44% of single family homes having at least one suite. We will stop here for today and leave it for someone else to estimate how many of these have more than one secondary suite.
+
+This exercise shows us that we are likely demolishing more suites than the permit data suggests, with the difference being made up by permitted suites. But it also shows that the number of suites is likely still growing in the City as the share of new single family homes with suites is significantly higher. But as we [have explained in detail before](https://doodles.mountainmath.ca/blog/2018/01/25/empty-suites/) suites are a strange part of our dwelling stock that end up registering as unoccupied at a higher rate than any other building type in Vancouver. So it takes more work to understand if and how much new dwelling units for people to live in this sizable construction activity in Single Family land actually produces.
+
+As Aaron has pointed out before, this construction activity comes with a high cumulative price tag.
+
+```{r}
+format_currency_millions<-function(x){paste0(format_currency(round(x/1000000)),"M")}
+ggplot(plot_data, aes(x=`TYPE OF WORK`,y=Value,fill=`Specific Use`)) +
+  geom_bar(stat="identity",position="stack") +
+  labs(title="2017 Permits, Dwelling Uses in RS",caption="CoV Open Data",fill="Type") + 
+  scale_y_continuous(labels=format_currency_millions) +
+  coord_flip()
+```
+
+
+```{r}
+total_value <- building_permits %>%
+  filter(`TYPE OF WORK` %in% main_types) %>%
+  filter(`Specific Use` %in% c("One-Family Dwelling","One-Family Dwelling w/Sec Suite")) %>%
+  mutate(val=gsub("\\$|,","",`PROJECT VALUE`)) %>% 
+  distinct(usedAddressString,`TYPE OF WORK`,.keep_all=TRUE) %>%
+  pull(val) %>% as.numeric %>%  sum(na.rm=TRUE)
+```
+
+If we look at demolition, abatement and additions for Single Detached and Suited Single Detached throughout the city (not just in RS) in 2017 the total permit value adds up to $`r format(total_value,big.mark=",")`, while adding very few units to live in. 
+
+# Neighbourhoods
+Another way to look at the data is to follow Aaron's lead and compare demolitions to the existing building stock. We will take CoV neighbourhoods as our base geography and only look at Single Family lots. For the census we restrict ourselves to occupied units for convenience since the CoV custom tabulation did not pull information on the total building stock. From that we estimate the number of SFH lots in each region by taking the number of single-detached units plus half the number of duplex units. As we have explained above, that's only a rough estimate and could be off by a bit in either direction, but it's good enough for our purposes. We will compare this to SFH demolition permit data.
+```{r}
+get_neighbourhood_geos <- function(){
+  geo_data_url="ftp://webftp.vancouver.ca/OpenData/shape/local_area_boundary_shp.zip"
+  nbhd_path=paste0(getOption("custom_data_path"),"local_area_boundary_shp")
+  if(!file.exists(nbhd_path)){
+    mkdir(nbhd_path)
+    download_path=tempfile()
+    download.file(geo_data_url,destfile=download_path)
+    utils::unzip(download_path,exdir=nbhd_path)
+  }
+  sf::read_sf(paste0(nbhd_path,"/local_area_boundary.shp"))
+}
+
+prettify_neighbourhood_geos <- function(nbhds,clip){
+  nbhds <- nbhds %>% st_as_sf  %>% st_transform(st_crs(nbhds)$epsg)%>% st_as_sf
+  clip <- clip %>% st_as_sf  %>% st_transform(st_crs(nbhds)$epsg)%>% st_as_sf
+  pretty_nbhds <- st_intersection(nbhds, clip)
+  pretty_nbhds$geometry[pretty_nbhds$NAME=="Dunbar-Southlands"]=nbhds$geometry[nbhds$NAME=="Dunbar-Southlands"]
+  pretty_nbhds %>% st_as_sf
+}
+
+# load and parse census data for a given year
+get_cov_census_data <- function(year,use_cache=TRUE){
+  base_name="CensusLocalAreaProfiles"
+  year_name=paste0(base_name,year,".csv")
+  path=paste0(getOption("custom_data_path"),year_name)
+  if (!use_cache | !file.exists(path)) {
+    base_data_url="ftp://webftp.vancouver.ca/opendata/csv/"
+    destfile=tempfile()
+    download.file(paste0(base_data_url,year_name),destfile=destfile)
+    data <- read_csv(destfile,skip=4,locale=locale(encoding = "windows-1252"),na=c(NA,"..","F")) %>%
+      mutate(IDX = 1:n())
+    if (!("ID" %in% names(data))) {
+      data <- data %>% mutate(ID=IDX)
+    }
+    if (!("Variable" %in% names(data))) {
+      data <- data %>% rename(Variable=X1)
+    }
+    n<- names(data)[!grepl("^X",names(data))]
+    data <- data %>% 
+      select(n) %>% 
+      mutate(Variable=ifelse(is.na(ID),paste0("filler_",IDX),paste0("v_",year,"_",ID,": ",Variable))) %>%
+      select(-IDX,-ID)
+    unlink(destfile)
+    dd <- data %>% as.data.frame()
+    row.names(dd)=dd$Variable
+    d <- t(dd %>% select(-Variable))
+    region_names <- rownames(d)
+    transposed_data <- as.tibble(d) %>%
+      dplyr::mutate_all(dplyr::funs(parse_number)) %>%
+      mutate(NAME=case_when(
+        grepl("CSD",region_names) ~ "City of Vancouver",
+        grepl("CMA",region_names) ~ "Metro Vancouver",
+        TRUE ~ region_names), Year=year)
+    write_csv(transposed_data,path=path)
+  }
+  data <- read_csv(path)
+      # %>% inner_join(get_neighbourhood_geos(),by="NAME")
+}
+
+get_all_census_data <- function(){
+  bind_rows(get_census_data(2001),get_census_data(2006),get_census_data(2011))
+}
+
+find_cov_variables <- function(data,search_string){
+  names(data)[grepl(search_string,names(data),ignore.case = TRUE)]
+}
+```
+
+```{r}
+bpd <- building_permits %>%
+  filter(`TYPE OF WORK` %in% c("Demolition / Deconstruction")) %>%
+  filter(`Specific Use` %in% c("One-Family Dwelling","One-Family Dwelling w/Sec Suite")) %>%
+  mutate(val=as.numeric(gsub("\\$|,","",`PROJECT VALUE`)))
+
+neighbourhoods <- get_cov_census_data(2016)
+vars_2016 <- find_cov_variables(neighbourhoods,"Dwellings|Single-detached|duplex")[1:3]
+var_names <- c("Dwellings","Single-detached","Duplex")
+neighbourhoods <- neighbourhoods %>%
+  select(c("NAME",vars_2016)) %>%
+  rename(Dwellings="v_2016_166: Total - Occupied private dwellings by structural type of dwelling - 100% data",
+         `Single-detached`="v_2016_167: Single-detached house",
+         `Duplex`="v_2016_172: Apartment or flat in a duplex") %>%
+  inner_join(get_neighbourhood_geos() %>% prettify_neighbourhood_geos(vancouver) %>%
+               select("NAME") %>%
+               st_transform(st_crs(building_permits)$epsg),
+             .,by="NAME") %>% st_as_sf
+nbhd_permit_data <- st_join(bpd,neighbourhoods) %>%
+  as.data.frame %>%
+  group_by(NAME) %>%
+  summarize(Value=sum(val,na.rm=TRUE),Count=n())
+```
+
+```{r sfh-demos}
+breaks=c(0,0.005,0.0075,0.01,0.0125,0.015,0.0175,0.02)
+labels=c("Below 0.5%","0.5% - 0.75%","0.75% - 1%","1% - 1.25%","1.25% - 1.5%","1.5% - 1.75%","1.75% - 2%")
+map_data <- inner_join(neighbourhoods,
+                       nbhd_permit_data ,
+                       by=c("NAME")) %>% st_as_sf %>%
+  mutate(`Census Count`=`Single-detached`+Duplex/2) %>%
+  mutate(`Demo Share`=Count/`Census Count`) %>%
+  filter(`Census Count`>100) %>%
+  mutate(`Demo Share`=cut(`Demo Share`,breaks=breaks,labels=labels)) %>%
+  mutate(fill=as.character(setNames(viridis::viridis(length(labels)),labels)[`Demo Share`]))
+base_map +
+  geom_sf(data=map_data,aes(fill=`Demo Share`)) +
+  scale_fill_viridis_d() +
+  geom_sf(data=bpd, color="red",size=0.3) +
+  labs(title="Share of SFH demolition Permits 2017\nout of SFH Census 2016")
+```
+
+
+
