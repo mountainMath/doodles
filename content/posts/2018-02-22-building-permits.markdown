@@ -24,7 +24,7 @@ type: "post"
 The City of Vancouver has [put up building permit data](http://data.vancouver.ca/datacatalogue/issuedBuildingPermits.htm) yesterday, and [Aaron Licker](https://twitter.com/LGeospatial) swiftly took a look at the data and teased out some interesting bits.
 {{< tweet 966469537909493760 >}}
 
-We have been asking for this data for quite a while, so we had to take a look too. We wrapped the nasty download, geocoding and general data wrangling into convenience functions, so importing the data into a tidy data frame is pretty simple now.
+We have been asking for this data for quite a while, so we had to take a look too. We wrapped the nasty download, geocoding and general data wrangling into convenience functions, so importing the data into a tidy data frame is pretty simple now. The complete code that made this post is, as always, [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-02-22-building-permits.Rmarkdown).
 
 
 
@@ -126,5 +126,5 @@ Another way to look at the data is to follow Aaron's lead and compare demolition
 
 <img src="/posts/2018-02-22-building-permits_files/figure-html/sfh-demos-1.png" width="864" />
 
-
+Interested in taking this further or explore different aspects of the data? The complete code that made this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-02-22-building-permits.Rmarkdown), just grab it and modify as you see fit.
 
