@@ -45,7 +45,7 @@ tax_data_2017 <- get_tax(2017) %>%
   select(pid,folio,land_coordinate,legal_type,utax_2017,ul_2017,ub_2017) %>%
   mutate_at(c("utax_2017","ul_2017","ub_2017"),funs(replace(., is.na(.), 0))) %>%
   mutate(ut_2017=ul_2017+ub_2017) %>%
-  mutate(etr_2017=ut_2017/utax_2017)
+  mutate(etr_2017=utax_2017/ut_2017)
 
 
 
@@ -61,7 +61,7 @@ tax_data <- left_join(tax_data,tax_data %>%
                         group_by(land_coordinate) %>% 
                         summarize(metr_2017=min(etr_2017),
                                   med_building=median(ub_2018)), by="land_coordinate") %>%
-  mutate(status=ifelse(etr_2017<=1.5*metr_2017,"residential","commerical"))
+  mutate(status=ifelse(etr_2017<=0.04,"residential","commerical"))
 
 tax_data <- left_join(tax_data,tax_data %>%
                         filter(status=="residential") %>%
@@ -72,7 +72,7 @@ tax_data <- left_join(tax_data,tax_data %>%
 
 data <- left_join(assessment_data, tax_data,by=c("tax_coord"="land_coordinate")) %>%
   mutate(tax_applies = candidates & status=="residential" & !(lu_code!="S110" & (res_unit_count==1 |  med_building>5000000))) %>%
-  mutate(tax_applies=ifelse(pid.y=="029-746-825",FALSE,tax_applies)) %>%
+  mutate(tax_applies=ifelse(pid.y %in% c("029-746-825","028-756-088"),FALSE,tax_applies)) %>%
   mutate(d1=pmin(1000000,pmax(ut_2018-3000000,0))) %>%
   mutate(d2=pmax(ut_2018-4000000,0)) %>%
   mutate(extra_tax=ifelse(tax_applies,d1*0.002+d2*0.004,0))
@@ -138,9 +138,9 @@ plot_data %>% as.data.frame %>%
   left_join(assessment_data %>% as.data.frame %>% select(id,name),by="id") %>%
   select(-id) %>%
   arrange(-extra_tax) %>% 
-  mutate(extra_tax=format_currency(round(extra_tax))) %>% 
-  select(name,extra_tax) %>%
-  knitr::kable(col.names = c("Address","Extra Tax"))
+  mutate(extra_tax=format_currency(round(extra_tax)), Rank=row_number()) %>% 
+  select(Rank,name,extra_tax) %>%
+  knitr::kable(col.names = c("Rank","Address","Extra Tax"))
 ```
 
 As always, the code that made this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-02-28-extra-school-tax.Rmarkdown).
