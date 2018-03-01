@@ -8,7 +8,7 @@ categories:
   - Empty Homes
   - Assessment Data
 tags: []
-description: 'Whem density maps mostly just show population density.'
+description: 'When density maps mostly just show population density.'
 images: ["https://doodles.mountainmath.ca/posts/2018-02-24-taxable-dwelling-density_files/figure-html/taxable_dwellings-1.png"]
 featured: 'heatmap_2x.png'
 featuredalt: ""
