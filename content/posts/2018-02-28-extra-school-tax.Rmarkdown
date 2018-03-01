@@ -79,9 +79,9 @@ data <- left_join(assessment_data, tax_data,by=c("tax_coord"="land_coordinate"))
 ```
 
 
-The new BC provincial budget had lots of interesting changes. One of them is the additional school tax on residential properties, charged at a rate of 2 basis points (0.002) of the assessed value above \$3M and an additional 2 basis points of the assessed value above \$4M.
+The new BC provincial budget had lots of interesting changes. One of them is the additional school tax on residential properties, charged at a rate of 2 basis points (0.002) of the assessed value above $3M and an additional 2 basis points of the assessed value above $4M.
 
-After some initial confusion the province clarified that this tax will not to apply to purpose built rental buildings, each of which is typically one single taxable property, which can easily breach the \$3M threshold for multi-unit buildings. This would have resulted in a hit of a little over \$100 per unit per month for the average rental unit, which would not apply to a similar condo development because the it would be applied to each individual unit, few of which would break the \$3M threshold.
+After some initial confusion the province clarified that this tax will not to apply to purpose built rental buildings, each of which is typically one single taxable property, which can easily breach the $3M threshold for multi-unit buildings. This would have resulted in a hit of a little over $100 per unit per month for the average rental unit, which would not apply to a similar condo development because the it would be applied to each individual unit, few of which would break the $3M threshold.
 
 
 ```{r}
