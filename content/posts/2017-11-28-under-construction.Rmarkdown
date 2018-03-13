@@ -125,6 +125,7 @@ We can get a little more fancy by shifting the time component of the constructio
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
 # method 1
 library(zoo)
+library(DescTools)
 construction_duration2 <- construction_duration %>%
   gather(key="Type",value="Units",types) %>%
   filter(!is.na(Units)) %>%

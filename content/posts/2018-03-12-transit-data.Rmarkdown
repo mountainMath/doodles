@@ -1,0 +1,211 @@
+---
+title: Transit Data
+author: Jens von Bergmann
+date: '2018-03-12'
+slug: transit-data
+categories:
+  - Vancouver
+  - geeky
+  - Transportation
+tags: []
+description: 'Playing with transit data'
+images: ["https://doodles.mountainmath.ca/posts/2018-03-12-transit-data_files/figure-html/vancouver_transit-1.png"]
+featured: 'vancouver_transit-1.png'
+featuredalt: ""
+featuredpath: "/posts/2018-03-12-transit-data_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+The other day I was catching a bus home later at night, which made me acutely aware that I should not take the frequent daytime transit in Vancouver for granted. On the ride home I decided to dig into this and grab some transit data. We have played with transit data before, but since this was going to be the second time it was high time for a [quick R package](https://github.com/mountainMath/transitland) to standardize our efforts and simplify things for the next time around. Or for anyone else interested in this.
+
+It took me a couple of days until I found some time to clean it up and write a quick post, so here we go.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 9
+)
+map_theme <- list(
+  ggplot2::theme_void(),
+  ggplot2::theme(panel.grid.major = ggplot2::element_line(colour = "transparent"))
+)
+caption="MountainMath, Transitland"
+
+# API calls are slow, and repeated API calls puts unneccessary drain on Transitland,
+# so we cache calls.
+simpleCache <- function(object,key,refresh=FALSE){
+  cache_path=file.path(getOption("cache_path"),key)
+  if(!refresh & file.exists(cache_path)) readRDS(cache_path) else {
+    data=object
+    saveRDS(data,file=cache_path)
+    data
+  }
+}
+```
+
+
+As an example we are looking at transit service in the City of Vancouver. There are a number of ways to query transit data, we will specify a bounding box based on the geo polygon for Vancouver that we grabbed using the **cancensus** package.
+
+```{r}
+library(transitland)
+library(tidyverse)
+library(sf)
+library(cancensus)
+region <- list_census_regions("CA16") %>% filter(name=="Vancouver",level=="CSD")
+vancouver <- get_census("CA16",regions=as_census_region_list(region),geo_format = "sf",level = "Regions")
+bbox=st_bbox(vancouver)
+```
+# Transit Routes
+To start off we pull the route data for the City of Vancouver using the bounding box from our polygon
+```{r}
+transit_routes <- simpleCache(get_transit_routes(list(bbox=bbox,per_page=1000),get_all = TRUE),"yvr_routes")
+```
+
+and plot it.
+```{r}
+cols <- transit_routes$color %>% unique
+route_colours=setNames(paste0("#",cols),cols)
+ggplot(vancouver) +
+  geom_sf() +
+  map_theme +
+  geom_sf(data=transit_routes,aes(color=color)) +
+  guides(color=FALSE) +
+  scale_color_manual(values=route_colours) +
+  coord_sf(xlim=c(bbox$xmin,bbox$xmax),ylim=c(bbox$ymin,bbox$ymax))
+```
+
+
+
+
+# Transit Stops
+```{r}
+stops <- simpleCache(get_transit_stops(list(bbox=bbox,per_page=1000),get_all=TRUE),"yvr_transit_stops") %>%
+  filter(st_intersects(.,vancouver)>0)
+```
+Next we query all transit stops in the bounding box and clip them to the City of Vancouver and identify the high frequency B-line and Skytrain stops and visualize all `r scales::comma(nrow(stops))` of them.
+```{r}
+bline_skytrain_routes="099|095|096| Line"
+# label the stops by route
+stops <- stops %>% 
+  mutate(routes=lapply(routes_serving_stop,function(x){fromJSON(x)$route_name %>% unique()})) %>% 
+  mutate(routes_string = lapply(routes,function(x){paste(x,collapse=",")})) %>%
+  mutate(bline=grepl(bline_skytrain_routes,routes_string))
+```
+
+
+```{r}
+ggplot(vancouver) +
+  geom_sf() +
+  map_theme +
+  geom_sf(data=stops,aes(color=bline), alpha=0.8,size=1,show.legend = "point") +
+  labs(title="Transit Stops in Vancouver",color="B-Line",caption=caption)
+```
+
+# Service Frequency
+To assess service frequency we pull all departures between 9am and 10am on March 13th and plot the frequencies by stop.
+```{r}
+params <- list(bbox=bbox,
+               per_page=10000,
+               origin_departure_between="09:00:00,10:00:00",
+               date="2018-03-13")
+schedule_stops <- simpleCache(get_transit_schedule_stops(params,get_all = TRUE),"yvr_schedule_9-10") %>% 
+  filter(origin_onestop_id %in% stops$onestop_id )
+
+frequency_counts <- schedule_stops %>% group_by(origin_onestop_id) %>% summarize(count=n())
+
+ggplot(frequency_counts %>% group_by(count) %>% summarize(n=n()), aes(x=count,y=n)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  theme_bw() +
+  labs(title="Number of stops by frequency, 9am to 10am",y="Number of stops","Frequency of service per hour",x="Departures per hour",caption=caption)
+```
+It's kind of mind-boggling to think that in that hour transit services in Vancouver rack up `r scales::comma(nrow(schedule_stops))` departures.
+
+
+# All on one map
+We can join the frequency on the stations and get a geographic overview of transit frequency by stop, binning the frequency for easier readability.
+```{r vancouver_transit}
+
+plot_data <- stops %>% select(onestop_id) %>% 
+  left_join(frequency_counts %>% rename(onestop_id=origin_onestop_id),by="onestop_id")
+
+#breaks <- classInt::classIntervals(plot_data$count)
+breaks <- c(0,1,3,6,12,20,30,40,60,120,360,Inf)
+labels <- c("1 per hour or fewer","hourly - every 20 minutes","every 20 minutes - every 10 minutes",
+            "every 10 minutes - every 5 minutes",
+            "every 5 minutes - every 3 minutes",
+            "every 3 minutes - every 2 minutes",
+            "every 2 minutes - every 1.5 minutes",
+            "every 1.5 minutes - every minute",
+            "every minute - 2 per minute",
+            "2 per minute - 3 per minute",
+            "more than 3 per minute")
+process_plot_data<-function(data){
+  data %>% mutate(d=cut(count,breaks=breaks, labels=labels)) %>%
+    mutate(d=as.character(d)) %>%
+    mutate(d=ifelse(is.na(d),"None",d)) %>%
+    mutate(d=factor(d,levels=c("None",labels))) %>%
+    mutate(size=ifelse(is.na(count),0,sqrt(count)))
+}
+plot_data <- plot_data %>% process_plot_data
+  
+
+color_map <- setNames(c("grey60",viridis::viridis(length(labels))),c("None",labels))
+
+ggplot(vancouver) +
+  geom_sf() +
+  map_theme +
+  geom_sf(data=transit_routes,color="darkgrey",size=0.2) +
+  scale_color_manual(values=color_map) +
+  geom_sf(data=plot_data,aes(color=d,size=size), alpha=0.8,show.legend = "point") +
+  scale_size_continuous(range=c(0.3,2),guide = FALSE) +
+  coord_sf(xlim=c(bbox$xmin,bbox$xmax),ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Vancouver transit frequency per stop/station 9am-10am",
+       color="Departures",caption=caption)
+```
+
+
+
+
+
+# Compaing to evening service
+To round up the example we want to compare this to transit departures midnight to 1am.
+```{r}
+params <- list(bbox=bbox,
+               per_page=10000,
+               origin_departure_between="24:00:00,25:00:00",
+               date="2018-03-13")
+schedule_stops_late <- simpleCache(get_transit_schedule_stops(params,get_all = TRUE),"yvr_schedule_24-45") %>% 
+  filter(origin_onestop_id %in% stops$onestop_id )
+
+frequency_counts_late <- schedule_stops_late %>% group_by(origin_onestop_id) %>% summarize(count=n())
+
+ggplot(frequency_counts_late %>% group_by(count) %>% summarize(n=n()), aes(x=count,y=n)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  theme_bw() +
+  labs(title="Number of stops by frequency, midnight to 1am",y="Number of stops","Frequency of service per hour",
+       x="Departures per hour",caption=caption)
+```
+
+As expected, the frequency is significantly lower at night, but there are still `r scales::comma(nrow(schedule_stops_late))` departures. We can again plot the geographic distribution, where we can observe that some local lines fade to grey with zero departures.
+
+```{r}
+
+plot_data <- stops %>% 
+  select(onestop_id) %>% 
+  left_join(frequency_counts_late %>% rename(onestop_id=origin_onestop_id),by="onestop_id") %>%
+  process_plot_data
+
+ggplot(vancouver) +
+  geom_sf() +
+  map_theme +
+  geom_sf(data=transit_routes,color="darkgrey",size=0.2) +
+  scale_color_manual(values=color_map) +
+  geom_sf(data=plot_data,aes(color=d,size=size), alpha=0.8,show.legend = "point") +
+  coord_sf(xlim=c(bbox$xmin,bbox$xmax),ylim=c(bbox$ymin,bbox$ymax)) +
+  scale_size_continuous(range=c(0.3,2),guide = FALSE) +
+  labs(title="Vancouver transit frequency per stop/station midnight-1am",
+       color="Departures",caption=caption)
+```

@@ -130,10 +130,6 @@ get_cov_census_data <- function(year,use_cache=TRUE){
       # %>% inner_join(get_neighbourhood_geos(),by="NAME")
 }
 
-get_all_census_data <- function(){
-  bind_rows(get_census_data(2001),get_census_data(2006),get_census_data(2011))
-}
-
 find_cov_variables <- function(data,search_string){
   names(data)[grepl(search_string,names(data),ignore.case = TRUE)]
 }
@@ -373,7 +369,7 @@ We can map the overall percentage change to get an idea of the geographic distri
 
 
 data_geo <- plot_data %>% 
-  mutate(Change_d = cut(`Change`,c(-0.15,-0.1,-0.075,-0.05,-0.025,-0.01,0.01,0.025,0.05,0.065,0.1,0.15))) %>%
+  mutate(Change_d = cut(Change,c(-0.15,-0.1,-0.075,-0.05,-0.025,-0.01,0.01,0.025,0.05,0.065,0.1,0.15))) %>%
   inner_join(get_neighbourhood_geos()  %>% prettify_neighbourhood_geos(vancouver),by="NAME") %>% st_as_sf
 centroids <- data_geo %>%
   as.data.frame %>% mutate(geometry=st_centroid(data_geo$geometry)) %>%
@@ -421,7 +417,7 @@ plot_data <- data %>% as.data.frame %>% select(NAME,Year,Renter_num) %>%
 
 #quantile(plot_data$Change)
 data_geo <- plot_data  %>%
-  mutate(Change_d = cut(`Change`,c(-Inf,-2000,-1000,-500,-250,-50,50,250,500,1000,2000,Inf))) %>%
+  mutate(Change_d = cut(Change,c(-Inf,-2000,-1000,-500,-250,-50,50,250,500,1000,2000,Inf))) %>%
   inner_join(get_neighbourhood_geos()  %>% prettify_neighbourhood_geos(vancouver),by="NAME") %>% st_as_sf
 centroids <- data_geo %>%
   as.data.frame %>% mutate(geometry=st_centroid(data_geo$geometry)) %>%
