@@ -8,7 +8,7 @@ categories:
   - geeky
   - Transportation
 tags: []
-description: 'Playing with transit data'
+description: 'Playing with our new R API wrapper for transit data from Transitland'
 images: ["https://doodles.mountainmath.ca/posts/2018-03-12-transit-data_files/figure-html/vancouver_transit-1.png"]
 featured: 'vancouver_transit-1.png'
 featuredalt: ""
@@ -17,9 +17,9 @@ linktitle: ''
 type: "post"
 ---
 
-The other day I was catching a bus home later at night, which made me acutely aware that I should not take the frequent daytime transit in Vancouver for granted. On the ride home I decided to dig into this and grab some transit data. We have played with transit data before, but since this was going to be the second time it was high time for a [quick R package](https://github.com/mountainMath/transitland) to standardize our efforts and simplify things for the next time around. Or for anyone else interested in this.
+The other day I was catching a bus home later at night, which made me acutely aware that I should not take the frequent daytime transit in Vancouver for granted. On the ride home I decided to dig into this and grab some transit data. We have played with transit data before, but since this was going to be the second time it was high time for a [quick R package](https://github.com/mountainMath/transitland) to standardize our efforts and simplify things for the next time around. Or for anyone else interested in this. And I can't think of a better way to use the time during a bus ride than writing an R package to access transit data!
 
-It took me a couple of days until I found some time to clean it up and write a quick post, so here we go.
+It's easy to write a quick package that gets the job done, but it took me a couple of days until I found some time to clean it up and write a short post, so here we go. This post is meant less to be informative about transit in Vancouver and more a mini-introduction of the [R package](https://github.com/mountainMath/transitland) in case others are interested in using this. It still has some pretty graphs and late-night bus riders might appreciate seeing why that bus they were waiting for never came.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
@@ -47,7 +47,7 @@ simpleCache <- function(object,key,refresh=FALSE){
 ```
 
 
-As an example we are looking at transit service in the City of Vancouver. There are a number of ways to query transit data, we will specify a bounding box based on the geo polygon for Vancouver that we grabbed using the **cancensus** package.
+As an example we are looking at transit service in the City of Vancouver. There are a number of ways to query transit data, we will specify a bounding box based on the geo polygon for Vancouver that we grabbed using our [**cancensus**](https://github.com/mountainMath/cancensus) package.
 
 ```{r}
 library(transitland)
@@ -209,3 +209,5 @@ ggplot(vancouver) +
   labs(title="Vancouver transit frequency per stop/station midnight-1am",
        color="Departures",caption=caption)
 ```
+
+As always, the code that made this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-03-12-transit-data.Rmarkdown), go grab it if you want to reproduce the graphs, run some interesting stats with the data or re-run the analysis for a different region. Transitland has a pretty good repository of [transit feeds from all over the world](https://transit.land/feed-registry/) that are much more suitable for data analysis and visualization compared to the GTFS. And if the transit provider you are intersted in is not on the list you can always [add it](https://transit.land/feed-registry/feeds/new).
