@@ -9,7 +9,7 @@ categories:
   - zoning
   - density
 tags: []
-description: 'Playing with our new R API wrapper for transit data from Transitland'
+description: 'Frontages for commercial zoned properties in Vancouver.'
 images: ["https://doodles.mountainmath.ca/posts/2018-03-28-frontage_files/figure-html/frontage-1.png"]
 featured: 'frontage-1.png'
 featuredalt: ""
