@@ -1,0 +1,395 @@
+---
+title: Frontage
+author: Jens von Bergmann
+date: '2018-03-28'
+slug: frontage
+categories:
+  - Assessment Data
+  - Vancouver
+  - zoning
+  - density
+tags: []
+description: 'Playing with our new R API wrapper for transit data from Transitland'
+images: ["https://doodles.mountainmath.ca/posts/2018-03-28-frontage_files/figure-html/frontage-1.png"]
+featured: 'frontage-1.png'
+featuredalt: ""
+featuredpath: "/posts/2018-03-28-frontage_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = TRUE,
+	fig.width=9
+)
+library(tidyverse)
+#install_github("r-spatial/sf")
+library(sf)
+library(cancensus)
+library(cancensusHelpers)
+
+meters_per_foot = 0.3048
+
+# Geospatial operatins are slow,
+# so we cache some results.
+simpleCache <- function(object,key,refresh=FALSE){
+  cache_path=file.path(getOption("cache_path"),key)
+  if(!refresh & file.exists(cache_path)) readRDS(cache_path) else {
+    data=object
+    saveRDS(data,file=cache_path)
+    data
+  }
+}
+
+```
+
+Over the past years several people have asked me questions about street frontage of city properties. When I needed similar data for a work project, and Scot Hein asked me a question about frontages of commercial properties for his [Urbanarium debate](https://urbanarium.org/city-debate-11-build-missing-middle-housing-without-lot-assembly), I decided to finally pull the numbers. The answer to that question is not as straight forward as it might seem, mostly because properties aren't necessarily square. There are a couple of algorithm that can solve this problem, but in this case we can keep things reasonably simple as the City of Vancouver has property frontages listed on [VanMap](http://vancouver.ca/your-government/vanmap.aspx) and make the data available on their [Open Data Portal](http://data.vancouver.ca/datacatalogue/propertyInformation.htm).
+
+Scot was particularly interested in the frontages in the commercial zones along the arterials. The ingredients we need to answer that question are:
+
+1. The property parcel polygons.
+2. The lot lines and dimensions.
+3. The zoning data for each lot.
+4. The streets data.
+
+All of these can be found on the City of Vancouver open data portal. I'll spare you the details on how I chose to match things up, if you need to know you can just download the [R notebook that made this post](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-03-28-frontage.Rmarkdown) and look at the code.
+
+As an aside, at this years open data day event I was reminded that there can be high entry barriers to using CoV open data. At this point I have a highly processed database that I usually use for this kind of questions, but with a narrow and clearly defined question at hand I thought it might be a useful exercise to build the data from scratch so that others have the benefit of being able to fully reproduce and adapt the analysis.
+
+There will be essentially no commentary in this post, Scot will have done a did a better job adding context than I can. Sadly I am out of the country and will have to watch the recording once it gets posted.
+
+```{r}
+region <- list_census_regions("CA16",use_cache = TRUE) %>% filter(name=="Vancouver",level=="CSD")
+vancouver <- get_census("CA16",regions=as_census_region_list(region),geo_format = "sf",level = "Regions")
+```
+
+```{r}
+get_property_data <- function(){
+  library(lwgeom)
+  
+  property_path=file.path(getOption("custom_data_path"),"property_polygons_2018")
+  if (!dir.exists(property_path)){
+    temp=tempfile()
+    download.file("ftp://webftp.vancouver.ca/OpenData/shape/shape_property_information.zip",temp)
+    utils::unzip(temp,exdir=property_path)
+    unlink(temp)
+  }
+  tax_path=file.path(getOption("custom_data_path"),"property_tax_report_csv.zip")
+  if (!file.exists(tax_path)) {
+    download.file("ftp://webftp.vancouver.ca/opendata/csv/property_tax_report_csv.zip",tax_path)
+  }
+  
+  # land values can't be integers, some propery values exceed integer limit
+  tax_data <- read_csv(tax_path,col_types=cols(CURRENT_LAND_VALUE="n",PREVIOUS_LAND_VALUE="n")) %>%
+    group_by(LAND_COORDINATE) %>%
+    summarize(YEAR_BUILT=median(YEAR_BUILT),
+              ADDRESS=paste0(first(TO_CIVIC_NUMBER)," ",first(STREET_NAME)),
+              ZONE_NAME=first(ZONE_NAME),
+              CURRENT_LAND_VALUE=sum(CURRENT_LAND_VALUE,na.rm=TRUE),
+              CURRENT_IMPROVEMENT_VALUE=sum(CURRENT_IMPROVEMENT_VALUE,na.rm=TRUE))
+    
+  # load property data and fix issues with invalid geometries and add on the zoning data. Easiest way is to just use the tax data as that's just
+  # a join on a string instead a geospatial join with the zoning dataset.
+  properties <- read_sf(file.path(property_path,"property_parcel_polygons.shp")) %>% 
+    st_make_valid %>%
+    group_by(TAX_COORD) %>%
+    summarize(CIVIC_NO=first(CIVIC_NO),
+              STREETNAME=first(STREETNAME)) %>%
+    mutate(area=st_area(.)) %>%
+    mutate(rn=row_number()) %>%
+    left_join(tax_data, by=c("TAX_COORD"="LAND_COORDINATE"))
+  
+  # load lot line data and deal with mixed units
+  lot_lines <- read_sf(file.path(property_path,"property_cadastral_boundaries.shp")) %>%
+    mutate(frontage=ifelse(grepl("m$",DIMENSIONS),as.numeric(sub("m","",DIMENSIONS)),as.numeric(DIMENSIONS)*meters_per_foot)) 
+
+  # merge data.
+  # buffer properties by 1m to make sure we get overlap, then join the properties onto the lot lines.
+  # associate each lot line with a property. This takes time....
+  data <- st_join(lot_lines %>% filter(TYPE=="PROPERTY LINE"),properties %>% st_buffer(1),largest=TRUE) 
+  
+  #compute distance for each tax_coord
+  frontage_values <- data %>% as.data.frame %>% select(TAX_COORD,frontage) %>%
+    group_by(TAX_COORD) %>%
+    summarize(frontage=sum(frontage,na.rm=TRUE),max_frontage=max(frontage,na.rm=TRUE))
+  
+  properties %>% left_join(frontage_values,by="TAX_COORD")
+}
+
+
+properties <- simpleCache(get_property_data(),"cov_properties_with_frontage_and_assessment",refresh = FALSE)
+
+streets_path=file.path(getOption("custom_data_path"),"cov_streets")
+if (!dir.exists(streets_path)) {
+  temp=tempfile()
+  download.file("ftp://webftp.vancouver.ca/OpenData/shape/shape_city_streets.zip",temp)
+  utils::unzip(temp,exdir=streets_path)
+  unlink(temp)
+}
+streets <- read_sf(file.path(streets_path,"public_streets.shp")) 
+
+```
+
+```{r, eval=FALSE, include=FALSE}
+# check out streets dataset
+street_uses <- c("Arterial","Secondary Arterial","Collector")
+ggplot(streets %>% filter(USE %in% street_uses), aes(color=USE)) +
+  geom_sf(show.legend="line") +
+  map_theme +
+  labs(title="CoV Major Streets",color="Type")
+```
+
+
+
+
+
+
+
+
+```{r}
+
+year_brackets <- c(0,1920,1940,1960,1980,2000,2010,Inf)
+year_labels <-c("Before 1920","1920-1940","1940-1960","1960-1980","1980-2000","2000-2010","After 2010")
+rbv_brackets <- c(0,0.05,0.1,0.2,0.3,0.4,0.5,Inf)
+rbv_labels <-c("Below 5%","5% - 10%","20% - 20%","20% - 30%","30% - 40%","40% - 50%","Above 50%")
+rbv_colors=setNames(RColorBrewer::brewer.pal(length(rbv_labels),"RdYlGn"),rbv_labels)
+
+breaks=c(0,50,100,150,200,300,400,500,600,700,800,1000,Inf)
+labels=c("<50ft","50ft-100ft","100ft-150ft","150ft-200ft","200ft-300ft","300ft-400ft","400ft-500ft","500ft-600ft","600ft-700ft","700ft-800ft","800ft-1,000ft",">1,000ft")
+
+
+plot_data <- properties %>% filter(grepl("^C-",ZONE_NAME)) %>%
+  mutate(large_frontage=max_frontage>150*meters_per_foot) %>%
+  #select(area,frontage,max_frontage,large_frontage,ADDRESS,YEAR_BUILT) %>% 
+  mutate(large_frontage=as.character(large_frontage)) %>% 
+  mutate(large_frontage=coalesce(.$large_frontage,"Unknown")) %>%
+  mutate(TOTAL_VALUE=CURRENT_LAND_VALUE+CURRENT_IMPROVEMENT_VALUE) %>%
+  mutate(rbv=CURRENT_IMPROVEMENT_VALUE/TOTAL_VALUE) %>%
+  mutate(frontage_ft=max_frontage/meters_per_foot) %>%
+  mutate(frontage_d=cut(frontage_ft,breaks=breaks,labels=labels),
+         `Relative Building Value`=cut(rbv,breaks=rbv_brackets,labels=rbv_labels),
+         Age=cut(YEAR_BUILT,breaks=year_brackets,labels=year_labels)) #%>%
+  #filter(large_frontage != "Unknown")
+
+summary <- plot_data %>% as.data.frame %>% 
+  select(frontage,max_frontage,large_frontage) %>%
+  group_by(large_frontage) %>% summarise(
+    frontage=sum(max_frontage,na.rm=TRUE),
+    #frontage=sum(frontage,na.rm=TRUE),
+    Count=n()
+    ) 
+
+caption=paste0("MountainMath, CoV Open Data")
+subtitle=paste0(scales::comma(summary$Count[summary$large_frontage==TRUE])," properties with frontage > 150ft and ",scales::comma(summary$Count[summary$large_frontage==FALSE])," properties with smaller frontage")
+
+plot_labels=c("TRUE"="Frontage > 150ft","FALSE"="Frontage < 150ft","Unknown"="NA")
+plot_colors=c("TRUE"="brown","FALSE"="steelblue","Unknown"="darkgrey")
+
+```
+
+
+# Commercial zoned properties by frontage
+To understand how many properties there are with frontages smaller and larger than 150ft, and what the finer distribution of frontages is, we graph them by frequency and cumulative area.
+
+```{r}
+library(gridExtra)
+library(grid)
+colors<-setNames(c(RColorBrewer::brewer.pal(3,'Blues'),RColorBrewer::brewer.pal(9,'Reds')),labels)
+d<-plot_data %>% as.data.frame %>% 
+  mutate(frontage_ft=max_frontage/meters_per_foot) %>%
+  mutate(frontage_d=cut(frontage_ft,breaks=breaks,labels=labels)) %>%
+  group_by(large_frontage,frontage_d) %>% summarize(Count=n(),Area=as.numeric(sum(area)))
+p1<-ggplot(d,aes(x=large_frontage,y=Count,fill=frontage_d)) +
+  geom_bar(stat="identity")+
+  scale_x_discrete(labels=plot_labels) +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=colors,na.value="grey",name="Frontage") +
+  guides(fill=FALSE) +
+  theme_bw() +
+  labs(x="",y="Number of properties")
+p2<-ggplot(d,aes(x=large_frontage,y=Area,fill=frontage_d)) +
+  geom_bar(stat="identity")+
+  scale_x_discrete(labels=plot_labels) +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=colors,na.value="grey",name="Frontage") +
+  theme_bw() +
+  labs(x="",y="Cumulative area (m\U00B2)")
+
+g<-arrangeGrob(p1,p2, ncol=2,widths = c(1.5, 2),top="City of Vancouver commerical zoned properties",bottom=textGrob(caption,gp=gpar(fontsize=8),just = "right",x=.95))
+grid.arrange(g)
+#ggsave("~/Desktop/frontage1.png",g,width=10,height=5)
+
+```
+
+## Building Age
+Building age is another important variable in this, as we generally expect higher re-development pressure on older buildings. 
+
+```{r}
+d<-plot_data %>% as.data.frame %>% 
+  group_by(Age,frontage_d) %>% summarize(Count=n(),Area=as.numeric(sum(area)))
+
+ggplot(d,aes(x=Age,y=Count,fill=frontage_d)) +
+  geom_bar(stat="identity")+
+  scale_x_discrete(labels=plot_labels) +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=colors,na.value="grey",name="Frontage") +
+  theme_bw() +
+  labs(title="City of Vancouver commercial zoned properties",y="Number of buildings",x="Building Age",caption=caption)
+#ggsave("~/Desktop/frontage2.png",width=10,height=5)
+```
+
+We can view the properties by number or cumulative area.
+
+```{r}
+ggplot(d,aes(x=Age,y=Area,fill=frontage_d)) +
+  geom_bar(stat="identity")+
+  scale_x_discrete(labels=plot_labels) +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=colors,na.value="grey",name="Frontage") +
+  theme_bw() +
+  labs(title="City of Vancouver commercial zoned properties",y="Cumulative area (m\U00B2)",x="Building Age",caption=caption)
+#ggsave("~/Desktop/frontage5.png",width=10,height=5)
+```
+
+## Relative Building Value
+The relative building value may is a more direct measure of development pressure, [as we have explained in detail previously](https://mountainmath.ca/teardowns).
+
+```{r}
+d<-plot_data %>% as.data.frame %>% 
+  group_by(`Relative Building Value`,frontage_d) %>% 
+  summarize(Count=n(),Area=as.numeric(sum(area)))
+
+ggplot(d,aes(x=`Relative Building Value`,y=Count,fill=frontage_d)) +
+  geom_bar(stat="identity")+
+  scale_x_discrete(labels=plot_labels) +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=colors,na.value="grey",name="Frontage") +
+  theme_bw() +
+  labs(title="City of Vancouver commercial zoned properties",y="Number of properties",caption=caption)
+#ggsave("~/Desktop/frontage7.png",width=10,height=5)
+```
+
+
+
+```{r}
+ggplot(d,aes(x=`Relative Building Value`,y=Area,fill=frontage_d)) +
+  geom_bar(stat="identity")+
+  scale_x_discrete(labels=plot_labels) +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=colors,na.value="grey",name="Frontage") +
+  theme_bw() +
+  labs(title="City of Vancouver commercial zoned properties",y="Cumulative area (m\U00B2)",caption=caption)
+#ggsave("~/Desktop/frontage6.png",width=10,height=5)
+
+```
+
+# Geographic distribution
+Another important dimension is the geographic distribution of these lots.
+
+```{r eval=FALSE, include=FALSE}
+# plain plot, avoids having to set up a nextzen api key
+ggplot() +
+  geom_sf(data=vancouver,size=0.1,fill=NA,color="black") +
+  geom_sf(data=streets %>% filter(USE %in% c("Arterial","Secondary Arterial")),size=0.1,color="darkgrey") +
+  geom_sf(data=plot_data,aes(fill=large_frontage),size=0) +
+  scale_fill_manual(labels=plot_labels,values=plot_colors) +
+  map_theme +
+  labs(title="City of Vancouver Commercial Zoned Properties",subtitle=subtitle, fill="",caption=caption)
+
+```
+
+
+```{r eval=FALSE, include=FALSE}
+#rvb_summary <- plot_data %>% as.data.frame %>% filter(!is.na(`Relative Building Value`)) %>% group_by(rbv<0.05) %>% summarize(n=n())
+# plain plot, avoids having to set up a nextzen api key
+ggplot() +
+  geom_sf(data=vancouver,size=0.1,fill=NA,color="black") +
+  geom_sf(data=streets %>% filter(USE %in% c("Arterial","Secondary Arterial")),size=0.1,color="darkgrey") +
+  geom_sf(data=plot_data,aes(fill=`Relative Building Value`),size=0) +
+  scale_fill_manual(labels=rbv_labels,values=rbv_colors, na.value="grey") +
+  map_theme +
+  labs(title="City of Vancouver Commercial Zoned Properties",subtitle="Redevelopment pressure by relative building value", fill="",caption=caption)
+```
+
+
+```{r}
+library(rmapzen)
+get_vector_tiles <- function(bbox){
+  mz_set_tile_host_nextzen(getOption("nextzen_API_key"))
+  mx_box=mz_rect(bbox$xmin,bbox$ymin,bbox$xmax,bbox$ymax)
+  mz_vector_tiles(mx_box)
+}
+  
+bbox=st_bbox(vancouver)
+vector_tiles <- simpleCache(get_vector_tiles(bbox),"vancouver_vector_tiles")
+# vector tiles return all layers (roads, water, buildings, etc) in a list
+roads <- as_sf(vector_tiles$roads) %>% filter(kind != "ferry")
+water <- as_sf(vector_tiles$water)
+
+```
+
+
+```{r frontage, echo=FALSE, fig.height=8, fig.width=8}
+# make a quick static map that includes roads and oceans as reference
+ggplot() +
+  geom_sf(data=vancouver,size=0.1,fill="white") +
+  geom_sf(data=streets %>% filter(USE %in% c("Arterial","Secondary Arterial")),size=0.1,color="darkgrey") +
+  geom_sf(data = water,
+          fill = "lightblue", colour = NA) +
+  #geom_sf(data = roads, size = .2, colour = "black") +
+  map_theme +
+  geom_sf(data=plot_data %>% mutate(large_fronrage=coalesce(large_frontage,"CA")), aes(fill=large_frontage),size=0) +
+  map_theme +
+  theme(panel.background = element_rect(fill = 'grey100'),
+        plot.background = element_rect(fill = 'grey100'),
+        legend.position="bottom") +
+  scale_fill_manual(labels=plot_labels,values=plot_colors) +
+  coord_sf(datum=st_crs(vancouver),
+           xlim=c(bbox$xmin,bbox$xmax),
+           ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="City of Vancouver Commercial Zoned Properties",subtitle=subtitle, fill="",caption=paste0(caption,", NextZen, OSM"))
+#ggsave("~/Desktop/frontage3.png",width=10,height=8)
+```
+
+While there is some bunching when it comes to narrow and wide lots, there is quite a bit of dispersion and we can find both, narrow and wide lots, in all areas.
+
+```{r echo=FALSE, fig.height=8, fig.width=8}
+# make a quick static map that includes roads and oceans as reference
+ggplot() +
+  geom_sf(data=vancouver,size=0.1,fill="white") +
+  geom_sf(data=streets %>% filter(USE %in% c("Arterial","Secondary Arterial")),size=0.1,color="darkgrey") +
+  geom_sf(data = water,
+          fill = "lightblue", colour = NA) +
+  #geom_sf(data = roads, size = .2, colour = "black") +
+  map_theme +
+  geom_sf(data=plot_data, aes(fill=`Relative Building Value`),size=0) +
+  map_theme +
+  theme(panel.background = element_rect(fill = 'grey100'),
+        plot.background = element_rect(fill = 'grey100'),
+        legend.position="bottom") +
+  scale_fill_manual(values=rbv_colors, na.value="grey") +
+  coord_sf(datum=st_crs(vancouver),
+           xlim=c(bbox$xmin,bbox$xmax),
+           ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="City of Vancouver Commercial Zoned Properties",subtitle="Redevelopment pressure by relative building value", fill="",caption=paste0(caption,", NextZen, OSM"))
+#ggsave("~/Desktop/frontage4.png",width=10,height=8)
+```
+
+
+```{r eval=FALSE, include=FALSE}
+# investigate "unknown frontage" properties
+ggplot() +
+  geom_sf(data=vancouver,size=0.1,fill=NA,color="black") +
+  geom_sf(data=streets %>% filter(USE %in% c("Arterial","Secondary Arterial")),size=0.1,color="darkgrey") +
+  geom_sf(data=plot_data %>% filter(large_frontage=="Unknown"),size=0,fill="red") +
+  map_theme +
+  labs(title="City of Vancouver Commercial Zoned Properties",subtitle=subtitle, fill="",caption=caption)
+```
+
+Similar things can be said about the teardown pressure facing these lots. There are some areas visible where building values have somewhat kept up with land values, but there are plenty of sites facing high teardown pressure in all neighbourhoods.
+
+
+Again, for those wishing to reproduce the results or adapt it for their own purposes, the code is [available in GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-03-28-frontage.Rmarkdown).
