@@ -155,7 +155,7 @@ Breaking up the population growth of 6,673 people as before we have:
 * -3,996 due to increase in unoccupied dwellings, and
 * 17,336 due to increase in dwelling units.
 
-## #The West Side
+### The West Side
 Lastly, we probably can't talk about this without running a separate analysis for the west side. So here we go.
 
     RS, RT, FSD

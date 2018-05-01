@@ -134,14 +134,15 @@ in certain sub time frames.
 
 <script>
 function resetImages(){
-    $('img').each(function(img){
-        imgsrc = $(img).attr('src');
+  var a=$('img');
+  for (i=0;i<a.length;i++) {
+        var img=$(a[i]);
+        imgsrc = img.attr('src');
         if (imgsrc.slice(imgsrc.length-4)=='.gif') {
-            $(img).attr('src', '');
-            $(img).attr('src', imgsrc);
-
+            img.attr('src', '');
+            img.attr('src', imgsrc);
         }
-    });
+    };
     setTimeout(function(){
         resetImages();
     },25000);

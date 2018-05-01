@@ -1,0 +1,234 @@
+---
+title: A modest school-tax proposal
+author: Jens von Bergmann
+date: '2018-05-01'
+slug: a-modest-school-tax-proposal
+categories:
+  - Assessment Data
+  - taxes
+  - Vancouver
+tags: []
+description: "Looking into the school tax outrage."
+images: ["https://doodles.mountainmath.ca/posts/2018-05-01-a-modest-school-tax-proposal_files/figure-html/gains-vs-school-tax-1.png"]
+featured: 'gains-vs-school-tax-1.png'
+featuredalt: ""
+featuredpath: "/posts/2018-05-01-a-modest-school-tax-proposal_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width=9
+)
+library(tidyverse)
+library(assessment)
+library(sf)
+library(cancensus)
+library(cancensusHelpers)
+#library(cansim)
+#library(cmhc)
+library(here)
+
+simpleCache <- function(object,key,refresh=FALSE){
+  cache_path=file.path(getOption("cache_path"),key)
+  if(!refresh & file.exists(cache_path)) readRDS(cache_path) else {
+    data=object
+    saveRDS(data,file=cache_path)
+    data
+  }
+}
+```
+
+
+We have [written about the extra school tax before](https://doodles.mountainmath.ca/blog/2018/02/28/extra-school-tax/), but in the meantime the discussion about the extra school tax has heated up considerably, cumulating in David Eby cancelling his townhouse today. Over the years I also have been spending some time thinking about how people got to the privilege of paying the extra school tax, for example [here](https://doodles.mountainmath.ca/blog/2016/01/24/work-vs-twiddling-thumbs/) and [here](https://doodles.mountainmath.ca/blog/2017/01/18/bumper-year-for-thumb-twiddlers/).
+
+There is a *slight* dissonance with people claiming that their homes should not be taxed because they are their homes and not their investment. But then their homes really only qualify for the tax because they have proven to have been an extremely lucrative investment. Of course one could use these investment gains to easily offset the extra school tax. Should be no issue since homes are not meant to be an investment in the first place, right? Apparently not, people like to have their cake and eat it too.
+
+# Earning the privilege to pay the school tax
+
+```{r}
+inflation_2006_2018 = 1.2238
+
+assessment_data <- get_assessmemt() %>%
+  regular_properties %>%
+  st_transform(4326) %>%
+  filter((lu_code=='S110' & unit_count==1) | (lu_code=='U100' & grepl("^RS",zone_name))) %>%
+  mutate_at(c("land_2018","building_2018"),funs(replace(., is.na(.), 0))) %>%
+  mutate(ut_2018=land_2018+building_2018) %>%
+  mutate(d1=pmin(1000000,pmax(ut_2018-3000000,0))) %>%
+  mutate(d2=pmax(ut_2018-4000000,0)) %>%
+  mutate(extra_tax_2018=d1*0.002+d2*0.004) %>%
+  mutate(extra_tax_2018=ifelse(extra_tax_2018>0,extra_tax_2018,NA)) %>%
+  mutate_at(c("land_2006","building_2006"),funs(replace(., is.na(.), 0))) %>%
+  mutate(ut_2006=(land_2006+building_2006)*inflation_2006_2018) %>% 
+  mutate(d1=pmin(1000000,pmax(ut_2006-3000000,0))) %>%
+  mutate(d2=pmax(ut_2006-4000000,0)) %>%
+  mutate(extra_tax_2006=d1*0.002+d2*0.004) %>%
+  mutate(extra_tax_2006=ifelse(extra_tax_2006>0,extra_tax_2006,NA)) %>%
+  mutate(gain=land_2018-land_2006*inflation_2006_2018) %>%
+  mutate(average_gain = gain/(2018-2006))
+
+```
+
+
+```{r}
+
+regions <- list_census_regions("CA16") %>% filter(level=="CSD",name=="Vancouver")
+vancouver <- get_census(dataset='CA16', regions=as_census_region_list(regions), labels="detailed", 
+                        geo_format='sf', level='Regions')
+
+library(rmapzen)
+get_vector_tiles <- function(bbox){
+  mz_set_tile_host_nextzen(getOption("nextzen_API_key"))
+  mx_box=mz_rect(bbox$xmin,bbox$ymin,bbox$xmax,bbox$ymax)
+  mz_vector_tiles(mx_box)
+}
+  
+bbox=st_bbox(vancouver)
+vector_tiles <- simpleCache(get_vector_tiles(bbox),"vancouver_vector_tiles")
+# vector tiles return all layers (roads, water, buildings, etc) in a list
+roads <- as_sf(vector_tiles$roads) %>% filter(kind != "ferry")
+water <- as_sf(vector_tiles$water) 
+
+```
+
+So let's look at who actually pays the school tax. I don't have much time today and will squeeze this into my lunch time, so for simplicity we are just focusing on single family homes here, which make up the vast mavority of properties the tax applies to.
+
+```{r}
+breaks=c(-Inf,0,100,500,1000,2000,5000,10000,50000,100000,Inf)
+labels=c("None","Less than $100","$100 - $500","$500 - $1,000","$1k - $2k","$2k - $5k","$5k - $10k","$10k - $50k","$50k - $100k","More than $100k")
+colors_values=c("white",viridis::inferno(length(labels)-1))
+colors <- set_names(colors_values,labels)
+
+plot_data <- assessment_data %>% 
+  filter(!is.na(extra_tax_2018)) %>%
+  mutate(et = cut(extra_tax_2018,breaks=breaks,labels=labels)) %>%
+  mutate(et=factor(et,levels=labels))
+
+ggplot() +
+  geom_sf(data = water,
+          fill = "lightblue", colour = NA) +
+  #geom_sf(data = roads, size = .2, colour = "black") +
+  geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
+  geom_sf(data=plot_data,aes(fill=et), colour = NA) +
+  map_theme +
+  # theme(panel.background = element_rect(fill = 'grey100'),
+  #       plot.background = element_rect(fill = 'grey100')) +
+        #legend.position="bottom") +
+  scale_fill_manual(values=colors, na.value="NA") +
+  coord_sf(datum=st_crs(vancouver),
+           xlim=c(bbox$xmin,bbox$xmax),
+           ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Extra School Tax for SFH based on 2018 assessments",subtitle="", fill="Extra School Tax",caption="MountainMath, CoV Open Data")
+
+```
+
+There are `r scales::comma(assessment_data %>%  filter(!is.na(extra_tax_2018)) %>% nrow)` single family homes (that passed our rough filter) that pay the extra school tax, they are almost exclusively on the west side. This is missing some high-end condo buildings as well as duplexes. And some other properties that fell through our makeshift SFH filter, like homes with a stratified boat ramp on Deering Island. For a more complete list refer to [the previous post on this](https://doodles.mountainmath.ca/blog/2018/02/28/extra-school-tax/).
+
+The extra school tax is new, this is the first year it applies. But it's instructional to see what things would have looked like if the tax did apply in e.g. 2006.
+
+```{r}
+plot_data <- assessment_data %>% 
+  filter(!is.na(extra_tax_2018)) %>%
+  mutate(et = cut(extra_tax_2006,breaks=breaks,labels=labels,ordered_result=TRUE)) 
+
+
+ggplot() +
+  geom_sf(data = water,
+          fill = "lightblue", colour = NA) +
+  #geom_sf(data = roads, size = .2, colour = "black") +
+  geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
+  geom_sf(data=plot_data,aes(fill=et), colour = NA) +
+  map_theme +
+  # theme(panel.background = element_rect(fill = 'grey100'),
+  #       plot.background = element_rect(fill = 'grey100')) +
+        #legend.position="bottom") +
+  scale_fill_manual(values=colors, na.value="grey") +
+  coord_sf(datum=st_crs(vancouver),
+           xlim=c(bbox$xmin,bbox$xmax),
+           ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Extra School Tax for SFH based on 2006 assessments (inflation adjusted)",subtitle="", fill="Extra School Tax",caption="MountainMath, CoV Open Data")
+
+```
+
+Not that many, `r scales::comma(assessment_data %>%  filter(!is.na(extra_tax_2006)) %>% nrow)` to be precise. So how exactly did people end up with the privilege of being able to pay the extra school tax? Mostly though [twiddling thumbs](https://doodles.mountainmath.ca/blog/2016/01/24/work-vs-twiddling-thumbs/), so simply sitting on their land and doing nothing. How lucrative is thumb-twiddling you ask? Very lucrative. Don't believe me? Just look at the average annual inflation-adjusted land value gain. 
+
+```{r}
+
+gain_breaks=c(-Inf,0,75000,100000,150000,200000,300000,500000,1000000,Inf)
+gain_labels=c("None","Less than $75k","$75k - $100k","$100k - $150k","$150k - $200k","$200k - $300k","$300k - $500k","$500k - $1m","More than $1m")
+gain_colors_values=c("white",viridis::magma(length(gain_labels)-1))
+gain_colors <- set_names(gain_colors_values,gain_labels)
+
+plot_data <- assessment_data %>% 
+  filter(!is.na(extra_tax_2018)) %>%
+  mutate(et = cut(average_gain,breaks=gain_breaks,labels=gain_labels,ordered_result=TRUE))
+
+ggplot() +
+  geom_sf(data = water,
+          fill = "lightblue", colour = NA) +
+  #geom_sf(data = roads, size = .2, colour = "black") +
+  geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
+  geom_sf(data=plot_data,aes(fill=et), colour = NA) +
+  map_theme +
+  # theme(panel.background = element_rect(fill = 'grey100'),
+  #       plot.background = element_rect(fill = 'grey100')) +
+        #legend.position="bottom") +
+  scale_fill_manual(values=gain_colors, na.value='grey') +
+  coord_sf(datum=st_crs(vancouver),
+           xlim=c(bbox$xmin,bbox$xmax),
+           ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Average annual inflation-adjusted land value gains",subtitle="", fill="Gain",caption="MountainMath, CoV Open Data")
+
+```
+
+To recap, the average annual inflation-adjusted land value gains for SFH that the extra school tax applies to ranged from $75k to over $1m. That's the gains due to increases in land value, so this does not include value gains because of upgrades to the buildings. Inflation adjusted. Averaged over 12 years. So at a minimum, properties increased by $75k per year on average. That's a lot of avocado toast right there.
+
+Which naturally leads us to compare the extra school tax to the average annual value gains. This gives us some perspective on the extra school tax. To be precise, we take the quotient of the average annual inflation-adjusted land value gain between 2006 and 2018 by the extra school tax. We interpret this as how many years of extra school tax could be payed for by a single year of average land value gains.
+
+```{r gains-vs-school-tax}
+
+c_breaks=c(-Inf,0,5,10,50,100,200,500,1000,Inf)
+c_labels=c("None","Less than 5","5 - 10","10 - 50","50 - 100","100 - 200","200 - 500k","500 - 1,000","More than 1,000")
+c_colors_values=c("white",viridis::viridis(length(c_labels)-1))
+c_colors <- set_names(c_colors_values,c_labels)
+
+plot_data <- assessment_data %>% 
+  filter(!is.na(extra_tax_2018)) %>%
+  mutate(years=average_gain/extra_tax_2018) %>%
+  mutate(et = cut(years,breaks=c_breaks,labels=c_labels,ordered_result=TRUE))
+
+ggplot() +
+  geom_sf(data = water,
+          fill = "lightblue", colour = NA) +
+  #geom_sf(data = roads, size = .2, colour = "black") +
+  geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
+  geom_sf(data=plot_data,aes(fill=et), colour = NA) +
+  map_theme +
+  # theme(panel.background = element_rect(fill = 'grey100'),
+  #       plot.background = element_rect(fill = 'grey100')) +
+        #legend.position="bottom") +
+  scale_fill_manual(values=c_colors, na.value="NA") +
+  coord_sf(datum=st_crs(vancouver),
+           xlim=c(bbox$xmin,bbox$xmax),
+           ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Years the extra school tax can be financed\nthrough typical annual land value gains",subtitle="(inflation adjusted, computed at individual property level)", fill="Years",caption="MountainMath, CoV Open Data")
+
+```
+
+So at a minimum, people's annual inflation-adjusted land value gains exceeds the school tax by a factor of 5 (actually it's 6, but I like round cutoffs). At the high end it's more than 1,000 times, but that's mostly a function of people barely breaking the $3m barrier. This observation leads us to our modest proposal.
+
+# A modest school-tax proposal
+If you don't want to pay the extra school tax, how about partnering up with someone who will pay the extra school tax for you for the next 10 years in exchange for the past 10 years of inflation-adjusted land value gains?
+
+If you are over the age of 55 there is of course also the option of simply deferring your taxes. At 1.2% simple interest. Which sounds like a deal too good to be true. Yet it is. 
+
+Not over 55? You can still get a similar deal as a family with children, at a somewhat higher interest rate of 3.2%. Don't qualify for that either? Try the hardship program!
+
+That won't work for you either? You can leverage some of those past value gains by getting a HELOC. Oh, you already did that to finance some expensive hobbies and maxed out your HELOC? That would be a problem I guess. Not sure how many people are in that category, I have not heard of anyone speaking out. I suspect however that there aren't that many, and that the public sympathy for cases like this will be muted.
+
+There are certainly people that have bought fairly recently and don't have those years of land value gains to fall back on. So there are definitely some edge cases where this logic does not apply to. But  I hear homes aren't investments. Property values, interest rates, and taxes and go up or down. And the main argument that is getting pushed these days, that people have lived in these homes (which aren't "investments") for many years and don't have the income that matches the home values and therefore can't or shouldn't pay the tax, seems quite dishonest to me in light of all the thumb-twiddling gains they have reaped and the tax deferral options they have. While many people are struggling to just rent a somewhat adequate place.
