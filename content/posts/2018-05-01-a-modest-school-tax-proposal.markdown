@@ -10,9 +10,9 @@ categories:
 tags: []
 description: "Looking into the school tax outrage."
 images: ["https://doodles.mountainmath.ca/posts/2018-05-01-a-modest-school-tax-proposal_files/figure-html/gains-vs-school-tax-1.png"]
-featured: 'gains-vs-school-tax-1.png'
+featured: ''
 featuredalt: ""
-featuredpath: "/posts/2018-05-01-a-modest-school-tax-proposal_files/figure-html"
+featuredpath: ""
 linktitle: ''
 type: "post"
 ---
