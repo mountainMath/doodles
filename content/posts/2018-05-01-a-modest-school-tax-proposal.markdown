@@ -41,13 +41,13 @@ The extra school tax is new, this is the first year it applies. But it's instruc
 
 <img src="/posts/2018-05-01-a-modest-school-tax-proposal_files/figure-html/unnamed-chunk-4-1.png" width="864" />
 
-Not that many, 514 to be precise. So how exactly did people end up with the privilege of being able to pay the extra school tax? Mostly though [twiddling thumbs](https://doodles.mountainmath.ca/blog/2016/01/24/work-vs-twiddling-thumbs/), so simply sitting on their land and doing nothing. How lucrative is thumb-twiddling you ask? Very lucrative. Don't believe me? Just look at the average annual inflation-adjusted land value gain. 
+Not that many, 514 to be precise. So how exactly did people end up with the privilege of being able to pay the extra school tax? Mostly through [twiddling thumbs](https://doodles.mountainmath.ca/blog/2016/01/24/work-vs-twiddling-thumbs/), so simply sitting on their land and doing nothing. How lucrative is thumb-twiddling you ask? Very lucrative. Don't believe me? Just look at the average annual inflation-adjusted land value gain. 
 
 <img src="/posts/2018-05-01-a-modest-school-tax-proposal_files/figure-html/unnamed-chunk-5-1.png" width="864" />
 
 To recap, the average annual inflation-adjusted land value gains for SFH that the extra school tax applies to ranged from $75k to over $1m. That's the gains due to increases in land value, so this does not include value gains because of upgrades to the buildings. Inflation adjusted. Averaged over 12 years. So at a minimum, properties increased by $75k per year on average. That's a lot of avocado toast right there.
 
-Which naturally leads us to compare the extra school tax to the average annual value gains. This gives us some perspective on the extra school tax. To be precise, we take the quotient of the average annual inflation-adjusted land value gain between 2006 and 2018 by the extra school tax. We interpret this as how many years of extra school tax could be payed for by a single year of average land value gains.
+Which naturally leads us to compare the extra school tax to the average annual value gains. This gives us some perspective on the extra school tax. To be precise, we take the quotient of the average annual inflation-adjusted land value gain between 2006 and 2018 by the extra school tax. We interpret this as how many years of extra school tax could be paid for by a single year of average land value gains.
 
 <img src="/posts/2018-05-01-a-modest-school-tax-proposal_files/figure-html/gains-vs-school-tax-1.png" width="864" />
 
