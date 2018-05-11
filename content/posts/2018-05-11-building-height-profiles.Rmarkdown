@@ -1,0 +1,197 @@
+---
+title: Building Height Profiles
+author: Jens von Bergmann
+date: '2018-05-11'
+slug: building-height-profiles
+categories:
+  - density
+  - land use
+  - Vancouver
+  - Toronto
+tags: []
+description: 'Building heights by distance from city centre.'
+images: ["https://doodles.mountainmath.ca/posts/2018-05-11-building-height-profiles_files/figure-html/building_height_profile-1.png"]
+featured: 'building_height_profile_dual-1.png'
+featuredalt: ""
+featuredpath: "/posts/2018-05-11-building-height-profiles_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 8,
+	cache = TRUE
+)
+library(tidyverse)
+library(sf)
+```
+
+```{r}
+
+yvr_building_height_data<-function(){
+  base_path=file.path(getOption("custom_data_path"),"cov_bilding_lines")
+  path=file.path(base_path,"building_footprints_2009.shp")
+  if (!file.exists(path)) {
+    temp <- tempfile()
+    download.file("ftp://webftp.vancouver.ca/OpenData/shape/building_footprints_2009_shp.zip",temp)
+    utils::unzip(temp,exdir = base_path)
+    unlink(temp)
+  }
+  read_sf(path) %>% st_transform(st_crs(.))
+}
+yvr_neighbourhood_geos <- function(){
+  geo_data_url="ftp://webftp.vancouver.ca/OpenData/shape/local_area_boundary_shp.zip"
+  nbhd_path=paste0(getOption("custom_data_path"),"local_area_boundary_shp")
+  if(!file.exists(nbhd_path)){
+    mkdir(nbhd_path)
+    download_path=tempfile()
+    download.file(geo_data_url,destfile=download_path)
+    utils::unzip(download_path,exdir=nbhd_path)
+  }
+  sf::read_sf(paste0(nbhd_path,"/local_area_boundary.shp"))
+}
+
+yyz_building_height_data<-function(){
+  base_path=file.path(getOption("custom_data_path"),"yyz_bilding_lines")
+  path=file.path(base_path,"3DMassing_2017_MTM3.shp")
+  if (!file.exists(path)) {
+    temp <- tempfile()
+    download.file("http://opendata.toronto.ca/planning/3dmassing/3DMassingShapefile_2017_MTM3.zip",temp)
+    utils::unzip(temp,exdir = base_path)
+    unlink(temp)
+  }
+  read_sf(path) %>% st_transform(2019)
+}
+
+yvr_neighbourhood_geos <- function(){
+  base=getOption("custom_data_path")
+  nbhd_path=file.path(base,"neighbourhoods_planning_areas_wgs84","NEIGHBORHOODS_WGS84.shp")
+  if (!file.exists(nbhd_path)) {
+    temp=tempfile()
+    download.file("http://opendata.toronto.ca/gcc/neighbourhoods_planning_areas_wgs84.zip", temp)
+    unzip(temp,exdir = file.path(base,"neighbourhoods_planning_areas_wgs84"))
+    unlink(temp)
+  }
+  read_sf(nbhd_path) %>%
+    mutate(NAME=gsub("( \\(\\d+\\))$","",AREA_NAME))
+}
+
+yvr_data <- yvr_building_height_data() 
+yyz_data <- yyz_building_height_data() 
+yvr_centre=st_point(x=c(-123.12283515930176,49.28334393728613)) %>% st_sfc() %>% st_sf(crs=4326) %>% st_transform(st_crs(yvr_data))
+yyz_centre=st_point(x=c(-79.3801474571228,43.64860633492428)) %>% st_sfc() %>% st_sf(crs=4326) %>% st_transform(st_crs(yyz_data))
+
+yvr_data2 <- yvr_data %>% 
+  group_by(BLDGID) %>% 
+  summarize(height=max(TOPELEV_M)-min(BASEELEV_M),
+            area=sum(AREA_M2)) %>% 
+  st_centroid() %>% 
+  mutate(distance=as.numeric(st_distance(.,yvr_centre)),
+         City="Vancouver (2009)") %>%
+  select(height,area,distance,City) %>%
+  st_join(yvr_neighbourhood_geos() %>% st_transform(st_crs(yvr_data)) %>% select(NAME)) 
+
+yyz_data2 <- yyz_data %>%
+  st_centroid() %>%
+  mutate(height=MAX_HEIGHT,
+         area=SHAPE_AREA,
+         distance=as.numeric(st_distance(.,yyz_centre)),
+         City="Toronto (2017)") %>%
+  select(height,area,distance,City)
+
+data <- bind_rows(yyz_data2,yvr_data2) %>% as.data.frame %>% select(-geometry)
+```
+
+
+
+[Jim](https://twitter.com/geographyjim) has been using the Copernicus building height data for select European cities to understand the height profiles of cities.
+{{<tweet 994949659461341184>}}
+
+We thought these were pretty cool. Sadly we don't have a dataset like this for Canadian metro areas, but we can hack together something similar using LIDAR survey data. Vancouver and Toronto have LIDAR derived building data available. It only covers the respective cities, not cover the whole metro area, although the Vancouver data includes Musqueam 2, the UBC area and Mitchell Island.
+
+Not much work is needed to get the height profiles, just a tiny bit of data wrangling and the distance computation. We take Granville/Robson and King/Bay as the locations of the respective city centres.
+
+```{r building_height_profile}
+ggplot(data %>% filter(height>=1),aes(x=distance,y=height)) + 
+  geom_point(size=0.01) +
+  geom_smooth(color="brown",size=1,fullrange=TRUE) +
+  theme_bw() +
+  facet_wrap("City",scales="free_x",ncol=2) +
+  guides(colour = guide_legend(override.aes = list(size=2))) +
+  scale_x_continuous(labels=function(x){paste0(round(x/1000,1),"km")}) +
+  scale_y_continuous(labels=function(x){paste0(round(x,1),"m")}) +
+  labs(title="Building height profile",
+       x="Distance from City Centre",
+       y="Building Height")
+```
+
+We should remember that Toronto has about than 4 times the size of Vancouver, and these graphs have a different x-axis scale. While Toronto has higher buildings downtown than Vancouver, on average Vancouver has taller buildings in the core. To better compare the two we can plot them on the same graph.
+
+```{r building_height_profile_dual}
+ggplot(data %>% filter(height>=1),aes(x=distance,y=height,color=City)) + 
+  geom_point(size=0.01,alpha=0.01) +
+  geom_smooth(size=1) +
+  theme_bw() +
+  guides(colour = guide_legend(override.aes = list(size=2))) +
+  scale_x_continuous(labels=function(x){paste0(round(x/1000,1),"km")}) +
+  scale_y_continuous(labels=function(x){paste0(round(x,1),"m")}) +
+  labs(title="Building height profile",
+       x="Distance from City Centre",
+       y="Building Height") +
+  coord_cartesian(ylim=c(0,50))
+```
+
+Here we cut off the axis and added a lot of opacity to better discern how the buildings group together. A point of caution is that the further out we go the more the graph will be affected by being constrained to city limits. In Vancouver we notice a gap and then clear uptick in average building heights, which is due to the UBC area being included in the data. Another caveat is that some buildings might be misclassified in the data. I am somewhat familiar with the Vancouver data that [I mapped a couple of years ago](https://mountainmath.ca/vancouver_lidar/map), and garages are also captured in the mix. I have not dug into the Toronto data, might be worthwhile to do that at some point.
+
+It's interesting to see that in Vancouver the buildings are on average higher in the core, but lower outside the core, when compared with Toronto.
+
+As always, the underlying code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-05-11-building-height-profiles.Rmarkdown) if you want to reproduce or adapt it for your own purposes.
+
+```{r eval=FALSE, include=FALSE}
+
+tall_hoods <- yvr_data2 %>% as.data.frame()  %>% select(height,NAME) %>% filter(height>50) %>% group_by(NAME) %>% summarize(n=n()) %>% filter(n>1) %>% top_n(8,n) %>% pull(NAME)
+
+yvr_data2 <- yvr_data2 %>% mutate(hood=ifelse(NAME %in% tall_hoods & height>50,NAME,NA))
+
+color_table <- set_names(c(RColorBrewer::brewer.pal(length(tall_hoods),"Set1")),c(tall_hoods))
+
+
+ggplot(yvr_data2,aes(x=distance,y=height,color=hood)) + 
+  geom_point(size=0.01) +
+  scale_color_manual(values=color_table,na.value="grey40",labels=set_names(c(tall_hoods,""),c(tall_hoods,NA))) +
+  geom_smooth(color="brown",size=1) +
+  theme_bw() +
+  guides(colour = guide_legend(override.aes = list(size=2))) +
+  scale_x_continuous(labels=function(x){paste0(round(x/1000,1),"km")}) +
+  scale_y_continuous(labels=function(x){paste0(round(x,1),"m")}) +
+  labs(title="City of Vancouver building height profile (2009)",
+       x="Distance from Granville/Robson",
+       y="Building Height",
+       color="Neighbourhood\n(tall buildings only)")
+```
+
+
+
+```{r eval=FALSE, include=FALSE}
+library(leaflet)
+# map_data <- bad_geocoded_city %>% mutate(ADDRESS=sub(", Vancouver, BC","",addressString)) %>%
+#   left_join(city_data, by="ADDRESS")
+# stops <- quantile(map_data$`Rental Units`,seq(0,1,0.1)) %>% unique
+# map_data <- map_data %>% 
+#  mutate(color=cut(units,breaks=stops,labels=viridis::magma(length(stops)-1)))
+#map_data <- data2 %>% filter(height>200) %>% st_transform(4326)
+map_data <- data2 %>% select(-distance) %>% filter(is.na(NAME)) %>% st_transform(4326)
+map_data$lng=(map_data %>% st_coordinates())[,1]
+map_data$lat=(map_data %>% st_coordinates())[,2]
+leaflet(map_data %>% as.data.frame) %>% 
+   addProviderTiles(providers$CartoDB.Positron) %>%
+   addCircles(
+     popup = paste0("<p>Address: ",map_data$addressString,"</p><p>Height: ",as.character(map_data$height),"</p>","<p>ID: ",as.character(map_data$BLDGID),"</p>"),
+     color="red")#~map_data$color)
+
+```
+
