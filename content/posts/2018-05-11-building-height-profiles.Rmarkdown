@@ -10,10 +10,10 @@ categories:
   - Toronto
 tags: []
 description: 'Building heights by distance from city centre.'
-images: ["https://doodles.mountainmath.ca/posts/2018-05-11-building-height-profiles_files/figure-html/building_height_profile-1.png"]
-featured: 'building_height_profile_dual-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2018-05-11-building-height-profiles_files/figure-html/building_height_profile_dual-1.png"]
+featured: ''
 featuredalt: ""
-featuredpath: "/posts/2018-05-11-building-height-profiles_files/figure-html"
+featuredpath: ""
 linktitle: ''
 type: "post"
 ---
