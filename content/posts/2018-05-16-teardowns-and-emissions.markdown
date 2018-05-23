@@ -102,7 +102,7 @@ Now let's tie all of this back to emissions. Vancouver is growing, and we need t
 
 At the same time we should be focusing our building activity on actually adding units. Tearing down a single family home and building a 6-plex in it's place will accrue a fair amount of embodied carbon debt, but tearing down the home and replacing it with yet another single family home, and accommodating the growth of the remaining units by adding a floor to a highrise accumulates a larger carbon debt.
 
-The single family teardown cycle is chiefly responsible for Vancouver's ineffectiveness of adding dwelling units. Vancouver has been seeing a fair amount of construction, but CMHC estimates that for each five units built in Metro Vancouver one gets torn down. StatCan has published a new data series starting at the beginning of 2018 with monthly permit data, where we can roughly reproduce this relationship, keeping in mind that we only have two months of data right now, so we should expect quite some volatility.
+The single family teardown cycle is chiefly responsible for Vancouver's ineffectiveness of adding dwelling units. Vancouver has been seeing a fair amount of construction, but [CMHC estimates](https://www.cmhc-schl.gc.ca/odpub/pdf/69262.pdf#page=158) that for each five units built in Metro Vancouver one gets torn down. StatCan has published a new data series starting at the beginning of 2018 with monthly permit data, where we can roughly reproduce this relationship, keeping in mind that we only have two months of data right now, so we should expect quite some volatility.
 
 <img src="/posts/2018-05-16-teardowns-and-emissions_files/figure-html/middle-finger-1.png" width="864" />
 
