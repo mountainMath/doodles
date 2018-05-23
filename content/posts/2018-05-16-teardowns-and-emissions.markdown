@@ -13,10 +13,10 @@ categories:
   - zoning
 tags: []
 description: "Analysing the impact of Vancouver's teardown cycle on carbon emissions."
-images: ["https://doodles.mountainmath.ca/posts/2018-05-23-teardowns-and-emissions_files/figure-html/middle-finger-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2018-05-16-teardowns-and-emissions_files/figure-html/middle-finger-1.png"]
 featured: 'middle-finger-1.png'
-featuredalt: ""
-featuredpath: "/posts/2018-05-23-teardowns-and-emissions_files/figure-html"
+featuredalt: "Demolitions Middle Finger"
+featuredpath: "/posts/2018-05-16-teardowns-and-emissions_files/figure-html"
 linktitle: ''
 type: "post"
 draft: false
