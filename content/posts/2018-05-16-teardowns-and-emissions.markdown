@@ -29,7 +29,7 @@ Last year we took a detailed look at [Single Family teardowns in Vancouver](http
 <a href="https://mountainmath.ca/teardowns"><img src="/images/teardowns_animated.gif" style="width:50%;float:right;margin-left:10px;"></a>
 Now the second part of this work, taking our understanding of the land economics of teardowns and our teardown predictor, and investigated the impact on CO2 emissions. There are two opposing mechanisms at work. A new home starts out in a deep carbon hole dug by the embodied energy associated with the teardown/rebuild process. But these homes are more carbon efficient than the ones they replaced, so over time they will come out net carbon-positive. In simplified form the question is how long does it take to dig out of the hole and will these new homes stay around long enough before the teardown cycle again rolls over them?
 
-Our paper, co-authored with [Joe Dahmen](https://sala.ubc.ca/people/faculty/joe-dahmen) and Misha Das that just got [published in Energy and Buildings](https://www.sciencedirect.com/science/article/pii/S0378778817325549) shows that it's complicated. 
+Our paper, co-authored with [Joe Dahmen](https://sala.ubc.ca/people/faculty/joe-dahmen) and Misha Das that just got [published in Energy and Buildings](https://authors.elsevier.com/c/1WwY71M7zGskdj) shows that it's complicated. 
 
 ## TL;DR
 Single Family homes built to current emission standards will not survive long enough in order to pay back their carbon debt due to teardown/rebuilt. Homes built to CoV 2025 emission standards will generally survive long enough to come out net carbon positive, although this is only true for the first iteration of the teardown cycle. 
