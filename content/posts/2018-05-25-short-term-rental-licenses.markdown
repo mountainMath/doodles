@@ -7,7 +7,7 @@ categories:
   - Vancouver
 tags: []
 description: 'A first look at STR license data'
-images: ["https://doodles.mountainmath.ca/posts/2018-05-25-short-term-rental-licenses_files/figure-html/str_map-1.png-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2018-05-25-short-term-rental-licenses_files/figure-html/str_map-1.png"]
 featured: ''
 featuredalt: ""
 featuredpath: ""
