@@ -1,0 +1,137 @@
+---
+title: Short Term Rental Licenses
+author: Jens von Bergmann
+date: '2018-05-25'
+slug: short-term-rental-licenses
+categories:
+  - Vancouver
+tags: []
+description: 'A first look at STR license data'
+images: ["https://doodles.mountainmath.ca/posts/2018-05-25-short-term-rental-licenses_files/figure-html/str_map-1.png-1.png"]
+featured: ''
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 9
+)
+library(tidyverse)
+library(cancensus)
+library(sf)
+library(fuzzyjoin)
+library(cancensusHelpers)
+```
+
+```{r}
+url="ftp://webftp.vancouver.ca/OpenData/csv/business_licences_csv.zip"
+tmp <- tempfile()
+download.file(url,tmp)
+tmp_dir <- tempdir()
+file<-utils::unzip(tmp,exdir = tmp_dir)
+unlink(tmp)
+data <- read_csv(file)
+unlink(file)
+```
+
+```{r}
+vancouver <- get_census("CA16",regions=list(CSD="5915022"),geo_format = "sf",level = "Regions")
+
+get_neighbourhood_geos <- function(refresh=FALSE){
+  geo_data_url="ftp://webftp.vancouver.ca/OpenData/shape/local_area_boundary_shp.zip"
+  nbhd_path=paste0(getOption("custom_data_path"),"local_area_boundary_shp")
+  if(refresh | !file.exists(nbhd_path)){
+    dir.create(nbhd_path)
+    download_path=tempfile()
+    download.file(geo_data_url,destfile=download_path)
+    utils::unzip(download_path,exdir=nbhd_path)
+  }
+  sf::read_sf(paste0(nbhd_path,"/local_area_boundary.shp"))
+}
+
+prettify_neighbourhood_geos <- function(nbhds,clip){
+  nbhds <- nbhds %>% st_as_sf  %>% st_transform(st_crs(nbhds)$epsg)%>% st_as_sf
+  clip <- clip %>% st_as_sf  %>% st_transform(st_crs(nbhds)$epsg)%>% st_as_sf
+  pretty_nbhds <- st_intersection(nbhds, clip)
+  pretty_nbhds$geometry[pretty_nbhds$NAME=="Dunbar-Southlands"]=nbhds$geometry[nbhds$NAME=="Dunbar-Southlands"]
+  pretty_nbhds %>% st_as_sf
+}
+
+library(rmapzen)
+get_vector_tiles <- function(bbox){
+  mz_set_tile_host_nextzen(getOption("nextzen_API_key"))
+  mx_box=mz_rect(bbox$xmin,bbox$ymin,bbox$xmax,bbox$ymax)
+  mz_vector_tiles(mx_box)
+}
+  
+bbox=st_bbox(vancouver)
+vector_tiles <- simpleCache(get_vector_tiles(bbox),"vancouver_vector_tiles")
+# vector tiles return all layers (roads, water, buildings, etc) in a list
+roads <- as_sf(vector_tiles$roads) %>% filter(kind != "ferry")
+water <- as_sf(vector_tiles$water) 
+
+```
+
+In the City of Vancouver operators of short term rentals now need to obtain a license from the city to legally operate. There are restrictions on what units can be rented out short term. I won't get into the nitty-gritty, but here is the main point. Licenses are only available for people that want to rent out their primary residence, that is the place where they reside at least half a year. Secondary suites or laneway houses count as separate residences for this purpose, so e.g. a person living in the main unit of a house can only STR the main unit, but not the secondary suite or the laneway house. However, long term tenants that claim the secondary suite as their primary residence can STR their suite if the landlord permits it.
+
+My favourite part about licensing is that we get licence data. Yay. Time for a quick blog post using the data we have so far on the [City of Vancouver Open Data Catalogue](http://data.vancouver.ca/datacatalogue/businessLicence.htm). 
+
+```{r}
+nbhds <- get_neighbourhood_geos(TRUE) %>% prettify_neighbourhood_geos(vancouver %>% select(geometry)) 
+
+str_data <- data %>% filter(BusinessType=="Short-Term Rental", Status=="Issued") %>%
+  mutate(LocalArea=sub("Central Business/","",LocalArea))
+plot_data <- str_data %>% filter(!is.na(LocalArea)) %>% group_by(LocalArea) %>% summarize(Count=n())
+
+d <- stringdist_left_join(nbhds,plot_data,max_dist=5,by=c("NAME"="LocalArea"))  %>% 
+  st_transform(st_crs(vancouver))
+
+centroids <- d %>% st_centroid() %>% 
+  cbind(., st_coordinates(.)) %>%
+  st_set_geometry(NULL) %>%
+  mutate(color=ifelse(Count>80,"dark","light"))
+
+```
+
+Up to now we have `r scales::comma(nrow(str_data))` STR licenses issued, excluding a handful of cancelled licenses. The data comes with license number, name of the holder, issue and expiry dates. Addresses and location data is stripped, but it does identify the neighbourhood the STR is in. Here are the current counts by neighbourhood.
+
+
+```{r str_map}
+ggplot(d) +
+  geom_sf(aes(fill=Count)) +
+  geom_sf(data = water,
+          fill = "lightblue", colour = NA) +
+  #geom_sf(data = roads, size = .2, colour = "black") +
+  geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
+  map_theme +
+  theme(panel.background = element_rect(fill = 'grey100'),
+        plot.background = element_rect(fill = 'grey100')) +
+        #legend.position="bottom") +
+  scale_fill_viridis_c(na.value="grey") +
+  coord_sf(datum=st_crs(vancouver),
+           xlim=c(bbox$xmin,bbox$xmax),
+           ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Active STR Licences", fill="",caption=paste0("MountainMath, CoV Open Data",", NextZen, OSM")) +
+  geom_text(data=centroids,
+                  aes(label = Count, x = X, y = Y,color=color),
+                  size=2.5) +
+  scale_color_manual(values=set_names(c("black","white"),c("dark","light")),guide=FALSE)
+
+```
+
+We can also take a quick look at the issue date, there was a big spike on April 20, that quickly petered off to a steady but low stream.
+
+```{r}
+ggplot(str_data,aes(x=IssuedDate)) +
+  geom_histogram(fill="steelblue") +
+  theme_bw()+
+  labs(title="Issued STR Licences by Issue Date", fill="",caption=paste0("MountainMath, CoV Open Data"),y="Count") 
+```
+
+We might update the post at some later point in time, but those that want more regular updates are welcome to [grab the code on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-05-25-short-term-rental-licenses.Rmarkdown) and run it regularly. It will pull in the latest data and automatically update.
