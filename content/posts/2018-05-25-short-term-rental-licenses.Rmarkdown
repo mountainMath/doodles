@@ -165,7 +165,7 @@ ggplot(d) +
   coord_sf(datum=st_crs(vancouver),
            xlim=c(bbox$xmin,bbox$xmax),
            ylim=c(bbox$ymin,bbox$ymax)) +
-  labs(title="Active STR Licences", fill="STR share",caption=paste0("MountainMath, CoV Open Data",", NextZen, OSM")) +
+  labs(title="Active STR Licences", subtitle="Normailzed by occupied dwelling units", fill="STR share",caption=paste0("MountainMath, CoV Open Data",", NextZen, OSM")) +
   geom_text(data=centroids,
                   aes(label = scales::percent(round(str_density,3)), x = X, y = Y,color=color2),
                   size=2.5) +
@@ -202,7 +202,7 @@ cc <- centroids %>% left_join(assessment) %>%
   mutate(color=ifelse(str_share>0.01,"dark","light"))
 ```
 
-```{r}
+```{r str_map_taxable}
 ggplot(dd) +
   geom_sf(aes(fill=str_share)) +
   geom_sf(data = water,
@@ -242,7 +242,7 @@ ggplot(d) +
   coord_sf(datum=st_crs(vancouver),
            xlim=c(bbox$xmin,bbox$xmax),
            ylim=c(bbox$ymin,bbox$ymax)) +
-  labs(title="Active STR Licences", fill="STR share",caption=paste0("MountainMath, CoV Open Data",", NextZen, OSM")) +
+  labs(title="Active STR Licences",subtitle="Normailzed by owner households", fill="STR share",caption=paste0("MountainMath, CoV Open Data",", NextZen, OSM")) +
   geom_text(data=centroids,
                   aes(label = scales::percent(round(str_owners,3)), x = X, y = Y,color=color3),
                   size=2.5) +
@@ -250,4 +250,4 @@ ggplot(d) +
 
 ```
 
-I think I got all my bases covered now. If you want to fine-tune this even further, maybe take out strata buildings that have STR restrictions, just go [grab the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-05-25-short-term-rental-licenses.Rmarkdown) and hack away. The taxable dwelling unit map requires access to my enriched CoV assessment database though, but if you comment that portion out it should pull in all the other data you need and reproduce everything else.
+I think I got all my bases covered now. If you want to fine-tune this even further, maybe take out strata buildings that have STR restrictions, just go [grab the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-05-25-short-term-rental-licenses.Rmarkdown) and hack away. The taxable dwelling unit map requires access to my enriched CoV assessment database though, but if you comment that portion out it should pull in all the other data you need and reproduce everything else. Also, the data will auto-update, so if you run this at a later time it will pull in the STR license data for that point in time.
