@@ -37,3 +37,8 @@ We can also take a quick look at the issue date, there was a big spike on April 
 <img src="/posts/2018-05-25-short-term-rental-licenses_files/figure-html/unnamed-chunk-4-1.png" width="864" />
 
 We might update the post at some later point in time, but those that want more regular updates are welcome to [grab the code on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-05-25-short-term-rental-licenses.Rmarkdown) and run it regularly. It will pull in the latest data and automatically update.
+
+# Update
+Some [asked](https://twitter.com/yvryimby/status/1000123204747251718) for a version normalized by dwellings. The neighbourhood level census data provided by the City of Vancouver misses the dwelling variable, we we use the one for occupied dwellings instead. Which probably is just as well, as one cannot get a license for an unoccupied dwelling unit. Here is a quick update for share of STR license among occupied dwelling units.
+
+<img src="/posts/2018-05-25-short-term-rental-licenses_files/figure-html/str_map_share-1.png" width="864" />

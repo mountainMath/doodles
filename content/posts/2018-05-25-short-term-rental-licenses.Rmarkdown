@@ -83,19 +83,26 @@ In the City of Vancouver operators of short term rentals now need to obtain a li
 My favourite part about licensing is that we get licence data. Yay. Time for a quick blog post using the data we have so far on the [City of Vancouver Open Data Catalogue](http://data.vancouver.ca/datacatalogue/businessLicence.htm). 
 
 ```{r}
-nbhds <- get_neighbourhood_geos(TRUE) %>% prettify_neighbourhood_geos(vancouver %>% select(geometry)) 
+cov_nbhd_census_data <- get_cov_census_data(2016) %>% 
+  mutate(dwellings=`v_2016_166: Total - Occupied private dwellings by structural type of dwelling - 100% data`) %>% select(NAME,dwellings)
+  
+
+nbhds <- get_neighbourhood_geos() %>% prettify_neighbourhood_geos(vancouver %>% select(geometry)) %>%
+  left_join(cov_nbhd_census_data)
 
 str_data <- data %>% filter(BusinessType=="Short-Term Rental", Status=="Issued") %>%
   mutate(LocalArea=sub("Central Business/","",LocalArea))
 plot_data <- str_data %>% filter(!is.na(LocalArea)) %>% group_by(LocalArea) %>% summarize(Count=n())
 
 d <- stringdist_left_join(nbhds,plot_data,max_dist=5,by=c("NAME"="LocalArea"))  %>% 
-  st_transform(st_crs(vancouver))
+  st_transform(st_crs(vancouver)) %>%
+  mutate(str_density=Count/dwellings)
 
 centroids <- d %>% st_centroid() %>% 
   cbind(., st_coordinates(.)) %>%
   st_set_geometry(NULL) %>%
-  mutate(color=ifelse(Count>80,"dark","light"))
+  mutate(color=ifelse(Count>80,"dark","light"),
+         color2=ifelse(str_density>0.45,"dark","light"))
 
 ```
 
@@ -135,3 +142,29 @@ ggplot(str_data,aes(x=IssuedDate)) +
 ```
 
 We might update the post at some later point in time, but those that want more regular updates are welcome to [grab the code on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-05-25-short-term-rental-licenses.Rmarkdown) and run it regularly. It will pull in the latest data and automatically update.
+
+# Update
+Some [asked](https://twitter.com/yvryimby/status/1000123204747251718) for a version normalized by dwellings. The neighbourhood level census data provided by the City of Vancouver misses the dwelling variable, we we use the one for occupied dwellings instead. Which probably is just as well, as one cannot get a license for an unoccupied dwelling unit. Here is a quick update for share of STR license among occupied dwelling units.
+
+```{r str_map_share}
+ggplot(d) +
+  geom_sf(aes(fill=str_density)) +
+  geom_sf(data = water,
+          fill = "lightblue", colour = NA) +
+  #geom_sf(data = roads, size = .2, colour = "black") +
+  geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
+  map_theme +
+  theme(panel.background = element_rect(fill = 'grey100'),
+        plot.background = element_rect(fill = 'grey100')) +
+        #legend.position="bottom") +
+  scale_fill_viridis_c(na.value="grey",option = "magma",labels=scales::percent) +
+  coord_sf(datum=st_crs(vancouver),
+           xlim=c(bbox$xmin,bbox$xmax),
+           ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Active STR Licences", fill="STR share",caption=paste0("MountainMath, CoV Open Data",", NextZen, OSM")) +
+  geom_text(data=centroids,
+                  aes(label = scales::percent(round(str_density,3)), x = X, y = Y,color=color2),
+                  size=2.5) +
+  scale_color_manual(values=set_names(c("black","white"),c("dark","light")),guide=FALSE)
+
+```
