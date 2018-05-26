@@ -42,3 +42,18 @@ We might update the post at some later point in time, but those that want more r
 Some [asked](https://twitter.com/yvryimby/status/1000123204747251718) for a version normalized by dwellings. The neighbourhood level census data provided by the City of Vancouver misses the dwelling variable, we we use the one for occupied dwellings instead. Which probably is just as well, as one cannot get a license for an unoccupied dwelling unit. Here is a quick update for share of STR license among occupied dwelling units.
 
 <img src="/posts/2018-05-25-short-term-rental-licenses_files/figure-html/str_map_share-1.png" width="864" />
+
+
+# Even later update
+I probably should have thought this through earlier, but purpose-built rental buildings are unlikely to get short-term rented by their tenants. The same is true for tenants in secondary suites or laneway houses. To STR these the tenant needs explicit approval from the landlord, who has not much to gain by allowing this. So here is another way to normalize the data, only counting "taxable" dwelling units [like we in a previous post on the empty homes tax](https://doodles.mountainmath.ca/blog/2018/02/24/taxable-dwelling-density/). 
+
+
+
+<img src="/posts/2018-05-25-short-term-rental-licenses_files/figure-html/unnamed-chunk-6-1.png" width="864" />
+
+
+And lastly, we can also normalize the STR licenses by owner-occupied dwellings. Realistically speaking, those are the only people that can make the decision to STR their unit without having to ask anyone for permission. An owner household going on a two week vacation abroad can STR their unit to help pay for the trip, a renter household wanting to do the same will first have to ask for permission from their landlord.
+
+<img src="/posts/2018-05-25-short-term-rental-licenses_files/figure-html/str_map_onwers-1.png" width="864" />
+
+I think I got all my bases covered now. If you want to fine-tune this even further, maybe take out strata buildings that have STR restrictions, just go [grab the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-05-25-short-term-rental-licenses.Rmarkdown) and hack away. The taxable dwelling unit map requires access to my enriched CoV assessment database though, but if you comment that portion out it should pull in all the other data you need and reproduce everything else.

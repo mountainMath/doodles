@@ -84,7 +84,9 @@ My favourite part about licensing is that we get licence data. Yay. Time for a q
 
 ```{r}
 cov_nbhd_census_data <- get_cov_census_data(2016) %>% 
-  mutate(dwellings=`v_2016_166: Total - Occupied private dwellings by structural type of dwelling - 100% data`) %>% select(NAME,dwellings)
+  mutate(dwellings=`v_2016_166: Total - Occupied private dwellings by structural type of dwelling - 100% data`,
+         owners=`v_2016_4019: Owner`) %>% 
+  select(NAME,dwellings,owners)
   
 
 nbhds <- get_neighbourhood_geos() %>% prettify_neighbourhood_geos(vancouver %>% select(geometry)) %>%
@@ -96,13 +98,15 @@ plot_data <- str_data %>% filter(!is.na(LocalArea)) %>% group_by(LocalArea) %>% 
 
 d <- stringdist_left_join(nbhds,plot_data,max_dist=5,by=c("NAME"="LocalArea"))  %>% 
   st_transform(st_crs(vancouver)) %>%
-  mutate(str_density=Count/dwellings)
+  mutate(str_density=Count/dwellings,
+         str_owners=Count/owners)
 
 centroids <- d %>% st_centroid() %>% 
   cbind(., st_coordinates(.)) %>%
   st_set_geometry(NULL) %>%
   mutate(color=ifelse(Count>80,"dark","light"),
-         color2=ifelse(str_density>0.0045,"dark","light"))
+         color2=ifelse(str_density>0.0045,"dark","light"),
+         color3=ifelse(str_owners>0.015,"dark","light"))
 
 ```
 
@@ -168,3 +172,82 @@ ggplot(d) +
   scale_color_manual(values=set_names(c("black","white"),c("dark","light")),guide=FALSE)
 
 ```
+
+
+# Even later update
+I probably should have thought this through earlier, but purpose-built rental buildings are unlikely to get short-term rented by their tenants. The same is true for tenants in secondary suites or laneway houses. To STR these the tenant needs explicit approval from the landlord, who has not much to gain by allowing this. So here is another way to normalize the data, only counting "taxable" dwelling units [like we in a previous post on the empty homes tax](https://doodles.mountainmath.ca/blog/2018/02/24/taxable-dwelling-density/). 
+
+```{r}
+library(assessment)
+library(splitstackshape)
+assessment <- get_assessmemt() %>%
+  residential_land_use %>%
+  mutate(centroid=st_centroid(.$geometry)) %>% 
+  st_set_geometry(.$centroid) %>%
+  sfc_as_cols %>% 
+  st_transform(st_crs(d)) %>%
+  st_join(d) %>%
+  as.data.frame %>%
+  select(NAME,unit_count) %>%
+  mutate(unit_count=coalesce(unit_count, 0L)) %>%
+  group_by(NAME) %>%
+  summarize(units=sum(unit_count))
+
+
+dd<- left_join(d,assessment) %>%
+  mutate(str_share=Count/units) %>%
+  mutate(log_str_share=log(str_share)) 
+cc <- centroids %>% left_join(assessment) %>%
+  mutate(str_share=Count/units) %>%
+  mutate(color=ifelse(str_share>0.01,"dark","light"))
+```
+
+```{r}
+ggplot(dd) +
+  geom_sf(aes(fill=str_share)) +
+  geom_sf(data = water,
+          fill = "lightblue", colour = NA) +
+  #geom_sf(data = roads, size = .2, colour = "black") +
+  geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
+  map_theme +
+  theme(panel.background = element_rect(fill = 'grey100'),
+        plot.background = element_rect(fill = 'grey100')) +
+        #legend.position="bottom") +
+  scale_fill_viridis_c(na.value="grey",option = "inferno",labels=scales::percent, trans = "log") +
+  coord_sf(datum=st_crs(vancouver),
+           xlim=c(bbox$xmin,bbox$xmax),
+           ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Active STR Licences",subtitle="Normalized by taxable dwelling units", fill="STR share",caption=paste0("MountainMath, CoV Open Data",", NextZen, OSM")) +
+  geom_text(data=cc,
+                  aes(label = scales::percent(round(str_share,3)), x = X, y = Y,color=color),
+                  size=2.5) +
+  scale_color_manual(values=set_names(c("black","white"),c("dark","light")),guide=FALSE)
+```
+
+
+And lastly, we can also normalize the STR licenses by owner-occupied dwellings. Realistically speaking, those are the only people that can make the decision to STR their unit without having to ask anyone for permission. An owner household going on a two week vacation abroad can STR their unit to help pay for the trip, a renter household wanting to do the same will first have to ask for permission from their landlord.
+
+```{r str_map_onwers}
+ggplot(d) +
+  geom_sf(aes(fill=str_owners)) +
+  geom_sf(data = water,
+          fill = "lightblue", colour = NA) +
+  #geom_sf(data = roads, size = .2, colour = "black") +
+  geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
+  map_theme +
+  theme(panel.background = element_rect(fill = 'grey100'),
+        plot.background = element_rect(fill = 'grey100')) +
+        #legend.position="bottom") +
+  scale_fill_viridis_c(na.value="grey",option = "plasma",labels=scales::percent,trans="log") +
+  coord_sf(datum=st_crs(vancouver),
+           xlim=c(bbox$xmin,bbox$xmax),
+           ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Active STR Licences", fill="STR share",caption=paste0("MountainMath, CoV Open Data",", NextZen, OSM")) +
+  geom_text(data=centroids,
+                  aes(label = scales::percent(round(str_owners,3)), x = X, y = Y,color=color3),
+                  size=2.5) +
+  scale_color_manual(values=set_names(c("black","white"),c("dark","light")),guide=FALSE)
+
+```
+
+I think I got all my bases covered now. If you want to fine-tune this even further, maybe take out strata buildings that have STR restrictions, just go [grab the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-05-25-short-term-rental-licenses.Rmarkdown) and hack away. The taxable dwelling unit map requires access to my enriched CoV assessment database though, but if you comment that portion out it should pull in all the other data you need and reproduce everything else.
