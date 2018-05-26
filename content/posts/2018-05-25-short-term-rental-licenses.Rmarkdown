@@ -102,7 +102,7 @@ centroids <- d %>% st_centroid() %>%
   cbind(., st_coordinates(.)) %>%
   st_set_geometry(NULL) %>%
   mutate(color=ifelse(Count>80,"dark","light"),
-         color2=ifelse(str_density>0.45,"dark","light"))
+         color2=ifelse(str_density>0.0045,"dark","light"))
 
 ```
 
