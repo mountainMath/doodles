@@ -7,7 +7,7 @@ categories:
   - Assessment Data
   - Vancouver
 tags: []
-description: 'Apparently 8th gade math ability is inversly proportional to property values, here is a simple calculator for those still suffering from consequences of sub-par math education.'
+description: 'Apparently 8th grade math ability is inversly proportional to property values, here is a simple calculator for those still suffering from consequences of sub-par math education.'
 images: ["https://doodles.mountainmath.ca/posts/2018-02-28-extra-school-tax_files/figure-html/school_tax_map-1.png"]
 featured: ''
 featuredalt: ""
@@ -20,7 +20,7 @@ One thing the extra school tax debate has [brought to light](https://twitter.com
 
 8th grade math should really be something all of us are comfortable with. (And it really should be 6th grade math.) Another good reason to invest more into our K-12 education system. Incidentally only 35% of which is currently funded by school taxes, although that's [not the main reason why increasing school taxes, which is just the name of the provincial portion of the property taxes, is a good idea](https://docs.google.com/document/d/1KnxJlJXkp853PAiHJNqNVL3xkhphYxsFrjg4o9zZBAk/edit).
 
-We have talked about the school taxes before, once just [running the numbers for the City of Vancouver to see who is affected](https://doodles.mountainmath.ca/blog/2018/02/28/extra-school-tax/) and once [relating the school tax to land value gainst](https://doodles.mountainmath.ca/blog/2018/05/01/a-modest-school-tax-proposal/). It seems we need yet another post to simplify the math down to moving a couple of sliders.
+We have talked about the school taxes before, once just [running the numbers for the City of Vancouver to see who is affected](https://doodles.mountainmath.ca/blog/2018/02/28/extra-school-tax/) and once [relating the school tax to land value against](https://doodles.mountainmath.ca/blog/2018/05/01/a-modest-school-tax-proposal/). It seems we need yet another post to simplify the math down to moving a couple of sliders.
 
 ### Assumptions
 <table style="border-spacing:1em 0;border-collapse:separate;margin-bottom:20px;">
@@ -40,7 +40,7 @@ We have talked about the school taxes before, once just [running the numbers for
 </table>
 
 # An example
-An upfront warning, I have a really hard time to dial down the snark level when talking about prominant examples from the news. You best not read on if that's potentially offensive to you.
+An upfront warning, I have a really hard time to dial down the snark level when talking about prominent examples from the news. You best not read on if that's potentially offensive to you.
 
 As an illustrative example consider the [plight of David Tha](http://www.vancourier.com/real-estate/house-rich-tax-poor-how-a-point-grey-couple-is-struggling-to-pay-school-surtax-1.23290979). He bought his home in 1987 for $370,000 and it's assessed at $6.75M now. That's an 18.2 fold increase over 31 years, or an annual appreciation of 9.8%. He says he has done nothing to earn this increase in value, other than applying "a few coats of paint" over the years. 
 
