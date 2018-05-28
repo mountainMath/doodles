@@ -16,7 +16,7 @@ linktitle: ''
 type: "post"
 ---
 
-One thing the extra school tax debate has [brought to light](https://twitter.com/elam101/status/1001114791975337984) is how challenging 8th grade math is for people, especially those living in homes valued over $3M. Journalists also seem trouble putting outrageously wrong statements into perspective, so here is a simple calculator on how much extra school tax people will own depending on their home value, years until home is sold, expected changes in the real estate market, interest rates on deferred (through government program or second mortgage) taxes.
+One thing the extra school tax debate has [brought to light](https://twitter.com/elam101/status/1001114791975337984) is how challenging 8th grade math is for people, especially those living in homes valued over $3M. Journalists also seem trouble putting outrageously wrong statements into perspective, so here is a simple calculator on how much extra school tax people will owe depending on their home value, years until home is sold, expected changes in the real estate market, interest rates on deferred (through government program or second mortgage) taxes.
 
 8th grade math should really be something all of us are comfortable with. (And it really should be 6th grade math.) Another good reason to invest more into our K-12 education system. Incidentally only 35% of which is currently funded by school taxes, although that's [not the main reason why increasing school taxes, which is just the name of the provincial portion of the property taxes, is a good idea](https://docs.google.com/document/d/1KnxJlJXkp853PAiHJNqNVL3xkhphYxsFrjg4o9zZBAk/edit).
 
