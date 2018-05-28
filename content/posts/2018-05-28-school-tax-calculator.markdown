@@ -58,7 +58,7 @@ But Tha's plight does not end here.
     
 The math is of course ambitious. First off, if his house had really "only" appreciated by 5% annually since he bought it it would now be worth $1.68M and he would not have to pay the extra school tax. Next, employing some math debugging skill, he seems to believe that it's ok not to compound the appreciation and is in the same camp as many homeowners in not understanding how regular property tax mill rates are calculated by assuming the mill rate is fixed as overall property values go up. And computed the total rate based on these assumptions, not just the extra school tax. Glad to know he is retired.
 
-So let's fix this and set out calculator to $6.75M home value, 5% real estate appreciating rate, 1.2% simple interest and 15 years. We see that in 15 years Tha's daughter will be in the very uncomfortable position of inheriting a $14M home owing $640k in deferred extra school tax, a net value of over $13M. At that point in time the annual extra school tax amounts to $42k and she will have to make up her mind if she wants to keep deferring taxes, which she may have to finace through a second mortgage at higher interest rates (although still lower than Tha's projected rate of real estate appreciation), or sell her home for around $14M.
+So let's fix this and set out calculator to $6.75M home value, 5% real estate appreciating rate, 1.2% simple interest and 15 years. We see that in 15 years Tha's daughter will be in the very uncomfortable position of inheriting a $14M home owing $390k in deferred extra school tax, a net value of over $13.5M. At that point in time the annual extra school tax amounts to $42k and she will have to make up her mind if she wants to keep deferring taxes, which she may have to finace through a second mortgage at higher interest rates (although still lower than Tha's projected rate of real estate appreciation), or sell her home for around $14M.
 
 Of course Tha could sell right now and downsize, this way he could avoid having to skimp on meals and cut his cable TV. But...
 
@@ -114,7 +114,7 @@ function updateResults(){
    
    var value2=0;
    for (i=1;i<=yearsValue;i++){
-    value2+=extraTax(homeValue*Math.pow(1+changeValue,yearsValue-1))*(1+interestValue * (yearsValue-i));
+    value2+=extraTax(homeValue*Math.pow(1+changeValue,i-1))*(1+interestValue * (yearsValue-i));
    }
    value2=roundSignificant(value2,2);
    $('#deferred_taxes').html(currencyFormatterFull(value2));
