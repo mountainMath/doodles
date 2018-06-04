@@ -1,0 +1,446 @@
+---
+title: Vancouver Streets and Lanes
+author: Jens von Bergmann
+date: '2018-06-04'
+slug: vancouver-streets-and-lanes
+categories:
+  - Vancouver
+  - Transportation
+  - land use
+tags: []
+description: "How much space is taken up by roads right-of-ways?"
+images: ["https://doodles.mountainmath.ca/posts/2018-06-04-vancouver-streets-and-lanes_files/figure-html/street_widths-1.png"]
+featured: 'street_widths-1.png'
+featuredalt: "Street Widths"
+featuredpath: "/posts/2018-06-04-vancouver-streets-and-lanes_files/figure-html/"
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 9
+)
+```
+
+[Mitchell Reardon](https://twitter.com/MitchellReardon) asked me a question about lanes in the City of Vancouver: "Do you happen to have a figure (or quick way to calculate) the number of laneways in Vancouver, and the amount of space they take up?" I have [looked at the overall space taken up by roads before](https://doodles.mountainmath.ca/blog/2016/02/29/land-use/) using the Metro Vancouver land use dataset, but never looked just at lanes. But that's easy enough to do thanks to [the streets package in Vancouver's Open Data Catalogue](http://data.vancouver.ca/datacatalogue/cityStreets.htm). So I decided to run the numbers. And write up a quick blog post for posterity, in case someone has questions or wants to refine this.
+
+Given the sheer mass of land dedicated to streets right-of-ways in Vancouver we should be paying a lot more attention to this. Transportation corridors can be a great resource for public space and even parks as Vancouver's ratio of park space to people is slowly declining. The Arbutus Corridor is just the latest example of how a transportation corridor can be repurposed, and the proposals on how to shape the individual sections looks amazing.
+
+You should also check out [Mitchell's article in Spacing](http://spacing.ca/vancouver/2018/06/04/alleys-laneways-life-buildings/) on lanes, the space they take up, and what else could be done with some of that space.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(sf)
+base=getOption("custom_data_path")
+ft_to_m=0.3048
+format_length <- function(x){return(paste0(round(x/1000,1)," km"))}
+format_area <- function(x){return(paste0(round(x/1000000,3)," km²"))}
+format_percent <- function(x){return(paste0(round(x*100,1),"%"))}
+
+simpleCache <- function(object,key,refresh=FALSE){
+  cache_path=file.path(getOption("cache_path"),key)
+  if(!refresh & file.exists(cache_path)) {
+    data=readRDS(cache_path) 
+    } else {
+    data=object
+    saveRDS(data,file=cache_path)
+  }
+  return(data)
+}
+
+```
+
+```{r, include=FALSE}
+lanes <- read_sf(paste0(base,"shape_city_streets/lanes.shp")) %>% 
+   mutate(type="lane") 
+non_city_streets <- read_sf(paste0(base,"shape_city_streets/non_city_streets.shp")) %>% 
+   mutate(type="non city street") 
+public_streets <- read_sf(paste0(base,"shape_city_streets/public_streets.shp")) %>% 
+   mutate(type="city street") 
+# one_way_streets <- read_sf(paste0(base,"shape_city_streets/one_way_streets.shp")) %>% 
+#    mutate(type="one-way street") %>%
+#   st_transform(3005) 
+
+streets <- do.call(rbind,list(
+  public_streets %>% select(type,USE),
+  lanes %>% mutate(USE="lane") %>% select(type,USE),
+  #one_way_streets %>% select(type,USE),
+  non_city_streets %>% mutate(USE="non city street") %>% select(type,USE)
+))
+
+```
+
+# The Streets
+The dataset distinguishes three types of streets, "city streets", "lanes", and "non city streets". Let's take a look what these are.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+library(cancensus)
+#census_data <- get_census(dataset='CA16', regions=list(CSD=c("5915022","5915803")), vectors=c("v_CA16_407"), labels="short", geo_format="sf", level='Regions') %>% transform(3005)
+cov <- get_census(dataset='CA16', regions=list(CSD=c("5915022")), vectors=c("v_CA16_407"), labels="short", geo_format="sf", level='Regions') %>% st_transform(st_crs(streets))
+
+map_opts <- list(
+  ggplot2::theme_void(),
+  ggplot2::theme(panel.grid.major = ggplot2::element_line(colour = "transparent"))
+)
+
+library(rmapzen)
+get_vector_tiles <- function(bbox){
+  mz_set_tile_host_nextzen(getOption("nextzen_API_key"))
+  mx_box=mz_rect(bbox$xmin,bbox$ymin,bbox$xmax,bbox$ymax)
+  mz_vector_tiles(mx_box)
+}
+
+bbox=st_bbox(cov)
+vector_tiles <- simpleCache(get_vector_tiles(bbox),"van_city_vector_tiles")
+# vector tiles return all layers (roads, water, buildings, etc) in a list
+roads <- rmapzen::as_sf(vector_tiles$roads) %>% filter(kind != "ferry")
+water <- rmapzen::as_sf(vector_tiles$water)
+
+basemap <- ggplot() +
+  geom_sf(data=cov, fill="#ffffff",size=0.1) +
+  map_opts +
+  theme(panel.background = element_rect(fill = '#f0f0f0', colour = NA))
+
+mapzen_overlay <- list(
+  #geom_sf(data=roads %>% filter(kind %in% c("highway","major_road")),size=0.1,color="darkgrey",fill=NA),
+  geom_sf(data = water, fill = "lightblue", colour = NA),
+  coord_sf(datum=st_crs(cov),
+         xlim=c(bbox$xmin,bbox$xmax),
+         ylim=c(bbox$ymin,bbox$ymax))
+)
+```
+
+```{r all_streets, echo=FALSE, message=FALSE, warning=FALSE}
+
+
+cols=setNames(c("#ff0000","#00ff00","#0000ff"),c("non city street","city street","lane"))
+
+basemap +
+  geom_sf(data=streets,aes(color=type), show.legend = "line") +
+  mapzen_overlay +
+  scale_color_manual(values=cols, name="Street Type") +
+  labs(title="Street ROW")
+
+# ggplot(streets) +
+#   geom_sf(data=cov, fill="#cccccc") +
+#   scale_color_manual(values=cols, name="Street Type") +
+#   labs(title="Street ROW") +
+#   map_opts
+  
+```
+
+We see that non city streets are private strata roads (e.g. Champlain Heights or Tugboat place) or ministry roads like Highway 1 or the roads in Stanley park. We also not that the dataset includes some roads outside of CoV, including the ones in Musqueam 2 that in many cases is included in CoV planning. There is a judgement call to be made if we should include Musqueam in our analysis, we did include it in our previous post. (Of note here is that the Metro Vancouver land use dataset did not include non city roads.) But Mitch's question just mentions Vancouver, so let's stick with that for this post.
+
+```{r cov_streets, echo=FALSE, message=FALSE, warning=FALSE}
+
+cov_streets <- streets %>% st_intersection(cov) %>% st_cast("MULTILINESTRING") %>% select(type,USE)
+
+basemap +
+  geom_sf(data=cov_streets,aes(color=type), show.legend = "line") +
+  mapzen_overlay +
+  scale_color_manual(values=cols, name="Street Type") +
+  labs(title="Street ROW")
+
+# ggplot(cov_streets) +
+#   geom_sf(data=cov, fill="#cccccc") +
+#   geom_sf(aes(color=type), show.legend = "line") +
+#   scale_color_manual(values=cols, name="Street Type") +
+#   labs(title="City of Vancouver Street ROW") +
+#   map_opts
+  
+```
+
+# Road ROW widths
+To understand how much space the roads right of ways take up we need to know how wide each road segment is. Conveniently enough the dataset has information on that. Unfortunately, the individual road segments aren't labelled, but the widths dataset consists of points at which measurements (or estimates) were taken. We can fold those in to label the segments that we can identify that way. It's a bit messy as the location of the measurements do not exactly coincide with road segments. We take the approach that each measurement applies to exactly one road segment, the one closest to it.
+
+This kind of matching gets messy (and computationally expensive) fast, [check the code]() if you need to know the details of how we wrangled the data.
+
+```{r, include=FALSE}
+widths <- read_sf(paste0(base,"shape_city_streets/right-of-way_widths.shp")) %>% 
+  st_transform(st_crs(streets)) %>% 
+  mutate(width=case_when(
+    grepl("\\(m\\)$",WIDTH) ~ as.numeric(sub("\\(m\\)$","",WIDTH)),
+    grepl("m|M",WIDTH) ~ as.numeric(sub("m|M","",WIDTH)),
+    TRUE ~ as.numeric(WIDTH)*ft_to_m
+  )) %>%
+  mutate(width=units::set_units(width,m)) %>%
+  #select(width) %>% 
+  mutate(ind=row_number())
+
+
+cov_streets <- cov_streets %>% select(type,USE) %>% mutate(id=row_number()) 
+
+used_widths <- c()
+s <- st_join(st_buffer(widths,0.05),cov_streets,left=FALSE) %>% as.data.frame 
+used_widths <- c(used_widths,s$ind)%>% unique
+s <- s %>% group_by(id) %>% summarize(width=mean(width))
+nrow(s)
+
+for (dist in c(0.1,0.2,0.3,0.4,0.5,0.6,0.8,1,2,3.4,5)) {
+  ss <- st_join(st_buffer(widths %>% filter(!(ind %in% used_widths)),dist),cov_streets %>% filter(!(id %in% s$id)),left=FALSE) %>% as.data.frame 
+  used_widths <- c(used_widths,ss$ind)%>% unique
+  s <- rbind(s,ss %>% group_by(id) %>% summarize(width=mean(width)))
+}
+
+cov_streets <- left_join(cov_streets,s,by="id") %>%
+  mutate(length=st_length(geometry)) %>% mutate(have_width=!is.na(width))
+
+# streets_for_match<-function(streets,widths,dist){
+#  streets %>%
+#   st_join(st_buffer(widths,dist), left=TRUE) %>%
+#     
+#    filter(!duplicated(id), !is.na(ind))
+# }
+# 
+# s <- streets_for_match(cov_streets,widths,0.1)
+# s %>% as.data.frame %>% filter(is.na(width)) %>% group_by(type) %>% summarize(n=n())
+# 
+# for (dist in c(0.5,1,1.5,2,3.4,5)) {
+#   ss=streets_for_match(cov_streets %>% filter(!(id %in% s$id)),widths %>% filter(!(ind %in% s$ind)),dist)
+#   s <- rbind(s,ss)
+# }
+# cov_streets <- rbind(s,cov_streets%>% filter(!(id %in% s$id)) %>% mutate(width=NA,WIDTH=NA,ind=NA)) %>%
+#     mutate(length=st_length(geometry))
+# 
+# cov_streets %>% as.data.frame %>% filter(is.na(width)) %>% group_by(type) %>% summarize(n=n())
+
+# s <- cov_streets %>%
+#   mutate(length=st_length(geometry)) %>%
+#   st_join(st_buffer(widths,1), left=TRUE)
+# 
+# s[duplicated(s$ind) & !is.na(s$ind),] %>% nrow
+# s[is.na(s$ind),] %>% nrow
+# cov_streets <- s[!duplicated(s$ind),]
+
+```
+
+```{r eval=FALSE, include=FALSE}
+# interactive feedback to see how we are doing
+library(leaflet)
+geojson <- cov_streets %>% 
+  select(type,id,width,have_width) %>% 
+  mutate(width=as.numeric(width)) %>% 
+  st_transform(4326) %>% 
+  as("Spatial") %>%
+  geojson::as.geojson() %>%
+  jsonlite::fromJSON(simplifyVector = FALSE)
+geojson$features <- lapply(geojson$features, function(feat) {
+  have_width <- feat$properties$have_width
+  feat$properties$style <- list(
+    strokeColor = ifelse(have_width,"red","black"),
+    stroke = ifelse(have_width,"red","black"),
+    color = ifelse(have_width,"red","black")
+  )
+  feat
+})
+map_data <- widths %>% mutate(used=ind %in% used_widths) %>% 
+  mutate(color=ifelse(used,"green","blue")) %>%
+  st_transform(4326)
+map_data$lng=(map_data %>% st_coordinates())[,1]
+map_data$lat=(map_data %>% st_coordinates())[,2]
+leaflet(map_data %>% as.data.frame) %>% 
+  setView(lng = -123.147125, lat = 49.261083, zoom = 15) %>% 
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addGeoJSON(aes(color="black"),geojson=geojson) %>%
+   addCircles(
+     #popup = paste0("<p>Widt: ",map_data$addressString,"</p><p>Units: ",as.character(map_data$`Rental Units`),"</p>"),
+     color=~color)#~map_data$color)
+```
+
+The following gives an overview of the result of our matching process.
+
+```{r have_widths, cho=FALSE, message=FALSE, warning=FALSE}
+
+#cols=setNames(c("#ff0000","#00ff00","#0000ff"),c("non city street","city street","lane"))
+
+basemap +
+  geom_sf(data=cov_streets,aes(color=have_width), show.legend = "line") +
+  mapzen_overlay +
+  scale_color_discrete(name="Have Width Data") +
+  labs(title="City of Vancouver Street Width Data Availability") +
+  facet_wrap("type",nrow=1)
+
+# ggplot(cov_streets) +
+#   geom_sf(data=cov, fill="#cccccc") +
+#   geom_sf(aes(color=have_width), show.legend = "line") +
+#   scale_color_discrete(name="Have Width Data") +
+#   labs(title="City of Vancouver Street Width Data Availability") +
+#   facet_wrap("type",nrow=1) +
+#   map_opts
+  
+```
+
+It turns out that we have very good information on lane widths, ok information on regular city streets and poor information on non-city streets. In fact, it seems likely that the city does not have any data on the width of non-city streets and the few we found are due to faulty assignments in our matching algorithm.
+
+One way to fill in the gaps is to assign the average width of the roads that we do know the width for to the unknown ones for each street type. Here is what our algorithm found.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+format_km <- function(x){paste0(scales::comma(round(x/1000,1))," km")}
+average_widths <- cov_streets %>% 
+   as.data.frame %>% 
+   select(length,type,USE,have_width,width) %>% 
+   group_by(type,have_width,USE) %>%
+  summarize(width=mean(width),length=sum(length)) %>%
+  ungroup()
+table_data <- average_widths %>%
+  select(-width) %>%
+  group_by(type,have_width,USE) %>%
+  spread(key="have_width",value="length") %>%
+  mutate(`TRUE`=ifelse(is.na(`TRUE`),0,`TRUE`),
+         `FALSE`=ifelse(is.na(`FALSE`),0,`FALSE`)) %>%
+  mutate(share=scales::percent(`TRUE`/(`TRUE`+`FALSE`)),
+         total=format_km(`TRUE`+`FALSE`)) %>%
+  left_join(average_widths %>% filter(have_width) %>% select(type,USE,width) %>% mutate(width=paste0(round(width,1)," m")),by=c("type","USE"))
+
+knitr::kable(table_data %>% select(type,USE,share,total,width),col.names=c("Type","Use","Have Width Data","Total Length", "Average Width"))
+```
+
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+av_widths <- average_widths %>% filter(have_width) %>% mutate(key=paste(type,USE, sep="_"))
+average_width_lookup <- set_names(av_widths$width,av_widths$key)
+cov_streets <- cov_streets %>% mutate(key=paste(type,USE, sep="_")) %>%
+  mutate(width=ifelse(is.na(width),average_width_lookup[key],width)) %>% 
+  mutate(area=length*units::set_units(width,"m"))
+```
+
+
+# Mapping Widths
+The last thing to do is to to get a clear handle on Vancouver's streets based on their width. Before we get there we want to take stock of the road widths data we have derived so far.
+
+```{r width_histogram, echo=FALSE, fig.height=3, fig.width=5, message=FALSE, warning=FALSE}
+cutoffs=c(0,19.5*ft_to_m,20.5*ft_to_m,63.5*ft_to_m,64.5*ft_to_m,65.5*ft_to_m,66.5*ft_to_m,100*ft_to_m,Inf)
+labels=c("Below 20ft","About 20ft","20ft to 64ft","About 64ft","About 65ft","About 66ft","66ft to 100ft","Above 100ft")
+
+cov_streets$discrete_width=cut(cov_streets$width,breaks=cutoffs,labels=labels)
+
+ggplot(cov_streets %>% 
+         as.data.frame %>% 
+         select(discrete_width,length,USE) %>% 
+         group_by(discrete_width,USE) %>% 
+         summarize(Length=sum(as.numeric(length)))) +
+  geom_bar(aes(x=discrete_width,y=Length, fill=USE),stat="identity") +
+  labs(x="Street Width (ft)", title="City of Vancouver Street Segements") +
+  scale_fill_brewer(name="Use",palette = "Spectral") +
+  scale_y_continuous(labels=format_length) +
+  theme_bw()
+```
+
+We can also represent this visually on a map.
+
+```{r street_widths_color, echo=FALSE, message=FALSE, warning=FALSE}
+basemap +
+  geom_sf(data=cov_streets,aes(color=discrete_width), show.legend = "line") +
+  mapzen_overlay +
+  scale_color_discrete(name="Street Width") +
+  labs(title="City of Vancouver Street ROW Widths") 
+
+# ggplot(cov_streets) +
+#   geom_sf(data=cov, fill="#cccccc") +
+#   geom_sf(aes(color=discrete_width), show.legend = "line") +
+#   scale_color_discrete(name="Street Width") +
+#   labs(title="City of Vancouver Street ROW Widths") +
+#   map_opts
+
+```
+
+# Area Covered by Streets
+With the missing widths estimated by using averages for each type we can now compute the total area each street type takes up, and what ratio of total Vancouver land area that is. We have to be a little mindful how to do this properly. Our street segments connect at the centre lines. If we just multiply the length of each segment by it's width we will count the intersections double.
+
+A cleaner way to do this is to turn the street network into a polygon by buffering each segment with half the street widths and bake this into one big polygon in which any overlapping areas will only appear once. That won't allows us to separate out the area taken up by lanes though, which was the original question. But that's easy to fix, we just need to do this procedure separately for each street type and then union, intersect or take differences depending on what question we want answered. We won't distinguish between city and non-city streets for this, but separate out lanes. And we will also refine the total length of lanes calculation by only counting the length of the lanes up to the road right-of-way instead of to the middle of the road.
+
+```{r, echo=FALSE}
+cov_area=cov$v_CA16_407*1000000
+
+get_all_streets <- function(){
+  streets_total_geometry <- cov_streets %>% 
+    st_buffer(.$width/2) %>% 
+    group_by(type) %>%
+    summarize(sum_area=sum(area),length=sum(length)) %>% 
+    mutate(pre_intersection_area=st_area(geometry)) %>%
+    st_intersection(cov %>% select(geometry)) %>% 
+    mutate(area=st_area(geometry))
+  streets_total_area <- st_area(streets_total_geometry)
+  
+  regular_streets <- streets_total_geometry %>% 
+    filter(type!="lane") %>% 
+    summarize(a=sum(area),length=sum(length)) %>% 
+    mutate(area=st_area(geometry), type="Regular Street") %>% select(area,length,type)
+  just_lanes <- st_difference(streets_total_geometry %>% filter(type=="lane"),regular_streets %>% select(geometry))  %>%
+    mutate(area=st_area(geometry), type="Lane") %>% select(area,length,type)
+  
+  # only count lane length to edge of road row
+  lane_length <- cov_streets %>% 
+    filter(type=="lane") %>% 
+    st_difference(regular_streets) %>%
+    rename(l=length) %>%
+    mutate(length=st_length(.))
+  
+  just_lanes$length = sum(lane_length$length)
+  
+  all_streets <- rbind(regular_streets,just_lanes)
+  return(all_streets)
+}
+
+# st_difference is slow, cache this!
+all_streets <- simpleCache(get_all_streets(), "streets_width_data",refresh=FALSE)
+
+```
+
+
+```{r}
+summary <- all_streets %>% 
+  as.data.frame %>% 
+  select(length,area,type) %>% 
+  group_by(type) %>% 
+  summarize_all(sum) %>%
+  bind_rows(cov_streets %>% 
+      as.data.frame %>% 
+      select(length,area,type) %>% 
+      select(-type) %>% 
+      summarize_all(sum) %>%
+      mutate(type="Total")) %>%
+  mutate(ratio=area/cov_area) %>%
+  mutate(length=format_length(length),
+         area=format_area(area),
+         ratio=format_percent(ratio))
+
+
+# summary_table <- tibble(Type=c("Lane","Regular Street","Total"),
+#                         Area=c(format_area(just_lanes$area),format_area(regular_streets$area),format_area(regular_streets$area+just_lanes$area)),
+#                         Ratio=c(format_percent(just_lanes$area/cov_area),format_percent(regular_streets$area/cov_area),
+#                                 format_percent((just_lanes$area+regular_streets$area)/cov_area)))
+
+knitr::kable(summary,col.names=c("Type","Length","Area","Share of City Land"))
+```
+
+
+One should emphasize again that this is road right of way, not just the paved surface area. It includes sidewalks, nature strips and [encrouchments](https://twitter.com/vb_jens/status/745749345291513856).
+
+The individual street types add up to a total area of `r format_area(sum(all_streets$area))` covering `r format_percent(sum(all_streets$area)/cov_area)` of City of Vancouver land area. Note that this is a slightly different result from what we got [previously using Metro Vancouver land use data](https://doodles.mountainmath.ca/blog/2016/02/29/land-use/), with the difference being explained by  Metro Vancouver land use data not counting non-city streets and including Musqueam 2.
+
+Lastly we can map the lane and street polygons to get a visual representation of the actual area taken up by the roads right of way.
+
+```{r street_widths, echo=FALSE, message=FALSE, warning=FALSE}
+basemap +
+  geom_sf(data=all_streets,fill="brown",size=0) +
+  mapzen_overlay +
+  scale_color_discrete(name="Street Type") +
+  labs(title="City of Vancouver Streets") 
+
+# ggplot(all_streets) +
+#   geom_sf(data=cov, fill="#dddddd") +
+#   geom_sf(fill="brown",size=0) +
+#   #geom_sf(aes(fill=type),size=0) +
+#   scale_color_discrete(name="Street Type") +
+#   labs(title="City of Vancouver Streets") +
+#   map_opts
+
+```
+
+As always, the R Notebook underlying this post [lives on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-06-04-vancouver-streets-and-lanes.Rmarkdown). Download it to reproduce this, or modify it to fit your purposes.

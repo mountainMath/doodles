@@ -65,4 +65,5 @@ Geographically, the west-side single family homes dominate. But those aren't the
 |   19|2815 POINT GREY RD   |$  169,500 |
 |   20|1465 HASTINGS ST W   |$  159,744 |
 
+
 As always, the code that made this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-02-28-extra-school-tax.Rmarkdown).

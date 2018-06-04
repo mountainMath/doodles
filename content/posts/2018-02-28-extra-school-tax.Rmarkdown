@@ -143,4 +143,5 @@ plot_data %>% as.data.frame %>%
   knitr::kable(col.names = c("Rank","Address","Extra Tax"))
 ```
 
+
 As always, the code that made this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-02-28-extra-school-tax.Rmarkdown).
