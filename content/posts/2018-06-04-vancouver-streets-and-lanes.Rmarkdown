@@ -83,10 +83,6 @@ library(cancensus)
 #census_data <- get_census(dataset='CA16', regions=list(CSD=c("5915022","5915803")), vectors=c("v_CA16_407"), labels="short", geo_format="sf", level='Regions') %>% transform(3005)
 cov <- get_census(dataset='CA16', regions=list(CSD=c("5915022")), vectors=c("v_CA16_407"), labels="short", geo_format="sf", level='Regions') %>% st_transform(st_crs(streets))
 
-map_opts <- list(
-  ggplot2::theme_void(),
-  ggplot2::theme(panel.grid.major = ggplot2::element_line(colour = "transparent"))
-)
 
 library(rmapzen)
 get_vector_tiles <- function(bbox){
@@ -103,13 +99,13 @@ water <- rmapzen::as_sf(vector_tiles$water)
 
 basemap <- ggplot() +
   geom_sf(data=cov, fill="#ffffff",size=0.1) +
-  map_opts +
+  theme_void() +
   theme(panel.background = element_rect(fill = '#f0f0f0', colour = NA))
 
 mapzen_overlay <- list(
   #geom_sf(data=roads %>% filter(kind %in% c("highway","major_road")),size=0.1,color="darkgrey",fill=NA),
   geom_sf(data = water, fill = "lightblue", colour = NA),
-  coord_sf(datum=st_crs(cov),
+  coord_sf(datum=NA,
          xlim=c(bbox$xmin,bbox$xmax),
          ylim=c(bbox$ymin,bbox$ymax))
 )

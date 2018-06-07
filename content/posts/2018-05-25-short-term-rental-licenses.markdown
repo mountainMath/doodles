@@ -27,7 +27,7 @@ My favourite part about licensing is that we get licence data. Yay. Time for a q
 
 
 
-Up to now we have 964 STR licenses issued, excluding a handful of cancelled licenses. The data comes with license number, name of the holder, issue and expiry dates. Addresses and location data is stripped, but it does identify the neighbourhood the STR is in. Here are the current counts by neighbourhood.
+Up to now we have 868 STR licenses issued, excluding a handful of cancelled licenses. The data comes with license number, name of the holder, issue and expiry dates. Addresses and location data is stripped, but it does identify the neighbourhood the STR is in. Here are the current counts by neighbourhood.
 
 
 <img src="/posts/2018-05-25-short-term-rental-licenses_files/figure-html/str_map-1.png" width="864" />

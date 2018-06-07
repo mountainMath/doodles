@@ -93,7 +93,8 @@ nbhds <- get_neighbourhood_geos() %>% prettify_neighbourhood_geos(vancouver %>% 
   left_join(cov_nbhd_census_data)
 
 str_data <- data %>% filter(BusinessType=="Short-Term Rental", Status=="Issued") %>%
-  mutate(LocalArea=sub("Central Business/","",LocalArea))
+  mutate(LocalArea=sub("Central Business/","",LocalArea)) %>% 
+  filter(IssuedDate < as.Date("2018-05-26")) # cap at time of blog post publish date
 plot_data <- str_data %>% filter(!is.na(LocalArea)) %>% group_by(LocalArea) %>% summarize(Count=n())
 
 d <- stringdist_left_join(nbhds,plot_data,max_dist=5,by=c("NAME"="LocalArea"))  %>% 
@@ -120,12 +121,12 @@ ggplot(d) +
           fill = "lightblue", colour = NA) +
   #geom_sf(data = roads, size = .2, colour = "black") +
   geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
-  map_theme +
+  theme_void() +
   theme(panel.background = element_rect(fill = 'grey100'),
         plot.background = element_rect(fill = 'grey100')) +
         #legend.position="bottom") +
   scale_fill_viridis_c(na.value="grey") +
-  coord_sf(datum=st_crs(vancouver),
+  coord_sf(datum=NA,
            xlim=c(bbox$xmin,bbox$xmax),
            ylim=c(bbox$ymin,bbox$ymax)) +
   labs(title="Active STR Licences", fill="",caption=paste0("MountainMath, CoV Open Data",", NextZen, OSM")) +
@@ -157,12 +158,12 @@ ggplot(d) +
           fill = "lightblue", colour = NA) +
   #geom_sf(data = roads, size = .2, colour = "black") +
   geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
-  map_theme +
+  theme_void() +
   theme(panel.background = element_rect(fill = 'grey100'),
         plot.background = element_rect(fill = 'grey100')) +
         #legend.position="bottom") +
   scale_fill_viridis_c(na.value="grey",option = "magma",labels=scales::percent) +
-  coord_sf(datum=st_crs(vancouver),
+  coord_sf(datum=NA,
            xlim=c(bbox$xmin,bbox$xmax),
            ylim=c(bbox$ymin,bbox$ymax)) +
   labs(title="Active STR Licences", subtitle="Normailzed by occupied dwelling units", fill="STR share",caption=paste0("MountainMath, CoV Open Data",", NextZen, OSM")) +
@@ -209,12 +210,12 @@ ggplot(dd) +
           fill = "lightblue", colour = NA) +
   #geom_sf(data = roads, size = .2, colour = "black") +
   geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
-  map_theme +
+  theme_void() +
   theme(panel.background = element_rect(fill = 'grey100'),
         plot.background = element_rect(fill = 'grey100')) +
         #legend.position="bottom") +
   scale_fill_viridis_c(na.value="grey",option = "inferno",labels=scales::percent, trans = "log") +
-  coord_sf(datum=st_crs(vancouver),
+  coord_sf(datum=NA,
            xlim=c(bbox$xmin,bbox$xmax),
            ylim=c(bbox$ymin,bbox$ymax)) +
   labs(title="Active STR Licences",subtitle="Normalized by taxable dwelling units", fill="STR share",caption=paste0("MountainMath, CoV Open Data",", NextZen, OSM")) +
@@ -234,12 +235,12 @@ ggplot(d) +
           fill = "lightblue", colour = NA) +
   #geom_sf(data = roads, size = .2, colour = "black") +
   geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
-  map_theme +
+  theme_void() +
   theme(panel.background = element_rect(fill = 'grey100'),
         plot.background = element_rect(fill = 'grey100')) +
         #legend.position="bottom") +
   scale_fill_viridis_c(na.value="grey",option = "plasma",labels=scales::percent,trans="log") +
-  coord_sf(datum=st_crs(vancouver),
+  coord_sf(datum=NA,
            xlim=c(bbox$xmin,bbox$xmax),
            ylim=c(bbox$ymin,bbox$ymax)) +
   labs(title="Active STR Licences",subtitle="Normailzed by owner households", fill="STR share",caption=paste0("MountainMath, CoV Open Data",", NextZen, OSM")) +
