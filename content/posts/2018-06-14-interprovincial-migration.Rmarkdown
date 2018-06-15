@@ -1,0 +1,84 @@
+---
+title: Interprovincial Migration
+author: Jens von Bergmann
+date: '2018-06-14'
+slug: interprovincial-migration
+categories:
+  - CANSIM
+tags: []
+description: 'Playing with the cansim package to access and process NDM data.'
+images: ["https://doodles.mountainmath.ca/images/interprovincial_migration.png"]
+featured: ''
+featuredalt: ''
+featuredpath: ''
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	#echo = FALSE,
+	#message = FALSE,
+	warning = FALSE,
+	fig.width = 9
+)
+```
+
+CANSIM switched over to the New Dissemination Model (NDM) this past weekend. What this means is that we now have better organized CANSIM data. Yay. But it also broke my R package to easily access and process cansim data. Not so yay. Luckily it was an easy fix to switch things over to the NDM, and the cleaning of data gets even easier. And I also build in functionality to access tables through the old trusty cansim numbers. But unfortunately there was no way to automatically keep the table format the same. Some some adjustments are needed for people wanting to run some of my previous posts that utilize cansim data.
+
+# Refreshed `cansim` R package
+The [refreshed cansim R package](https://github.com/mountainMath/cansim) is just as easy to use as the old one, and has some added functionality. As an example we will use interprovincial migration data from the last quarter and visualize it as a chord diagram. We ran across this in [this twitter thread](https://twitter.com/trevortombe/status/1007270402949672966) and thought it would make for a good quick demo. For illustrative purposes we include the code in the post instead of hiding it like we usually do.
+
+First we look for tables with interprovincial migration that have origin and destination geographies using the built-in `list_cansim_tables` function (thanks [Dmitry](https://twitter.com/dshkol) for spotting a bug and fixing it!). The first time it is called it will take quite a bit of time as it is scraping through cansim table pages. Hopefully StatCan will provide better APIs for this. Make sure you set the `options(cache_path="some path")` option so that the data will be stored across sessions.
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+#devtools::install_github("mountainmath/cansim")
+library(cansim)
+#devtools::install_github("mattflor/chorddiag")
+library(chorddiag)
+
+list_cansim_tables() %>% 
+  filter(grepl("interprovincial migrants.*origin.*destination",title))
+```
+
+We see there are two tables, one annual and one quarterly. Let's use the quarterly data.
+
+```{r}
+table_id <- list_cansim_tables() %>% 
+  filter(grepl("interprovincial migrants.*origin.*destination.*quarterly",title)) %>%
+  pull(table)
+
+migration_data <- get_cansim(table_id) %>% normalize_cansim_values()
+```
+
+The `normalize_cansim_values` function from the `cansim` package cleans the data by expressing things as numbers instead of e.g. "thousands", normalizing percentages to be ratios and making inferences about the date format and try to automatically convert dates into R date objects.
+
+To make the chord diagram we cut the data down to the last quarter, clip out the origin-destination matrix and feed it to the chord diagram.
+
+```{r}
+plot_data <- migration_data %>% 
+  filter(Date==(.)$Date %>% sort %>% last) %>% # only get the last available quarter
+  rename(Origin=GEO,Destination=`Geography, province of destination`) %>%
+  mutate(Origin=sub(",.+$","",Origin), Destination=sub(",.+$","",Destination))
+
+chord_matrix <- xtabs(VALUE~Destination+Origin, plot_data)
+
+chorddiag(chord_matrix,groupnameFontsize=10,
+          showTicks=FALSE, type="bipartite",
+          groupnamePadding=5,
+          categorynamePadding=150,
+          width=800, height=600,
+          groupColors=viridis::viridis(nrow(chord_matrix),option="magma"))
+```
+
+The chord diagram is interactive, which makes it easy to read off the various values as needed.
+
+That's it. Feel free to grab the code and play with the data. Analyzing CANSIM data has never been this easy. As always, the code [lives on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-06-14-interprovincial-migration.Rmarkdown) if you want to download it instead of copy-pasting it out of this post.
+
+<script src="/widgets/my_htmlwidgets.js"></script>
+<script src="/widgets/d1_files/chorddiag/chorddiag.js"></script>
+<script src="/widgets/d1_files/chorddiag-binding/chorddiag.js" ></script>
+<script src="/widgets/d1_files/d3/d3.min.js" ></script>
+<script src="/widgets/d1_files/d3-tip/index.js"  ></script>
+
