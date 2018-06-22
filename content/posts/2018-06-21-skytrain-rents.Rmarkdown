@@ -121,3 +121,26 @@ ggplot(yvr) +
 # Next steps
 There are obvious next steps. We could see how asking rents have evolved over time near the stations. Or through in the B-Lines or other bus routes for comparison. Or get a little more technical and look at rent per square foot and run some more in-depth analysis. But for tonight this will have to do.
 
+# Update
+Another interesting metric is the availablility of rentals. So we round this off with the number of 1-bedrooms listings per month in each area.
+
+```{r one_bedroom_listings_map}
+breaks=c(0,5,10,25,50,100,250,500,Inf)
+labels=c("Fewer than 5","5-10","10-25","25-50","50-100","100-250","250-500","More than 500")
+station_rent_data <- station_rent_data %>% mutate(count=cut(n/3,breaks=breaks,labels=labels,ordered_result=TRUE))
+ggplot(yvr) +
+  geom_sf(fill="white") +
+  geom_sf(data = water,
+          fill = "lightblue", colour = NA) +
+  geom_sf(data=routes,color="red") +
+  geom_sf(data=station_rent_data %>% filter(beds=="1"),aes(fill=count),alpha=0.75) +
+  #geom_sf(data = roads, size = .2, colour = "black") +
+  geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
+  theme_void() +
+  scale_fill_viridis_d(option="viridis",na.value = "grey",labels=scales::comma) +
+  coord_sf(datum=NULL,xlim = c(bbox2$xmin,bbox2$xmax), ylim=c(bbox2$ymin,bbox2$ymax)) +
+  labs(title="Monthly listings in 800m radius around Skytrain stations",subtitle="March through May 2018",
+       fill="Number of\n1 bedroom listings",caption="MountainMath, Transitland, Rental Listings")
+```
+
+This shows that especially the Millennium line is under-served when it comes to 1-bedroom rentals, with fewer than 5 rental units becoming available each month along stretches of the line.

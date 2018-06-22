@@ -72,3 +72,9 @@ That's it, now all that's left is to grab some background map data and graph the
 # Next steps
 There are obvious next steps. We could see how asking rents have evolved over time near the stations. Or through in the B-Lines or other bus routes for comparison. Or get a little more technical and look at rent per square foot and run some more in-depth analysis. But for tonight this will have to do.
 
+# Update
+Another interesting metric is the availablility of rentals. So we round this off with the number of 1-bedrooms listings per month in each area.
+
+<img src="/posts/2018-06-21-skytrain-rents_files/figure-html/one_bedroom_listings_map-1.png" width="864" />
+
+This shows that especially the Millennium line is under-served when it comes to 1-bedroom rentals, with fewer than 5 rental units becoming available each month along stretches of the line.
