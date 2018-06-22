@@ -5,7 +5,7 @@ date: '2018-06-21'
 slug: skytrain-rents
 categories:
   - cancensus
-  - craigslist
+  - rental
   - Transportation
   - Vancouver
 tags: []
@@ -21,30 +21,35 @@ type: "post"
 
 
 
-A friend of mine is looking for a new rental, which reminded me that I always wanted to do a quick map of rents near skytrain stations. Should not be too hard. First we need to grab the skytrain stations, which we grab from TransitLand using our [transitland R package](https://github.com/mountainMath/transitland) that we used before to look at [transit frequency in Vancouver](https://doodles.mountainmath.ca/blog/2018/03/12/transit-data/).
-
-<!--more-->
+A friend of mine is looking for a new rental, which reminded me that I always wanted to do a quick map of rents near skytrain stations. Should not be too hard. 
 
 # Skytrain station data
+First we need the skytrain stations, which we grab from [TransitLand](https://transit.land) using our [transitland R package](https://github.com/mountainMath/transitland) that we used before to look at [transit frequency in Vancouver](https://doodles.mountainmath.ca/blog/2018/03/12/transit-data/).
+<!--more-->
+
 
 ```r
+library(cancensus)
 yvr <- get_census("CA16",regions=list(CMA="59933"),geo_format="sf",level="CSD")
-bbox= st_bbox(yvr)
-transit_routes <- simpleCache(get_transit_routes(list(bbox=bbox,per_page=1000),get_all = TRUE),"metro_yvr_routes")
-skytrain <- transit_routes %>% filter(operated_by_name=="British Columbia Rapid Transit Company")
-stops <- get_transit_stops(list(served_by=paste(skytrain$operated_by_onestop_id %>% unique,collapse = ",")),get_all = TRUE) %>%
+
+library(transitland)
+routes <- get_transit_routes(list(bbox=st_bbox(yvr),per_page=1000), get_all = TRUE) %>% 
+  filter(operated_by_name=="British Columbia Rapid Transit Company")
+stops <- get_transit_stops(list(served_by=unique(routes$operated_by_onestop_id)),get_all = TRUE) %>%
   st_transform(26910) %>% st_buffer(800) %>% st_transform(4326) %>%
   filter(!duplicated(gsub(" PLATFORM \\d+$","",name)))
 ```
 
 Here we decided to go with 800m radius around each station.
 
-# Rental listins data
-Next we need rental listings data, which we have used before to look at [how many square foot you can rent for $1,500/month in Toronto](https://doodles.mountainmath.ca/blog/2017/11/07/renting-in-toronto/), and compute median rents per station.
+# Rental listings data
+Next we need data on rents. CMHC or census rent data give overall stock rents, for people like my friend that are moving we should turn to rental listings data, which we have used before to look at [how many square foot you can rent for $1,500/month in Toronto](https://doodles.mountainmath.ca/blog/2017/11/07/renting-in-toronto/). My friend is interested in an unfurnished one or two bedroom unit near rapid transit, so that's the data we will grab and compute median rents per bedroom and station.
 
 
 ```r
-listings <- get_listings("2018-03-01","2018-06-01",region=st_union(stops),beds=c(1,2),filter="unfurnished") 
+library(rental)
+listings <- get_listings("2018-03-01","2018-06-01",region=st_union(stops),
+                         beds=c(1,2),filter="unfurnished") 
 station_rent_data <- st_join(stops,listings) %>% 
   group_by(onestop_id,beds) %>%
   summarize(ask=median(price),n=n()) %>%
@@ -53,7 +58,7 @@ station_rent_data <- st_join(stops,listings) %>%
 
 Here we grey out stations with fewer than 10 observations.
 
-That's it, now all that's left is to grab some background map data and graph the results. It makes sense to slice the data by bedrooms.
+That's it, now all that's left is to grab some background map data and graph the results.
 
 
 # 1 bedroom rents

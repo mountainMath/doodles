@@ -4,7 +4,7 @@ author: Jens von Bergmann
 date: '2017-11-07'
 slug: renting-in-toronto
 categories:
-  - craigslist
+  - rental
   - Toronto
 tags: []
 description: 'How much space to you get for $1500 in Toronto.'
@@ -28,11 +28,6 @@ To do this we need to grab the Toronto neighbourhoods [which can be found on Tor
 
 
 
-
-
-```
-## Warning: package 'bindrcpp' was built under R version 3.4.4
-```
 
 <img src="/posts/2017-11-07-renting-in-toronto_files/figure-html/unnamed-chunk-3-1.png" width="288" />
 
