@@ -567,7 +567,7 @@ ggplot(plot_data %>% filter(!grepl("RDA|IM",name))) +
   facet_wrap("name",ncol=6) +
   scale_y_continuous(labels=scales::percent) +
   labs(tital="Occupied by Usual Residents, Temporary/Foreign Residents and Unoccupied by Structural Type",
-       y="Share", fill="", caption=xtab_attribution_11) +
+       y="Share", fill="", caption=xtab_attribution_16) +
   theme_bw() + theme(legend.position="bottom")
 ```
 
@@ -583,7 +583,7 @@ ggplot(plot_data %>% filter(grepl("RDA|IM",name))) +
   facet_wrap("name",nrow=1) +
   scale_y_continuous(labels=scales::percent) +
   labs(tital="Occupied by Usual Residents, Temporary/Foreign Residents and Unoccupied by Structural Type",
-       y="Share", fill="", caption=xtab_attribution_11) +
+       y="Share", fill="", caption=xtab_attribution_16) +
   theme_bw() #+ theme(legend.position="bottom")
 ```
 
@@ -605,7 +605,7 @@ ggplot(plot_data) +
   facet_wrap("name", scales="free_x") +
   scale_y_continuous(labels=scales::comma) +
   labs(tital="Occupied by Usual Residents, Temporary/Foreign Residents and Unoccupied by Structural Type",
-       y="Number", fill="", caption=xtab_attribution_11) +
+       y="Number", fill="", caption=xtab_attribution_16) +
   theme_bw() + theme(legend.position="bottom")
 
 vancouver_cma_duplex <- plot_data %>%
