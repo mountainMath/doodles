@@ -32,6 +32,7 @@ To start things off let's look at the numbers. We will use `cancensus` to load t
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
 library(cancensus)
 library(tidyverse)
+library(cancensusHelpers)
 caption="StatCan census 2006, 2011 NHS, 2016 via cancensus & CensusMapper"
 format_percent <- function(x){return(paste0(round(x*100,1),"%"))}
 format_number <- function(x){return(format(x,big.mark = ","))}
@@ -236,8 +237,9 @@ options(custom_data_path="/Users/jens/.custom_data/")
 path=paste0(getOption("custom_data_path"),"98-400-X2016228_ENG_CSV/98-400-X2016228_English_CSV_data.csv")
 s=c("Less than 15%","15% to less than 30%","30% to less than 50%","50% to less than 100%","100%","Not applicable")
 
-data2 <- readr::read_csv(path, na=c("x", "F", "...", "..",NA), locale=readr::locale(encoding = "latin1")) %>%
-  rename(GeoUID = `GEO_CODE (POR)`,
+data2 <- xtab_for("98-400-X2016228","https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=110571&OFT=CSV") %>%
+#data2 <- readr::read_csv(path, na=c("x", "F", "...", "..",NA), locale=readr::locale(encoding = "latin1")) %>%
+  rename(#GeoUID = `GEO_CODE (POR)`,
          si=`DIM: Shelter-cost-to-income ratio (9)`,
          income=`DIM: Household total income groups (14)`,
          hh_type=`DIM: Household type including census family structure (16)`,
@@ -252,6 +254,7 @@ data2 <- readr::read_csv(path, na=c("x", "F", "...", "..",NA), locale=readr::loc
   filter(GeoUID %in% ("933")) %>%
   gather(key="Tenure",value="Count",c("All Tenure","Owner","With Mortgage","Without Mortgage","Renter","Subsidized housing","Not subsidized housing")) %>%
   select(GeoUID,GEO_NAME,si,income,hh_type,sc,Tenure,Count) %>%
+  mutate(Count=as.numeric(Count)) %>%
   group_by(GeoUID,GEO_NAME, income, hh_type, sc, Tenure, si) %>% 
   mutate(ind = row_number()) %>%
   spread(key=si,value=Count) %>%
@@ -338,11 +341,12 @@ We see a fairly uniform picture, with one-person, lone-parent and non-census-fam
 # City of Vancouver
 
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
-path3=paste0(getOption("custom_data_path"),"98-400-X2016229_ENG_CSV/98-400-X2016229_English_CSV_data.csv")
+#path3=paste0(getOption("custom_data_path"),"98-400-X2016229_ENG_CSV/98-400-X2016229_English_CSV_data.csv")
 s3=c("Less than 30%","30% to less than 100%","100%","Not applicable")
 
-data3 <- readr::read_csv(path3, na=c("x", "F", "...", "..",NA)) %>%
-  rename(GeoUID = `GEO_CODE (POR)`,
+data3 <- xtab_for("98-400-X2016229","https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=110573&OFT=CSV") %>%
+#data3 <- readr::read_csv(path3, na=c("x", "F", "...", "..",NA)) %>%
+  rename(#GeoUID = `GEO_CODE (POR)`,
          si=`DIM: Shelter-cost-to-income ratio (5A)`,
          hh_type=`DIM: Household type including census family structure (9)`,
          `All Tenure`=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [1]: Total - Tenure including presence of mortgage payments and subsidized housing (Note: 4)`,
@@ -353,6 +357,7 @@ data3 <- readr::read_csv(path3, na=c("x", "F", "...", "..",NA)) %>%
          `Subsidized housing`=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [6]: Subsidized housing`,
          `Not subsidized housing`=`Dim: Tenure including presence of mortgage payments and subsidized housing (7): Member ID: [7]: Not subsidized housing`) %>%
   gather(key="Tenure",value="Count",c("All Tenure","Owner","With Mortgage","Without Mortgage","Renter","Subsidized housing","Not subsidized housing")) %>%
+  mutate(Count=as.numeric(Count,na=c("x", "F", "...", "..",NA))) %>%
   select(GeoUID,GEO_NAME,si,hh_type,Tenure,Count) %>%
   group_by(GeoUID, hh_type, Tenure, si) %>% 
   mutate(ind = row_number()) %>%

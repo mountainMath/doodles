@@ -1,0 +1,372 @@
+---
+title: Aboriginal overrepresentation in correctional services and police checks
+author: Jens von Bergmann
+date: '2018-07-13'
+slug: aboriginal-overrepresentation-in-correctional-services-and-police-checks
+categories:
+  - CANSIM
+  - cancensus
+  - Vancouver
+tags: []
+description: 'The long legacy of Canadian aboriginal relations'
+images: ["https://doodles.mountainmath.ca/posts/2018-07-13-aboriginal-overrepresentation-in-correctional-services-and-police-checks_files/figure-html/aboriginal_adult_overrepresentation-1.png"]
+featured: 'aboriginal_adult_overrepresentation-1.png'
+featuredalt: ""
+featuredpath: "/posts/2018-07-13-aboriginal-overrepresentation-in-correctional-services-and-police-checks_files/figure-html/"
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 9
+)
+library(tidyverse)
+library(cansim)
+library(cancensus)
+library(cancensusHelpers)
+```
+
+
+In the past weeks I got interested in several news stories on aboriginal [youth admissions to correctional services](http://www.cbc.ca/news/canada/manitoba/youth-incarcerated-indigenous-half-1.4720019), [adult incarceration rates](https://newsinteractives.cbc.ca/longform/correctional-healing-lodges-aim-to-reduce-rising-rates-of-indigenous-inmates-but-numbers-continue-to-climb) and [frequency of getting carded](https://globalnews.ca/news/4328087/1-in-5-people-carded-by-vancouver-police-in-2016-were-indigenous-women-complaint/). I have this habit that when something interests me I go grab the original data and take a look myself. Having done this three times on related issues within a fairly short timeframe I decided to throw my code snippets together into a blog post.
+
+# TL;DR
+The takeaway is that no matter how you look at things, aboriginal people are overrepresented in our correctional systems, as well as when it comes to just getting carded on the street. This clearly shows that the long shadow of Canada's ugly history towards aboriginal people is still very present in today's experience of aboriginal people. It points to sytemic failures within the Canadian system lasting to this day, much work is still to be done along the path to reconciliation.
+
+# Youth admissions to correctional services
+This is the first article I read, and in many ways the most troubling. If we can't reduce youth admissions to correctional services, it will be even harder to reduce adult incarceration rates. Indeed, [another report on this topic](http://www.cbc.ca/news/indigenous/indigenous-youth-overrepresented-justice-system-1.3554394) notes that
+
+>   Sinclair recalls that in a survey conducted in 1991, more than 70 per cent of adult inmates in the federal system had prior experience with the child welfare system.
+
+
+```{r}
+aboriginal_adult_youth <- xtab_for("98-400-X2016155","http://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=110588&OFT=CSV") %>%
+  gather_for_grep_string("Aboriginal identity","Dim: Aboriginal identity \\(9\\): Member ID: \\[\\d+\\]: ") %>%
+  filter(GEO_LEVEL <=1,
+         #`DIM: Sex (3)`=="Total - Sex",
+         `DIM: Registered or Treaty Indian status (3)`=="Total - Population by Registered or Treaty Indian status",
+         `Aboriginal identity` %in% c("Total - Aboriginal identity (Note: 3)","Aboriginal identity (Note: 4)")) %>%
+  rename(Sex=`DIM: Sex (3)`, Age=`DIM: Age (20)`) %>%
+  select(GeoUID,ALT_GEO_CODE,GEO_NAME,`Aboriginal identity`,Age,Sex,Value) %>%
+  spread(key="Age",value=Value) %>%
+  mutate(adults=`Total - Age`-`0 to 14 years`-`15 to 19 years`,
+         youth=`0 to 14 years`+`15 to 19 years`) %>%
+  select(GeoUID,ALT_GEO_CODE,GEO_NAME,`Aboriginal identity`,Sex,adults,youth) %>%
+  mutate(`Aboriginal identity`=sub(" \\(Note: \\d+\\)","",`Aboriginal identity`)) %>%
+  gather(key="Age",value="Value",c("adults","youth")) %>%
+  left_join((.) %>% filter(`Aboriginal identity`=="Total - Aboriginal identity") %>% select(-`Aboriginal identity`) %>% rename(Total=Value)) %>%
+  mutate(pop_share=Value/Total) %>%
+  rename(name=GEO_NAME)
+```
+
+
+```{r}
+youth_admissions<-get_cansim("35-10-0007") %>%
+  normalize_cansim_values
+```
+
+```{r }
+plot_data <- youth_admissions %>% 
+  mutate(Sex=recode(Sex,Males="Male",Females="Female",`Total, admissions by sex`="Total - Sex"),
+         GeoUID=recode(GeoUID,`11124`="01")) %>%
+   filter(`Correctional services` %in% c(categories_for_level(.,"Correctional services",1),categories_for_level(.,"Correctional services",0))) %>%
+  select("Date","GEO","GeoUID","Aboriginal identity","Sex","Correctional services","VALUE") %>%
+  spread(key="Aboriginal identity",value="VALUE") %>%
+  mutate(`Total - Aboriginal identity`=`Total, admissions by Aboriginal identity`-coalesce(`Aboriginal identity unknown`,0)) %>%
+  mutate(Share=`Aboriginal identity`/`Total - Aboriginal identity`) %>%
+  filter(Sex %in% c("Male","Female")) %>%
+  gather(key="Aboriginal identity",value="VALUE",c("Aboriginal identity", "Total - Aboriginal identity")) %>%
+  inner_join(aboriginal_adult_youth %>% 
+               filter(Age=="youth") %>%
+               select(GeoUID,name,`Aboriginal identity`,Sex,pop_share)) %>%
+  filter(`Aboriginal identity`=="Aboriginal identity") %>%
+  mutate(factor=Share/pop_share)
+
+```
+
+
+```{r}
+ggplot(plot_data %>% filter(`Correctional services`=="Total correctional services"),aes(x=Date,y=Share,group=interaction(`Correctional services`,Sex),linetype=Sex)) +
+  geom_line(color="red") +
+  geom_point(size=0.25,color="red") +
+  geom_hline(aes(yintercept = pop_share,linetype=Sex)) +
+  theme_bw() +
+  facet_wrap("name",ncol=4) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Youth admissions to correctional services",x="Year",y="Share with aboriginal identity",
+       caption="Cansim 35-10-0007, Census 2016 98-400-X2016155")
+```
+
+Here we added the share of the youth (under 20) population with aboriginal identity in 2016 as horizontal black lines. We see that the the frequency of admissions of youth with aboriginal identity is consistently above the aboriginal share in the general population in some provinces.
+
+We can split the data into groups of correctional services.
+
+```{r}
+ggplot(plot_data %>% 
+         filter(`Correctional services`!="Total correctional services"),
+                            aes(x=Date,y=Share,
+                                group=interaction(`Correctional services`,Sex),
+                                color=`Correctional services`,linetype=Sex)) +
+  geom_line() +
+  geom_point(size=0.25) +
+  geom_hline(aes(yintercept = pop_share,linetype=Sex)) +
+  theme_bw() +
+  facet_wrap("name",ncol=4) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Youth admissions to correctional services",x="Year",y="Share with aboriginal identity",
+       caption="Cansim 35-10-0007, Census 2016 98-400-X2016155")
+```
+
+This shows a discrepancy in the type of correctional services for aboriginal youths. 
+
+
+We can normalize the data by dividing by the share of aboriginal youth in the overall youth population in each region in 2016 to show the "factor of overrepresentation". The share of aboriginal youth in the population may have changed over time, this analysis could be refined by folding in older census data.
+
+```{r}
+ggplot(plot_data %>% filter(!(name %in% c("Prince Edward Island","Quebec"))),aes(x=Date,y=factor,group=interaction(`Correctional services`,Sex),color=`Correctional services`,linetype=Sex)) +
+  geom_hline(aes(yintercept = 1)) +
+  geom_line() +
+  geom_point(size=0.25) +
+  theme_bw() +
+  facet_wrap("name",ncol=4) +
+  labs(title="Youth admissions to correctional services",x="Year",y="Factor of aboriginal overrrepresentation",
+       caption="Cansim 35-10-0007, Census 2016 98-400-X2016155")
+```
+
+This shows alarmingly high rates for British Columbia, as well as Alberta, although Alberta is missing data for recent years. The overall Canadian numbers are skewed when looking at sub-types like Provincial director remand that are dominated by a few provinces with higher aboriginal share.
+
+Looking at Manitoba in particular
+
+```{r}
+ggplot(plot_data %>% 
+         filter(`Correctional services`!="Total correctional services", name=="Manitoba"),aes(x=Date,y=factor,group=interaction(`Correctional services`,Sex),color=`Correctional services`,linetype=Sex)) +
+  geom_hline(aes(yintercept = 1)) +
+  geom_line() +
+  geom_point(size=0.25) +
+  theme_bw() +
+  facet_wrap("name",ncol=4) +
+  labs(title="Youth admissions to correctional services",x="Year",y="Factor of aboriginal overrrepresentation",
+       caption="Cansim 35-10-0007, Census 2016 98-400-X2016155")
+```
+
+we notice that the factor of overrepresentation is highest for secure custody and lowest for community sentences, which should receive more scrutiny.
+
+
+# Adult custodial admissions
+```{r}
+adult_admissions<-get_cansim("35-10-0016") %>%
+  normalize_cansim_values
+```
+
+```{r }
+plot_data <- adult_admissions %>%
+  mutate(GeoUID=recode(GeoUID,`11124`="01")) %>%
+  #filter(`Custodial admissions` %in% categories_for_level(.,"Custodial admissions",0)) %>%
+  select("Date","GEO","GeoUID","Aboriginal identity","Custodial admissions","VALUE") %>%
+  group_by(Date,GEO,GeoUID,`Custodial admissions`) %>%
+  spread(key="Aboriginal identity",value="VALUE") %>%
+  mutate(`Total - Aboriginal identity`=`Total, custodial admissions by Aboriginal identity`-coalesce(`Aboriginal identity unknown`,0)) %>%
+  mutate(Share=`Aboriginal identity`/`Total - Aboriginal identity`) %>%
+  gather(key="Aboriginal identity",value="VALUE",c("Aboriginal identity", "Total - Aboriginal identity")) %>%
+  mutate(Sex="Total - Sex") %>%
+  inner_join(aboriginal_adult_youth %>% 
+               filter(Age=="youth") %>%
+               select(GeoUID,name,`Aboriginal identity`,Sex,pop_share)) %>%
+  filter(`Aboriginal identity`=="Aboriginal identity") %>%
+  mutate(factor=Share/pop_share)
+```
+
+Just like before we can look at the share of admissions to custodial services that have aboriginal identity, which has been climbing Canada-wide as [reported](https://newsinteractives.cbc.ca/longform/correctional-healing-lodges-aim-to-reduce-rising-rates-of-indigenous-inmates-but-numbers-continue-to-climb) by [Angela Sterritt](https://twitter.com/AngelaSterritt).
+
+```{r}
+ggplot(plot_data %>% filter(`Custodial admissions` =="Total, custodial admissions"),aes(x=Date,y=Share,group=name)) +
+  geom_line(color="red") +
+  geom_point(size=0.25,color="red") +
+  geom_hline(aes(yintercept = pop_share)) +
+  theme_bw() +
+  facet_wrap("name") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Adult custodial admissions",x="Year",
+       color="Province",
+       y="Share with aboriginal identity",
+       caption="Cansim 35-10-0016, Census 2016 98-400-X2016155")
+```
+
+Splitting this out by type of admission
+
+```{r}
+ggplot(plot_data %>% filter(`Custodial admissions` !="Total, custodial admissions"),
+       aes(x=Date,y=Share,group=`Custodial admissions`,color=`Custodial admissions`)) +
+  geom_line() +
+  geom_point(size=0.25) +
+  geom_hline(aes(yintercept = pop_share)) +
+  theme_bw() +
+  facet_wrap("name") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Adult custodial admissions",x="Year",
+       color="Province",
+       y="Share with aboriginal identity",
+       caption="Cansim 35-10-0016, Census 2016 98-400-X2016155")
+```
+
+we again notice disparate shares in some provinces. We can again normalize the data by the share of aboriginals in the adult (20+) population to examine the factor of aboriginal overrepresentation.
+
+
+```{r}
+ggplot(plot_data %>% filter(`Custodial admissions` !="Total, custodial admissions"),
+       aes(x=Date,y=factor,group=`Custodial admissions`,color=`Custodial admissions`)) +
+  geom_hline(aes(yintercept = 1)) +
+  geom_line() +
+  geom_point(size=0.25) +
+  theme_bw() +
+  facet_wrap("name") +
+  labs(title="Adult custodial admissions",x="Year",
+       color="Province",
+       y="Factor of aboriginal overrepresentation",
+       caption="Cansim 35-10-0016, Census 2016 98-400-X2016155")
+```
+
+Here we see that Alberta and British Columbia are again the provinces with the highest aboriginal overrepresentation, and we also notice that the the overrepresentation has been getting worse over time in some provinces.
+
+These graphs contain a lot of information and can be messy and difficult to read. To clean things up a bit we can focus on the last available year only.
+
+```{r aboriginal_adult_overrepresentation}
+admission_categories <- c("Total, custodial admissions", "Sentenced", "Remand", "Other custodial statuses")
+pd <- plot_data %>% 
+  ungroup %>%
+  filter(Date==(.)$Date %>% sort %>% last) %>%
+  mutate(`Custodial admissions`=factor(`Custodial admissions`,levels=admission_categories,ordered = TRUE))
+geo_levels <- pd %>% 
+  filter(`Custodial admissions`=="Total, custodial admissions") %>%
+  arrange(-`factor`) %>% 
+  pull(name)
+geo_levels =c("Canada",setdiff(geo_levels,"Canada"))
+pd <- pd %>% mutate(name=factor(name,levels=geo_levels))
+ggplot(pd,aes(x=`Custodial admissions`,y=factor,group=`Custodial admissions`,fill=`Custodial admissions`)) +
+  geom_bar(stat="identity") +
+  theme_bw() +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
+  facet_wrap("name") +
+  scale_fill_brewer(palette = "Dark2") +
+  scale_y_continuous(labels=function(x)round(x,1)) +
+  labs(title="Overrepresentation of adults with aboriginal identity in adult custodial admissions 2017",
+       subtitle="Share of of adults with aboriginal identity in custodial admissions,\nnormalized by share of adults with aboriginal identity in population",
+       x="",y="Factor of overrepresentation",caption="Cansim 35-10-0016, Census 2016 98-400-X2016155")
+
+```
+
+# Vancouver Street Checks
+Lastly we turn to Vancouver street checks. It was [reported yesterday](https://globalnews.ca/news/4328087/1-in-5-people-carded-by-vancouver-police-in-2016-were-indigenous-women-complaint/) that "1 in 5 women ‘carded’ by Vancouver police in 2016 were Indigenous". The Union of BC Indian Chiefs and (UBCIC) and the BC Civil Liberties Association (BCCLA) have filed a complaint with the Office of the Police Complaints Commissioner (OPCC) over data suggesting Indigenous people were being disproportionately street-checked.
+
+This complaint is based upon data released via an FOI and posted on the [Vancouver website](https://vancouver.ca/police/organization/public-affairs/freedom-of-information.html). It's in PDF format, so it requires a bit of scraping and massaging to get it into processeable form.
+
+```{r}
+library(tabulizer)
+url="https://vancouver.ca/police/assets/pdf/foi/2018/vpd-street-check-data-2008-2017-by-gender-and-ethnicity-fields.pdf"
+data <- extract_tables(url, method="stream") 
+data <- rbind(data[[1]],data[[2]]) %>%
+  as.tibble
+
+df <- data %>% setNames((.)[1,]) %>%
+  filter(Total!="",Gender!="Gender") %>%
+  mutate(Gender=na_if(Gender,"")) %>%
+  fill(Gender) %>%
+  mutate(Ethnicity=ifelse(Ethnicity=="","Total",Ethnicity)) %>%
+  gather(key="Year",value="Value",seq(2008,2017) %>% as.character) %>%
+  mutate_at(c("Value","Total"),as.numeric) 
+
+check_data <- df %>%
+  filter(Gender %in% c("M","F"),!(Ethnicity %in% c("Total","NULL","UNKNOWN"))) %>%
+  left_join((.) %>% 
+              group_by(Gender,Year) %>%
+              summarise(All=sum(Value))
+            ) %>%
+  mutate(Share=Value/All)
+
+
+```
+
+The data contains a breakdown of street checks by Ethnicity and Gender and we see how female aboriginals are disproportionally represented in the data.
+
+```{r}
+ggplot(check_data,aes(x=Year,y=Share,color=Ethnicity,linetype=Gender,group=interaction(Ethnicity,Gender))) +
+  geom_line() +
+  geom_point() +
+  theme_bw() +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Vancouver PD Street Checks",caption="VPD published FOI data")
+```
+
+We can use data from the 2016 census for the City of Vancouver, as well as Musqueam 2 which is also part of the VPD jurisdiction, to compute the factor of overrepresentation like we did before.
+
+```{r}
+library(cancensus)
+library(cancensusHelpers)
+
+regions = list(CSD=c("5915022","5915803"))
+
+get_ethnicity <- function(type){
+  vectors <- search_census_vectors("Total - Visible minority for the population in private households","CA16",type=type) %>% child_census_vectors(leaves_only = TRUE)
+  census_data <- get_census("CA16",regions=regions,vectors=vectors$vector,labels = "short",level="Regions") 
+  labels <- set_names(attr(census_data,"census_vectors")$Detail,attr(census_data,"census_vectors")$Vector)
+  
+  cd <- census_data %>% gather(key="Ethnicity",value=Value,names(labels)) %>%
+  mutate(Ethnicity=labels[Ethnicity]) %>%
+  mutate(Ethnicity=recode(Ethnicity,Korean="Asian",Japanese="Asian",`Southeast Asian`="Asian",Filipino="Asian",
+                          `Latin American`="Hispanic",`West Asian`="Middle Eastern",
+                          `Not a visible minority`="Caucasian")) %>%
+  mutate(Ethnicity=toupper(Ethnicity)) %>%
+  filter(Ethnicity %in% check_data$Ethnicity) %>%
+  select(Ethnicity,Value) %>%
+  group_by(Ethnicity) %>%
+  summarize_all(sum) %>%
+  mutate(Total= sum((.)$Value)) %>%
+  mutate(Share=Value/Total)
+  
+  cd
+}
+
+get_aboriginal <- function(){
+  vectors=c("v_CA16_3853","v_CA16_3856","v_CA16_3854","v_CA16_3857")
+  get_census("CA16",regions=regions,
+                       vectors=vectors,
+                       labels="short",level="Regions") %>%
+    select(vectors) %>%
+    summarize_all(sum) %>%
+              mutate(Ethnicity="ABORIGINAL",
+                     `M`=v_CA16_3856/v_CA16_3853,
+                     `F`=v_CA16_3857/v_CA16_3854) %>%
+              select(Ethnicity,`M`,`F`) %>%
+              gather(key="Gender",value="Share",c("M","F")) %>%
+              select(Gender,Ethnicity,Share)
+}
+
+cd <- bind_rows(get_ethnicity("Male") %>% mutate(Gender="M"),
+                get_ethnicity("Female") %>% mutate(Gender="F"),
+                get_aboriginal()) %>%
+  select(Gender,Ethnicity,Share) %>%
+  rename(pop_share=Share) %>%
+  left_join(check_data) %>%
+  mutate(factor=Share/pop_share)
+
+```
+
+
+```{r}
+ggplot(cd,aes(x=Year,y=factor,color=Ethnicity,linetype=Gender,group=interaction(Ethnicity,Gender))) +
+  geom_hline(yintercept = 1) +
+  geom_line() +
+  theme_bw() +
+  labs(y="Factor of overrepresentation",title="Overrepresentation in Vancouver Street Checks",
+       caption="VPD published FOI data, StaCan Census 2016")
+```
+
+This shows that aboriginal women are overrepresented by a factor 10, although there was a slight drop in recent years. Male aboriginal overrepresentation has been consistently lower, but trending slightly upward. People will not be surprised that black males are the next-most overrepresented group.
+
+# Next steps
+These numbers are disturbing, and this analysis is just scratching the surface. It deserves more detailed look province by province. The disparate rates for different custodial services should also be examined more closely, and in this post we have not explored the full breakdown of custodial services that is available in the data.
+
+As always, the code for the analysis is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-07-13-aboriginal-overrepresentation-in-correctional-services-and-police-checks.Rmarkdown), the code automatically pulls in all the data needed and reproduces the analysis. This should make it fairly straightforward for anyone to copy, adapt and refine the results.
