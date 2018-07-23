@@ -17,10 +17,14 @@
             {{ $.Scratch.Set "dateType" .Date }}
         {{ end }}
 
-        <time class="published"
-            datetime='{{ ($.Scratch.Get "dateType").Format "2006-01-02" }}'>
-            {{ ($.Scratch.Get "dateType").Format "January 2, 2006" }}</time>
-        <span class="author">{{ .Params.author }}</span>
+        <time class="published" datetime='{{ ($.Scratch.Get "dateType").Format "2006-01-02" }}'>
+        {{ ($.Scratch.Get "dateType").Format "January 2, 2006" }}</time>
+        {{ range .Params.authors }}
+          <span class="author">{{ . }}</span>
+          {{ end }}
+        {{ with .Params.author }}
+          <span class="author">{{ . }}</span>
+          {{ end }}
         {{ if .Site.Params.includeReadingTime }}
             <p>{{ .ReadingTime }} minute read</p>
         {{ end }}
