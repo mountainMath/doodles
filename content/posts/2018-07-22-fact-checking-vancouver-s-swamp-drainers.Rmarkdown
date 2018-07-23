@@ -343,3 +343,5 @@ We think fixing our affordability problems is going to involve making tough choi
 
 As usual, the underlying R Notebook for this post that includes all the code for the graphs and numbers in this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-07-22-fact-checking-vancouver-s-swamp-drainers.Rmarkdown). Feel free to download it to reproduce the analysis or adapt it for your own purposes. Hopefully this kind of transparent and reproducible analysis can help establish a shared base of facts. And reduce the amount of guessing needed to make sense of people's numbers and statements.
 
+#### PS
+This was written jointly with [Nathan Lauster](https://twitter.com/LausterNa) and cross-posted on [his blog](https://homefreesociology.wordpress.com/2018/07/23/fact-checking-vancouvers-swamp-drainers/).
