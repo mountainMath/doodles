@@ -120,7 +120,7 @@ Several people have pointed out via Twitter and comments that inflation-adjusted
 
 <img src="/posts/2018-07-22-fact-checking-vancouver-s-swamp-drainers_files/figure-html/unnamed-chunk-10-1.png" width="864" />
 
-Here we used CMA-specific inflation estimates, as we felt that would best reflect local purchasing power. The two graphs show the inflation-adjusted incomes, as well as change in adjusted incomes indexed to 2000. We can clearly see the growth in all categories, both in absolute terms, as well as in relative terms compared to Toronto. Despite this, the notion of "stagnant incomes" in Vancouver is [quite pervasive in news stories](https://www.google.com/search?client=safari&rls=en&q=vancouver+stagnant+incomes&ie=UTF-8&oe=UTF-8).
+Here we used Canada-wide inflation estimates, Vancouver's income growth looks even stronger when normalizing by CMA-specific CPI. (Digging into the reasons for this would probably make another interesting blog post.) The two graphs show the inflation-adjusted incomes, as well as change in adjusted incomes indexed to 2000. We can clearly see the growth in all categories, both in absolute terms, as well as in relative terms compared to Toronto. Despite this, the notion of "stagnant incomes" in Vancouver is [quite pervasive in news stories](https://www.google.com/search?client=safari&rls=en&q=vancouver+stagnant+incomes&ie=UTF-8&oe=UTF-8).
 
 
 ### PS

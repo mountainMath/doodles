@@ -353,16 +353,17 @@ Several people have pointed out via Twitter and comments that inflation-adjusted
 
 inflation <- get_cansim("18-10-0005") %>%
   normalize_cansim_values %>%
-  filter(grepl("Vancouver|Toronto",GEO),
+  filter(GEO=="Canada", #grepl("Vancouver|Toronto",GEO),
          `Products and product groups`=="All-items (1992=100)") %>%
   select(Date, GEO,VALUE) %>%
-  mutate(rebase=VALUE/filter(.,Date==first(sort(income$Date)))$VALUE)
+  mutate(rebase=VALUE/filter(.,Date==last(sort(income$Date)))$VALUE)
   
 plot_data <- income %>%
   filter(grepl("Vancouver|Toronto",GEO),
          `Age of older adult`=="Total all ages",
          `Family income`=="Median total income") %>%
-  left_join(inflation %>% select(Date,rebase,GEO)) %>%
+  left_join(inflation %>% select(Date,rebase)) %>%
+  #left_join(inflation %>% select(Date,rebase,GEO)) %>%
   mutate(real=VALUE/rebase) %>%
   left_join((.) %>% filter(Date==first(sort((.)$Date))) %>%
               select(GEO,`Family type`,real) %>%
@@ -380,7 +381,8 @@ gridExtra::grid.arrange(
     scale_y_continuous(labels=scales::percent) +
     labs(x="",y="Cumulative Change in Median Real Income",linetype="CMA"),
   ncol=2, widths=c(2,3.2), 
-  top="Median inflation-adjusted income (CMA-specific CPI, 2016 dollars)",
+  top="Median inflation-adjusted income (2016 dollars)",
+  #top="Median inflation-adjusted income (CMA-specific CPI, 2016 dollars)",
   bottom = grid::textGrob(
     "Cansim 11-10-0012, 18-10-0005",
     gp = grid::gpar(fontsize = 9),
@@ -389,7 +391,7 @@ gridExtra::grid.arrange(
 )
 ```
 
-Here we used CMA-specific inflation estimates, as we felt that would best reflect local purchasing power. The two graphs show the inflation-adjusted incomes, as well as change in adjusted incomes indexed to 2000. We can clearly see the growth in all categories, both in absolute terms, as well as in relative terms compared to Toronto. Despite this, the notion of "stagnant incomes" in Vancouver is [quite pervasive in news stories](https://www.google.com/search?client=safari&rls=en&q=vancouver+stagnant+incomes&ie=UTF-8&oe=UTF-8).
+Here we used Canada-wide inflation estimates, Vancouver's income growth looks even stronger when normalizing by CMA-specific CPI. (Digging into the reasons for this would probably make another interesting blog post.) The two graphs show the inflation-adjusted incomes, as well as change in adjusted incomes indexed to 2000. We can clearly see the growth in all categories, both in absolute terms, as well as in relative terms compared to Toronto. Despite this, the notion of "stagnant incomes" in Vancouver is [quite pervasive in news stories](https://www.google.com/search?client=safari&rls=en&q=vancouver+stagnant+incomes&ie=UTF-8&oe=UTF-8).
 
 
 ### PS
