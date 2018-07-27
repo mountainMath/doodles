@@ -286,17 +286,18 @@ This is plain false. To its credit, back in February the NDP government moved to
 ```{r}
 income <- get_cansim("11-10-0012") %>%
   normalize_cansim_values 
+
 plot_data <- income %>%
   filter(grepl("Vancouver|Toronto",GEO),
          `Age of older adult`=="Total all ages",
-         `Family income`=="Median total income")
+         `Family income`=="Median total income") 
 ggplot(plot_data,aes(x=Date,y=VALUE,color=`Family type`,linetype=`GEO`)) +
   geom_line() +
   scale_y_continuous(labels=scales::dollar) +
   labs(x="",y="Median Income",linetype="CMA",caption="Cansim 11-10-0012",
        title="Total income (nominal)")
 ```
-We see that Vancouver CMA has overtaken Toronto for non-family individual income and lone-parent median income, and almost closed the cap on couple family income.
+We see that Vancouver CMA has overtaken Toronto for non-family individual income and lone-parent median income, and almost closed the gap on couple family income.
 
 
 ```{r}
@@ -336,12 +337,60 @@ ggplot(data %>% filter(Statistics=="Job vacancy rate"),aes(x=Date,y=VALUE,color=
 ```
 
 
-#### Afterword
+### Afterword
 In our hyper-polarized environment it is probably not enough to simply point out factual errors without further comment. So we take this opportunity to state that we strongly support stricter oversight and enforcement of money-laundering, as well as implementing measures to increase transparency in property ownership. We are also gravely concerned about Vancouver’s affordability problems. We've supported a number of housing policies recently put forward by local governments, including the empty homes tax, the school tax, and the boost to social housing investments, all aimed at fixing regulation and providing more housing to those most in need. It's important to separate out what governments are doing right from where they might be failing. This is where swamp imagery fails us, blending everything together and dragging it all into the mud. 
 
 We think fixing our affordability problems is going to involve making tough choices and policy tradeoffs, and we should approach them with a clear sense of what’s at stake rather than mixed up facts, vague swamp-ish imagery and the sense it can all be blamed on the dark, corrupting forces of globalization. We've all seen where that last route can take us.
 
 As usual, the underlying R Notebook for this post that includes all the code for the graphs and numbers in this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-07-22-fact-checking-vancouver-s-swamp-drainers.Rmarkdown). Feel free to download it to reproduce the analysis or adapt it for your own purposes. Hopefully this kind of transparent and reproducible analysis can help establish a shared base of facts. And reduce the amount of guessing needed to make sense of people's numbers and statements.
 
-#### PS
+
+### Update (July 27, 2018)
+Several people have pointed out via Twitter and comments that inflation-adjusted income growth might be a better metric to use. And that's a good point. In the context of housing we often have nominal housing prices in mind, so nominal income can be a good metric in this context. But inflation-adjusted incomes add another important perspective.
+
+
+```{r}
+
+inflation <- get_cansim("18-10-0005") %>%
+  normalize_cansim_values %>%
+  filter(grepl("Vancouver|Toronto",GEO),
+         `Products and product groups`=="All-items (1992=100)") %>%
+  select(Date, GEO,VALUE) %>%
+  mutate(rebase=VALUE/filter(.,Date==first(sort(income$Date)))$VALUE)
+  
+plot_data <- income %>%
+  filter(grepl("Vancouver|Toronto",GEO),
+         `Age of older adult`=="Total all ages",
+         `Family income`=="Median total income") %>%
+  left_join(inflation %>% select(Date,rebase,GEO)) %>%
+  mutate(real=VALUE/rebase) %>%
+  left_join((.) %>% filter(Date==first(sort((.)$Date))) %>%
+              select(GEO,`Family type`,real) %>%
+              rename(real_start=real)) %>%
+  mutate(index=real/real_start) %>%
+  mutate(log_index=log(index)/log(2))
+gridExtra::grid.arrange(
+  ggplot(plot_data,aes(x=Date,y=real,color=`Family type`,linetype=`GEO`)) +
+    geom_line() +
+    guides(color=FALSE,linetype=FALSE) +
+    scale_y_continuous(labels=scales::dollar) +
+    labs(x="",y="Median Real Income",linetype="CMA"),
+  ggplot(plot_data,aes(x=Date,y=index-1,color=`Family type`,linetype=`GEO`)) +
+    geom_line() +
+    scale_y_continuous(labels=scales::percent) +
+    labs(x="",y="Cumulative Change in Median Real Income",linetype="CMA"),
+  ncol=2, widths=c(2,3.2), 
+  top="Median inflation-adjusted income (CMA-specific CPI, 2016 dollars)",
+  bottom = grid::textGrob(
+    "Cansim 11-10-0012, 18-10-0005",
+    gp = grid::gpar(fontsize = 9),
+    hjust = 1.2, x = 1
+  )
+)
+```
+
+Here we used CMA-specific inflation estimates, as we felt that would best reflect local purchasing power. The two graphs show the inflation-adjusted incomes, as well as change in adjusted incomes indexed to 2000. We can clearly see the growth in all categories, both in absolute terms, as well as in relative terms compared to Toronto. Despite this, the notion of "stagnant incomes" in Vancouver is [quite pervasive in news stories](https://www.google.com/search?client=safari&rls=en&q=vancouver+stagnant+incomes&ie=UTF-8&oe=UTF-8).
+
+
+### PS
 This was written jointly with [Nathan Lauster](https://twitter.com/LausterNa) and cross-posted on [his blog](https://homefreesociology.wordpress.com/2018/07/23/fact-checking-vancouvers-swamp-drainers/).
