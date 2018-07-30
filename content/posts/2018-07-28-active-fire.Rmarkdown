@@ -7,7 +7,7 @@ categories:
   - OSM
   - geeky
 tags: []
-description: 'A quick look at active fire satellite data.'
+description: 'Playing with fire data.'
 images: ["https://doodles.mountainmath.ca/posts/2018-07-28-active-fire_files/figure-html/redding_fire_all-1.png"]
 featured: ''
 featuredalt: ""
@@ -120,6 +120,8 @@ plot_data <- data %>%
 
 The other day I saw a link to NASA active fire data fly by on Twitter. It's a satellite-derived world wide dataset at 375m resolution, where one (or several) polar orbiting satellites scan earth in the infrared band from which fire and fire intensity is computed.
 
+## Redding, CA
+
 With the [Redding fire in the news](http://www.latimes.com/local/lanow/la-me-carr-fire-redding-20180728-story.html) I decided to take the data for a test drive. And also try out the [gganimate package](https://github.com/thomasp85/gganimate) to watch the fire evolve over time.
 
 ```{r redding_fire, include=FALSE}
@@ -159,4 +161,50 @@ ggmap(map) +
 ```
 
 
-As usual, the code is [abailable on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-07-28-active-fire.Rmarkdown) and should be easily adaptable to other locations.
+## Richmond, BC
+We have had our [own fire in Metro Vancouver in Richmond](https://www.cbc.ca/news/canada/british-columbia/richmond-fire-challenging-crews-likely-to-be-a-multi-day-event-1.4764117) (and the fire data also registers a couple other spots in Delta), so let's take a quick look what the cumulative past 48 hours of fire activity looks like.
+
+```{r}
+ca_48h_url = "https://firms.modaps.eosdis.nasa.gov/active_fire/viirs/shapes/zips/VNP14IMGTDL_NRT_Canada_48h.zip"
+  
+data <- simpleCache(get_sf_data_for(ca_48h_url),"canada_28h_fire_data.rda") %>%
+    mutate(Date=parse_datetime(paste0(ACQ_DATE,":",ACQ_TIME),format="%Y-%m-%d:%H%M") %>%
+             lubridate::with_tz("US/PACIFIC")) 
+
+rs <- list_census_regions("CA16") %>% filter(level=="CSD", CMA_UID=="59933",name %in% c("Richmond","Delta"))
+metro_van <- get_census("CA16",regions=as_census_region_list(rs),geo_format = "sf",level = "Regions")
+mbox <- st_bbox(metro_van)
+
+
+vector_tiles2 <- simpleCache(get_vector_tiles(bbox),"metro_van_vector_tiles")
+# vector tiles return all layers (roads, water, buildings, etc) in a list
+roads2 <- rmapzen::as_sf(vector_tiles2$roads) %>% filter(kind != "ferry")
+water2 <- rmapzen::as_sf(vector_tiles2$water)
+
+map <- get_map("Richmond, BC", maptype = "satellite", zoom = 10, source = "google")
+
+plot_data <- data %>% 
+  mutate(Date=parse_datetime(paste0(ACQ_DATE,":",ACQ_TIME),format="%Y-%m-%d:%H%M") %>%
+             lubridate::with_tz("US/PACIFIC")) %>%
+  filter(LONGITUDE>=mbox$xmin,LONGITUDE<=mbox$xmax,LATITUDE>=mbox$ymin,LATITUDE<=mbox$ymax)
+  #filter(as.logical(st_within(.,m,sparse=FALSE)) %>% coalesce(FALSE)) # this takes forever
+
+ggmap(map) +
+  geom_sf(data = water2, fill = "lightblue", colour = NA, inherit.aes = FALSE) +
+  geom_sf(data=roads2,size=0.1,color="lightgrey",fill=NA, inherit.aes = FALSE) +
+  geom_sf(data=plot_data,aes(color=FRP), inherit.aes = FALSE,size=1.2)+
+  scale_color_gradient(low = "#BB3754FF", high = "#FCFFA4FF",trans="log",guide=FALSE) +
+  #scale_color_viridis_c(option="inferno",trans="log",guide=FALSE)  +
+  coord_sf(datum=NA,xlim=c(mbox$xmin,mbox$xmax),ylim=c(mbox$ymin,mbox$ymax)) +
+  theme_void() +
+  #facet_wrap("Date") +
+  labs(title="Active Fire, Richmond/Delta, BC",
+       subtitle=paste0(first(plot_data$Date) %>% as.Date," -- ",last(plot_data$Date) %>% as.Date),
+       caption="NASA VIIRS 375 m",x="",y="")
+
+```
+
+The fire does show up, but it gives a stark contrast to the scale and intensity of the fire in Redding.
+
+
+As usual, the code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-07-28-active-fire.Rmarkdown) and should be easily adaptable to other locations.
