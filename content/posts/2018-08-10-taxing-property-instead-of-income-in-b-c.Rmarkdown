@@ -1,0 +1,211 @@
+---
+title: Taxing property instead of income in B.C.
+author: Jens von Bergmann
+date: '2018-08-10'
+slug: taxing-property-instead-of-income-in-b-c
+categories:
+  - cancensus
+  - taxes
+  - Assessment Data
+tags: []
+description: 'What if we were more like Washington and replaced the provinial income tax by a property tax?'
+images: ["https://doodles.mountainmath.ca/posts/2018-08-10-taxing-property-instead-of-income-in-b-c/figure-html/property_taxes-1.png"]
+featured: ''
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width=9
+)
+library(tidyverse)
+library(cancensus)
+library(cancensusHelpers)
+
+tax <- 9.534
+sales_tax <- 7.428
+property <- 1445.51
+king_rate <- 0.01025
+tax_rate=tax/property
+
+```
+
+Vancouver has low property taxes and high income taxes. Seattle is the opposite. What would it look like if British Columbia was more like Washington State? If we got rid of personal provincial income tax and recovered the revenue by raising the provincial portion of the residential property tax, a.k.a. the "school tax".
+
+The tax policy of British Columbia, when compared to Washington, is sending the message that it's a great place to come and invest in property with it's low property tax rate, but not such a great place to live and work with it's higher income tax rate. There have been a number of initiatives to try and change this, from the [BC Housing Affordability Fund](http://www.housingaffordability.org) that aims to raise property taxes for those that don't work here, to the [Extra School Tax on properties over $3M](https://doodles.mountainmath.ca/blog/2018/02/28/extra-school-tax/) that raises property taxes on expensive properties and follows [arguments for a progressive property tax](https://www.cdhowe.org/intelligence-memos/rhys-kesselman-attacking-high-housing-prices-making-property-tax-progressive), to the "speculation tax" that is being discussed and the details are getting fleshed out right now.
+
+But there has been little public discussion about the simplest solution that is virtually impossible to avoid: Get rid of the provincial income tax and shift the entire tax load to property taxes. That would discourage using property as investment, [soften price volatility](https://www.imf.org/external/pubs/ft/wp/2016/wp16216.pdf) and give people that work and pay taxes in BC an edge. This tax setup may seem a little radical to some in Vancouver, but it's totally normal to people in Seattle.
+
+### The numbers
+Let's look at the numbers. The [current BC budget for 2018&#x2215;2019](http://bcbudget.gov.bc.ca/2018/bfp/2018_Budget_and_Fiscal_Plan.pdf) estimates a personal income tax revenue of `r scales::dollar(tax)` billion. The total 2018 property tax assessment for residential (Class 1) properties in BC was [`r scales::dollar(property)` billion](https://info.bcassessment.ca/Property-information-and-trends/AnnualReleasesandReports/2018%20Assessment%20Roll%20Total%20Value%20by%20Property%20Class.pdf) for the 2018 tax year. **So to offset the foregone income tax we would need an additional flat property tax rate of `r scales::percent(tax_rate)`**. Or possibly choose something more complex like a progressive property tax. And we might want to exclude purpose-built rental buildings from this, that would certainly help get more of those built. (Although property taxes on rental buildings are tax-deductible, so the net effect on these is softer.) For now, let's go with the flat tax. 
+
+The property tax rate in King County is `r scales::percent(king_rate)`. How would that compare with British Columbia's rates? Let's add in the "hypothetical income tax relief" portion of the property tax.
+
+```{r}
+get_tax_data <- function(){
+  temp<-tempfile()
+  download.file("https://www2.gov.bc.ca/assets/gov/british-columbians-our-governments/local-governments/finance/local-government-statistics/schedule707_2018.xls",temp)
+  data <- readxl::read_xls(temp,skip=1) #%>% rename(Municipality=Municipalities1)
+  unlink(temp)
+  data
+}
+
+get_tax_rates <- function(){
+  temp<-tempfile()
+  download.file("https://www2.gov.bc.ca/assets/gov/british-columbians-our-governments/local-governments/finance/local-government-statistics/schedule702_2018.xls",temp)
+  data <- readxl::read_xls(temp,skip=1) #%>% rename(Municipality=Municipalities1)
+  unlink(temp)
+  data
+}
+
+property_classes=c("Residential","Utilities", "Supportive Housing", "Major Industry", "Light Industry", "Business/Other", "Managed Forest", "Recreation", "Farm")
+tax_types <- c("Hypothetical income tax relief","Hospital", "Municipal", "Other", "Reg'l District", "School" ,"Total")
+
+data1 <- get_tax_data() %>% 
+  mutate(name=paste0(Municipalities," (",Type,")"),
+         Population=`July 1, 2018 BC STATS Population Estimates (Dec. 2018 Release)`)
+
+data2 <- get_tax_rates() %>%
+  rename(Farm=Farm1,
+         `Major Industry`=`Major Industry1`,
+         `Managed Forest`=`Managed Forest Land`,
+         `Recreation`=`Recreation Non-Profit`,
+         `Business/Other`=Business) %>%
+  gather(key="Property Class",value="Value",property_classes) %>%
+  group_by(Municipalities,Type,RD,`Property Class`) %>%
+  spread(key="Purpose of Tax Rate",value="Value")
+
+data <- inner_join(data1,data2,by=c("Municipalities","Type","RD","Property Class")) %>%
+  mutate(per_capita=`Municipal Taxes Per Capita`*(Total/Municipal),
+         Overall=Total) %>%
+  mutate(`Hypothetical income tax relief` = tax/property*1000) %>%
+  gather(key="Purpose of Tax Rate",value="Rate",tax_types,factor_key = TRUE) %>%
+  mutate(tax_by_type=Rate*per_capita/Overall) %>%
+  filter(`Property Class`=="Residential",
+          #Municipalities != "Kitimat", # Kitimat is weird
+         `Purpose of Tax Rate`!="Total") 
+ 
+
+top_pop_munis <- data1 %>% filter(`Property Class`=="Residential") %>% top_n(20,Population) %>% pull(name)
+top_tax_munis <- data %>% filter(`Property Class`=="Residential") %>% select(name,Rate) %>% group_by(name) %>% 
+  summarise_all(sum,na.rm=TRUE) %>% top_n(20,Rate) %>% pull(name)
+bottom_tax_munis <- data %>% filter(`Property Class`=="Residential") %>% select(name,Rate) %>% group_by(name) %>% 
+  summarise_all(sum,na.rm=TRUE) %>% top_n(20,-Rate) %>% pull(name)
+```
+
+
+
+```{r property_taxes}
+
+colors <- setNames(c("lightpink",RColorBrewer::brewer.pal(length(tax_types)-1,"Dark2")),tax_types)
+
+ggplot(data %>% filter(name %in% top_pop_munis),aes(x=reorder(name,Rate), y=Rate,fill=`Purpose of Tax Rate`)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_fill_manual(values=colors) +
+  theme_bw() +
+  #scale_alpha_manual(values=c("TRUE"=0.3,"FALSE"=1)) +
+  scale_y_continuous(labels=function(x)scales::percent(x/1000)) +
+  labs(title="Residential property tax rates 2018",subtitle="20 most populous BC Municipalities",x="",y="Residential property tax rates",
+       caption="MountainMath, BC Open Data")
+```
+
+This shows that if we followed Washington State's example and nixed our provincial income tax and recovered the lost revenue from property taxes, most of the larger cities would end up with a tax rate similar to Seattle's. 
+
+But how about the smaller cities? Let's take a look at the highest taxed municipalities.
+
+```{r}
+ggplot(data %>% filter(name %in% top_tax_munis),aes(x=reorder(name,Rate), y=Rate,fill=`Purpose of Tax Rate`)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_fill_manual(values=colors) +
+  theme_bw() +
+  #scale_alpha_manual(values=c("TRUE"=0.3,"FALSE"=1)) +
+  scale_y_continuous(labels=function(x)scales::percent(x/1000)) +
+  labs(title="Residential property tax rates 2018",subtitle="20 highest taxed BC Municipalities",x="",y="Residential property tax rates",
+       caption="MountainMath, BC Open Data")
+
+```
+
+We see that the spread is not that large, although a few of the very small municipalities have substantially higher tax rates. So substituting the income tax revenue through increased "school tax" brings essentially all of British Columbia into the range of King County's property taxes.
+
+### The effect on homeowners
+```{r}
+census_data <- get_census(dataset='CA16', regions=list(CMA="59933"), vectors=c("v_CA16_4894","v_CA16_4896"), labels="short", geo_format=NA, level='Regions') %>%
+  mutate(shelter_cost=v_CA16_4894,home_value=v_CA16_4896)
+
+cost_increase <- round(tax_rate*census_data$home_value)
+
+income <- xtab_for("98-400-X2016225") %>%
+  mutate(income = `DIM: Household total income groups (14)`,
+         households = `DIM: Household type including census family structure (16)`,
+         suitability = `DIM: Housing suitability (3)`,
+         repair = `DIM: Dwelling condition (3)`,
+         shelter_to_income = `DIM: Shelter-cost-to-income ratio (5)`) %>%
+  gather(key="tenure",value="count",c("Dim: Tenure (4): Member ID: [1]: Total - Tenure","Dim: Tenure (4): Member ID: [2]: Owner","Dim: Tenure (4): Member ID: [3]: Renter","Dim: Tenure (4): Member ID: [4]: Band housing")) %>%
+     select("GeoUID", "GEO_NAME","GNR","DATA_QUALITY_FLAG","ALT_GEO_CODE","households",
+            "income","suitability","repair","shelter_to_income","tenure","count")  %>% 
+  mutate(tenure=sub("Dim: Tenure \\(4\\): Member ID: \\[\\d+\\]: ","",tenure)) %>%
+  filter(GEO_NAME=="Vancouver",
+         tenure=="Owner",
+         suitability=="Total - Housing suitability",
+         income=="Average total income of households ($)",
+         households=="Total - Household type including census family structure",
+         shelter_to_income=="Total - Shelter-cost-to-income ratio",
+         repair=="Total - Dwelling condition") %>%
+  mutate(count=as.numeric(count)) %>%
+  pull(count)
+
+median_bc_tax_in_metro_van <- 2417 # 98-400-X2016121 but not very useful, this is individual level of all taxfilers
+
+```
+Let's look at what this translates into on the ground. For Metro Vancouver we had an average owner-occupied home value of `r scales::dollar(census_data$home_value)` in 2016, and average annual shelter costs, including mortgage payments, property taxes and regular home maintenance, but also utilities, of `r scales::dollar(census_data$shelter_cost*12)`. (Averages are better suited than medians for this kind of calculations, but that choice does not make much of a difference for the results). This shows that the average shelter cost would go up by `r scales::dollar(cost_increase)`, an increase of the average running shelter cost by `r scales::percent(cost_increase/(census_data$shelter_cost*12))`.
+
+```{r}
+census_data_incomes <- get_census(dataset='CA16', regions=list(PR="59",CMA="59933"), vectors=c("v_CA16_4954","v_CA16_4957"), labels="short", geo_format=NA, level='Regions') %>%
+  mutate(total_income=v_CA16_4954*v_CA16_4957,
+         rate=tax/total_income*1000000000)
+
+bc_effective_rate <- census_data_incomes %>% filter(`Region Name`=="British Columbia") %>% pull(rate)
+
+```
+
+That looks like a substantial increase, but we need to remember that this is offset by getting rid of the provincial income tax. The average effective provincial tax rate was `r scales::percent(bc_effective_rate)`, so people will have on average `r scales::percent(bc_effective_rate)` more after-tax income to take home. Homeowners in Metro Vancouver had an average household income of `r scales::dollar(income)`, resulting in a lowballed average increase in after-tax income of `r scales::dollar(income*bc_effective_rate)`. That number is lowballing it since Metro Vancouver homeowners tend to have higher incomes than the average British Columbia household, so they will have a higher effective provincial tax rate and thus higher savings.
+
+### Winners and losers
+Whenever there is a change in the tax system there will be winners and losers. The hypothetical tax change is revenue neutral, so on average everyone comes out even. Except homeowners that don't live or don't pay taxes in BC, those will pay extra. So the BC taxpaying resident will come out on top. On average, and that is also supported by our rough analysis using census data above.
+
+Some will pay extra, in particular homeowners in high-value homes with low income, including some seniors. Others would end up on top, for example high earners in lower value housing or renting.
+
+It would probably be worthwhile to dig down further and understand who the winners and losers would be after such a policy change.
+
+### Impact on property values
+But higher property taxes depress property values. But by how much? On the other hand, increasing after-tax income puts upward pressure on home prices. Estimating and comparing these effects is tricky business. But we can give a simplified heuristic argument to get a rough idea of the possible effects. 
+
+```{r}
+library(FinCal)
+discount_rate <- 0.035
+pv_tax=-pv.annuity(discount_rate,30,tax_rate)
+pv_tax_perpetuity=-pv.perpetuity(discount_rate,tax_rate)
+
+pv_additional_income <- -pv.annuity(discount_rate,30,bc_effective_rate)
+
+entire_to_housing <- pv_additional_income*income/census_data$home_value
+```
+
+We can estimate the effect of raising property taxes on home values by computing the present value of the additional future tax payments. Using a discount rate of `r scales::percent(discount_rate)` we get a present value of `r scales::percent(pv_tax)` of the home value assuming a 30 year revenue stream, or if we assume perpetual payments we get `r scales::percent(pv_tax_perpetuity)` of the home value. That gives us a range by which this could lower home values.
+
+For people working and paying taxes in BC this would be offset by a the ability to spend more on housing due to lower income taxes. Estimating the effect of that is a bit harder as it requires a lot more assumptions. Perhaps a simple way to estimate it is to compare (a portion of) the present value of the tax savings and compare that to home values. If we dedicate the entire tax savings to housing we an upward pressure on home prices by `r scales::percent(entire_to_housing)`, if we only dedicate a third of the tax savings to housing and spend the remainder on other things we get an home price increase of `r scales::percent(entire_to_housing/3)`. So rising after-tax income would somewhat offset the downward pressure from property taxes.
+
+Again that's an over-simplified view on the issue, and things are never that simple. Especially when it comes to Vancouver real estate. I will leave it to the economists to refine this appropriately.
+
+As always, the code underlying this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-08-10-taxing-property-instead-of-income-in-b-c.Rmarkdown), feel free to grab it and adapt four your own purposes.
+
+
+
