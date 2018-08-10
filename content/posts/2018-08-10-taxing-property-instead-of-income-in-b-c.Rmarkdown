@@ -203,6 +203,8 @@ We can estimate the effect of raising property taxes on home values by computing
 
 For people working and paying taxes in BC this would be offset by a the ability to spend more on housing due to lower income taxes. Estimating the effect of that is a bit harder as it requires a lot more assumptions. Perhaps a simple way to estimate it is to compare (a portion of) the present value of the tax savings and compare that to home values. If we dedicate the entire tax savings to housing we an upward pressure on home prices by `r scales::percent(entire_to_housing)`, if we only dedicate a third of the tax savings to housing and spend the remainder on other things we get an home price increase of `r scales::percent(entire_to_housing/3)`. So rising after-tax income would somewhat offset the downward pressure from property taxes.
 
+On balance the tax shift will likely exert a little downward pressure on home prices. Which in turn would require rising the hypothetical property tax relief rate a bit. But simple math shows things would stabilize pretty quickly.
+
 Again that's an over-simplified view on the issue, and things are never that simple. Especially when it comes to Vancouver real estate. I will leave it to the economists to refine this appropriately.
 
 As always, the code underlying this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-08-10-taxing-property-instead-of-income-in-b-c.Rmarkdown), feel free to grab it and adapt four your own purposes.
