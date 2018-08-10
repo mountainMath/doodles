@@ -9,7 +9,7 @@ categories:
   - Assessment Data
 tags: []
 description: 'What if we were more like Washington and replaced the provinial income tax by a property tax?'
-images: ["https://doodles.mountainmath.ca/posts/2018-08-10-taxing-property-instead-of-income-in-b-c/figure-html/property_taxes-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2018-08-10-taxing-property-instead-of-income-in-b-c_files/figure-html/property_taxes-1.png"]
 featured: ''
 featuredalt: ""
 featuredpath: ""
