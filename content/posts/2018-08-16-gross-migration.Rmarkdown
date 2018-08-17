@@ -1,0 +1,114 @@
+---
+title: Gross migration
+author: Jens von Bergmann
+date: '2018-08-16'
+slug: gross-migration
+categories:
+  - cancensus
+  - CensusMapper
+  - Vancouver
+tags: []
+description: 'Counting those coming and leaving.'
+images: ["https://doodles.mountainmath.ca/posts/2018-08-16-gross-migration_files/figure-html/gross_migration-1.png"]
+featured: ''
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width=9,
+	fig.height = 7
+)
+library(tidyverse)
+library(cancensusHelpers)
+```
+
+We have spent much digital ink on the [myth of fleeing Millenials](https://doodles.mountainmath.ca/blog/2017/05/16/lifeblood/), and related misconceptions around the [difference between changing sizes of age groups and net migration](https://doodles.mountainmath.ca/blog/2017/08/06/millennials-redux/). And one of our favourite [CensusMapper maps visualizes net-migration across Canada](https://censusmapper.ca/maps/731).
+
+Today we want to take a slightly different angle and take a quick look at **gross migration**, that is look separately at in- and out-migration. More specifically, we are interested in separating out interprovincial and intraprovincial in- and out-migrants, as well as external in-migrants. Unfortunately the census does not have data on external out-migrants since they don't live in Canada at the time of the census. Duh.
+
+### Components of gross migration
+Here is a quick view of gross-migration by age group for selected CMAs.
+
+```{r}
+data <- xtab_for("98-400-X2016315","http://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=111348&OFT=CSV") %>%
+  strip_columns_for_grep_string("Notes: ") %>%
+  gather_for_grep_string("Migration","Dim: Components of migration \\(in- and out-\\): Mobility 5 years ago \\(7\\): Member ID: \\[\\d+\\]: ") %>%
+  set_names(sub("^DIM: ","",sub(" \\(.+\\)$","",names(.)))) %>%
+  mutate(Migration=sub(" \\(Note: \\d+\\)$","",Migration))
+
+```
+
+```{r gross_migration}
+cmas <- c("Vancouver","Toronto","Calgary","Montréal","Victoria","Ottawa - Gatineau")
+
+age_levels <- c("5 to 9 years", "10 to 14 years", "15 to 19 years", "20 to 24 years", "25 to 29 years", "30 to 34 years", "35 to 39 years",    "40 to 44 years", "45 to 49 years", "50 to 54 years", "55 to 59 years", "60 to 64 years", "65 to 69 years", "70 to 74 years", "75 to 79 years",  "80 to 84 years", "85 years and over")
+
+colors <- setNames(RColorBrewer::brewer.pal(6,"Paired"),c("Intraprovincial out-migrants","Intraprovincial in-migrants",  "Interprovincial out-migrants", "Interprovincial in-migrants",  "", "External in-migrants"))
+
+plot_data <- data %>% 
+  filter(`Current - Census metropolitan areas and census agglomerations` %in% cmas,
+         Sex == "Total - Sex",
+         `Mother tongue`=="Total - Mother tongue",
+         Age %in% age_levels,
+         Migration %in% names(colors)) %>%
+  mutate(Age=factor(Age,levels=age_levels)) %>%
+  mutate(Value=ifelse(grepl(" out-",Migration),-Value,Value))%>%
+  rename(CMA=`Current - Census metropolitan areas and census agglomerations`) %>%
+  select(Age,Migration,CMA,Value)
+
+
+
+ggplot(plot_data,aes(x=Age,y=Value,fill=Migration)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_fill_manual(values=colors) +
+  facet_wrap("CMA",scales="free_x") +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Components of in- and out-migration 2011-2016",subtitle="(excluding external out-migration)",
+       x="Age in 2016",y="",caption="MountainMath, StatCan 98-400-X2016315")
+
+```
+
+
+We see how large a role external migration plays for Canada's "international arrival" metropolitan areas of Toronto, Vancouver and Montreal, with a more muted role in Calgary and much lower impact in Victoria and Ottawa.
+
+
+### Components of net migration
+To better understand the role of the "international arrival" CMAs, we can collapse the interprovincial and intraprovincial migration to their respective net migration. 
+
+
+```{r}
+pd2 <- plot_data %>% 
+  group_by(Age,CMA) %>%
+  spread(key="Migration",value="Value") %>%
+  mutate(`Net intraprovincial migrants`=`Intraprovincial in-migrants` + `Intraprovincial out-migrants`,
+         `Net interprovincial migrants`=`Interprovincial in-migrants` + `Interprovincial out-migrants`) %>%
+  gather(key="Migration",value="Value",c("Net intraprovincial migrants","Net interprovincial migrants","External in-migrants"))
+
+
+ggplot(pd2,aes(x=Age,y=Value,fill=Migration)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  #scale_fill_manual(values=colors) +
+  facet_wrap("CMA",scales="free_x") +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Components of net migration 2011-2016",subtitle="(excluding external out-migration)",
+       x="Age in 2016",y="",caption="MountainMath, StatCan 98-400-X2016315")
+
+```
+
+Doing so brings the "international arrival" nature of the large CMAs, where lots of external migrants first settle and then disperse from there. For Ottawa - Gatineau and Victoria we see the "university slingshot" in action, attracting lots of in-migrants (domestic and internationally) in their 20s, and sending them off again across Canada to launch their careers in the 30s.
+
+### Next steps
+Lots of interesting things can be learned by diving further into this kind of data. At some point I might need a "demographics" category for my blog. As usual, the code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-08-16-gross-migration.Rmarkdown) for anyone that wants to refine this. 
+
+
+
