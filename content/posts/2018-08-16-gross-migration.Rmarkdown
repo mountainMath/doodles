@@ -28,6 +28,7 @@ knitr::opts_chunk$set(
 )
 library(tidyverse)
 library(cancensusHelpers)
+pop_formatter <- function(x)paste0(scales::comma(round(x/1000)),"k")
 ```
 
 We have spent much digital ink on the [myth of fleeing Millenials](https://doodles.mountainmath.ca/blog/2017/05/16/lifeblood/), and related misconceptions around the [difference between changing sizes of age groups and net migration](https://doodles.mountainmath.ca/blog/2017/08/06/millennials-redux/). And one of our favourite [CensusMapper maps visualizes net-migration across Canada](https://censusmapper.ca/maps/731).
@@ -71,7 +72,7 @@ ggplot(plot_data,aes(x=Age,y=Value,fill=Migration)) +
   coord_flip() +
   scale_fill_manual(values=colors) +
   facet_wrap("CMA",scales="free_x") +
-  scale_y_continuous(labels=scales::comma) +
+  scale_y_continuous(labels=pop_formatter) +
   labs(title="Components of in- and out-migration 2011-2016",subtitle="(excluding external out-migration)",
        x="Age in 2016",y="",caption="MountainMath, StatCan 98-400-X2016315")
 
@@ -99,7 +100,7 @@ ggplot(pd2,aes(x=Age,y=Value,fill=Migration)) +
   coord_flip() +
   #scale_fill_manual(values=colors) +
   facet_wrap("CMA",scales="free_x") +
-  scale_y_continuous(labels=scales::comma) +
+  scale_y_continuous(labels=pop_formatter) +
   labs(title="Components of net migration 2011-2016",subtitle="(excluding external out-migration)",
        x="Age in 2016",y="",caption="MountainMath, StatCan 98-400-X2016315")
 
