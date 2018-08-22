@@ -1,0 +1,359 @@
+---
+title: Airbnb and STR licences
+author: Jens von Bergmann
+date: '2018-08-21'
+slug: airbnb-and-str-licences
+categories:
+  - Vancouver
+  - rental
+tags: []
+description: 'Checking in on Aribnb operator complicance'
+images: ["https://doodles.mountainmath.ca/posts/2018-08-21-airbnb-and-str-licences_files/figure-html/airbnb_complicance_map-1.png"]
+featured: 'airbnb_complicance_map-1.png'
+featuredalt: ""
+featuredpath: "/posts/2018-08-21-airbnb-and-str-licences_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 9
+)
+library(PostGisConnections)
+library(tidyverse)
+library(cancensus)
+library(fuzzyjoin)
+library(rmapzen)
+library(sf)
+library(cancensusHelpers)
+
+
+airbnb_connection<-function(){
+  RPostgreSQL::dbConnect(RPostgreSQL::PostgreSQL(),
+                         dbname = getOption("airbnb.dbname"),
+                         host=getOption("airbnb.host"),
+                         user=getOption("airbnb.user"),
+                         password=getOption("airbnb.password"))
+}
+
+get_airbnb_listings <- function(survey_id){
+  conn <- airbnb_connection()
+
+  ls <- sf::st_read(conn, query = paste0("SELECT * from room WHERE survey_id = ",survey_id), geom_column = "location") %>%
+    rename(geometry=location)
+  
+  RPostgreSQL::dbDisconnect(conn)
+  ls
+}
+
+preprocess <- function(data){
+  licences=data$license
+  na_list <- is.na(licences)
+  exempt_list <- (licences == "Exempt") & !na_list
+  clean_list <- gsub("[^0-9]", "", licences)
+
+  accepted_list <- grepl("^18",clean_list) & !na_list
+  
+  licences[accepted_list] <-
+    paste0(substr(clean_list[accepted_list],1,2),"-",substr(clean_list[accepted_list],3,100))
+  
+  data %>% mutate(licence=licences) %>%
+    mutate(licence_status=case_when(
+      is.na(licence) ~ "Missing",
+      grepl("exempt",licence,ignore.case = TRUE) ~ "Exempt",
+      grepl("^18-",licence) ~ "Valid format",
+      TRUE ~"Invalid format"
+    )) %>%
+    mutate(city=trimws(city))
+}
+
+get_str_data <- function(){
+  url="ftp://webftp.vancouver.ca/OpenData/csv/business_licences_csv.zip"
+  tmp <- tempfile()
+  download.file(url,tmp)
+  tmp_dir <- tempdir()
+  file<-utils::unzip(tmp,exdir = tmp_dir)
+  unlink(tmp)
+  data <- read_csv(file)
+  unlink(file)
+  data
+}
+
+
+my_theme <- list(
+  theme_bw(),
+  labs(caption="MountainMath, Airbnb, CoV Open Data")
+)
+
+my_map_theme <- list(
+  theme_void(),
+  labs(caption="MountainMath, Airbnb (locations not exact), CoV Open Data")
+)
+
+licence_status_levels = c("Issued", "Pending", "Exempt", "Missing", "Invalid format", "Valid format", "Gone Out of Business", "Inactive")
+
+licence_status_colors <- setNames(
+  RColorBrewer::brewer.pal(8,"Paired"),
+  c("Valid format", "Invalid format", "Pending", "Issued", "Missing", "Exempt", "Gone Out of Business", "Inactive" )
+)
+
+```
+
+
+```{r}
+city_region <- list(CT=c("9330069.01","9330069.02"),CSD=c("5915022","5915803"))
+
+vancouver <- get_census(dataset='CA16', regions=city_region,
+                               vectors=c(), labels="short", 
+                               geo_format='sf', level='Regions')
+bbox2=st_bbox(vancouver)
+vector_tiles2 <- simpleCache(get_vector_tiles(bbox2),"van_city_ubc_vector_tiles")
+# vector tiles return all layers (roads, water, buildings, etc) in a list
+roads2 <- rmapzen::as_sf(vector_tiles2$roads) %>% filter(kind != "ferry")
+water2 <- rmapzen::as_sf(vector_tiles2$water)
+
+```
+
+We are getting close the [end of the STR grace period ending August 31st](https://vancouver.ca/doing-business/short-term-rentals.aspx), so it's time to take a look at compliance of the STR operators. For today we will just look at [Airbnb](https://www.airbnb.ca/s/Vancouver--BC/homes?query=Vancouver%2C%20BC&refinement_paths%5B%5D=%2Fhomes), which is the largest STR listings platform. Other larger listings platforms are [VRBO](https://www.vrbo.com/results?petIncluded=false&ssr=true&adultsCount=2&childrenCount=0&neLat=49.315593397975874&neLong=-123.06274539513674&swLat=49.22161586817295&swLong=-123.15544253869143&zoom=13&q=Vancouver%2C%20BC%2C%20Canada&from-date=2018-08-23&to-date=2018-08-29) or [Craiglist](https://vancouver.craigslist.ca/search/vac).
+
+## How did we get here?
+The concern over short term rentals is a fairly new phenomenon. As recently as 2013 a local columnist [praised the benefits of Airbnb in generating higher incomes and side-stepping the resiential tenancy act](https://www.theglobeandmail.com/real-estate/in-high-cost-vancouver-the-trick-is-getting-strangers-to-pay-the-rent/article15676047/). In the following years potential negative impacts of Airbnb slowly entered the public debate, [Karen Sawatzky](https://twitter.com/karensawa)'s [excellend master's thesis](http://summit.sfu.ca/system/files/iritems1/16841/etd9840_.pdf) provided the foundation for much of the debate, her [slides from the PHRN in 2015](http://bcnpha.ca/wp_bcnpha/wp-content/uploads/2015/12/2015.11.25-Sawatzky_Airbnb_PHRN_web.pdf) give a good overview over the main points.
+
+This led to a [City of Vancouver council motion in April 2016](https://council.vancouver.ca/20160406/documents/pspc10.pdf) to direct staff to study the "impact of short-term rentals on housing stock", "options to mitigate negative impacts", "steps that other cities are taking to address these issues", and to "seek co-operation from Airbnb and other listing services, including detailed data on listings, to ensure an accurate assessment of the issue", and "to consult with the Renters Advisory Committee, the tourism industry, and others as needed on the City's response to this issue". 
+
+Lots of "process" and two years later this resulted in the data sharing MOU with Airbnb, with Airbnb agreeing to reject listings without a licence number after August 31st, 2018 and sharing data on hosts, licences and addresses with the city thereafter.
+
+## The Rules
+To recap, the STR rules in the City of Vancouver defines a *short term rental* (STR) as a unit rented out for less than 30 days at a time. To operate an STR legally within the City of Vancouver the operator needs to have an STR licence. After August 31st any operator operating an STR without a licence faces [fines up to $1,000](https://vancouver.ca/doing-business/short-term-rentals.aspx?utm_campaign=short-term-rentals&utm_medium=Vanity&utm_source=short-term-rentals_Vanity).
+
+The STR business licence needs to be displayed on all listings.
+
+## Airbnb
+The City agreement with Airbnb makes enforcement a lot easier. The rules require the display of a licence on each ad, and failing to display a valid licence is an easily enforceable offence, with Airbnb sharing host, licence and address information. The City won't have to check if a suite actually got rented out, the mere act of advertising it is an offence.
+
+The licence information, if provided, is already displayed on Airbnb listings. That gives us the opportunity to gauge compliance at this point in time, a week and a half before the grace period runs out. And we can compare that with the [Business licence data from the City](https://data.vancouver.ca/datacatalogue/businessLicence.htm).
+
+The data is not perfect, it takes a bit of effort to convince the Airbnb website to divulge the information we require for this, and listings are in constant flux. But it gives a reasonable good indication of where we are at at this point in time.
+
+### Compliance
+Our first question is compliance, how many listings have submitted a valid licence. 
+```{r}
+date_cutoff <- "2018-08-19" # not used
+all_licenses <- get_str_data()
+str_data <- all_licenses %>% filter(BusinessType=="Short-Term Rental") %>%
+  mutate(LocalArea=sub("Central Business/","",LocalArea))  
+
+last_issued <- str_data$IssuedDate %>% sort %>% last
+last_extracted <- str_data$ExtractDate %>% sort %>% last
+
+issued_pending <- filter(str_data,Status %in% c("Issued","Pending"))
+revoked <-  filter(str_data,!(Status %in% c("Issued","Pending"))) %>% mutate(licenceStatus="Revoked")
+issued_pending_not_revoked <- issued_pending %>% filter(!(LicenceNumber %in% revoked$LicenceNumber)) %>% mutate(licenceStatus="Valid")
+
+valid_licences <- issued_pending_not_revoked$LicenceNumber  %>% unique
+
+other_licenses <- all_licenses %>% filter(!(LicenceNumber %in% c(revoked$LicenceNumber,issued_pending_not_revoked$LicenceNumber)))
+```
+
+```{r}
+ls <- get_airbnb_listings(survey_id = 1) %>%
+  preprocess %>%
+  st_join(vancouver %>% select(GeoUID,name) %>% rename(city_name=name)) %>%
+  mutate(geo_match=case_when(
+    city=="Vancouver" & city_name=="Vancouver (CY)" ~ "City name and geography",
+    city=="Vancouver" & (is.na(city_name) | city_name!="Vancouver (CY)") ~ "City name only",
+    city!="Vancouver" & city_name=="Vancouver (CY)" ~ "Geography only",
+    TRUE ~ "None"
+  )) %>%
+  mutate(str_type=ifelse(minstay<30,"STR","Long term"))
+#ls %>% st_set_geometry(NULL) %>% group_by(city) %>% summarize(n=n())
+cov_ls <- ls %>% 
+  filter(city_name=="Vancouver (CY)") %>%
+  #filter(city=="Vancouver") %>%
+  left_join(bind_rows(revoked,issued_pending_not_revoked,other_licenses) %>%
+              select(LicenceNumber,licenceStatus,Status),by=c("licence"="LicenceNumber")) %>%
+  mutate(licence_status_verified=factor(coalesce(Status,licence_status),levels=licence_status_levels)) 
+```
+
+Our scrapes picked up `r scales::comma(nrow(cov_ls))` listings within the City of Vancouver proper. (Read further below about some caveats regarding the geography).
+
+We have [looked at STR business licence data before](https://doodles.mountainmath.ca/blog/2018/05/25/short-term-rental-licences/), which makes it easy to fold it into the Airbnb data. The city dataset gets updated on a daily basis, so we are assuming the licence data from the city is up-to-date. It contains `r scales::comma(issued_pending %>% filter(Status=="Pending") %>% nrow)` licences marked as "pending", so these are intermediate licences still making their way through the bureaucracy. 
+
+
+```{r}
+cov_ls %>% st_set_geometry(NULL) %>% 
+  group_by(licence_status_verified) %>% 
+  summarize(Count=n()) %>% 
+  ggplot(aes(x=licence_status_verified,y=Count,fill=licence_status_verified,label=scales::comma(Count))) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=licence_status_colors,guide=FALSE) +
+  scale_y_continuous(labels=scales::comma,limits=c(0,3000)) +
+  my_theme +
+  coord_flip() +
+  geom_text(hjust=-0.1)+
+  labs(x="Licence status",y="Number of listings",title="Listings by licence status")
+```
+
+Interestingly, `r scales::comma(cov_ls %>% filter(licence_status_verified=="Pending") %>% nrow)` of these pending licences already found their way onto Airbnb. Concerning is the appearance of `r scales::comma(cov_ls %>% filter(licence_status_verified %in% c("Inactive", "Gone out of business")) %>% nrow)` licences marked as "Inactive" or "Gone out of business" in listings. Similarly, there are `r scales::comma(cov_ls %>% filter(licence_status_verified=="Valid format") %>% nrow)` licences that are formatted like City licence numbers but have no match in the City dataset. Then there are `r scales::comma(cov_ls %>% filter(licence_status_verified=="Exempt") %>% nrow)` entries with the word "Exempt" in the licence field, with some noting in the description that they only rent for periods greater than 30 days, plus another `r scales::comma(cov_ls %>% filter(licence_status_verified=="Invalid format") %>% nrow)` listings with other text in the licence field that does not match the City licence format. Most of those claim to be exempt because they rent for longer than 30 days or pledge to apply for their licence soon. 
+
+### Exempt licences
+The obvious thing to check for listings that claim to be exempt is what *minimum stay* is set within Airbnb, that is the minimum number of nights that need to be booked, and then compare that to the licence status of the listings.
+
+```{r}
+minstay_cutoffs <- c(0,1.5,2.5,3.5,6.5,7.5,13.5,14.5,29.5,30.5,Inf)
+minstay_lables <- c("1","2","3","4-6","7","8-13","14","15-29","30","Over 30")
+
+minstay_data <- cov_ls %>% 
+  st_set_geometry(NULL) %>% 
+  mutate(minstay_d=cut(minstay,breaks=minstay_cutoffs,labels=minstay_lables,ordered_result = TRUE)) %>%
+  group_by(minstay_d,licence_status_verified) %>% 
+  summarize(Count=n())
+
+ggplot(minstay_data,aes(x=minstay_d,y=Count,fill=licence_status_verified))+
+  geom_bar(stat="identity") +
+  my_theme +
+  scale_fill_manual(values=licence_status_colors) +
+  labs(y="Number of listings",x="Minimum stay (days)",title="Listings in City of Vancouver by minimum stay",fill="Licence status")
+```
+
+There are a surprising (to us) number of long-term listings, so listings with a minimum stay of 30 days or more. While listings with minimum stay of at least 30 days have higher proportion of missing and "Exempt" listings, the majority of listings claiming to be "Exempt" are not listed as long-term rentals on Airbnb. The same is true for listings with missing licence information. We might be missing some other type of rental that are exempt from getting a licence, or the enforcement department will be busy next month.
+
+As an aside, there may be some legal wiggle room to set the minimum stay to 29 instead of 30, as the minimum stay counts nights not days.
+
+### Multiple licences
+```{r}
+business_count <- issued_pending_not_revoked %>% filter(Status=="Issued") %>% group_by(BusinessName) %>% summarize(Count=n(),Statuses=paste(Status,collapse = ", "),licences=paste(LicenceNumber %>% unique,collapse = ", "),`Licence count`=LicenceNumber %>% unique %>% length) %>% arrange(-`Licence count`)
+```
+The vast majority of the `r scales::comma(nrow(business_count))` STR operators have a single licence, but some have more than one active license.
+```{r}
+plot_data <- business_count %>% filter(`Licence count`>1) %>% ungroup %>% group_by(`Licence count`) %>% summarize(n=n()) %>%
+  mutate(`Licence count`=factor(`Licence count`))
+ggplot(plot_data,aes(x=`Licence count`,y=n)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  my_theme +
+  labs(y="Number of operators",title="Operators with more than one issued and active STR licences")
+```
+
+Some of these cases are operators that advertise several rooms or spaces in shared rooms in their house. But another is what appears to be renting out main unit, basement suite and laneway house as three separate units with operators living off-site. Again, we suspect that these cases will be subject to enforcement soon.
+
+### Multiple listings
+We can also slice the data the other way around and look for operators with more than one listing on Airbnb.
+
+```{r}
+plot_data <- cov_ls %>% 
+  group_by(host_id) %>%
+  summarize(n=n()) %>%
+  filter(n>1) %>%
+  ungroup() %>%
+  group_by(n) %>%
+  summarize(Count=n())
+  
+ggplot(plot_data,aes(x=n,y=Count)) +
+  geom_bar(stat="identity",fill="brown") +
+  my_theme +
+  labs(y="Number of operators",x="Number of listings",title="Operators with more than one listing on Airbnb")
+
+```
+
+In total `r scales::comma(plot_data$Count %>% sum)` operators have more than one listing, most of those have two, but one operator has 36. Some of these will be people renting out several rooms within the primary residence that they live in. Not sure what the rules say about that. But looking through the data it's obvious that there are also people operating multiple units. And people operating hostel-like accommodation. Some may be hotels or bed and breakfast operators cross-listing, but browsing the data it is clear that that there are plenty that don't fit these categories. I am curious to see how they will fare after the grace period runs out.
+
+## Multiple listings with same licence
+Lastly we can look at issued licenses and check for how many listings they were used. 
+
+```{r}
+plot_data <- cov_ls %>% 
+  filter(licence_status_verified == "Issued") %>%
+  group_by(licence) %>%
+  summarize(n=factor(n(),ordered = TRUE)) %>%
+  filter(n>1) %>%
+  ungroup() %>%
+  group_by(n) %>%
+  summarize(Count=n())
+  
+ggplot(plot_data,aes(x=n,y=Count)) +
+  geom_bar(stat="identity",fill="darkgreen") +
+  my_theme +
+  labs(y="Number of licences",x="Number of listings",title="Licences used for more than one listing")
+
+```
+
+It turns out some licences are used for several listings, up to 8 in some cases. I am not entirely clear what the rules are when one operator lists several rooms (or just several beds) in their house, but I was under the impression that one could not rent out several "entire home/apt" units under the same licence. 
+
+Filtering down to listings that are entire homes or apartments, we still get a sizable number of licences used on more than one listing.
+
+```{r}
+plot_data <- cov_ls %>% 
+  filter(licence_status_verified == "Issued",room_type=="Entire home/apt") %>%
+  group_by(licence) %>%
+  summarize(n=factor(n(),ordered = TRUE)) %>%
+  filter(n>1) %>%
+  ungroup() %>%
+  group_by(n) %>%
+  summarize(Count=n())
+  
+ggplot(plot_data,aes(x=n,y=Count)) +
+  geom_bar(stat="identity",fill="maroon") +
+  my_theme +
+  labs(y="Number of licences",x="Number of entire homes or apartments",title="Licences used for more than one entire home/apt listing")
+
+```
+
+That seems problematic.
+
+## Geography
+Just for the fun of it we can also look at the geography of listings. We are already familiar with geographic distribution of listings via the work of [Inside Airbnb](http://insideairbnb.com/vancouver/), so there is not much new to be learned here. But for completeness we show the listings by licence status. Locations are only approximate.
+
+```{r airbnb_complicance_map}
+background_fill <- c("9330069.01"="#e0e0e0","9330069.02"="#e0e0e0","5915022"="#ffffff","5915803"="#e0e0e0")
+ggplot(cov_ls) +
+  geom_sf(data=vancouver,aes(fill=GeoUID),color=NA) +
+  scale_fill_manual(values=background_fill,guide=FALSE) +
+  geom_sf(data=roads2,size=0.1,color="darkgrey",fill=NA) +
+  geom_sf(data = water2, fill = "lightblue", colour = NA) +
+  my_map_theme +
+  theme(panel.background = element_rect(fill="#a0a0a0")) +
+  scale_color_brewer(palette="Dark2") +
+  geom_sf(aes(color=licence_status_verified),size=0.25,alpha=0.8,show.legend = "point") +
+  guides(colour = guide_legend(override.aes = list(size=5))) +
+  coord_sf(datum=NA,
+           xlim=c(bbox2$xmin,bbox2$xmax),
+           ylim=c(bbox2$ymin,bbox2$ymax)) +
+  labs(title="Airbnb listings",color="Licence status") 
+```
+
+
+## Jurisdictions
+The last point we want to touch on is that of jurisdictions. Vancouver is a case where address and jurisdiction don't match. Everyone in the City of Vancouver has a Vancouver address, but not everyone with a Vancouver address lives in the City of Vancouver. The latter category is comprised of Musqueam 2, UBC, UNA and the UEL. Musqueam 2 are covered under some City of Vancouver planning procedures, but it is not clear to us if the Airbnb rules apply in Musqueam 2. The rules don't apply in UBC, UNA or UEL homes.
+
+For us that brings some difficulties in reliably identifying listings within the City of Vancouver. The following map gives an overview on matching listings to jurisdictions, either by geography and name, by geography only, name only, or neither.
+
+
+```{r}
+background_fill <- c("9330069.01"="#e0e0e0","9330069.02"="#e0e0e0","5915022"="#ffffff","5915803"="#e0e0e0")
+ggplot(ls) +
+  geom_sf(data=vancouver,aes(fill=GeoUID),color=NA) +
+  scale_fill_manual(values=background_fill,guide=FALSE) +
+  geom_sf(data=roads2,size=0.1,color="darkgrey",fill=NA) +
+  geom_sf(data = water2, fill = "lightblue", colour = NA) +
+  my_map_theme +
+  theme(panel.background = element_rect(fill="#a0a0a0")) +
+  scale_color_brewer(palette="Set1") +
+  geom_sf(aes(color=geo_match),size=0.5,alpha=0.8,show.legend = "point") +
+  guides(colour = guide_legend(override.aes = list(size=5))) +
+  coord_sf(datum=NA,
+           xlim=c(bbox2$xmin,bbox2$xmax),
+           ylim=c(bbox2$ymin,bbox2$ymax)) +
+  labs(title="Airbnb listings",color="Jurisdictional match") 
+```
+
+We went by geography only for all of the above analysis, and looking at the map it seems that we got some cases wrong along Boundary Road and possible near Blanca in Little Australia. We are also missing some cases located (possibly by accident) within False Creek. We could use the *neighbourhood* field from Airbnb to help decided some of these edge cases, but that field is not always populated and does not distinguish Musqueam 2 (although maybe we should include that area anyway). For this post we will live with those misclassifications.
+
+
+## Next steps
+We will revisit this in early September after the grace period expired. At that point every listing will have to have the licence number field populated on Airbnb to stay visible. Unless we see a huge spike in business license applications we should either see a lot of listings coming offline or a slew of bogus licence numbers appear. The latter option will likely turn out costly for operators choosing to go that route, as Airbnb will begin sharing data on hosts, addresses and licence numbers for CoV to compare with their dataset. The September/November time frame is when we will learn how effective Vancouver's Airbnb regulation really is. Ether way, the bylaw officers will be busy.
+
+
