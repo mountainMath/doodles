@@ -31,7 +31,7 @@ library(rmapzen)
 library(sf)
 library(cancensusHelpers)
 
-
+options("airbnb.host"="bikewalkubc.org") # old airbnb database
 airbnb_connection<-function(){
   RPostgreSQL::dbConnect(RPostgreSQL::PostgreSQL(),
                          dbname = getOption("airbnb.dbname"),
@@ -121,7 +121,7 @@ water2 <- rmapzen::as_sf(vector_tiles2$water)
 We are getting close the [end of the STR grace period ending August 31st](https://vancouver.ca/doing-business/short-term-rentals.aspx), so it's time to take a look at compliance of the STR operators. For today we will just look at [Airbnb](https://www.airbnb.ca/s/Vancouver--BC/homes?query=Vancouver%2C%20BC&refinement_paths%5B%5D=%2Fhomes), which is the largest STR listings platform. Other larger listings platforms are [VRBO](https://www.vrbo.com/results?petIncluded=false&ssr=true&adultsCount=2&childrenCount=0&neLat=49.315593397975874&neLong=-123.06274539513674&swLat=49.22161586817295&swLong=-123.15544253869143&zoom=13&q=Vancouver%2C%20BC%2C%20Canada&from-date=2018-08-23&to-date=2018-08-29) or [Craiglist](https://vancouver.craigslist.ca/search/vac).
 
 ## How did we get here?
-The concern over short term rentals is a fairly new phenomenon. As recently as 2013 a local columnist [praised the benefits of Airbnb in generating higher incomes and side-stepping the resiential tenancy act](https://www.theglobeandmail.com/real-estate/in-high-cost-vancouver-the-trick-is-getting-strangers-to-pay-the-rent/article15676047/). In the following years potential negative impacts of Airbnb slowly entered the public debate, [Karen Sawatzky](https://twitter.com/karensawa)'s [excellend master's thesis](http://summit.sfu.ca/system/files/iritems1/16841/etd9840_.pdf) provided the foundation for much of the debate, her [slides from the PHRN in 2015](http://bcnpha.ca/wp_bcnpha/wp-content/uploads/2015/12/2015.11.25-Sawatzky_Airbnb_PHRN_web.pdf) give a good overview over the main points.
+The concern over short term rentals is a fairly new phenomenon. As recently as 2013 a local columnist [praised the benefits of Airbnb in generating higher incomes and side-stepping the resiential tenancy act](https://www.theglobeandmail.com/real-estate/in-high-cost-vancouver-the-trick-is-getting-strangers-to-pay-the-rent/article15676047/). In the following years potential negative impacts of Airbnb slowly entered the public debate, [Karen Sawatzky](https://twitter.com/karensawa)'s [excellent master's thesis](http://summit.sfu.ca/system/files/iritems1/16841/etd9840_.pdf) provided the foundation for much of the debate, her [slides from the PHRN in 2015](http://bcnpha.ca/wp_bcnpha/wp-content/uploads/2015/12/2015.11.25-Sawatzky_Airbnb_PHRN_web.pdf) give a good overview over the main points.
 
 This led to a [City of Vancouver council motion in April 2016](https://council.vancouver.ca/20160406/documents/pspc10.pdf) to direct staff to study the "impact of short-term rentals on housing stock", "options to mitigate negative impacts", "steps that other cities are taking to address these issues", and to "seek co-operation from Airbnb and other listing services, including detailed data on listings, to ensure an accurate assessment of the issue", and "to consult with the Renters Advisory Committee, the tourism industry, and others as needed on the City's response to this issue". 
 
@@ -143,7 +143,7 @@ The data is not perfect, it takes a bit of effort to convince the Airbnb website
 Our first question is compliance, how many listings have submitted a valid licence. 
 ```{r}
 date_cutoff <- "2018-08-19" # not used
-all_licenses <- get_str_data()
+all_licenses <- simpleCache(get_str_data(),"str_for_airbnb_post_2018-08-21") # cache data to fix for post
 str_data <- all_licenses %>% filter(BusinessType=="Short-Term Rental") %>%
   mutate(LocalArea=sub("Central Business/","",LocalArea))  
 
@@ -350,10 +350,10 @@ ggplot(ls) +
   labs(title="Airbnb listings",color="Jurisdictional match") 
 ```
 
-We went by geography only for all of the above analysis, and looking at the map it seems that we got some cases wrong along Boundary Road and possible near Blanca in Little Australia. We are also missing some cases located (possibly by accident) within False Creek. We could use the *neighbourhood* field from Airbnb to help decided some of these edge cases, but that field is not always populated and does not distinguish Musqueam 2 (although maybe we should include that area anyway). For this post we will live with those misclassifications.
+We went by geography only for all of the above analysis, and looking at the map it seems that we got some cases wrong along Boundary Road and possibly near Blanca in Little Australia. We are also missing some cases located (possibly by accident) within False Creek. We could use the *neighbourhood* field from Airbnb to help decide some of these edge cases, but that field is not always populated and does not distinguish Musqueam 2 (although maybe we should include that area anyway). For this post we will live with those misclassifications.
 
 
 ## Next steps
-We will revisit this in early September after the grace period expired. At that point every listing will have to have the licence number field populated on Airbnb to stay visible. Unless we see a huge spike in business license applications we should either see a lot of listings coming offline or a slew of bogus licence numbers appear. The latter option will likely turn out costly for operators choosing to go that route, as Airbnb will begin sharing data on hosts, addresses and licence numbers for CoV to compare with their dataset. The September/November time frame is when we will learn how effective Vancouver's Airbnb regulation really is. Ether way, the bylaw officers will be busy.
+We will revisit this in early September after the grace period expires. At that point every listing will have to have the licence number field populated on Airbnb to stay visible. Unless we see a huge spike in business license applications we should either see a lot of listings coming offline or a slew of bogus licence numbers appear. The latter option will likely turn out costly for operators choosing to go that route, as Airbnb will begin sharing data on hosts, addresses and licence numbers for CoV to compare with their dataset. The September/November time frame is when we will learn how effective Vancouver's Airbnb regulation really is. Ether way, the bylaw officers will be busy.
 
 
