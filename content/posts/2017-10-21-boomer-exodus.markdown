@@ -43,9 +43,10 @@ ggplot(plot_data, aes(x = Age, y = Population, fill = Gender)) +
 There is a reason the boomers are called the "boomers". We can clearly identify the sharp tail as people that were over 50 years old in 2016. Another way to visualize is to follow the size of the 40 - 44 year old age bracket through time. Timeline data is available at CANSIM, and we utilize the convenient `CANSIM2R` package for that.
 
 ```r
-library(CANSIM2R)
-data <- getCANSIM('0510001',showLabels = FALSE) %>% filter(i=="Canada")
-ggplot(data,aes(x=t,y=V56)) +
+library(cansim)
+data <- get_cansim('0510001') %>% normalize_cansim_values %>% 
+  filter(GEO=="Canada", `Age group`=="40 to 44 years", Sex=="Both sexes")
+ggplot(data,aes(x=Date,y=VALUE)) +
   geom_line(color="blue") + geom_point(color="steelblue") + 
   age_time_styling
 ```

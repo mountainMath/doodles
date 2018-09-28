@@ -24,7 +24,7 @@ I got curious how my (somewhat biased) twitter feed interprets the 13% drop, so 
 {{< tweet 921560974422827010 >}} Let's just say the performance was sub-optimal. The correct answer is that Canada overall saw a 14% (13.6% to be precise) drop in the number of people in the 40 to 44 year age group. And that's despite the total population of Canada growing by 11% in that time frame. But this gives me a great excuse to explain what's going on in more detail.
 
 So where are those 40 to 44 year olds going? Nowhere, they are just getting older. The 40 to 44 year old age group in 2006 is the tail end of the boomers. In 2016, these people are 50 to 54 year old, and there are fewer people coming after them to fill the 40 to 44 year old bracket in 2016.
-```{r, message=FALSE, warning=FALSE, include=FALSE}
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
 library(tidyr)
 library(dplyr)
 library(ggplot2)
@@ -57,9 +57,10 @@ ggplot(plot_data, aes(x = Age, y = Population, fill = Gender)) +
 
 There is a reason the boomers are called the "boomers". We can clearly identify the sharp tail as people that were over 50 years old in 2016. Another way to visualize is to follow the size of the 40 - 44 year old age bracket through time. Timeline data is available at CANSIM, and we utilize the convenient `CANSIM2R` package for that.
 ```{r age_timeline, fig.height=4, fig.width=7, message=FALSE, warning=FALSE, dev='svg'}
-library(CANSIM2R)
-data <- getCANSIM('0510001',showLabels = FALSE) %>% filter(i=="Canada")
-ggplot(data,aes(x=t,y=V56)) +
+library(cansim)
+data <- get_cansim('0510001') %>% normalize_cansim_values %>% 
+  filter(GEO=="Canada", `Age group`=="40 to 44 years", Sex=="Both sexes")
+ggplot(data,aes(x=Date,y=VALUE)) +
   geom_line(color="blue") + geom_point(color="steelblue") + 
   age_time_styling
 ```
