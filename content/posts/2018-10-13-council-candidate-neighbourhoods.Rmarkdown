@@ -1,0 +1,299 @@
+---
+title: Council candidate neighbourhoods
+author: Jens von Bergmann
+date: '2018-10-13'
+slug: council-candidate-neighbourhoods
+categories:
+  - cancensus
+  - Vancouver
+tags: []
+description: 'Comparing what neighbourhoods council candidates live in.'
+images: ["https://doodles.mountainmath.ca/posts/2018-10-13-council-candidate-neighbourhoods_files/figure-html/housing-types-1.png"]
+featured: 'housing-types-1.png'
+featuredalt: ""
+featuredpath: "/posts/2018-10-13-council-candidate-neighbourhoods_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 9
+)
+library(tidyverse)
+library(cancensus)
+library(cancensusHelpers)
+library(tongfen)
+library(dotdensity)
+library(sf)
+library(tricolore)
+library(gridExtra)
+library(ggtern)
+
+geocode_postal <- function(postal_code){
+  geocoded <- postal_code %>% 
+    map(function(c){
+      c=as.character(c)
+    response=httr::GET(paste0("http://geocoder.ca/",gsub(" ","",c),"?json=1"))
+    if (response$status_code==200) {
+      content=httr::content(response)
+      result=tibble(`Postal Code`=c,
+                    lon=as.numeric(content$longt),
+                    lat=as.numeric(content$latt),
+                    prov=content$standard$prov,
+                    city=content$standard$city,
+                    adauid=content$Dissemination_Area$adauid,
+                    dauid=content$Dissemination_Area$dauid)
+    } else {
+      print(paste0("Error retrieving data: ",response$status_code))
+      print(httr::content(response,as="text") %>% cat)
+      result=tibble(`Postal Code`=c,
+                    lon=NA,
+                    lat=NA,
+                    prov=NA,
+                    city=NA,
+                    adauid=NA,
+                    dauid=NA)
+    }
+    result
+  }) %>%
+    bind_rows %>% 
+    st_as_sf(.,coords = c("lon", "lat"), crs = 4326, agr = "constant",na.fail=FALSE)
+  
+  geocoded
+}
+
+
+```
+
+I haven't taken time yet to dive into the council candidate's data game, [Chrustopher Porter](https://twitter.com/cdnveggie) has been tearing it up with great posts, one on [candidate location](https://canadianveggie.wordpress.com/2018/09/15/mapping-at-the-2018-vancouver-election-candidates/), several on their [position on various housing issues](https://canadianveggie.wordpress.com/2018/10/06/vancouver-election-2018-primer-part-3-housing/) and a [compilation of endorsements](https://canadianveggie.wordpress.com/2018/10/11/vancouver-election-2018-primer-part-5-endorsements/).
+
+[Dmitry Shkolnik](https://twitter.com/dshkol) has been [running some analysis on candidate's tweets](https://www.dshkol.com/2018/vancouver-mayor-race-twitter/).
+
+[Nathan Lauster](https://twitter.com/LausterNa) dove into the [urbanist / preservationist divide](https://homefreesociology.wordpress.com/2018/10/10/a-very-imby-election/) first crowdsourced by the [Cambie report](https://cambiereport.ca).
+
+Better late than never, I decided to jump in and look at candidate's neighbourhoods. The immediate surrounding of candidates should give some clues about who they interact with on a daily basis, at least for the candidates that are connected with their neighbourhoods in ways other than just driving through them to get to their home.
+
+For this we grab census data form the 500m radius around their rough home location, geocoded from the zip codes that Christopher Porter copied from the disclosure documents and shared via a spreadsheet linked in his blog post.
+
+```{r}
+get_candidates_data <- function(){
+  mayoral_candidates <- read_csv("https://docs.google.com/spreadsheets/d/10dSXXro1Ldr9nqj6h2xQBwmMa3ynyEniVWSlNGBT1P4/export?format=csv&id=10dSXXro1Ldr9nqj6h2xQBwmMa3ynyEniVWSlNGBT1P4&gid=0")
+  council_candidates <- read_csv("https://docs.google.com/spreadsheets/d/10dSXXro1Ldr9nqj6h2xQBwmMa3ynyEniVWSlNGBT1P4/export?format=csv&id=10dSXXro1Ldr9nqj6h2xQBwmMa3ynyEniVWSlNGBT1P4&gid=989538486")
+  
+  bind_rows(mayoral_candidates %>% mutate(Position="Mayor"),
+            council_candidates %>% mutate(Position="Council")) %>%
+    left_join(geocode_postal((.)$`Postal Code`),by="Postal Code") %>%
+    mutate(Party=replace_na(Party,"Independent")) %>%
+    st_sf
+}
+```
+
+Between mayor and council there are lots of candidates to make a really messy map of where they live and the neighbourhoods we consider.
+
+```{r}
+candidates <- simpleCache(get_candidates_data(),"cov_2018_mayor_and_council_candidates") %>%
+    bind_cols((.) %>% st_coordinates %>% as.tibble) %>% unique
+
+candidate_regions <- candidates %>% 
+  st_transform(26910) %>%
+  st_buffer(500) %>%
+  st_transform(4326)
+
+bbox=st_bbox(candidate_regions)
+bbox_wide=st_bbox(candidate_regions %>% st_transform(26910) %>%
+  st_buffer(5000) %>%
+  st_transform(4326))
+vector_tiles <- simpleCache(get_vector_tiles(bbox_wide),"candidate_regions_vector_tiles",refresh = TRUE)
+roads <- rmapzen::as_sf(vector_tiles$roads) %>% filter(kind != "ferry")
+water <- rmapzen::as_sf(vector_tiles$water)
+
+parties <- candidate_regions$Party %>% unique()
+party_colours=setNames(RColorBrewer::brewer.pal(length(parties),"Set3"),parties)
+
+
+ggplot(candidate_regions,aes(fill=Party)) +
+  geom_sf(data=roads,size=0.1,color="darkgrey",fill=NA) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  geom_sf(alpha=0.5) +
+  ggrepel::geom_label_repel(aes(label=`Last Name`,x=X,y=Y),
+                            size=2,force=10,label.size=0.1,alpha=0.75,
+                           segment.size = 0.25, min.segment.length=0, segment.alpha = 0.75,show.legend = FALSE) +
+  theme_void() +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values=party_colours) +
+  coord_sf(datum = NA,
+           xlim=c(bbox_wide$xmin,bbox_wide$xmax),
+           ylim=c(bbox_wide$ymin,bbox_wide$ymax)) +
+  labs(fill="",title="Vancouver Mayor and Council candidates")
+```
+
+From here we use our standard tools to grab census data for a couple of variables from the 2016 census and use our [tongfen package](https://github.com/mountainMath/tongfen), as well as the down-sampling from out [dotdensity package](https://github.com/mountainMath/dotdensity), to estimate the variables in the given neighbourhoods. (Check [the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-10-13-council-candidate-neighbourhoods.Rmarkdown) if you need to know the details.)
+
+```{r}
+commute_vectors <- search_census_vectors("Main mode of commuting","CA16","Total") %>% child_census_vectors(leaves_only = TRUE)
+income_vectors <- search_census_vectors("Economic family income","CA16","Total") %>% child_census_vectors(.,leaves_only = TRUE)
+age_vectors <- c("v_CA16_4","v_CA16_64","v_CA16_82","v_CA16_100","v_CA16_61","v_CA16_244","v_CA16_208","v_CA16_190")
+dwelling_vectors <- search_census_vectors("structural type of dwelling","CA16","Total") %>% 
+  child_census_vectors(leaves_only = TRUE) 
+  
+
+tenure_vectors <- search_census_vectors("tenure","CA16") %>% child_census_vectors(leaves_only = TRUE)
+med_mult_vectors <- c("v_CA16_4895","v_CA16_2397")
+
+vectors <- c(commute_vectors$vector,tenure_vectors$vector,income_vectors$vector,age_vectors,med_mult_vectors,dwelling_vectors$vector)
+census_data.da <- get_census("CA16",regions=list(CMA="59933"),vectors=vectors,level="DA",labels = "short") %>%
+  mutate_at(med_mult_vectors,function(x){x*(.)$Households})
+census_data.db <- get_census("CA16",regions=list(CMA="59933"),geo_format="sf",level="DB")
+
+census_data <- bind_cols(
+  dot_density.proportional_re_aggregate(census_data.db,census_data.da, geo_match = c("DA_UID"="GeoUID"),base = "Population",
+                                        categories = c(commute_vectors$vector,income_vectors$vector,age_vectors)),
+  dot_density.proportional_re_aggregate(census_data.db,census_data.da, geo_match = c("DA_UID"="GeoUID"),base = "Households",
+                                        categories = c(tenure_vectors$vector,med_mult_vectors,dwelling_vectors$vector)) %>%
+    st_set_geometry(NULL) %>% select(c(tenure_vectors$vector,med_mult_vectors,dwelling_vectors$vector))
+)
+
+data <- candidate_regions %>% 
+  bind_cols( (.) %>%
+    tongfen_estimate(census_data %>% replace(., is.na(.), 0),c("Population","Dwellings","Households",vectors)) %>%
+    mutate(low = v_CA16_409+v_CA16_414+v_CA16_417, middle=v_CA16_412+v_CA16_413+v_CA16_416+v_CA16_415,high=v_CA16_410) %>%
+    mutate(active_transport=(v_CA16_5804+v_CA16_5807+v_CA16_5801)/(st_set_geometry(.,NULL) %>% select(commute_vectors$vector) %>% rowSums(na.rm=TRUE)),
+           renters=v_CA16_4838/(st_set_geometry(.,NULL) %>% select(tenure_vectors$vector) %>% rowSums(na.rm=TRUE)),
+           income=v_CA16_2397/Households,
+           housing=v_CA16_4895/Households,
+           med_mult = housing/income,
+           Bottom=(v_CA16_2477+v_CA16_2480+v_CA16_2483)/(st_set_geometry(.,NULL) %>% select(income_vectors$vector) %>% rowSums(na.rm=TRUE)),
+           Middle=(v_CA16_2486+v_CA16_2489+v_CA16_2495+v_CA16_2498)/(st_set_geometry(.,NULL) %>% select(income_vectors$vector) %>% rowSums(na.rm=TRUE)),
+           Top=(v_CA16_2501+v_CA16_2504+v_CA16_2507)/(st_set_geometry(.,NULL) %>% select(income_vectors$vector) %>% rowSums(na.rm=TRUE)),
+           `Under 30`=(v_CA16_4+v_CA16_64+v_CA16_82+v_CA16_100)/(v_CA16_4+v_CA16_61+v_CA16_244),
+           `30-50`=(v_CA16_61-v_CA16_64-v_CA16_82-v_CA16_100-v_CA16_190-v_CA16_208)/(v_CA16_4+v_CA16_61+v_CA16_244),
+           `50+`=(v_CA16_244+v_CA16_190+v_CA16_208)/(v_CA16_4+v_CA16_61+v_CA16_244),
+           low_pct=low/(st_set_geometry(.,NULL) %>% select(low,middle,high) %>% rowSums(na.rm=TRUE)),
+           middle_pct=middle/(st_set_geometry(.,NULL) %>% select(low,middle,high) %>% rowSums(na.rm=TRUE)),
+           high_pct=high/(st_set_geometry(.,NULL) %>% select(low,middle,high) %>% rowSums(na.rm=TRUE)))
+    ) %>%
+  mutate(area=(st_area(.) %>% as.numeric)/10000) %>%
+  mutate(pop_density=Population/area)
+```
+
+## Transportation and tenure
+We start by mapping out the active transportation (walk, bike, transit) to work and share of renter households.
+
+```{r}
+ggplot(data,aes(x=renters,y=active_transport,color=Party)) +
+  geom_point() +
+  guides(color=FALSE) +
+  scale_x_continuous(labels=scales::percent,limits=c(0,1)) +
+  theme_light() +
+  scale_y_continuous(labels=scales::percent,limits=c(0,1)) +
+  facet_wrap("Party") +
+  labs(title="Mayoral and council candidate 500m radius neighbourhood profile",x="Renter Households",y="Active Transportation")
+```
+
+Active transportation correlates strongly with renter households, and this is also reflected in the graphs. We see that most parties cover a broad spectrum, except Coalition Vancouver (and to a lesser extent Vancouver 1st) that seem to bunch in the lower-left quadrant. I was surprised to see that COPE also does not reach out into the upper-right quadrant.
+
+## Dwelling value and household income
+No post about Vancouver is complete without talking about dwelling values and household income. 
+
+```{r}
+million_formatter <- function(x){paste0(scales::dollar(x/1000000),"M")}
+thousand_formatter <- function(x){paste0(scales::dollar(x/1000),"k")}
+ggplot(data,aes(x=income,y=housing,color=Party)) +
+  geom_point() +
+  theme_light() +
+  guides(color=FALSE) +
+  scale_x_continuous(labels=thousand_formatter) +
+  scale_y_continuous(labels=million_formatter) +
+  facet_wrap("Party") +
+  labs(title="Mayoral and council candidate 500m radius neighbourhood profile",x="Median Household Income",y="Median Dwelling Value")
+```
+
+Coalition Vancouver, as well as some independents, score high on the dwelling value and the income scale, with NPA nd Vancouver 1st the only other parties to crack the $2M dwelling value mark. 
+
+## Adjusted after-tax family income
+Adjusted after-tax family income is probably a better way to compare income, so here a little graph on how the parties pan out in this scale. Not much surprising here with most bunching in the middle, as [income distribution in Vancouver is quite uniform](https://twitter.com/vb_jens/status/1041571195747917824).
+
+We divided the income distribution into "Low" (bottom 30%), "Middle" (middle 40%), and "High" (upper 30%). The shares are relative to Canada's overall adjusted after-tax family income distribution.
+
+```{r fig.height=12, fig.width=9}
+parties %>% lapply(function(p){
+  tric <- Tricolore(data %>% filter(Party==p), 
+                    p1 = 'Bottom', p2 = 'Middle', p3 = 'Top', 
+                    breaks = 2,data_size=2,data_alpha=0.8)
+  ggplot() + annotation_custom(ggplotGrob(tric$key + labs(title=p)))
+}) %>% grid.arrange(grobs=.,top="Adjusted after-tax family income brackets")
+```
+
+
+We see that only independents and ProVancouver have candidates in predominantly low-income areas. Both Coalition Vancouver and independents have candidates in predominately high-income areas.
+
+## Housing types
+When it comes to housing types, there is a much greater variety. We divided the structural types into "SFH" (single detached and suited single detached), "Missing middle" (Duplex and row/town houses and low-rise (four or fewer storeys)), and "Highrise" (five or more storeys). This is the same split that we have [mapped on CensusMapper before](https://censusmapper.ca/maps/717).
+
+```{r housing-types, fig.height=12, fig.width=9}
+parties %>% lapply(function(p){
+  tric=Tricolore(data %>%  filter(Party==p) %>% rename(SFH=low_pct,`Missing middle`=middle_pct,Highrise=high_pct),
+                 p1 = 'SFH', p2 = 'Missing middle', p3 = 'Highrise', 
+                 data_size=2,data_alpha=0.8)
+  ggplot() + annotation_custom(ggplotGrob(tric$key + labs(title=p)))
+}) %>% gridExtra::grid.arrange(grobs=.,top="Housing types")
+```
+
+
+## Population change and density
+Another much talked about metric in this election is population change and density. 
+
+```{r}
+census_data_1116.da <- get_census("CA1116",regions=list(CMA="s_1_59933_59933"),vectors=vectors,level="DA",labels = "short") %>%
+  mutate_at(med_mult_vectors,function(x){x*(.)$Households})
+census_data_1116.csd=get_census("CA1116",regions=list(CMA="s_1_59933_59933"),level="CSD",labels = "short",geo_format="sf")
+census_data_1116.db <- get_census("CA1116",regions=list(CSD=census_data_1116.csd$GeoUID),geo_format="sf",labels = "short",level="DB") # CMA level on DB is broken
+```
+
+
+```{r}
+data_1116 <- candidate_regions %>% 
+  bind_cols( (.) %>%
+    tongfen_estimate(census_data_1116.db %>% replace(., is.na(.), 0),c("Population 2016","Dwellings 2016","Households 2016","Population 2011","Dwellings 2011","Households 2011"))) %>%
+  mutate(`Population Change`=`Population.2016`/`Population.2011`-1,
+         `Households Change`=`Households.2016`/`Households.2011`-1,
+         `Dwelling Change`=`Dwellings.2016`/`Dwellings.2011`-1) 
+```
+
+
+```{r denity-pop_change}
+ggplot(data_1116,aes(x=`Population.2016`,y=`Population Change`,color=Party)) +
+  geom_hline(yintercept = 0) +
+  geom_point() +
+  theme_light() +
+  guides(color=FALSE) +
+  scale_x_continuous(labels=function(x){paste0(scales::comma(x/1000),"k")}) +
+  scale_y_continuous(labels=scales::percent) +
+  facet_wrap("Party") +
+  labs(title="Mayoral and council candidate 500m radius neighbourhood profile",x="Population 2016")
+
+```
+
+That huge outlier in terms of population change is Justin Caudwell, who apparently lives in the Olympic Village. Coalition Vancouver is quite heavily invested in areas with losing population, with only COPE, IDEA Vancouver, OneCity and YES Vancouver running no candidate living in neighbourhoods that lost population.
+
+To focus in on this we graph just the population change.
+
+```{r fig.height=10,fig.width=9}
+ggplot(data_1116,aes(x=reorder(Label,`Population Change`), y=`Population Change`,fill=Party)) +
+  geom_bar(stat="identity") +
+  guides(color=FALSE) +
+  theme_light() +
+  scale_fill_manual(values=party_colours) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Mayoral and council candidate 500m radius neighbourhood profile",x="") +
+  coord_flip()
+```
+
+
+## Upshot
+This adds another perspective to what may inform the candidate's position. As always, the code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-10-13-council-candidate-neighbourhoods.Rmarkdown), feel free to grab it and reproduce the post, add different metrics or expand on this in other ways. To compute the population change we made use of an internal CensusMapper tiling that gives 2011 and 2016 data on a common geographies. To access this, you will have to grab the "label-fix" branch on the `cancensus` package until this is merged into master and the CRAN version gets updated.
