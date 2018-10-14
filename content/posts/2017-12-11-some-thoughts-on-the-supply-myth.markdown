@@ -42,7 +42,8 @@ The economics definition is useful because it is clearly defined and there is a 
 ### Ownership
 For the ownership market in Vancouver the interplay of the supply-demand balance with prices has been expertly visualized by [YVR Housing Analyst](https://twitter.com/YVRHousing) and is summarized in this tweet
 
-{{<tweet 940663306511048705>}}
+![YVRHousing](/images/yvrhousing_moi.png)
+<!--{{<tweet 940663306511048705>}}-->
 
 and [a blog post](http://housing-analysis.blogspot.ca/2017/04/vancouver-teranet-hpi-and-inventory.html). The upshot is that price change is driven by months of inventory. (And yes, this is more than just a correlation.)
 
