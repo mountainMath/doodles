@@ -19,7 +19,7 @@ type: "post"
 
 
 
-I haven't taken time yet to dive into the council candidate's data game, [Chrustopher Porter](https://twitter.com/cdnveggie) has been tearing it up with great posts, one on [candidate location](https://canadianveggie.wordpress.com/2018/09/15/mapping-at-the-2018-vancouver-election-candidates/), several on their [position on various housing issues](https://canadianveggie.wordpress.com/2018/10/06/vancouver-election-2018-primer-part-3-housing/) and a [compilation of endorsements](https://canadianveggie.wordpress.com/2018/10/11/vancouver-election-2018-primer-part-5-endorsements/).
+I haven't taken time yet to dive into the council candidate's data game, [Christopher Porter](https://twitter.com/cdnveggie) has been tearing it up with great posts, one on [candidate location](https://canadianveggie.wordpress.com/2018/09/15/mapping-at-the-2018-vancouver-election-candidates/), several on their [position on various housing issues](https://canadianveggie.wordpress.com/2018/10/06/vancouver-election-2018-primer-part-3-housing/) and a [compilation of endorsements](https://canadianveggie.wordpress.com/2018/10/11/vancouver-election-2018-primer-part-5-endorsements/).
 
 [Dmitry Shkolnik](https://twitter.com/dshkol) has been [running some analysis on candidate's tweets](https://www.dshkol.com/2018/vancouver-mayor-race-twitter/).
 
@@ -88,4 +88,4 @@ To focus in on this we graph just the population change.
 
 
 ## Upshot
-This adds another perspective to what may inform the candidate's position. As always, the code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-10-13-council-candidate-neighbourhoods.Rmarkdown), feel free to grab it and reproduce the post, add different metrics or expand on this in other ways. To compute the population change we made use of an internal CensusMapper tiling that gives 2011 and 2016 data on a common geographies. To access this, you will have to grab the "label-fix" branch on the `cancensus` package until this is merged into master and the CRAN version gets updated.
+This adds another perspective to what may inform the candidate's position. As always, the code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-10-13-council-candidate-neighbourhoods.Rmarkdown), feel free to grab it and reproduce the post, add different metrics or expand on this in other ways. To compute the population change we made use of an internal CensusMapper tiling that gives 2011 and 2016 data on a common geographies. To access this, you will have to grab the "label-fix" branch on the `cancensus` package until this is merged into master and the CRAN version gets updated. It also uses a [fork of the tricolore package](https://github.com/mountainMath/tricolore) in order to get more control over the triangle plots.
