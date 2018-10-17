@@ -39,19 +39,21 @@ This is a good opportunity to use the excellent [mapdeck package](https://github
 
 <iframe src="/widgets/m1.html" style="width: 100%; height: 700px; border:0;" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
 
-If you want some context, here is another one with streets and street names.
+If you want to enjoy this in detail, head over to the [fullscreen version](/widgets/m2.html).
+
+If you want some context, [here is another one with streets and street names](/widgets/m2.html).
 
 
 
-<iframe src="/widgets/m2.html" style="width: 100%; height: 700px; border:0;" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+<!--iframe src="/widgets/m2.html" style="width: 100%; height: 700px; border:0;" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe-->
 
 ## OSM buildings
-We do have another source of buildings: Open Street Map. In fact, the above map with context has the OSM building data if you zoom in enough. Here is the map with just the buildings.
+We do have another source of buildings: Open Street Map. And that data comes tiled on most basemaps. With modern vector maps it's easy to make a map with [just the buildigns](/static/m3.html), but the disadvantage is that the buildings are only visible when zoomed in quite closely, vector tiles at higher zoom level typically don't come with the buildings data.
 
 
 
 
-<iframe src="/widgets/m3.html" style="width: 100%; height: 700px; border:0;" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+<!--iframe src="/widgets/m3.html" style="width: 100%; height: 700px; border:0;" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe-->
 
 
 The problem here is that the buildings disappear when zooming out, that's because the data is served as vector tiles, and buildings are omitted for higher zoom levels.
@@ -71,6 +73,6 @@ One way around that is to download the buildings from osm first. We quite like [
 
 <iframe src="/widgets/m4.html" style="width: 100%; height: 700px; border:0;" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
 
-The advantage of grabbing the data form OSM is that this immediately generalizes to everywhere where we have OSM building data.
+Again, you can also [view this map fullscreen](/maps/m4.html). The advantage of grabbing the data form OSM is that this immediately generalizes to everywhere where we have OSM building data.
 
 As always, the code for this post is [on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-10-16-naked-buildings-map.Rmarkdown). If you want maps for other cities in Canada or elsewhere in the world, just grab the code and modify it to your liking.
