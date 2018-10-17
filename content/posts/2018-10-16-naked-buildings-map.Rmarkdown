@@ -69,7 +69,9 @@ Another great source, in many ways better for this project, is OSM building data
 
 I really liked the simplicity of the NYT map, so why not make yet another building map? These kind of "naked maps" can be quite revealing, and it reminds of the [naked bike maps from the WaPo WonkBlog](https://www.washingtonpost.com/news/wonk/wp/2015/04/01/bleak-maps-of-how-cities-look-using-only-their-bike-lanes/?noredirect=on) that we [also imitated](https://doodles.mountainmath.ca/blog/2015/04/01/bike-paths/), although it seems that my live maps did not survive my blog update. The [WaPo even made a quiz to have people guess cities by the naked bike maps](https://www.washingtonpost.com/news/wonk/wp/2015/04/03/quiz-can-you-identify-these-cities-by-only-looking-at-their-bike-lanes/?utm_term=.37f20c402ce1).
 
+
 ## Vancouver building footprints
+This is a good opportunity to use the excellent [mapdeck package](https://github.com/SymbolixAU/mapdeck) that provides R bindings to deck.gl. The maps are interactive, you can zoom and pan, but they only cover the City of Vancouver. It may take a moment for the data to load.
 
 ```{r}
 m1 <- mapdeck(token = getOption("mapbox_token"), style = NA) %>%
