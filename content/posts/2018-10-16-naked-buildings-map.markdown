@@ -7,7 +7,7 @@ categories:
   - Vancouver
 tags: []
 description: 'Just buildings.'
-images: ["https://doodles.mountainmath.ca/static/images/naked-buildings-map.png"]
+images: ["https://doodles.mountainmath.ca/images/naked-building-map.png"]
 featured: ''
 featuredalt: ""
 featuredpath: ""
@@ -21,7 +21,9 @@ type: "post"
 
 
 
-The other day the New Your Times did a [really fun story on buildings in the US](https://www.nytimes.com/interactive/2018/10/12/us/map-of-every-building-in-the-united-states.html). There are several datasets for building data, and we have worked quite a bit with the City of Vancouver LIDAR generated data of 2009. We have mapped this on several occasions in the past, e.g. [to show building heights](https://mountainmath.ca/vancouver_lidar/map), or just [residential buildings to map building values](https://mountainmath.ca/assessment/split_map?zoom=15&lat=49.2509&lng=-123.1243&type=3&use3D=0&year=2017&units=[1,1]), and have used the building heights data in Vancouver and Toronto to make [building heights profiles](https://doodles.mountainmath.ca/blog/2018/05/11/building-height-profiles/) by distance from downtown.
+The other day the New Your Times did a [really fun story on buildings in the US](https://www.nytimes.com/interactive/2018/10/12/us/map-of-every-building-in-the-united-states.html), and I was chatting about that with someone at the VPL last night. Which reminded me that I wanted to replicate that for Vancouver. So here we go.
+
+There are several datasets for building data, and we have worked quite a bit with the City of Vancouver LIDAR generated data of 2009. We have mapped this on several occasions in the past, e.g. [to show building heights](https://mountainmath.ca/vancouver_lidar/map), or just [residential buildings to map building values](https://mountainmath.ca/assessment/split_map?zoom=15&lat=49.2509&lng=-123.1243&type=3&use3D=0&year=2017&units=[1,1]), and have used the building heights data in Vancouver and Toronto to make [building heights profiles](https://doodles.mountainmath.ca/blog/2018/05/11/building-height-profiles/) by distance from downtown.
 
 [Robert White did a really nice building map too](http://maps.nicholsonroad.com/heights/).
 
