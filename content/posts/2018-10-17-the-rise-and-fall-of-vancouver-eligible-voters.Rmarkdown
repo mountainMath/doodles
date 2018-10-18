@@ -1,0 +1,314 @@
+---
+title: The rise and fall of Vancouver eligible voters
+author: Jens von Bergmann
+date: '2018-10-17'
+slug: the-rise-and-fall-of-vancouver-eligible-voters
+categories:
+  - Vancouver
+  - newsfail
+  - cancensus
+tags: []
+description: 'Running the numbers on eligible voters by neighbourhood.'
+images: ["https://doodles.mountainmath.ca/posts/2018-10-17-the-rise-and-fall-of-vancouver-eligible-voters_files/figure-html/voter_change-1.png"]
+featured: ''
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 8,
+	cache = TRUE
+)
+library(tidyverse)
+library(cancensusHelpers)
+library(sf)
+```
+
+```{r}
+data_2016 <- get_cov_census_data(2016) %>%
+  mutate(voters = `v_2016_2519: Canadian citizens aged 18 and over`,
+         under_18 = `v_2016_2518: Canadian citizens under age 18`,
+         non_citizens = `v_2016_2520: Not Canadian citizens`,
+         citizens = `v_2016_2517: Canadian citizens`,
+         non_permanent = `v_2016_2541: Non-permanent residents`,
+         citizen_base =`v_2016_2516: Total - Citizenship for the population in private households - 25% sample data`,
+         over_19=`v_2016_6: 15 to 64 years`-`v_2016_7: 15 to 19 years`+`v_2016_17: 65 years and over`,
+         pop=`v_2016_1: Total - Age groups and average age of the population - 100% data`,
+         priv_pop=`v_2016_156: Number of persons in private households`) %>%
+  select_if(!grepl("^v_|^filler",names(.)))
+data_2006 <- get_cov_census_data(2006) %>% 
+  mutate(voters = `v_2006_414: Canadian citizens age 18 and over`,
+         citizen_base = `v_2006_411: Total population by citizenship`,
+         over_19 = `v_2006_2: Male & Female, Total` - `v_2006_3: 0 to 4 years`-`v_2006_4: 5 to 9 years`-`v_2006_5: 10 to 14 years`-`v_2006_6: 15 to 19 years`,
+         pop=`v_2006_2: Male & Female, Total`,
+         priv_pop=`v_2006_1642: Total number of persons in private households`) %>%
+  select_if(!grepl("^v_|^filler",names(.)))
+
+data <- bind_rows(data_2016,data_2006) %>%
+  mutate(missed=pop-citizen_base)
+
+downtown_west_end <- data %>% 
+  filter(NAME %in% c("Downtown","West End")) %>% 
+  group_by(Year) %>%
+  summarize(voters=sum(voters)) %>%
+  spread(key="Year",value="voters") %>%
+  mutate(pct_change=`2016`/`2006`-1)
+  
+caption <- "StatCan Census 2006, 2016 via CoV Open Data"
+```
+
+Now three people have asked me about the [purported explosion of Canadians 18 and over in Downtown Vancouver](https://www.vancourier.com/news/npa-strongholds-on-vancouver-s-west-side-losing-voters-1.23464652), and in particular the claim that [eligible voters in the Downtown and West End grew by a combined 70%](https://www.thestar.com/vancouver/2018/10/16/with-population-boom-vancouvers-downtown-and-east-side-voters-could-sway-municipal-election-results.html). And I had to explain three times that while that population grew strongly, it grew by much less than reported. In fact, the number of Canadian citizens 18 years and older in the downtown peninsula only grew by `r scales::percent(downtown_west_end$pct_change)`. Or maybe 21%, depending how to count. So maybe it's time for a super-quick blog post, if nothing else it's a reference people can quote and a way for people to [check my code and see what I did](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-10-17-the-rise-and-fall-of-vancouver-eligible-voters.Rmarkdown).
+
+The census conveniently provides a data field for Canadian citizens 18 and over, so it's just a simple exercise of grabbing the numbers from 2006 and 2016 and dividing them. This can easily be done in excel or by hand, not sure how one could get this so wrong. However, there are a couple of details to pay attention to.
+
+The 2016 data only considers the population in private households, whereas 2006 considers the population not in institutional dwellings (which is a larger category). That makes comparisons somewhat difficult. On top of that, we know that between 2006 and 2016 some housing that used to be classified as *private* has been re-classified as *collective*, in particular some SROs and elderly homes. That means straight-up comparing the 2006 to the 2016 citizen data will be biased in areas where housing got re-classified and where we have non-institutional collective dwellings.
+
+Another caveat is that Musqueam 2 also gets to vote in the City of Vancouver elections, so we want to throw those into the mix and not [disenfranchise them as almost happend before](https://www.cbc.ca/news/canada/british-columbia/vancouver-musqueam-voters-left-off-electoral-list-1.2834457).
+
+Getting the data for the city neighbourhoods is easy, it's available on the [Vancouver Open Data Catalogue](https://data.vancouver.ca/datacatalogue/index.htm) and we have played with it [before](https://doodles.mountainmath.ca/blog/2018/02/08/neighbourhood-level-census-data/) and have all the input scripts already set up. Conveniently, the neighbourhood data for Dunbar-Southlands already includes Musqueam 2.
+
+A last caveat is that the 2016 data is already over two years old now, and things will likely have changed a bit in the meantime. Oh, and then there is the issue that Canadian citizens living anywhere in BC that own property in the City of Vancouver also get to vote in Vancouver. Even if they don't live in Vancouver. Yes, it seems crazy that this is the case, but property ownership gives people lots of privileges, including special voting rights!
+
+
+```{r}
+
+process_for <- function(data,var){
+  data %>%
+  filter(!(NAME %in% c("Metro Vancouver"))) %>%
+  mutate(Value=!!as.name(var)) %>%
+  select(NAME,Year,Value) %>%
+  bind_rows(
+    (.) %>% 
+      filter(!grepl("Vancouver",NAME)) %>%
+      group_by(Year) %>%
+      summarize(Value=sum(Value)) %>%
+      mutate(NAME="City of Vancouver + Musqueam 2")
+            ) %>%
+  group_by(NAME) %>%
+  spread(key="Year",value="Value") %>%
+  mutate(change=`2016`-`2006`) %>%
+  mutate(pct_change=change/`2006`) %>%
+  mutate(sign=as.character(sign(change))) %>%
+  mutate(sign=ifelse(grepl("City of Vancouver",NAME),"0",sign))
+}
+
+plot_data <- data %>% process_for("voters")
+
+citizen_bar_theme <- list(
+  geom_bar(stat="identity"),
+  coord_flip(),
+  theme_light(),
+  scale_fill_manual(values=c("-1"="brown","1"="steelblue","0"="darkgreen"),guide=FALSE),
+  labs(y="Change 2006-2016",caption=caption)
+)
+```
+
+## Straight-up census numbers
+The first approach is to take straight-up census data, graphing the change change in citizens 18 and over as reported in the census and ignore issues around changes in definition and re-classification in dwellings for now.
+
+```{r voter_change}
+ggplot(plot_data,aes(x=reorder(NAME,pct_change),label=scales::percent(pct_change),fill=sign,y=pct_change)) +
+  citizen_bar_theme + 
+  scale_y_continuous(labels=scales::percent,limits = c(-0.20,0.5)) +
+  geom_text(aes(hjust=-sign(pct_change)*0.7+0.5),size=3) +
+  labs(title="Canadian citizens aged 18 and over")
+```
+
+Total population varies by neighbourhood, so the order changes if we look at the change in total number of citizens 18 and over.
+
+```{r}
+ggplot(plot_data %>% filter(!grepl("Vancouver",NAME)),aes(x=reorder(NAME,change),label=scales::comma(change),fill=sign,y=change)) +
+  citizen_bar_theme +
+  scale_y_continuous(labels=scales::comma,limits=c(-1500,11500)) +
+  geom_text(aes(hjust=-sign(pct_change)*0.7+0.5),size=3) +
+  labs(title="Canadian citizens aged 18 and over")
+```
+
+## Estimating voters
+As mentioned above, there are a couple of issues with the naive census numbers. Some we can't deal with, we don't know how many Citizens live in BC outside of Vancouver and own property in Vancouver. But we can try to at least estimate the effects of the change in definitions and classifications in the census, although there is no canconical way of doing this. We first take a look at the change in the population without citizenship information to get an idea by how much this could effect the results.
+
+```{r}
+plot_data2 <- data %>% process_for("missed") %>%
+  filter(!grepl("Vancouver",NAME))
+  
+ggplot(plot_data2,aes(x=reorder(NAME,change),label=scales::comma(change),fill=sign,y=change)) +
+  citizen_bar_theme +
+  scale_y_continuous(labels=scales::comma,limits=c(-250,2500)) +
+  geom_text(aes(hjust=-sign(change)*0.7+0.5),size=3) +
+  labs(title="Population without citizenship information")
+```
+
+Downtown and Strathcona stand out, and we have already seen this when previously looking at [change in renters by neighbourhood](https://doodles.mountainmath.ca/blog/2018/02/08/neighbourhood-level-census-data/). We don't know how much collective housing was built in this 10 year timeframe. And we don't know what share of the population in collective housing are citizens. Negative numbers are a lower bound on people leaving collective housing, positive numbers are an upper bound on people moving into, or getting reclassified as, collective housing. What we don't know is how many of these are canadian citizens 18 or older.
+
+But we can use this to derive an upper bound on the growth of citizens above the age of 18 by simply adding the non-negative numbers onto our previous graph.
+
+```{r}
+plot_data3 <- plot_data %>% left_join(plot_data2 %>% rename(missed=change) %>% select(NAME,missed),by="NAME") %>%
+  mutate(estimate=change+pmax(0,missed)) %>%
+  mutate(pct_estimate=estimate/`2006`) %>%
+  mutate(sign=as.character(sign(estimate))) %>%
+  mutate(sign=ifelse(grepl("City of Vancouver",NAME),"0",sign)) %>%
+  filter(!grepl("Vancouver",NAME))
+  
+downtown_west_end2 <- plot_data3 %>% filter(NAME %in% c("Downtown","West End")) %>% ungroup %>% summarize(`2006`=sum(`2006`),estimate=sum(`estimate`)) %>%
+  mutate(pct_estimate=estimate/`2006`)
+
+ggplot(plot_data3,aes(x=reorder(NAME,pct_estimate),label=scales::percent(pct_estimate),fill=sign,y=pct_estimate)) +
+  citizen_bar_theme +
+  scale_y_continuous(labels=scales::percent,limits=c(-.15,.5)) +
+  geom_text(aes(hjust=-sign(estimate)*0.7+0.5),size=3) +
+  labs(title="Upper bound on Canadian citizens aged 18 or older")
+```
+
+Comparing to the first graph, we notice that Strathcona is in the blue, and downtown has crept up a bit. Combining Downtown and the West end we get an upper bound of a growth of `r scales::percent(downtown_west_end2$pct_estimate)`, a slightly higher growth rate than naively using census numbers, but still nowhere near the 70% that was reported.
+
+## Citizens, voting age, permanent residents and non-permanent residents and collective dwellers
+That leaves us with an interesting question of how the neighbourhoods are made up. With respect to voting, we are interested in Canadian citizens 18 and over, Canadian citizens under 18, permanent residents, non_permanent residents and people not in private households. Citizens under 18 will reach voting age some day, and Vancouver council has voted on allowing permanent residents to vote, at least those 18 and older.
+
+```{r}
+type_labels = list("collective"="Collective",
+                   "pr"="PR",
+                   "non_permanent"="Non-PR",
+                   "voters"="Citizens 18+",
+                   "under_18"="Citizens <18")
+caption2 <- "StatCan Census 2016 via CoV Open Data"
+
+plot_data <- data_2016 %>% 
+  mutate(pr=non_citizens-non_permanent,collective=pop-priv_pop) %>%
+  group_by(NAME) %>%
+  gather(key="type",value="Value",rev(c("voters","under_18","collective","pr","non_permanent")),factor_key = TRUE)
+
+
+ggplot(plot_data %>% filter(!grepl("Vancouver",NAME)),aes(x=NAME,y=Value,fill=type)) +
+  geom_bar(stat="identity") +
+  theme_light() +
+  coord_flip() +
+  scale_fill_brewer(palette = "Dark2",labels=type_labels) +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Makeup of population",fill="",y="Number",caption=caption2)
+
+```
+
+Or as share.
+
+```{r}
+ggplot(plot_data ,aes(x=NAME,y=Value,fill=type)) +
+  geom_bar(stat="identity",position = "fill") +
+  theme_light() +
+  coord_flip() +
+  scale_fill_brewer(palette = "Dark2",labels=type_labels) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Makeup of population",fill="",y="Share",caption=caption2)
+```
+
+
+## The Map
+We love maps here, so let's end by looking at the geographic distribution of the change in eligible voters, naively using the census numbers as an estimate, in each neighbourhood.
+
+```{r}
+get_neighbourhood_geos <- function(){
+  geo_data_url="ftp://webftp.vancouver.ca/OpenData/shape/local_area_boundary_shp.zip"
+  nbhd_path=paste0(getOption("custom_data_path"),"local_area_boundary_shp")
+  if(!file.exists(nbhd_path)){
+    mkdir(nbhd_path)
+    download_path=tempfile()
+    download.file(geo_data_url,destfile=download_path)
+    utils::unzip(download_path,exdir=nbhd_path)
+  }
+  sf::read_sf(paste0(nbhd_path,"/local_area_boundary.shp"))
+}
+
+prettify_neighbourhood_geos <- function(nbhds,clip){
+  nbhds <- nbhds %>% st_as_sf  %>% st_transform(st_crs(nbhds)$epsg)%>% st_as_sf
+  clip <- clip %>% st_as_sf  %>% st_transform(st_crs(nbhds)$epsg)%>% st_as_sf
+  pretty_nbhds <- st_intersection(nbhds, clip)
+  pretty_nbhds$geometry[pretty_nbhds$NAME=="Dunbar-Southlands"]=nbhds$geometry[nbhds$NAME=="Dunbar-Southlands"]
+  pretty_nbhds %>% st_as_sf
+}
+
+```
+
+
+```{r}
+vancouver <- get_census("CA16",regions=list(CSD="5915022"),geo_format = "sf",level = "Regions")
+
+data_geo <- data %>%
+  process_for("voters") %>%
+  filter(!grepl("Vancouver",NAME)) %>%
+  select(NAME,pct_change) %>%
+  inner_join(get_neighbourhood_geos()  %>% 
+               prettify_neighbourhood_geos(vancouver),by="NAME") %>% 
+  st_as_sf  %>% st_transform(4326)
+centroids <- data_geo %>%
+  as.data.frame %>% mutate(geometry=st_centroid(data_geo$geometry)) %>%
+  st_as_sf %>%
+  cbind(., st_coordinates(.)) %>%
+  st_set_geometry(NULL)
+
+```
+
+
+```{r}
+city_region <- list(CT=c("9330069.01","9330069.02"),CSD=c("5915022","5915803"))
+
+vancouver <- get_census(dataset='CA16', regions=city_region,
+                               vectors=c(), labels="short", 
+                               geo_format='sf', level='Regions')
+bbox2=st_bbox(vancouver)
+vector_tiles2 <- simpleCache(get_vector_tiles(bbox2),"van_city_ubc_vector_tiles")
+# vector tiles return all layers (roads, water, buildings, etc) in a list
+roads2 <- rmapzen::as_sf(vector_tiles2$roads) %>% filter(kind != "ferry")
+water2 <- rmapzen::as_sf(vector_tiles2$water)
+
+
+contrast_color = function(color){
+	purrr::map(color,function(c) {ifelse(as.integer(sub("#","0x",c)) > (0xffffff/4*3), '#000000' , '#ffffff')}) %>% unlist
+}
+
+label_colors <- function(values){
+  kableExtra::spec_color(values, option = "magma") %>% substr(1,7) %>% contrast_color
+}
+#centroids <- centroids %>% mutate(share_label_color = label_colors(pct_change))
+
+breaks <- c(-0.5,-0.4,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5)
+labels <- seq(1:(length(breaks)-1))
+data_geo <- data_geo %>% mutate(change_d = cut(pct_change,breaks=breaks,labels=labels))
+centroids <- centroids %>% mutate(change_d = cut(pct_change,breaks=breaks,labels=labels))
+change_colors <- setNames(RColorBrewer::brewer.pal(length(breaks-1),"PiYG"),labels)
+
+centroids <- centroids %>% mutate(share_label_color = change_colors[change_d] %>% contrast_color)
+
+```
+
+```{r, fig.height=8, fig.width=9}
+ggplot(data_geo, aes(fill=change_d)) +
+  #geom_sf(data=vancouver,fill="lightgrey") +
+  geom_sf(color="#808080") + 
+  geom_sf(data=roads2,size=0.1,color="darkgrey",fill=NA) +
+  geom_sf(data = water2, fill = "lightblue", colour = NA) +
+  theme_void() +
+  scale_fill_manual(values=change_colors,guide=FALSE) +
+  #scale_fill_viridis_c(option="magma",guide=FALSE) +
+  scale_color_identity() +
+  labs(title="Change in Vancouver's citizens 18 and over 2006 - 2016",
+       caption="Canada Census 2016 via CoV Open Data") +
+  geom_text(data=centroids ,
+                  aes(label = NAME, x = X, y = Y,color=share_label_color),
+                  size=2.5,nudge_y=0.0002) +
+  geom_text(data=centroids ,
+                  aes(label = scales::percent(pct_change), x = X, y = Y,color=share_label_color),size=4,nudge_y=-0.002) +
+  coord_sf(datum=NA,
+           xlim=c(bbox2$xmin,bbox2$xmax),
+           ylim=c(bbox2$ymin,bbox2$ymax))
+
+```
+
+
+As always, the code for this post is [on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-10-17-the-rise-and-fall-of-vancouver-eligible-voters.Rmarkdown) in case anyone wants to check the code, reproduce the post or adapt it for their own purposes.
