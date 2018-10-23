@@ -1,0 +1,395 @@
+---
+title: Toronto wards
+author: Jens von Bergmann
+date: '2018-10-22'
+slug: toronto-wards
+categories:
+  - Toronto
+  - dotdensity
+  - CensusMapper
+  - cancensus
+  - geeky
+tags: []
+description: 'Fun with Toronto wards and census data.'
+images: ["https://doodles.mountainmath.ca/posts/2018-10-22-toronto-wards_files/figure-html/non_eligible-1.png"]
+featured: 'non_eligible-1.png'
+featuredalt: ""
+featuredpath: "/posts/2018-10-22-toronto-wards_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 8,
+	cache = TRUE
+)
+library(tidyverse)
+library(sf)
+```
+
+```{r}
+
+get_toronto_ward_25_geos <- function(){
+  tmp<-tempfile()
+  download.file("http://opendata.toronto.ca/gcc/WARD25_OpenData_08072018_mtm3.zip",tmp)
+  tmpd <- tempdir()
+  utils::unzip(tmp,exdir = tmpd)
+  file_name <- dir(tmpd,"*.shp$")
+  geo <- read_sf(file.path(tmpd,file_name))
+  
+  unlink(tmp)
+  unlink(tmpd)
+  geo %>%
+    mutate(Ward=paste0("Ward ",as.integer(AREA_S_CD)))
+}
+
+get_toronto_ward_25_data <- function(){
+  tmp<-tempfile()
+  download.file("https://www.toronto.ca/ext/open_data/catalog/data_set_files/WardProfiles_2018_25Wards_2016Census_&_2011CensusNHS_Data.xlsx",tmp)
+  wd <- readxl::read_xlsx(tmp,skip = 17) %>%
+    rename(Variable=X__1) %>%
+    filter(!is.na(Variable)) %>%
+    t
+  ward_names <- rownames(wd)[rownames(wd) != "Variable"]
+  var_names <- paste0("v",seq(1,ncol(wd)),": ",wd[1,]) # unique col names
+  
+  ward_data <- wd[-1,] %>%
+    as.tibble %>%
+    set_names(var_names) %>%
+    mutate_all(as.numeric) %>%
+    mutate(Ward=ward_names) %>%
+    select(c("Ward",setdiff(names(.),"Ward")))
+  unlink(tmp)
+  ward_data
+}
+
+plot_theme <- list(
+  theme_light(),
+  labs(caption="Toronto Open Data, StatCan Census 2016")
+)
+```
+
+
+Vancouver had elections on Saturday, today Toronto had their elections. And as opposed to Vancouver, Toronto has wards. Which makes things more fun, as we can look at census data for each ward to understand how people voted in the ward. We ran a [very similar type of analysis the other day for Vancouver](https://doodles.mountainmath.ca/blog/2018/10/17/the-rise-and-fall-of-vancouver-eligible-voters/), so this is an easy add.
+
+```{r}
+wards_exact <- get_toronto_ward_25_data() %>%
+  filter(Ward != "Toronto") %>%
+  left_join(get_toronto_ward_25_geos()) %>%
+  st_sf
+#find_cov_variables(wards_exact,"immigrant")
+#find_cov_variables(wards_exact,"permanent")
+
+immigrant_vars <- c("immigrant_base"="v95: Total - Immigrant status and period of immigration for the population in private households - 25% sample data",
+                    "non_immigrants"="v96: Non-immigrants",
+                    "immigrants"="v97: Immigrants",
+                    "non_pr"="v105: Non-permanent residents")
+```
+
+```{r}
+contrast_color = function(color){
+	purrr::map(color,function(c) {ifelse(brightbness(c) > 0.5, '#000000' , '#ffffff')}) %>% unlist
+	#purrr::map(color,function(c) {ifelse(as.integer(sub("#","0x",c)) > (0xffffff/4*3), '#000000' , '#ffffff')}) %>% unlist
+}
+
+brightbness <- function(color){
+  col2rgb(color) %>% 
+    as.tibble %>%
+    mutate(mult=c(0.2126, 0.7152, 0.0722)) %>%
+    mutate(res=V1*mult) %>%
+    pull(res) %>%
+    sum()/255
+}
+
+label_colors <- function(values,option = "viridis"){
+  kableExtra::spec_color(values, option = option) %>% substr(1,7) %>% contrast_color
+}
+
+```
+
+The Toronto Open Data catalogue has [data for the ward boundaries](https://www.toronto.ca/city-government/data-research-maps/open-data/open-data-catalogue/#29b6fadf-0bd6-2af9-4a8c-8c41da285ad7) and a [custom tab with census data](https://www.toronto.ca/city-government/data-research-maps/open-data/open-data-catalogue/#7d109f12-1623-858f-f56d-9c312946ed40). All we need to do is download the data and link them. To check that it works we start with a population density map by wards.
+
+```{r}
+plot_data <- wards_exact %>% 
+  mutate(area=st_area(geometry) %>% as.numeric) %>%
+  mutate(density=`v1: Total - Age`/area*10000)
+
+
+ggplot(plot_data,aes(fill=density)) +
+  geom_sf() +
+  scale_fill_viridis_c(option="magma") +
+  theme_void() +
+  labs(title="Population density",fill="People/ha") +
+  coord_sf(datum=NA) +
+  plot_theme
+
+```
+
+
+Now to more interesting things. Results aren't all in yet, so let's look at eligible voters, so citizens aged 18 and up. The only problem is, the city did not pull that variable for their custom tab.
+
+What we need is to estimate eligible voters in each ward from regular census data. Enter TongFen.
+
+## TongFen
+The [TongFen R package](https://github.com/mountainMath/tongfen) that automates the process of estimating census data for arbitrary regions. And we can use the [dotdensty package](https://github.com/mountainMath/dotdensity) facilitates using Dissemination Block population and region data to refine the estimate.
+
+```{r}
+library(tongfen)
+library(cancensus)
+library(dotdensity)
+```
+
+```{r}
+vectors=c("citizen_base"="v_CA16_3390","citizen"="v_CA16_3393","citizen_under_18"="v_CA16_3396","citizen_18_plus"="v_CA16_3399","non_citizen"="v_CA16_3402","immigrant_base"="v_CA16_3405","non_immigrants"="v_CA16_3408","immigrants"="v_CA16_3411","non_pr"="v_CA16_3435",
+          "a1"="v_CA16_61","a2"="v_CA16_244","a3"="v_CA16_67","a4"="v_CA16_70","a5"="v_CA16_73")
+
+process_census_data <- function(data){
+  data %>% mutate(adults=a1+a2-a3-a4-a5) %>%
+    select(-a1,-a2,-a3,-a4,-a5)
+}
+
+census_data_da <- get_census(dataset='CA16', regions=list(CSD="3520005"), vectors=vectors, level='DA',geo_format="sf") %>%
+  mutate_all(function(x)replace_na(x,0)) 
+
+total_data <- get_census(dataset='CA16', regions=list(CSD="3520005"), vectors=vectors) %>% process_census_data 
+
+census_db <- get_census(dataset='CA16', regions=list(CSD="3520005"),geo_format="sf",level="DB")
+
+census_data_db <- dot_density.proportional_re_aggregate(census_db,census_data_da,geo_match=c("DA_UID"="GeoUID"),categories=names(vectors))
+
+ward_geos <- get_toronto_ward_25_geos()
+ward_estimate <- tongfen_estimate(ward_geos,census_data_db %>% st_transform(st_crs(ward_geos)),names(vectors),"Ward") %>% process_census_data
+```
+
+```{r}
+## sanity check
+
+data <- wards_exact %>% rename(!!!immigrant_vars) %>%
+  select(c("Ward",names(immigrant_vars))) %>%
+  rename_at(names(immigrant_vars),function(x)paste0(x,"_exact")) %>%
+  left_join(ward_estimate %>% st_set_geometry(NULL) %>% select("Ward",names(immigrant_vars))) 
+```
+
+```{r}
+
+merge_variables <- function(data_exact,data_estimate,variables,postfix="exact"){
+  data_exact %>% rename(!!!variables) %>%
+    select(c("Ward",names(immigrant_vars))) %>%
+    rename_at(names(variables),function(x)paste0(x,"_",postfix)) %>%
+    left_join(data_estimate %>% st_set_geometry(NULL) %>% select("Ward",names(variables))) 
+}
+
+process_absolute_difference <- function(data){
+  data %>%
+    mutate(`Immigrants base`=immigrant_base/immigrant_base_exact-1,
+           `Non-immigrants`=non_immigrants/non_immigrants_exact-1,
+           Immigrants=immigrants/immigrants_exact-1,
+           `Non-permanent residents`=non_pr/non_pr_exact-1) %>%
+    group_by(Ward) %>%
+    gather(key="Metric",value="Share",c("Immigrants base","Non-immigrants","Immigrants","Non-permanent residents"))
+}
+
+process_share_difference <- function(data){
+  data %>%
+    mutate(`Non-immigrants`=non_immigrants/immigrant_base-non_immigrants_exact/immigrant_base_exact,
+           Immigrants=immigrants/immigrant_base-immigrants_exact/immigrant_base_exact,
+           `Non-permanent residents`=non_pr/immigrant_base-non_pr_exact/immigrant_base_exact) %>%
+    group_by(Ward) %>%
+    gather(key="Metric",value="Share",c("Non-immigrants","Immigrants","Non-permanent residents"))
+}
+```
+
+Before we get serious, let's take this for a test ride and look at some census data that the City of Toronto did pull for the wards. And compare it to our TongFen estimates.
+
+```{r}
+plot_data <- merge_variables(wards_exact,ward_estimate,variables=immigrant_vars,postfix="exact") %>%
+  process_absolute_difference
+
+ggplot(plot_data,aes(x=Ward,y=Share,fill=Metric)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_fill_brewer(palette = "Dark2",guide=FALSE) +
+  scale_y_continuous(labels=scales::percent) +
+  scale_x_discrete(labels=function(x)"")+
+  facet_wrap("Metric") +
+  labs(title="Percent difference between custom tab and TongFen estimates") +
+  plot_theme
+```
+
+This shows that the difference between the estimates and the variables are quite sizable, up to a little over 1%, for most variables and up to 3% for non-permanent residents. There are only somewhere between `r min(plot_data$non_pr_exact)` and `r max(plot_data$non_pr_exact)` non-permanent residents per ward, so only fairly small errors are needed to produce a 3% error.
+
+But if we are interested in derived quantities, like the share of non-permanent residents, then we should expect better results. I will spare you the math, but we expect some of the errors to divide out. And we can see this if we look at the difference in the percentage shares.
+
+```{r}
+plot_data <- merge_variables(wards_exact,ward_estimate,variables=immigrant_vars,postfix="exact") %>%
+  process_share_difference
+
+ggplot(plot_data,aes(x=Ward,y=Share,fill=Metric)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_fill_brewer(palette = "Dark2",guide=FALSE) +
+  scale_y_continuous(labels=scales::percent) +
+  scale_x_discrete(labels=function(x)"")+
+  facet_wrap("Metric") +
+  plot_theme
+```
+
+The come out consistently less than a quarter percent. That's pretty good and gives us confidence that we can use TongFen to estimate the share of eligible voters in wards.
+
+First let's look at what fraction of eligible voters lives in each ward.
+
+```{r}
+plot_data <- ward_estimate %>% mutate(share=citizen_18_plus/sum(citizen_18_plus))
+
+centroids <- plot_data %>%
+  st_centroid() %>%
+  cbind(., st_coordinates(.)) %>%
+  st_set_geometry(NULL) %>%
+  mutate(share_label_color=label_colors(share,option = "inferno"))
+
+ggplot(plot_data,aes(fill=share)) +
+  geom_sf() +
+  scale_fill_viridis_c(labels=scales::percent,option="inferno")+
+  labs(title="Share of total eligible voters",fill="") +
+  scale_color_identity() +
+  coord_sf(datum=NA) +
+    geom_text(data=centroids ,
+                  aes(label = Ward, x = X, y = Y,color=share_label_color),
+                  size=2.5,nudge_y=500) +
+  geom_text(data=centroids ,
+                  aes(label = scales::percent(share), x = X, y = Y,color=share_label_color),size=3,nudge_y=-500)  +
+  plot_theme +
+  theme_void()
+```
+
+`r filter(plot_data,share==max(share))$Ward` is definitely the winner, with `r round(max(plot_data$share)/min(plot_data$share),2)` times the number of eligible voters than `r filter(plot_data,share==min(share))$Ward`.
+
+I picked up that there are some [discussions in Toronto to allow permanent residents to vote](https://twitter.com/Diane_Dyson/status/1054418334920323072). And Doug Saunders [argued this point earlier this year](https://www.theglobeandmail.com/opinion/democracy-at-the-bottom-of-a-deep-fryer/article15197439/)
+So let's check what percentage of the adult population in each ward is not eligible to vote. (There is a slight issue in that citizen's are only reported for the population in private households that we will gloss over here.) 
+
+```{r non_eligible}
+plot_data <- ward_estimate %>% mutate(share=1-citizen_18_plus/adults)
+
+centroids <- plot_data %>%
+  st_centroid() %>%
+  cbind(., st_coordinates(.)) %>%
+  st_set_geometry(NULL) %>%
+  mutate(share_label_color=label_colors(share))
+
+ggplot(plot_data,aes(fill=share)) +
+  geom_sf() +
+  scale_fill_viridis_c(labels=scales::percent)+
+  labs(title="Share of adult population that can't vote",fill="") +
+  scale_color_identity() +
+  coord_sf(datum=NA) +
+    geom_text(data=centroids ,
+                  aes(label = Ward, x = X, y = Y,color=share_label_color),
+                  size=2.5,nudge_y=500) +
+  geom_text(data=centroids ,
+                  aes(label = scales::percent(share), x = X, y = Y,color=share_label_color),size=3,nudge_y=-500) +
+  plot_theme +
+  theme_void() 
+```
+
+This shows that this is not just a question about residency and allegiance, but also about geography. In `r filter(plot_data,share==max(share))$Ward` a fill `r scales::percent(max(plot_data$share))` of adults aren't eligible to vote, whereas in `r filter(plot_data,share==min(share))$Ward` only `r scales::percent(min(plot_data$share))` aren't eligible. This includes non-permanent residents, for which we don't have age data. If we assume all non-permanent residents are adults, so discounting school-aged non-permanent residents, we get slightly lower numbers as the following graph shows.
+
+
+```{r}
+plot_data <- ward_estimate %>% mutate(share=1-(citizen_18_plus-non_pr)/adults)
+
+centroids <- plot_data %>%
+  st_centroid() %>%
+  cbind(., st_coordinates(.)) %>%
+  st_set_geometry(NULL) %>%
+  mutate(share_label_color=label_colors(share))
+
+ggplot(plot_data,aes(fill=share)) +
+  geom_sf() +
+  scale_fill_viridis_c(labels=scales::percent)+
+  labs(title="Share of adult permanent resident population that can't vote",subtitle="(lower bound)",fill="") +
+  scale_color_identity() +
+  coord_sf(datum=NA) +
+    geom_text(data=centroids ,
+                  aes(label = Ward, x = X, y = Y,color=share_label_color),
+                  size=2.5,nudge_y=500) +
+  geom_text(data=centroids ,
+                  aes(label = scales::percent(share), x = X, y = Y,color=share_label_color),size=3,nudge_y=-500)  +
+  plot_theme +
+  theme_void()
+```
+
+As expected this does not change things by much.
+
+## More TongFen
+For geeks only, a little more details on TongFen. We mentioned at the beginning that we go down to census block data to derive the estimates. It's a good exercises to compare what happens when we only use Dissemination Area or even Census Tract level data to derive the estimates. Let's do a quick comparison.
+
+```{r}
+ward_estimate_da <- tongfen_estimate(ward_geos,census_data_da %>% st_transform(st_crs(ward_geos)),names(vectors),"Ward") %>%  process_census_data
+
+census_data_ct <- get_census(dataset='CA16', regions=list(CSD="3520005"), vectors=vectors, level='CT',geo_format="sf") %>%
+      mutate_all(function(x)replace_na(x,0)) 
+ward_estimate_ct <- tongfen_estimate(ward_geos,census_data_ct %>% st_transform(st_crs(ward_geos)),names(vectors),"Ward") %>% process_census_data
+
+combined_data <- bind_rows(
+  merge_variables(wards_exact,ward_estimate,variables=immigrant_vars,postfix="exact") %>%
+    mutate(Level="DB"),
+  merge_variables(wards_exact,ward_estimate_da,variables=immigrant_vars,postfix="exact") %>%
+    mutate(Level="DA"),
+  merge_variables(wards_exact,ward_estimate_ct,variables=immigrant_vars,postfix="exact") %>%
+    mutate(Level="CT")
+) %>%
+  group_by(Level)
+
+plot_data <- combined_data %>%
+  process_absolute_difference
+  
+ggplot(plot_data,aes(x=Ward,y=Share,fill=Level)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_fill_brewer(palette = "Dark2") +
+  scale_y_continuous(labels=scales::percent) +
+  scale_x_discrete(labels=function(x)"")+
+  facet_wrap("Metric",scales="free_y") +
+  plot_theme
+```
+
+```{r}
+pd <- plot_data %>% group_by(Level,Metric) %>% summarize(Error=mean(abs(Share)))
+
+ggplot(pd,aes(x=Metric,fill=Level,y=Error)) +
+  geom_bar(stat="identity", position = "dodge") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Average error in absolute TongFen estimate",y="Average error") +
+  plot_theme
+```
+
+```{r}
+plot_data <- combined_data %>%
+  process_share_difference
+  
+ggplot(plot_data,aes(x=Ward,y=Share,fill=Level)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_fill_brewer(palette = "Dark2") +
+  scale_y_continuous(labels=scales::percent) +
+  scale_x_discrete(labels=function(x)"")+
+  facet_wrap("Metric",scales="free_y") +
+  labs(title="Error in shares using TongFen estimate",y="Average error") +
+  plot_theme
+
+```
+
+```{r}
+pd <- plot_data %>% group_by(Level,Metric) %>% summarize(Error=mean(abs(Share)))
+
+ggplot(pd,aes(x=Metric,fill=Level,y=Error)) +
+  geom_bar(stat="identity", position = "dodge") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Average error in shares using TongFen estimate",y="Average error") +
+  plot_theme
+```
+
+We see that census tracts can lead to very large errors. When using variables that have stronger spatial gradients this will be even more pronounced. That's why trying to validate TongFen estimates is important. And of course doing the little extra work to take advantage of of Dissemination Block data. Incidentally, we suspect that the botched numbers that prompted our recent [Vancouver eligible voter fact-check](https://doodles.mountainmath.ca/blog/2018/10/17/the-rise-and-fall-of-vancouver-eligible-voters/) may have been the product  of a poorly executed TongFen.
+
+## Next steps
+That's it for tonight, I might do another post once the election data comes in. Or maybe someone that understand Toronto better is interested in [grabbing my code](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-10-22-toronto-wards.Rmarkdown) and doing a more in-depth analysis.
