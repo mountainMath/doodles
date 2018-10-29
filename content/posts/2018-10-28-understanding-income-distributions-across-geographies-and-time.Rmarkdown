@@ -10,7 +10,7 @@ categories:
   - Vancouver
   - Toronto
 tags: []
-description: 'Running the numbers on eligible voters by neighbourhood.'
+description: 'Some thoughts on income distributions and labelling neighbrourhoods as low, middle, or high income: Most of our neighbourhoods are neither, they are truely mixed-income.'
 images: ["https://doodles.mountainmath.ca/posts/2018-10-28-understanding-income-distributions-across-geographies-and-time_files/figure-html/vancouver_income_map-1.png"]
 featured: 'vancouver_income_map-1.png'
 featuredalt: ""
@@ -174,7 +174,7 @@ To get an idea how this works, here are the distributions of adjusted after-tax 
 
 ```{r}
 census_caption = "MountainMath, StatCan 2016 Census"
-regions=list_census_regions("CA16") %>% filter(level=="CMA") %>% top_n(4,pop) %>% as_census_region_list
+regions=list_census_regions("CA16",use_cache=TRUE) %>% filter(level=="CMA") %>% top_n(4,pop) %>% as_census_region_list
 
 vectors <- search_census_vectors("Economic family income","CA16","Total") %>%
   child_census_vectors(leaves_only = TRUE)
@@ -288,7 +288,7 @@ To understand income segregation within a metropolitan area we bin people into t
 
 ```{r}
 census_data <-function(geo_name,geo_level="CMA",aggregation_level="DA") {
-  regions=list_census_regions("CA16") %>% filter(level==geo_level,name==geo_name) %>%
+  regions=list_census_regions("CA16",use_cache=TRUE) %>% filter(level==geo_level,name==geo_name) %>%
     as_census_region_list
   
   data <- get_census("CA16",regions=regions,vectors = vectors$vector,labels="short",geo_format = "sf",level=aggregation_level) %>%
@@ -450,7 +450,7 @@ This shows that the differences between these regions on our scale are not large
 We can also try to understand how the segregated labels are distribution among municipalities within a CMA. As an example, we look at Vancouver.
 
 ```{r}
-cma_names <- list_census_regions("CA16") %>% filter(CMA_UID=="59933",level=="CSD") %>%
+cma_names <- list_census_regions("CA16",use_cache=TRUE) %>% filter(CMA_UID=="59933",level=="CSD") %>%
   mutate(name=paste0(name," (",municipal_status,")"))
 d <- vancouver_data$data %>% 
   st_set_geometry(NULL) %>% 

@@ -10,7 +10,7 @@ categories:
   - Vancouver
   - Toronto
 tags: []
-description: 'Running the numbers on eligible voters by neighbourhood.'
+description: 'Some thoughts on income distributions and labelling neighbrourhoods as low, middle, or high income: Most of our neighbourhoods are neither, they are truely mixed-income.'
 images: ["https://doodles.mountainmath.ca/posts/2018-10-28-understanding-income-distributions-across-geographies-and-time_files/figure-html/vancouver_income_map-1.png"]
 featured: 'vancouver_income_map-1.png'
 featuredalt: ""
