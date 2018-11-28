@@ -322,7 +322,7 @@ ggplot(corr_data,aes(x=lag,y=acf)) +
   geom_bar(stat="identity") +
   facet_wrap("name") +
   labs(title="Correlation between vacancy rate and inflation adjusted fixed sample rent change",
-       caption=vrc_caption,x="Lag of rent change")
+       caption=vrc_caption,x="Lag of rent change (years)")
 
 ```
 

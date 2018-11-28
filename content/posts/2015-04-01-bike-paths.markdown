@@ -17,7 +17,7 @@ linktitle: ''
 type: "post"
 ---
 
-Motivated by the excellent [Washington Post Wonkblog](http://www.washingtonpost.com/blogs/wonkblog/wp/2015/04/01/bleak-maps-of-how-cities-look-using-only-their-bike-lanes/) I
+Motivated by the excellent [Washington Post Wonkblog](https://www.washingtonpost.com/blogs/wonkblog/wp/2015/04/01/bleak-maps-of-how-cities-look-using-only-their-bike-lanes/) I
 mapped Vancouver's bike infrastructure. Looks good at first, but when you take out the 'fake' "Local Street" bikeways more in line with Wonkblog's methodology it's looking pretty
 bleak in large portions of the city.
 
@@ -36,7 +36,7 @@ the local street portion of Pt. Grey Rd, where cycling is rather pleasant.
 
 [Full screen view](/html/bike_paths.html)
 
-Methodology is simple, it's just the city's bike path data from [their open data catalogue](http://vancouver.ca/your-government/open-data-catalogue.aspx). The data
+Methodology is simple, it's just the city's bike path data from [their open data catalogue](https://vancouver.ca/your-government/open-data-catalogue.aspx). The data
 comes with two fields, 'name' and 'type'. The 'type' was used for the checkboxes at the bottom to selectively turn different
 bike lane types on or off and the 'name' will be displayed on hover.
 
@@ -44,16 +44,16 @@ bike lane types on or off and the 'name' will be displayed on hover.
 
 ### Some more <strike>Canadian</strike> cities:
 
-[Calgary on street](http://doodles.mountainmath.ca/html/bike_paths.html?city=Calgary,street&type=BICYCLE_CL&dataUrl=http://doodles.mountainmath.ca/data/CALGIS_TRAN_BIKEWAY.geojson),
-[Calgary pathways](http://doodles.mountainmath.ca/html/bike_paths.html?city=Calgary,pathways&type=PRIORITY&name=LOCATION_D&dataUrl=http://doodles.mountainmath.ca/data/YYC_Path_BikeRoutes.geojson),
-[Calgary trails](http://doodles.mountainmath.ca/html/bike_paths.html?city=Calgary,trails&type=TYPE_DESCR&name=LOCATION_D&dataUrl=http://doodles.mountainmath.ca/data/YYC_Trail_BikeRoutes.geojson),
-[Victoria](http://doodles.mountainmath.ca/html/bike_paths.html?city=Victoria&type=FullDescr&dataUrl=http://doodles.mountainmath.ca/data/VicBikeRoutes.geojson),
-[Montreal](http://doodles.mountainmath.ca/html/bike_paths.html?city=Montreal&name=PROJET_NOM&dataUrl=http://doodles.mountainmath.ca/data/MontrealBikeRoutes.geojson),
-[Toronto](http://doodles.mountainmath.ca/html/bike_paths.html?city=Toronto&type=CP_TYPE&dataUrl=http://doodles.mountainmath.ca/data/TorontoBikeRoutes.geojson)
-[Portland](http://doodles.mountainmath.ca/html/bike_paths.html?city=Portland&type=FACILITYDE&name=SEGMENTNAM&dataUrl=http://doodles.mountainmath.ca/data/PDXBikeRoutes.geojson)
-[NYC](http://doodles.mountainmath.ca/html/bike_paths.html?city=NYC&type=TF_Facilit&name=Street&fh=65&dataUrl=http://doodles.mountainmath.ca/data/NYCBikeRoutes.geojson)
-[Amsterdam](http://doodles.mountainmath.ca/html/bike_paths.html?city=Amsterdam&type=HIGHWAY&name=WIDTH&dataUrl=http://doodles.mountainmath.ca/data/AmsterdamBikeRoutes.geojson)
-[Taipei](http://doodles.mountainmath.ca/html/bike_paths.html?city=Taipei&name=RDNAME&dataUrl=http://doodles.mountainmath.ca/data/TPEBikeRoutes.geojson)
+[Calgary on street](https://doodles.mountainmath.ca/html/bike_paths.html?city=Calgary,street&type=BICYCLE_CL&dataUrl=http://doodles.mountainmath.ca/data/CALGIS_TRAN_BIKEWAY.geojson),
+[Calgary pathways](https://doodles.mountainmath.ca/html/bike_paths.html?city=Calgary,pathways&type=PRIORITY&name=LOCATION_D&dataUrl=http://doodles.mountainmath.ca/data/YYC_Path_BikeRoutes.geojson),
+[Calgary trails](https://doodles.mountainmath.ca/html/bike_paths.html?city=Calgary,trails&type=TYPE_DESCR&name=LOCATION_D&dataUrl=http://doodles.mountainmath.ca/data/YYC_Trail_BikeRoutes.geojson),
+[Victoria](https://doodles.mountainmath.ca/html/bike_paths.html?city=Victoria&type=FullDescr&dataUrl=http://doodles.mountainmath.ca/data/VicBikeRoutes.geojson),
+[Montreal](https://doodles.mountainmath.ca/html/bike_paths.html?city=Montreal&name=PROJET_NOM&dataUrl=http://doodles.mountainmath.ca/data/MontrealBikeRoutes.geojson),
+[Toronto](https://doodles.mountainmath.ca/html/bike_paths.html?city=Toronto&type=CP_TYPE&dataUrl=http://doodles.mountainmath.ca/data/TorontoBikeRoutes.geojson)
+[Portland](https://doodles.mountainmath.ca/html/bike_paths.html?city=Portland&type=FACILITYDE&name=SEGMENTNAM&dataUrl=http://doodles.mountainmath.ca/data/PDXBikeRoutes.geojson)
+[NYC](https://doodles.mountainmath.ca/html/bike_paths.html?city=NYC&type=TF_Facilit&name=Street&fh=65&dataUrl=http://doodles.mountainmath.ca/data/NYCBikeRoutes.geojson)
+[Amsterdam](https://doodles.mountainmath.ca/html/bike_paths.html?city=Amsterdam&type=HIGHWAY&name=WIDTH&dataUrl=http://doodles.mountainmath.ca/data/AmsterdamBikeRoutes.geojson)
+[Taipei](https://doodles.mountainmath.ca/html/bike_paths.html?city=Taipei&name=RDNAME&dataUrl=http://doodles.mountainmath.ca/data/TPEBikeRoutes.geojson)
 
 A word of caution. I have done zero data cleaning or verification. Some of these maps are missing some type of infrastructure.
 I am familiar with cycling conditions in Calgary, and their the extensive network along the river and other areas are missing in their main file.
@@ -81,21 +81,21 @@ download the Tranportation Bikeways shapefiles (SHP). To convert them go geojson
 
     ogr2ogr -f GeoJSON -simplify 1 -s_srs CALGIS_TRAN_BIKEWAY.prj -t_srs "EPSG:4326" CALGIS_TRAN_BIKEWAY.geojson CALGIS_TRAN_BIKEWAY.shp
 
-from the [GDAL package](http://trac.osgeo.org/gdal/wiki/DownloadingGdalBinaries).
+from the [GDAL package](https://trac.osgeo.org/gdal/wiki/DownloadingGdalBinaries).
 
-I uploaded the geojson to `http://doodles.mountainmath.ca/data/CALGIS_TRAN_BIKEWAY.geojson`, so that will be the value of the `dataUrl` query string.
+I uploaded the geojson to `https://doodles.mountainmath.ca/data/CALGIS_TRAN_BIKEWAY.geojson`, so that will be the value of the `dataUrl` query string.
 
 Looking at the resulting geojson file you will see that the data does not include bikeway names, but it does include
 types and the property is called `BICYCLE_CL`.
 
 The rather lengthy link to the map would then be
-[http://doodles.mountainmath.ca/html/bike_paths.html?city=Calgary&type=BICYCLE_CL&dataUrl=http://doodles.mountainmath.ca/data/CALGIS_TRAN_BIKEWAY.geojson](http://doodles.mountainmath.ca/html/bike_paths.html?city=Calgary&type=BICYCLE_CL&dataUrl=http://doodles.mountainmath.ca/data/CALGIS_TRAN_BIKEWAY.geojson)
+[https://doodles.mountainmath.ca/html/bike_paths.html?city=Calgary&type=BICYCLE_CL&dataUrl=http://doodles.mountainmath.ca/data/CALGIS_TRAN_BIKEWAY.geojson](http://doodles.mountainmath.ca/html/bike_paths.html?city=Calgary&type=BICYCLE_CL&dataUrl=http://doodles.mountainmath.ca/data/CALGIS_TRAN_BIKEWAY.geojson)
 
 <iframe src="/html/bike_paths.html?city=Calgary&type=BICYCLE_CL&fh=50&nh=true&dataUrl=/data/CALGIS_TRAN_BIKEWAY.geojson" width="100%" height="580"></iframe>
 
 
 Or if you want to zoom into Calgary's sprawling suburbs, you could also enable zooming (using double-click) and panning
-[http://doodles.mountainmath.ca/html/bike_paths.html?city=Calgary&type=BICYCLE_CL&zoom=true&dataUrl=http://doodles.mountainmath.ca/data/CALGIS_TRAN_BIKEWAY.geojson](http://doodles.mountainmath.ca/html/bike_paths.html?city=Calgary&type=BICYCLE_CL&zoom=true&dataUrl=http://doodles.mountainmath.ca/data/CALGIS_TRAN_BIKEWAY.geojson)
+[https://doodles.mountainmath.ca/html/bike_paths.html?city=Calgary&type=BICYCLE_CL&zoom=true&dataUrl=http://doodles.mountainmath.ca/data/CALGIS_TRAN_BIKEWAY.geojson](http://doodles.mountainmath.ca/html/bike_paths.html?city=Calgary&type=BICYCLE_CL&zoom=true&dataUrl=http://doodles.mountainmath.ca/data/CALGIS_TRAN_BIKEWAY.geojson)
 
 
 
