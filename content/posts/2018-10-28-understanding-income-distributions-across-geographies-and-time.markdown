@@ -90,6 +90,14 @@ To label geographies, we choose to condense the data into 4 distinct labels. If 
 ## Vancouver
 <img src="/posts/2018-10-28-understanding-income-distributions-across-geographies-and-time_files/figure-html/unnamed-chunk-7-1.png" width="768" />
 
+```
+## TableGrob (2 x 2) "arrange": 3 grobs
+##   z     cells    name                 grob
+## 1 1 (2-2,1-1) arrange       gtable[layout]
+## 2 2 (2-2,2-2) arrange       gtable[layout]
+## 3 3 (1-1,1-2) arrange text[GRID.text.3079]
+```
+
 Vancouver distinguishes itself as being mostly "mixed income", with some high-income areas in the low-density parts of the North Shore and a cluster of middle-income ares in Surrey. Among our four CMAs, it's the one with the lowest share of areas dominated by low-income people.
 
 ## Toronto
@@ -102,11 +110,27 @@ Toronto paints a different picture. It's still dominated by mixed-income neighbo
 
 <img src="/posts/2018-10-28-understanding-income-distributions-across-geographies-and-time_files/figure-html/unnamed-chunk-9-1.png" width="768" />
 
+```
+## TableGrob (2 x 2) "arrange": 3 grobs
+##   z     cells    name                 grob
+## 1 1 (2-2,1-1) arrange       gtable[layout]
+## 2 2 (2-2,2-2) arrange       gtable[layout]
+## 3 3 (1-1,1-2) arrange text[GRID.text.7671]
+```
+
 Montréal has the highest share of predominantly low-income areas, although not by a large margin. If we had based this on the overall Canadian income distribution and not rescaled the income bins relative to the overall metropolitan area of Montréal, we would see a pattern dominated by "middle income" areas, with about 1 in 5 areas with over half the population in the middle 40% of the Canadian adjusted after-tax family income distribution. 
 
 ## Calgary 
 
 <img src="/posts/2018-10-28-understanding-income-distributions-across-geographies-and-time_files/figure-html/unnamed-chunk-10-1.png" width="768" />
+
+```
+## TableGrob (2 x 2) "arrange": 3 grobs
+##   z     cells    name                 grob
+## 1 1 (2-2,1-1) arrange       gtable[layout]
+## 2 2 (2-2,2-2) arrange       gtable[layout]
+## 3 3 (1-1,1-2) arrange text[GRID.text.8343]
+```
 
 Even after rescaling to the overall Calgary income distribution, Calgary still has the highest share of areas dominated by high-income people. It also has the lowest share of areas dominated by middle-income people.
 
@@ -138,9 +162,25 @@ For reference, we start with just looking at our original four categories at the
 
 <img src="/posts/2018-10-28-understanding-income-distributions-across-geographies-and-time_files/figure-html/unnamed-chunk-13-1.png" width="768" />
 
+```
+## TableGrob (2 x 2) "arrange": 3 grobs
+##   z     cells    name                  grob
+## 1 1 (2-2,1-1) arrange        gtable[layout]
+## 2 2 (2-2,2-2) arrange        gtable[layout]
+## 3 3 (1-1,1-2) arrange text[GRID.text.12617]
+```
+
 Refining the geographies to dissemination areas lends more geographic nuance to the representation, it is fine enough to pick up some areas dominated my middle-income people.
 
 <img src="/posts/2018-10-28-understanding-income-distributions-across-geographies-and-time_files/figure-html/unnamed-chunk-14-1.png" width="768" />
+
+```
+## TableGrob (2 x 2) "arrange": 3 grobs
+##   z     cells    name                  grob
+## 1 1 (2-2,1-1) arrange        gtable[layout]
+## 2 2 (2-2,2-2) arrange        gtable[layout]
+## 3 3 (1-1,1-2) arrange text[GRID.text.17607]
+```
 
 This reveals that West Point Grey was mixed income because it was made up of a high-income area reaching west of Blanca and a low income area around the non-profit housing project by Jericho.
 
@@ -148,11 +188,27 @@ Alternatively we could have kept the geographic aggregation level fixed and allo
 
 <img src="/posts/2018-10-28-understanding-income-distributions-across-geographies-and-time_files/figure-html/unnamed-chunk-15-1.png" width="768" />
 
+```
+## TableGrob (2 x 2) "arrange": 3 grobs
+##   z     cells    name                  grob
+## 1 1 (2-2,1-1) arrange        gtable[layout]
+## 2 2 (2-2,2-2) arrange        gtable[layout]
+## 3 3 (1-1,1-2) arrange text[GRID.text.21733]
+```
+
 This reveals an important category that the broader categorization entirely missed, the olive band from Second Narrows down to Marpole, as well as the West End, indicating an even mixture of middle and low income people. West Point Grey is now more precisely defined as mixing high and low income. We could make out the reason for this when looking at finer geographies, but this remains hidden when aggregating up to census tracts.
 
 Lastly we refine both the geographies as well as the categories.
 
 <img src="/posts/2018-10-28-understanding-income-distributions-across-geographies-and-time_files/figure-html/vancouver_income_map-1.png" width="768" />
+
+```
+## TableGrob (2 x 2) "arrange": 3 grobs
+##   z     cells    name                  grob
+## 1 1 (2-2,1-1) arrange        gtable[layout]
+## 2 2 (2-2,2-2) arrange        gtable[layout]
+## 3 3 (1-1,1-2) arrange text[GRID.text.26735]
+```
 
 This reveals a lot of nuance, the band of Middle/Bottom income mixture ranging from the Second Narrows down to Marpole through East Vancouver, as well as the West End, is still clearly visible, occasionally punctuate by regions pulling more towards lower and middle income. Just to the west of that East Vancouver band we see a band of greyish-purple that sits between the high and middle income bands. The West Side is dominated by pinkish colours, at turning purplish when adding more middle-income people or brownish when adding more low-income people. Low income pockets are strong around the Downtown Eastside, with occasional pockets popping up elsewhere, in particular the triangle at Arbutus and 33rd. The non-profit housing project at Jericho also leaves a visible imprint.
 

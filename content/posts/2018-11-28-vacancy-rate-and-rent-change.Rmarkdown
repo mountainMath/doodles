@@ -1,0 +1,397 @@
+---
+title: Vacancy rate and rent change
+author: Jens von Bergmann
+date: '2018-11-28'
+slug: vacancy-rate-and-rent-change
+categories:
+  - cmhc
+  - CANSIM
+  - Vancouver
+  - Toronto
+  - rental
+tags: []
+description: 'The relationship between rent change and vacancy rates in Canada.'
+featured: 'vacancy-rent-change-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2018-11-28-vacancy-rate-and-rent-change_files/figure-html/vacancy-rent-change-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2018-11-28-vacancy-rate-and-rent-change_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 8,
+	cache = TRUE
+)
+library(tidyverse)
+library(cmhc)
+library(cancensus)
+library(cansim)
+
+vars <- c("Bachelor", "1 Bedroom", "2 Bedroom", "3 Bedroom +", "Total")
+
+bedroom_colors <- set_names(RColorBrewer::brewer.pal(length(vars),"Dark2"),vars)
+```
+
+Today the new CMHC Rental Market Survey data came out, which is a good opportunity to refine my musings on the rental vacancy rate and rent increases. I view this as the renter version of the relationship between [months of inventory and changes in resale prices in the for sale market](https://twitter.com/YVRHousing/status/940663306511048705).
+
+
+```{r}
+rental_stock_for <- function(GeoUID){
+  params=cmhc_timeseries_params(table_id = cmhc_table_list["Rms Rental Universe Time Series"],
+                                region=cmhc_region_params_from_census(as.character(GeoUID)))
+  get_cmhc(params)  %>% 
+    rename(Date=X1) %>% 
+    select(-X2)
+}
+```
+
+```{r}
+geo_list <- cmhc::cmhc_cma_translation_data %>%
+  filter(nchar(CMA_UID)==5)
+
+vectors <- search_census_vectors("renter","CA16")$vector
+
+regions <- list_census_regions("CA16") %>% 
+  filter(level=="CMA",region %in% geo_list$CMA_UID) %>%
+  rename(GeoUID=region,Name=name,Population=pop) %>%
+  select(GeoUID,Name) %>%
+  inner_join(geo_list,by=c("GeoUID"="CMA_UID")) %>%
+  left_join(
+    get_census("CA16",regions=list(CMA=(.)$GeoUID),vectors=c("Renters"=vectors)) %>% select(GeoUID,Population,Households,Dwellings,Renters)
+  )
+
+stock_data <- seq_len(nrow(regions)) %>% lapply(function(i){
+  r=regions[i,]
+  #print(paste0("Processing ",r$GEO_UID," for ",r$NAME_EN))
+  rental_stock_for(r$GeoUID) %>%
+    #filter(Date==latest_date) %>%
+    mutate(name=r$NAME_EN,
+           GeoUID=r$GeoUID,
+           METCODE=r$METCODE,
+           Population=r$Population,
+           Renters=r$Renters,
+           Households=r$Households)
+}) %>% 
+  bind_rows %>%
+  mutate(per_pop=Total/Population,
+         per_renter=Total/Renters,
+         per_household=Total/Households)
+  
+```
+
+CMHC surveys purpose-built (market) rental apartments every October and reports on a variety of metrics, including statistics about the total stock, median and average rents, vacancy rates, and fixed-sample average rent change among others. I have grown quite font of the fixed-sample rent change metric, because it naturally lends itself to use in analysis. Fixed sample rent change keeps the rental buildings used for comparison fixed from one year to the next, so it is not polluted by changes in composition when a new building comes online or an old one gets torn down. In that sense, it's the Case-Shiller metric for rents, with the caveat that in rent-controlled environments the change in rent may be capped, although in Canada rents are usually constrained at turnover (vacancy decontrol).
+
+A point that sometimes get forgotten is that the CMHC purpose-built stock only includes market rentals (modulo messy details on data collection and classification), so subsidized rentals are generally not included in this.
+
+## Purpose-built (market) rental stock
+To start off, let's look at the purpose-built rental stock in Canada. 
+
+
+```{r}
+
+
+plot_data <- stock_data %>% 
+  mutate(Year=as.integer(gsub(" October$","",Date))) %>%
+  filter(Year==max(Year)) %>%
+  top_n(20,Total) %>%
+  mutate(name=factor(name,levels=arrange(.,Total)$name)) %>%
+  gather(key="Bedrooms",value="Value",rev(vars),factor_key = TRUE) %>%
+  filter(Bedrooms!="Total")
+
+ggplot(plot_data,aes(x=name,fill=Bedrooms,y=Value)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values =bedroom_colors) +
+  coord_flip() +
+  theme_light()+
+  scale_y_continuous(labels = scales::comma)+
+  labs(title=paste0("Purpose-built rental units in ",max(plot_data$Year)),
+       caption="MountainMath, CMHC Rms",
+       fill="", x="CMA",y="Number of units"
+       )
+```
+
+The list of CMAs with the largest purpose-built rental stock is naturally dominated by larger cities, but we immediately notice that the ordering does not correspond to population. Nor to the number or share of renter households in each city. The following graph relates the size of the purpose-built rental stock to the number of renters in each area.
+
+```{r}
+plot_data <- stock_data %>% filter(Date=="2017 October") %>%
+  mutate(Year=as.integer(gsub(" October$","",Date))) %>%
+  filter(Year==max(Year)) %>%
+  top_n(20,per_renter) %>%
+  mutate(name=factor(name,levels=arrange(.,per_renter)$name)) 
+
+ggplot(plot_data,aes(x=name,y=per_renter)) +
+  geom_bar(stat="identity",fill="turquoise") +
+  scale_fill_manual(values =bedroom_colors) +
+  coord_flip() +
+  scale_y_continuous(labels=scales::percent) +
+  theme_light()+
+  labs(title=paste0("Purpose-built rental units in ",max(plot_data$Year)),
+       caption="MountainMath, CMHC Rms, StatCan 2016 Census",
+       fill="", x="CMA",y="Share of renters in purpose-built rental units"
+       )
+```
+
+Sliced this way, we notice a lot of smaller CMAs dominating the list, but some larger CMAs, in particular Montréal, also feature prominently. For comparison, here is how the shares look for the CMAs with the largest stock.
+
+```{r}
+plot_data <- stock_data %>% filter(Date=="2017 October") %>%
+  mutate(Year=as.integer(gsub(" October$","",Date))) %>%
+  filter(Year==max(Year)) %>%
+  top_n(20,Total) %>%
+  mutate(name=factor(name,levels=arrange(.,per_renter)$name)) 
+
+ggplot(plot_data,aes(x=name,y=per_renter)) +
+  geom_bar(stat="identity",fill="turquoise") +
+  scale_fill_manual(values =bedroom_colors) +
+  coord_flip() +
+  scale_y_continuous(labels=scales::percent) +
+  theme_light()+
+  labs(title=paste0("Purpose-built rental units in ",max(plot_data$Year)),
+       caption="MountainMath, CMHC Rms, StatCan 2016 Census",
+       fill="", x="CMA",y="Share of renters in purpose-built rental units"
+       )
+```
+
+## Vacancy rate vs rent change
+What we are really interested in is the vacancy rate and rent change. The purpose-built market is only one portion of the rental market, the other two are the subsidized rental market and the individual ("artisanal") rental market. The subsidized market functions very differently, but the purpose-built and artisanal markets are somewhat fungible. 
+
+```{r}
+vacancy_rent_table_for <- function(GeoUID){
+  region_params=cmhc_region_params_from_census(as.character(GeoUID))
+  params=cmhc_timeseries_params(table_id = cmhc_table_list["Rms Vacancy Rate Time Series"],region=region_params)
+  dat_vacancy <- get_cmhc(params) %>% 
+    rename(Year=X1) %>%
+    mutate(Series="Vacancy rate")
+  
+  params=cmhc_timeseries_params(table_id = cmhc_table_list["Rms Rent Change Time Series"],region=region_params)
+  dat_rent_change <- get_cmhc(params) %>%
+    rename(Year=X1) %>%
+    mutate(Series="Rent change")
+ 
+  if (!(GeoUID %in% c("24433"))){
+    average_condo_rents <- get_cmhc(cmhc_timeseries_params(table_id = "4.4.2", region=region_params)) %>%
+      rename(Year=X1) %>%
+      mutate(Series="Condo rents") %>%
+      select(-X7)
+    average_other_secondary_rents <-   get_cmhc(cmhc_timeseries_params(table_id = "4.6.2", region=region_params)) %>%
+      rename(Year=X1) %>%
+      select(Year,Total,X5) %>%
+      mutate(Series="Other secondary rents")
+    params=cmhc_timeseries_params(table_id = cmhc_table_list["Srms Vacancy Rate Time Series"],region=region_params)
+    condo_vacancy <- get_cmhc(params) %>% 
+      rename(Year=X1) %>%
+      select(Year,Total,X5) %>%
+      mutate(Series="Condo vacancy rate")
+  
+    average_rents <- bind_rows(average_condo_rents,average_other_secondary_rents) %>%
+      group_by(Series) %>%
+      mutate(Total=(Total/lag(Total,order_by = Year)-1)*100)
+  } else {
+    average_rents=NULL
+    condo_vacancy=NULL
+  }
+  dat=bind_rows(dat_vacancy,condo_vacancy,dat_rent_change,average_rents)
+  return(dat)
+}
+```
+
+
+
+```{r}
+
+regions <- stock_data %>% filter(Date==max(Date)) %>%
+  top_n(12,Total) 
+
+
+inflation <- get_cansim_vector("v108785713","1990-01-01") %>%
+  normalize_cansim_values() %>%
+  rename(CPI=VALUE) %>%
+  select(Date,CPI) %>%
+  mutate(CPI=CPI/100)
+
+# inflation <- get_cansim("18-10-0256") %>%
+#   normalize_cansim_values() %>%
+#   filter(`Alternative measures`=="Measure of core inflation based on a factor model, CPI-common (year-over-year percent change)") %>%
+#   rename(CPI=VALUE) %>%
+#   select(Date,CPI)
+
+
+
+data <- seq_len(nrow(regions)) %>% lapply(function(i){
+  r=regions[i,]
+  #print(r$name)
+  #print(r$GeoUID)
+    vacancy_rent_table_for(r$GeoUID) %>%
+     mutate(name=r$name)
+}) %>% bind_rows %>%
+  mutate(Date=as.Date(paste0(gsub(" October","",Year),"-10-01"))) %>%
+  gather(key="Bedrooms",value="Value",vars) %>%
+  mutate(Value=Value/100) %>%
+  left_join(inflation,by="Date") 
+  #bind_rows((.) %>% select(Date,CPI,name,Year) %>% mutate(Total=CPI,Series="CPI"))
+
+paired_colors <- RColorBrewer::brewer.pal(6,"Paired")[c(1,2,5,6)]
+series_names <- data$Series %>% unique
+series_colors <- c("Vacancy rate"=paired_colors[1], "Rent change" = paired_colors[3])
+series_labels <- c("Vacancy rate"="Primary vacancy rate", "Rent Change" = "Fixed sample rent change\n(inflation adjusted)" )
+color_labels <- c()
+color_labels[paired_colors[1]]="Primary vacancy rate"
+color_labels[paired_colors[3]] = "Fixed sample rent change (inflation adjusted)"
+#color_labels[paired_colors[2]]="Primary vacancy rate"
+#color_labels[paired_colors[4]] = "Fixed sample rent change\n(inflation adjusted)"
+vrc_caption="MountainMath, data from CMHC Rms & StatCan v108785713"
+```
+
+
+
+```{r vacancy-rent-change}
+vacancy_cutoff=0.03
+
+plot_data <- data %>% 
+  mutate(Year=gsub(" October","",Year)) %>%
+  filter(Bedrooms=="Total") %>%
+  mutate(name=factor(name,levels=arrange(regions,-per_renter)$name)) %>%
+  filter(Series %in% c("Rent change","Vacancy rate")) %>%
+  na.omit() %>%
+  mutate(Value=ifelse(Series=="Rent change",Value-CPI,Value)) %>%
+  group_by(Series,name,Bedrooms) %>%
+  mutate(Next=lead(Value,order_by = Date)) %>%
+  ungroup %>%
+  mutate(color=ifelse(Series=="Vacancy rate",
+                      ifelse(Value>=vacancy_cutoff,paired_colors[2],paired_colors[1]),
+                      ifelse(Value<=0,paired_colors[4],paired_colors[3]))) %>%
+  mutate(line_color=ifelse(Series=="Vacancy rate",
+                      ifelse(Value>=vacancy_cutoff & (is.na(Next) | Next>=vacancy_cutoff),paired_colors[2],paired_colors[1]),
+                      ifelse(Value<=0 & (is.na(Next) | Next <=0),paired_colors[4],paired_colors[3])))
+ggplot(plot_data ,aes(x=Date,y=Value,color=Series,group=Series))+
+  geom_hline(yintercept = 0,size=0.5,color="#aa6666") +
+  geom_hline(yintercept = vacancy_cutoff,color="#6666aa",size=0.5) +
+  geom_line(aes(color=line_color),size=1) +
+  theme_bw() +
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_identity(labels=color_labels,breaks=as.character(series_colors),guide = "legend") +
+  facet_wrap("name") +
+  theme(legend.position = "bottom") +
+  geom_point(size=1.2,aes(color=color)) +
+  labs(title="Vacancy rate and rent change by CMA",
+       caption=vrc_caption,
+       #subtitle="(CMAs with highest purpose-built rental stock, ordered by share of renters in purpose-built)",
+       x="",y="")
+```
+
+With a renewed focus on renters and public discussions about rent control, this graph highlights the relationship of the vacancy rate to inflation adjusted fixed-sample rent changes in market purpose-built rental units.
+
+The graphs validate the rule of thumb of a three percent vacancy rate as being considered as healthy. When the vacancy rate climbs above three percent, inflation-adjusted rents generally flattens and go negative. When the vacancy rate drops below three percent, inflation-adjusted rents tends to climb. 
+
+The natural vacancy rate, the rate when inflation-adjusted rent stays flat, varies somewhat across cities and possibly across time. Vancouver appears to have a lower natural vacancy rate, with inflation-adjusted rent dipping in the negative while the vacancy rate maxes out at 2.7%. On the other hand, Sherbrooke, Montréal and Halifax appear to have slightly higher natural vacancy rates. 
+
+# Correlations and causation
+The graphs do suggest a correlation between vacancy rates and fixed-sample rent changes. But does one cause the other or are both simply driven by the same hidden factor? Economics 101 gives a plausible mechanism for vacancy rates driving rent changes. When landlords have a lot of competition in the rental market and vacancy rates are high, they can't hike the rents or might even have to drop rents to fill their units. When the rental market is tight with low vacancy rates and several renters are bidding on the same apartment, landlords can be more aggressive in hiking their rents.
+
+But nailing down causality is tricky, especially when we only have annual data when the timeframe of effects is likely shorter. One way to start exploring causality further is to understand the relative timing of the two time series. For this we consider lagged correlations, where we correlate time-shifted time series.
+
+```{r}
+base_data <- plot_data %>% 
+    group_by(name,Date) %>%
+    select(name,Date,Series,Value) %>%
+    spread(key="Series",value="Value")
+
+corr_data <- plot_data$name %>% unique %>% lapply(function(n){
+  d<- base_data %>%
+    filter(name==n) %>%
+    arrange(Date)
+
+  d1 <- d %>% 
+    ungroup %>%
+    mutate(`Vacancy rate`=lead(`Vacancy rate`,order_by = Date)) %>% arrange(Date)
+  
+  c=ccf(d$`Rent change`,d$`Vacancy rate`,plot=FALSE,type="correlation",lag.max = 5,na.action = na.pass)
+  tibble(acf=as.vector(c$acf),lag=as.vector(c$lag),corr=cor(d1$`Rent change`,d1$`Vacancy rate`,use="complete.obs")) %>%
+    mutate(name=n)
+}) %>% bind_rows
+
+
+ggplot(corr_data,aes(x=lag,y=acf)) +
+  #geom_line(aes(y = corr)) +
+  geom_bar(stat="identity") +
+  facet_wrap("name") +
+  labs(title="Correlation between vacancy rate and inflation adjusted fixed sample rent change",
+       caption=vrc_caption,x="Lag of rent change")
+
+```
+
+The correlations show out general observation that vacancy rate and rent changes anti-correlate. In most cases the correlations peak at zero lag, but the main mode seems slightly shifted toward rent changes trailing vacancy rates. As we would expect from our Economics 101 reasoning. 
+
+In the cases of Winnipeg and Waterloo the lag seems unplausably large, in Sherprook the correlation looks quite weak, and in Hamilton it appears that rent changes lead the vacancy rate, possibly because the Hamilton market does not operate in isolation. Given the temporal resolution of the data there is not much more we can do here, but overall the lagged correlations support our hypothesis of vacancy rates driving fixed-sample rent changes.
+
+## The rest of the rental supply
+So far we have only talked about purpose-built market rentals. The main reason for this is that we have longer time lines and better quality data for purpose-built rental, and the idea is that purpose-built and "artisanal rentals" are fungible, so there should not be too much of a different. But in e.g. Vancouver that's only a small fraction of the rental market. How representative is this really? 
+
+To understand that, we start by comparing the purpose-built vacancy rate to the condo vacancy rate.
+
+
+```{r}
+plot_data <- data %>% 
+  mutate(Year=gsub(" October","",Year)) %>%
+  filter(Bedrooms=="Total") %>%
+  filter(grepl("Vacancy",Series,ignore.case = TRUE)) %>%
+  select(name,Series,Value,CPI,Bedrooms,Date) %>%
+  mutate(name=factor(name,levels=arrange(regions,-per_renter)$name)) %>%
+  na.omit() %>%
+  mutate(Value=ifelse(grepl("rent",Series,ignore.case = TRUE),Value-CPI,Value))
+ggplot(plot_data ,aes(x=Date,y=Value,color=Series,group=Series))+
+  #geom_hline(yintercept = 0,size=0.5,color="#aa6666") +
+  #geom_hline(yintercept = vacancy_cutoff,color="#6666aa",size=0.5) +
+  geom_line(size=1) +
+  theme_bw() +
+  scale_y_continuous(labels = scales::percent) +
+  facet_wrap("name") +
+  theme(legend.position = "bottom") +
+  geom_point(size=1.2) +
+  labs(title="Purpose-built and condo vacancy rate by CMA",
+       caption="MountainMath, data from CMHC Rms",
+       #subtitle="(CMAs with highest purpose-built rental stock, ordered by share of renters in purpose-built)",
+       x="",y="")
+
+```
+
+We have much shorter time lines for the condo vacancy rate, but the two track fairly well. Next, let's look at rents. For "artisanal" rentals, we don't have the luxury of a fixed sample rent change series, so we use the year over year change in average rent to stand in.
+
+
+```{r}
+plot_data <- data %>% 
+  mutate(Year=gsub(" October","",Year)) %>%
+  filter(Bedrooms=="Total") %>%
+  filter(!grepl("Vacancy",Series,ignore.case = TRUE)) %>%
+  select(name,Series,Value,CPI,Bedrooms,Date) %>%
+  mutate(name=factor(name,levels=arrange(regions,-per_renter)$name)) %>%
+  na.omit() %>%
+  mutate(Value=ifelse(grepl("rent",Series,ignore.case = TRUE),Value-CPI,Value))
+ggplot(plot_data ,aes(x=Date,y=Value,color=Series,group=Series))+
+  #geom_hline(yintercept = 0,size=0.5,color="#aa6666") +
+  #geom_hline(yintercept = vacancy_cutoff,color="#6666aa",size=0.5) +
+  geom_line(size=1) +
+  theme_bw() +
+  scale_fill_brewer("Set2")+
+  scale_y_continuous(labels = scales::percent) +
+  facet_wrap("name") +
+  theme(legend.position = "bottom") +
+  geom_point(size=1.2) +
+  labs(title="Purpose-built and condo vacancy rate by CMA",
+       caption="MountainMath, data from CMHC Rms",
+       #subtitle="(CMAs with highest purpose-built rental stock, ordered by share of renters in purpose-built)",
+       x="",y="")
+
+```
+
+And looking at the data, it's a real mess. The high volatility in the graphs suggest poor data quality, and the quality indicators provided by CMHC. In Vancouver for example, only the latest two points in the Series come with an uncertainty below 2 percentage points. Probably not too much useful can be learned from this.
+
+One could pull census data to try and understand rents in "artisanal" setting better, but they are only available every 5 years. And the census only allows to filter by condominium units since 2011.
+
+As always, the code for the analysis is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-11-28-vacancy-rate-and-rent-change.Rmarkdown) for anyone to reproduce, adapt or appropriate for their own purposes.
