@@ -49,18 +49,18 @@ cut_at_na <- function(data,column_name){
   index=which(is.na(data[[column_name]])) %>% first
   data[1:(index-1),]
 }
-h1 <- readxl::read_xlsx(here("data/cmhc_average_vacant_rents/average-rents-vacant-occupied-units-2018.xlsx"),skip=8) %>% 
+h1 <- readxl::read_xlsx(here("static/data/cmhc_average_vacant_rents/average-rents-vacant-occupied-units-2018.xlsx"),skip=8) %>% 
   names %>% 
   gsub("X__\\d+","XXX",.) %>% 
   na_if("XXX")
-h2 <- readxl::read_xlsx(here("data/cmhc_average_vacant_rents/average-rents-vacant-occupied-units-2018.xlsx"),skip=8) %>% 
+h2 <- readxl::read_xlsx(here("static/data/cmhc_average_vacant_rents/average-rents-vacant-occupied-units-2018.xlsx"),skip=8) %>% 
   first_row 
 
 hh=tibble(h1=h1,h2=h2) %>% 
   fill(h1) %>% 
   mutate(h2=ifelse(is.na(h2),paste0(lag(h2)," Q"),h2)) %>%
   mutate(h=ifelse(is.na(h1),h2,paste0(h1,";",h2)))
-data <- readxl::read_xlsx(here("data/cmhc_average_vacant_rents/average-rents-vacant-occupied-units-2018.xlsx"),skip=10,col_names=FALSE) %>%
+data <- readxl::read_xlsx(here("static/data/cmhc_average_vacant_rents/average-rents-vacant-occupied-units-2018.xlsx"),skip=10,col_names=FALSE) %>%
   set_names(hh$h) %>% 
   cut_at_na("Zone") %>%
   gather(key="Type",value="Value",setdiff(names(.),c("Zone","Year"))) %>%
