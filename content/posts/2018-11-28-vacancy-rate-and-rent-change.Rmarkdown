@@ -395,3 +395,4 @@ And looking at the data, it's a real mess. The high volatility in the graphs sug
 One could pull census data to try and understand rents in "artisanal" setting better, but they are only available every 5 years. And the census only allows to filter by condominium units since 2011.
 
 As always, the code for the analysis is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2018-11-28-vacancy-rate-and-rent-change.Rmarkdown) for anyone to reproduce, adapt or appropriate for their own purposes.
+
