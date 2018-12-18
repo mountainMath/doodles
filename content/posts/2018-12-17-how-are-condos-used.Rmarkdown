@@ -19,6 +19,7 @@ linktitle: ''
 type: "post"
 ---
 
+<p style="size:small;text-align:right;padding-bottom:10px;">(Cross-posted at <a href="https://homefreesociology.com/2018/12/18/how-are-condos-used/" target ="_blank">HomeFreeSociology</a>)</p>
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
@@ -314,7 +315,7 @@ ggplot(waffle_unoccupied, aes(fill = Tenure)) +
        x="",y="",caption=paste0("* imputed information on vacant condos\n\n",X2016219_caption,", StatCan 2016 custom tabulation, CMHC Rms, Srms"))
 ```
 
-Our findings on how condominium apartments are used are really interesting!. In all the metro areas we analyzed, the modal use of condominium apartments is owner-occupation. As a result, it appears that condominium apartments are enabling more homeowners to live in increasingly dense cities. 
+Our findings on how condominium apartments are used are really interesting! In all the metro areas we analyzed, the modal use of condominium apartments is owner-occupation. As a result, it appears that condominium apartments are enabling more homeowners to live in increasingly dense cities. 
 
 However,  condominium apartments also make up a substantial proportion of the rental stock in many metro areas. While many condominium apartments are rented, relatively few show up as vacant (i.e. empty but listed as “for rent”) at any given point in time. Here we distinguish these rare vacancies, which are good for renters, from unoccupied condominiums.  In tight markets such as Vancouver and Toronto we see effectively non-existent condominium apartment vacancy rates, comparable to purpose-built rental vacancy rates.
 
