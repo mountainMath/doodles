@@ -277,28 +277,28 @@ Now let's tie all of this back to emissions. Vancouver is growing, and we need t
 
 At the same time we should be focusing our building activity on actually adding units. Tearing down a single family home and building a 6-plex in it's place will accrue a fair amount of embodied carbon debt, but tearing down the home and replacing it with yet another single family home, and accommodating the growth of the remaining units by adding a floor to a highrise accumulates a larger carbon debt.
 
-The single family teardown cycle is chiefly responsible for Vancouver's ineffectiveness of adding dwelling units. Vancouver has been seeing a fair amount of construction, but [CMHC estimates](https://www.cmhc-schl.gc.ca/odpub/pdf/69262.pdf#page=158) that for each five units built in Metro Vancouver one gets torn down. StatCan has published a new data series starting at the beginning of 2018 with monthly permit data, where we can roughly reproduce this relationship, keeping in mind that we only have two months of data right now, so we should expect quite some volatility.
+The single family teardown cycle is chiefly responsible for Vancouver's ineffectiveness of adding dwelling units. Vancouver has been seeing a fair amount of construction, but [CMHC estimates](https://www.cmhc-schl.gc.ca/en/data-and-research/publications-and-reports/examining-escalating-house-prices-in-large-canadian-metropolitan-centres) that for each five units built in Metro Vancouver one gets torn down. StatCan has published a new data series starting at the beginning of 2018 with monthly permit data, where we can roughly reproduce this relationship, keeping in mind that we only have two months of data right now, so we should expect quite some volatility.
 
 ```{r middle-finger}
 date_from_month<-function(d){
   as.Date(paste0(d,"/01"))
 }
 
-data <-get_cansim("026-0021") %>% mutate(
-  Date=date_from_month(Ref_Date),
-  name=sub(",.+$","",GEO)
-)
+data <-get_cansim("026-0021") %>% 
+  normalize_cansim_values() %>%
+  mutate(name=sub(",.+$","",GEO))
+  
 plot_data <- data %>% filter(
   Date >= as.Date("2018-01-01"), # don't have early data
   Date <= as.Date("2018-02-01"), # freeze latest available date at time of writing
   grepl("Toronto|Calgary|Montréal|Vancouver|Victoria",name),
-  STR %in% c("Total residential","Total demolitions"),
-  WOK %in% c("Demolitions for residential dwellings","New dwelling units total"),
-  SEA == "Unadjusted",
-  VAL %in% c("Number of dwelling-units created","Number of dwelling-units lost","Number of dwelling-units demolished")) %>%
-  select(Date,name,STR,Value) %>%
+  `Type of structure` %in% c("Total residential","Total demolitions"),
+  `Type of work` %in% c("Demolitions for residential dwellings","New dwelling units total"),
+  `Seasonal adjustment` == "Unadjusted",
+  Variables %in% c("Number of dwelling-units created","Number of dwelling-units lost","Number of dwelling-units demolished")) %>%
+  select(Date,name,`Type of structure`,VALUE) %>%
   group_by(Date,name) %>%
-  spread(key="STR",value="Value") %>%
+  spread(key="Type of structure",value="VALUE") %>%
   ungroup() %>%
   select(-Date) %>%
   group_by(name) %>%
@@ -309,7 +309,7 @@ plot_data <- data %>% filter(
 ggplot(plot_data, aes(x=name,y=`Demolitions to Construction`)) +
   geom_bar(stat="identity",position="dodge",fill="steelblue") +
   theme_bw() +
-  labs(x="",title="Ratio of demolitions to building permits first two months of 2018",caption="MountianMath, CANSIM 026-0021")
+  labs(x="",title="Ratio of demolitions to building permits first two months of 2018",caption="MountainMath, CANSIM 026-0021")
 
 ```
 
@@ -369,7 +369,7 @@ prep_series <- function(data,name){
     mutate(Ground=Single+`Semi-Detached`+Row) %>%
     bind_rows((.) %>% 
                 group_by(Year) %>% 
-                summarise_at(vars(-Municipality) ,sum,na.rm=TRUE) %>% 
+                summarise_at(vars(-Municipality,-Year) ,sum,na.rm=TRUE) %>% 
                 mutate(Municipality="Metro Vancouver") %>%
                 ungroup) %>%
     mutate(Municipality=muni_lookup[Municipality] %>% as.character) %>%
@@ -384,7 +384,7 @@ completions= bind_rows(lapply(years,function(year){
   mutate(Year=year) 
 })) %>% prep_series("Completions")
 
-rental_completions= bind_rows(lapply(years,function(year){
+  rental_completions= bind_rows(lapply(years,function(year){
   get_cmhc(cmhc_snapshot_params(table_id = cmhc_table_list["Scss Completions"], 
                                 geography_id = cmhc_geography_list["Vancouver"],
                                 month=NA,year=year,frequency="Annual",
