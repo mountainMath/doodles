@@ -1,0 +1,450 @@
+---
+title: High-value homes
+author: Jens von Bergmann
+date: '2019-01-09'
+slug: high-value-homes
+categories:
+  - cancensus
+  - Vancouver
+  - CANSIM
+tags: []
+description: "Who lives in Metro Vancouver's high-value homes?"
+featured: 'shelter-cost-mortgage-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2019-01-09-high-value-homes_files/figure-html/shelter-cost-mortgage-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2019-01-09-high-value-homes_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 8
+)
+library(cancensusHelpers)
+library(cansim)
+library(tidyverse)
+
+sqlite_file <- file.path(getOption("custom_data_path"),"Movers1Xtab.sqlite")
+table_name="MoversData"
+
+base_fields <- c("Mob Status_PHM", "Age group (PHM)", "Household type", "HH Tenure", "Shelter-cost", "CondoStat/Type", "HH Income group")
+
+my_theme <- list(
+  theme_light(),
+  labs(caption="MountainMath, StatCan 2016 Census custom tabulation")
+)
+
+con <- DBI::dbConnect(RSQLite::SQLite(), dbname=sqlite_file)
+
+```
+
+```{r}
+fields <- DBI::dbListFields(con,table_name)
+
+where_string="GEO='Metro Vancouver'"
+
+household_types <-get_unique_values_for_field(con,table_name,"Household type",where_string)
+income_groups <- get_unique_values_for_field(con,table_name,"HH Income group",where_string)
+age_groups <- get_unique_values_for_field(con,table_name,"Age group (PHM)",where_string)
+mobility_groups <- get_unique_values_for_field(con,table_name,"Mob Status_PHM",where_string)
+shelter_groups <- get_unique_values_for_field(con,table_name,"Shelter-cost",where_string)
+dwelling_types <- get_unique_values_for_field(con,table_name,"CondoStat/Type",where_string)
+tenure_types <- get_unique_values_for_field(con,table_name,"HH Tenure",where_string)
+mobility_types <- get_unique_values_for_field(con,table_name,"Mob Status_PHM",where_string)
+geographies <- get_unique_values_for_field(con,table_name,"GEO")
+
+value_fields <- c(
+  "Total owner households by estimated value of dwellings",
+  "$2,500,000 and over")
+
+process_data <- function(data){
+  data %>%
+    as.tibble %>%
+    rename(Total=`Total owner households by estimated value of dwellings`,
+           Value=`$2,500,000 and over`) %>%
+    mutate(Value=as.numeric(Value),
+           Total=as.numeric(Total))
+}
+
+select_string <-function(fields){
+  fields %>% map(function(d)paste0("`",d,"`")) %>% unlist %>% paste0(collapse=", ")
+}
+
+```
+
+High-value homes frequently make the news in Vancouver, most recently in the wake of the [extra school tax for homes valued over $3M](https://doodles.mountainmath.ca/blog/2018/02/28/extra-school-tax/). The province will have looked at the data before introducing the legislation, but none of this seems to have filtered out to the general public. So maybe there is a need to take a closer look using Census data.
+
+The census is a couple of years old now, and things have changed a bit since then. Nonetheless, it should give a basic overview of who lives in high-value homes. Throughout we will only look at owner-occupied homes and ignore investors that don't live in their homes.
+
+Dwelling values in the census are self-reported. That introduces some noise, in particular it is not clear how owners estimate their dwelling value. Some may look at market conditions at the time of the census, especially if they just bought the place. Others will rely on property assessments, which were one year out of date at the time of the census. And that year saw [spectacular gains](https://doodles.mountainmath.ca/blog/2017/01/18/bumper-year-for-thumb-twiddlers/).
+
+With that in mind, we call a home **high value** if it's self-reported value in the 2016 census was **at least $2.5M**. To better zoom in on these homes, and to filter by metrics we are interested in, we are employing a custom tabulation. Unfortunately, we are not at liberty to share the raw data, which means this post is not reproducible without obtaining a similar custom tabulation from Statistics Canada. But the [code is available](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-01-09-high-value-homes.Rmarkdown) as always, which contains all the information needed on what variables the custom tabulation contains. Hopefully we will be able to share the underlying data at a later point.
+
+To get started, let's take an inventory of high-value homes in Metro Vancouver.
+
+
+```{r}
+variables <- c(value_fields)
+
+where_string <- "`Mob Status_PHM`='Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)' and `HH Tenure`='Owned' and `Household type`='Total - household type' and `Shelter-cost`='Total - Shelter-cost-to-income ratio' and `CondoStat/Type`='Total - Condominium status and structural type of dwelling' and `HH Income group`='Total - Household income' and `Age group (PHM)`='Total - age groups'"
+
+data <- DBI::dbGetQuery(con, paste0("SELECT GEO, ",select_string(variables)," FROM MoversData WHERE ",where_string)) %>%
+  process_data 
+
+geos <- top_n(data,7,Value) %>% arrange(-Value) %>% pull(GEO)
+
+process_geos <- function(data){
+  data %>% filter(GEO %in% geos, GEO!="Metro Vancouver") %>%
+    bind_rows(data %>% 
+    filter(GEO == "Metro Vancouver") %>% 
+    rename(MetroTotal=Total,MetroValue=Value) %>%
+      mutate(test="1") %>%
+    left_join(data %>% 
+                filter(GEO %in% geos, GEO!="Metro Vancouver") %>% 
+                select(-GEO) %>% 
+                group_by_at(vars(-Value,-Total)) %>%
+                summarize_all(sum,na.rm=TRUE) %>% mutate(test="1") %>%
+                rename(RestTotal=Total,RestValue=Value)) %>%
+      select(-test) %>%
+    mutate(Value=pmax(0,MetroValue-RestValue),
+           Total=pmax(0,MetroTotal-RestTotal)) %>%
+    select(-MetroTotal,-MetroValue,-RestValue,-RestTotal) %>%
+    mutate(GEO="Rest of Metro Vancouver")) %>%
+    mutate(GEO=factor(GEO,levels=rev(c(setdiff(geos,"Metro Vancouver"),"Rest of Metro Vancouver"))))
+}
+
+
+ggplot(process_geos(data),aes(x=reorder(GEO,Value),y=Value)) +
+  geom_bar(stat="identity",fill='steelblue') +
+  coord_flip() +
+  scale_y_continuous(labels=scales::comma) +
+  my_theme +
+  labs(title="Metro Vancouver high-value owner-occupied homes",x="",y="")
+```
+
+As a sanity-check the number of self-reported owner-occupied high-value homes in the City of Vancouver in the 2016 Census roughly matches the number of homes above $3M in the City of Vancouver [based on July 2017 assessed value](https://doodles.mountainmath.ca/blog/2018/02/28/extra-school-tax/). Which means that our $2.5M cutoff we are using is likely a bit too low as we should account for some homes being empty or rented out. But we aren't off by much.
+
+Some of the grouping of municipalities is due to the way the custom tabulation was done, for this particular purpose it would probably be better to treat West Vancouver and Electoral A separately instead of mixing them with other municipalities. In particular the grouping of Electoral A with North Vancouver is unfortunate. The bulk of the area of Electoral A is indeed on the North Shore, but very few people live there and the vast majority of the population lives in the UEL and UNA near UBC. Grouping into the "Rest of Metro Vancouver" was informed by trying to avoid running into problems later on when slicing the data further.
+
+For this we are focused entirely on owner households, and it is helpful to also understand what proportions of owner-occupied homes are "high-value".
+
+```{r}
+plot_data <- data %>% process_geos
+ggplot(plot_data,aes(x=reorder(GEO,Value),y=Value/Total)) +
+  geom_bar(stat="identity",fill='steelblue') +
+  coord_flip() +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  labs(title="Metro Vancouver high-value owner-occupied homes",x="",y="")
+
+```
+
+West Vancouver stands out, but The City of Vancouver also has `r scales::percent(plot_data %>% filter(GEO=="City of Vancouver") %>% mutate(Share=Value/Total) %>% pull(Share))` of owner-occupied homes that are high-value.
+
+## Types of homes
+```{r}
+variables <- c(value_fields,"CondoStat/Type")
+
+included_dwelling_types <- c(
+"Part of a condominium, single detached",
+"Part of a condominium, apartment",
+"Part of a condominium, other multiple dwelling",
+"Part of a condominium, movable dweling",
+"Not part of a condominium, Single detached",
+"Not part of a condominium, apartment",
+"Not part of a condominium, other multiple dwelling",
+"Not part of a condominium, movable dwelling")
+
+
+where_string <- paste0("`Mob Status_PHM`='Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)' and `HH Tenure`='Owned' and `Household type`='Total - household type' and `Shelter-cost`='Total - Shelter-cost-to-income ratio' and `CondoStat/Type` in (",included_dwelling_types %>% map(function(d)paste0("'",d,"'")) %>% unlist %>% paste0(collapse=", "),") and `HH Income group`='Total - Household income' and `Age group (PHM)`='Total - age groups'")
+
+data_dwelling <- DBI::dbGetQuery(con, paste0("SELECT GEO, ",select_string(variables)," FROM MoversData WHERE ",where_string)) %>%
+  process_data %>%
+  process_geos
+
+ggplot(data_dwelling,aes(x=GEO,y=Value,fill=`CondoStat/Type`)) +
+  geom_bar(stat="identity",position="fill") +
+  coord_flip() +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  scale_fill_brewer(palette="Set3") +
+  theme(legend.position = 'bottom') +
+  guides(fill=guide_legend(ncol=2,byrow=TRUE)) +
+  labs(title="Metro Vancouver high-value owner-occupied homes",x="",y="",fill="Dwelling type")
+```
+
+As expected, the majority of high-value homes are single-family. Some condos also fall into this category (including land strata), but the fairly large portion of non-condo apartments is surprising on first view, the data counts `r scales::comma(sum(data_dwelling$Value[data_dwelling[['CondoStat/Type']]=='Not part of a condominium, apartment']))` of these. To understand this we need to unravel the definition of "apartment" used here. This category is the sum of three census categories, Apartment with five or more storeys, Apartment with fewer than five storeys, and Apartment or flat in a duplex. The latter category is essentially units in a suited single family home, so these are owner-occupiers in homes that the census has identified as having a suite. (It does not mean that the suite is rented out, we know that [suites are the dwelling types most likely to show up as "empty" in the census](https://doodles.mountainmath.ca/blog/2018/01/25/empty-suites/).)
+
+## Mortgage
+Next we look at how many of these homes carry a mortgage or require other regular payments like interest-only payments that are mandated on on many HELOCs.
+
+```{r}
+variables <- c(value_fields,"HH Tenure")
+
+where_string <- "`Mob Status_PHM`='Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)' and `HH Tenure` in ('With mortgage', 'Without mortgage') and `Household type`='Total - household type' and `Shelter-cost`='Total - Shelter-cost-to-income ratio' and `CondoStat/Type`='Total - Condominium status and structural type of dwelling' and `HH Income group`='Total - Household income' and `Age group (PHM)`='Total - age groups'"
+
+data_tenure <- DBI::dbGetQuery(con, paste0("SELECT GEO, ",select_string(variables)," FROM MoversData WHERE ",where_string)) %>%
+  process_data %>%
+  process_geos %>%
+  mutate(`HH Tenure`=factor(`HH Tenure`,levels=rev(tenure_types)))
+
+ggplot(data_tenure,aes(x=GEO,y=Value,fill=`HH Tenure`)) +
+  geom_bar(stat="identity",position="fill") +
+  coord_flip() +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  scale_fill_brewer(palette="Set2") +
+  labs(title="Metro Vancouver high-value owner-occupied homes",x="",y="",fill="")
+```
+
+This shows that roughly half of high-value homes carry a mortgage, slightly more in Richmond.
+
+## Shelter-cost
+Being mortgage-free does not necessarily means people are not stretched for shelter cost payments, but it certainly helps.
+
+```{r shelter-cost-mortgage}
+variables <- c(value_fields,"Shelter-cost","HH Tenure")
+
+where_string <- "`Mob Status_PHM`='Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)' and `HH Tenure` in ('With mortgage', 'Without mortgage')  and `Household type`='Total - household type' and `Shelter-cost`!='Total - Shelter-cost-to-income ratio' and `CondoStat/Type`='Total - Condominium status and structural type of dwelling' and `HH Income group`='Total - Household income' and `Age group (PHM)`='Total - age groups'"
+
+data_sc <- DBI::dbGetQuery(con, paste0("SELECT GEO, ",select_string(variables)," FROM MoversData WHERE ",where_string)) %>%
+  process_data %>%
+  process_geos %>%
+  mutate(`HH Tenure`=factor(`HH Tenure`,levels=rev(tenure_types))) %>%
+  mutate(`Shelter-cost`=factor(`Shelter-cost`,levels=rev(shelter_groups))) %>%
+  droplevels
+
+shelter_colors <- set_names(RColorBrewer::brewer.pal(length(levels(data_sc$`Shelter-cost`)),"Reds"),rev(levels(data_sc$`Shelter-cost`)))
+
+ggplot(filter(data_sc,GEO!="Metro Vancouver"),aes(x=GEO,y=Value,fill=`Shelter-cost`)) +
+  geom_bar(stat="identity",position="fill") +
+  coord_flip() +
+  facet_wrap("`HH Tenure`") +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  scale_fill_manual(values = shelter_colors) +
+  labs(title="Metro Vancouver high-value owner-occupied homes",x="",y="",fill="")
+```
+
+Indeed, the vast majority of owners without a mortgage can cover their shelter costs very comfortably. The same is not the case for households with a mortgage, and Richmond stands out with over half of households in mortgaged high-value homes spending over half of their income on shelter costs.
+
+## Age of primary household maintainer
+
+```{r}
+variables <- c(value_fields,"Age group (PHM)","HH Tenure")
+
+where_string <- "`Mob Status_PHM`='Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)' and `HH Tenure` in ('With mortgage', 'Without mortgage')  and `Household type`='Total - household type' and `Shelter-cost`='Total - Shelter-cost-to-income ratio' and `CondoStat/Type`='Total - Condominium status and structural type of dwelling' and `HH Income group`='Total - Household income' and `Age group (PHM)`!='Total - age groups'"
+
+data_age <- DBI::dbGetQuery(con, paste0("SELECT GEO, ",select_string(variables)," FROM MoversData WHERE ",where_string)) %>%
+  process_data %>%
+  process_geos %>%
+  mutate(`HH Tenure`=factor(`HH Tenure`,levels=rev(tenure_types))) %>%
+  mutate(`Age group (PHM)`=factor(`Age group (PHM)`,levels=rev(age_groups))) %>%
+  droplevels
+
+ggplot(filter(data_age,GEO!="Metro Vancouver"),aes(x=GEO,y=Value,fill=`Age group (PHM)`)) +
+  geom_bar(stat="identity",position="fill") +
+  coord_flip() +
+  facet_wrap("`HH Tenure`") +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  scale_fill_viridis_d(direction = -1) +
+  labs(title="Metro Vancouver high-value owner-occupied homes",x="",y="s",fill="Age of PHM")
+```
+
+```{r}
+data_senior <- data_age %>% filter(`Age group (PHM)` %in% c("75 years and over","65 to 74 years")) %>% group_by(`HH Tenure`) %>% summarize(Value=sum(Value)) %>% spread(key="HH Tenure",value=Value) %>% mutate(Share=`With mortgage`/(`With mortgage`+`Without mortgage`)) %>% pull(Share)
+```
+Older owners are much more likely to have no mortgage, although `r scales::percent(data_senior)` of seniors do carry a mortgage or HELOC with regular payments.
+
+## Household Type
+To understand better how these high-value homes are used we look at their household type.
+
+
+```{r}
+variables <- c(value_fields,"Household type")
+
+where_string <- "`Mob Status_PHM`='Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)' and `HH Tenure`='Owned' and `Household type`!='Total - household type' and `Shelter-cost`='Total - Shelter-cost-to-income ratio' and `CondoStat/Type`='Total - Condominium status and structural type of dwelling' and `HH Income group`='Total - Household income' and `Age group (PHM)`='Total - age groups'"
+
+data_hh <- DBI::dbGetQuery(con, paste0("SELECT GEO, ",select_string(variables)," FROM MoversData WHERE ",where_string)) %>%
+  process_data %>%
+  process_geos %>%
+  mutate(`Household type`=factor(`Household type`,levels=rev(household_types)))
+
+ggplot(filter(data_hh,GEO!="Metro Vancouver"),aes(x=GEO,y=Value,fill=`Household type`)) +
+  geom_bar(stat="identity",position="fill") +
+  coord_flip() +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  scale_fill_brewer(palette="Set1") +
+  labs(title="Metro Vancouver high-value owner-occupied homes",x="",y="",fill="")
+```
+```{r}
+data_hh_aggregate <- data_hh %>% group_by(`Household type`) %>% select(`Household type`,Value,Total) %>% summarize_all(sum) %>% mutate(Share=Value/sum(Value),totalShare=Total/sum(Total))
+
+children_share <- filter(data_hh_aggregate, `Household type`%in% c("Lone-parent family","Couple with children"))$Share %>% sum
+complex_share <- filter(data_hh_aggregate, `Household type`%in% c("Other types of households"))$Share %>% sum
+```
+
+`r scales::percent(children_share)` of these are occupied by families with children, with another `r scales::percent(complex_share)` complex households including multi-generational households. When looking at all owner-occupied homes we see a higher portion of one-person households, but the rest of the makeup is similar.
+
+
+## Household income
+We have already seen in the income-to-shelter-cost ratios that income must vary considerably. People in a $3M home with a $2M mortgage would look toward monthly mortgage payments around $10k. Add to that property taxes and utilities, we should expect a household income reaching $500k to stay below the fairly comfortable 30% of income on housing cutoff. Unfortunately our data only has $200k as the top bracket cutoff.
+
+```{r}
+variables <- c(value_fields,"HH Income group","HH Tenure")
+
+where_string <- "`Mob Status_PHM`='Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)' and `HH Tenure` in ('With mortgage', 'Without mortgage') and `Household type`='Total - household type' and `Shelter-cost`='Total - Shelter-cost-to-income ratio' and `CondoStat/Type`='Total - Condominium status and structural type of dwelling' and `HH Income group`!='Total - Household income' and `Age group (PHM)`='Total - age groups'"
+
+data_income <- DBI::dbGetQuery(con, paste0("SELECT GEO, ",select_string(variables)," FROM MoversData WHERE ",where_string)) %>%
+  process_data %>%
+  process_geos %>%
+  mutate(`HH Income group`=factor(`HH Income group`,levels=rev(income_groups)))
+
+ggplot(data_income,aes(x=GEO,y=Value,fill=`HH Income group`)) +
+  geom_bar(stat="identity",position="fill") +
+  coord_flip() +
+  facet_wrap("`HH Tenure`") +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  scale_fill_viridis_d(option="inferno",direction = -1) +
+  labs(title="Metro Vancouver high-value owner-occupied homes",x="",y="",fill="")
+```
+
+```{r}
+top_income <- data_income %>% 
+  mutate(Top=`HH Income group` %in% levels(.data$`HH Income group`)[1:4]) %>% 
+  group_by(Top) %>% 
+  summarize(Value=sum(Value)) %>%
+  mutate(Share=Value/sum(Value)) %>% 
+  filter(Top) %>% pull(Share)
+
+low_income <- data_income %>% 
+  mutate(Top=`HH Income group`=="Less than $25,000") %>% 
+  group_by(Top) %>% 
+  summarize(Value=sum(Value)) %>%
+  mutate(Share=Value/sum(Value)) %>% 
+  filter(Top) %>% pull(Share)
+```
+
+Owners with a mortgage have generally higher incomes, but not by much. And curiously this tendancy is reversed in Richmond, where owners with a mortgage tend to have lower household incomes.
+
+Overall `r scales::percent(top_income)` of high-value owner-occupiers have household income over $100k, and `r scales::percent(low_income)` have less than $25k, with Richmond high-value owner-occupiers leaning heavier on the low side when it comes to income.
+
+At this point we should fold in age groups of the primary household maintainer.
+
+
+```{r}
+variables <- c(value_fields,"HH Income group","Age group (PHM)")
+
+where_string <- "`Mob Status_PHM`='Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)' and `HH Tenure`='Owned' and `Household type`='Total - household type' and `Shelter-cost`='Total - Shelter-cost-to-income ratio' and `CondoStat/Type`='Total - Condominium status and structural type of dwelling' and `HH Income group`!='Total - Household income' and `Age group (PHM)`!='Total - age groups' and GEO='Metro Vancouver'"
+
+data_income_age <- DBI::dbGetQuery(con, paste0("SELECT ",select_string(variables)," FROM MoversData WHERE ",where_string)) %>%
+  process_data %>%
+  mutate(`Age group (PHM)`=factor(`Age group (PHM)`,levels=(age_groups))) %>%
+  mutate(`HH Income group`=factor(`HH Income group`,levels=rev(income_groups))) %>%
+  group_by(`Age group (PHM)`) %>%
+  filter(sum(Value)>500)
+
+ggplot(data_income_age,aes(x=`Age group (PHM)`,y=Value,fill=`HH Income group`)) +
+  geom_bar(stat="identity",position="fill") +
+  coord_flip() +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  scale_fill_viridis_d(option="inferno",direction = -1) +
+  labs(title="Metro Vancouver high-value owner-occupied homes",x="",y="",fill="")
+```
+```{r}
+cap_gains <- get_cansim("11-10-0048") %>%
+  normalize_cansim_values %>%
+  filter(grepl("Vancouver",GEO)) %>%
+  filter(`Characteristics of taxfilers with capital gains`=="Total capital gains of taxfilers with capital gains") %>%
+  filter(REF_DATE=="2016") %>%
+  pull(VALUE)
+```
+
+We dropped the under 25 year old group as it was not large enough to give robust results. The top income bracket is the largest one in all age groups except for 25 to 34 year olds, where the bottom bracket is the largest. At the same time, all age groups have fairly large segments of income that is low in comparison to the high value of the home. Some of that may be explained by income and shelter data being offset by a year, by [income volatility](https://td-capa.s3.amazonaws.com/prod/default/0001/02/a5a362538f70b81df4ae6ea6d66e8171cbd444ca.pdf) and by income sources like capital gains that don't show up in census income numbers. Metro Vancouver residents declared `r scales::dollar(cap_gains/1000000000)` billion in capital gains income in 2016. This interpretation jives with [data from the 2011 NHS showing areas with high value homes registering high captial gains income](https://censusmapper.ca/maps/480#11/49.2387/-123.1444), but these possibilities are unlikely to explain all of the low-income households.
+
+## Extra School Tax
+When looking specifically at the impact of the Extra School Tax, we have often heard concerns about seniors, in particular seniors that might have a mortgage or HELOC against their home and that are already stretched for shelter costs. So let's consider seniors with a mortgage that pay 30% or more of their income on shelter before the extra school tax.
+
+```{r}
+variables <- c(value_fields,"Shelter-cost","Age group (PHM)","HH Tenure")
+
+where_string <- "`Mob Status_PHM`='Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)' and `HH Tenure` in ('With mortgage', 'Without mortgage') and `Household type`='Total - household type' and `Shelter-cost` in ('30% to less than 50%','50% to less than 100%','100% or more') and `CondoStat/Type`='Total - Condominium status and structural type of dwelling' and `HH Income group`='Total - Household income' and `Age group (PHM)` in ('65 to 74 years','75 years and over') and GEO='Metro Vancouver'"
+
+data_sc2 <- DBI::dbGetQuery(con, paste0("SELECT ",select_string(variables)," FROM MoversData WHERE ",where_string)) %>%
+  process_data %>%
+  mutate(`Age group (PHM)`=factor(`Age group (PHM)`,levels=(age_groups))) %>%
+  mutate(`Shelter-cost`=factor(`Shelter-cost`,levels=rev(shelter_groups))) %>%
+  filter(`HH Tenure`=="With mortgage")
+
+ggplot(data_sc2,aes(x=`Age group (PHM)`,y=Value,fill=`Shelter-cost`)) +
+  geom_bar(stat="identity",position="stack") +
+  coord_flip() +
+  scale_y_continuous(labels=scales::comma) +
+  my_theme +
+  scale_fill_manual(values = shelter_colors) +
+  labs(title="Metro Vancouver high-value owner-occupied homes with mortgage",
+       x="Age of primary household maintainer",y="",fill="Shelter cost to income")
+```
+```{r}
+seniors <- data_age %>% filter(`Age group (PHM)` %in% c('65 to 74 years','75 years and over'))
+
+variables <- c("Total private households by estimated value of dwellings (including not applicable)","Shelter-cost","Age group (PHM)")
+
+where_string <- "`Mob Status_PHM`='Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)' and `HH Tenure`='Rented' and `Household type`='Total - household type' and `Shelter-cost` in ('30% to less than 50%','50% to less than 100%','100% or more') and `CondoStat/Type`='Total - Condominium status and structural type of dwelling' and `HH Income group`='Total - Household income' and `Age group (PHM)` in ('65 to 74 years','75 years and over')"
+
+data_senior_renter <- DBI::dbGetQuery(con, paste0("SELECT GEO, ",select_string(variables)," FROM MoversData WHERE ",where_string)) %>%
+  rename(Value="Total private households by estimated value of dwellings (including not applicable)") %>%
+  mutate(Value=as.numeric(Value),Total=as.numeric(Value)) %>%
+  process_geos %>%
+  mutate(`Age group (PHM)`=factor(`Age group (PHM)`,levels=(age_groups))) %>%
+  mutate(`Shelter-cost`=factor(`Shelter-cost`,levels=rev(shelter_groups))) %>%
+  group_by(GEO,`Shelter-cost`) %>%
+  summarize(Value=sum(Value))
+
+
+```
+
+In total we have `r scales::comma(sum(data_sc2$Value))`, seniors in high-value homes in Metro Vancouver that are shelter-cost burdened. That's `r scales::percent(sum(data_sc2$Value)/sum(seniors$Value))` of all senior owner-occupiers in high-value homes and  `r scales::percent(sum(data_sc2$Value)/sum(data$Value))` of all high-value homes. Those proportions are small, but not trivial. These seniors might have to make use of the [property tax deferral](https://www2.gov.bc.ca/gov/content/taxes/property-taxes/annual-property-tax/defer-taxes) program.
+
+In this context it is good to keep in mind that there are `r scales::comma(sum(data_senior_renter$Value))` seniors in Metro Vancouver that are renting and spending more than 50% (not just more than 30%) of income on shelter, that's `r round(sum(data_senior_renter$Value)/sum(data_sc2$Value))` times the number of seniors owning high value housing with a mortgage that pay 30% or more of income on shelter. And they have no option to defer rent increases or sell and cash out of their home.
+
+
+```{r eval=FALSE, include=FALSE}
+variables <- c(value_fields,"Shelter-cost","Age group (PHM)")
+
+where_string <- "`Mob Status_PHM`='Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)' and `HH Tenure`='With mortgage' and `Household type`='Total - household type' and `Shelter-cost` in ('30% to less than 50%','50% to less than 100%','100% or more') and `CondoStat/Type`='Total - Condominium status and structural type of dwelling' and `HH Income group`='Total - Household income' and `Age group (PHM)` in ('65 to 74 years','75 years and over')"
+
+data_sc3 <- DBI::dbGetQuery(con, paste0("SELECT GEO, ",select_string(variables)," FROM MoversData WHERE ",where_string)) %>%
+  process_data %>%
+  process_geos %>%
+  mutate(`Age group (PHM)`=factor(`Age group (PHM)`,levels=(age_groups))) %>%
+  mutate(`Shelter-cost`=factor(`Shelter-cost`,levels=rev(shelter_groups))) %>%
+  group_by(GEO,`Shelter-cost`) %>%
+  summarize(Value=sum(Value))
+
+ggplot(data_sc3,aes(x=`GEO`,y=Value,fill=`Shelter-cost`)) +
+  geom_bar(stat="identity",position="stack") +
+  coord_flip() +
+  scale_y_continuous(labels=scales::comma) +
+  my_theme +
+  scale_fill_manual(values = shelter_colors) +
+  labs(title="Metro Vancouver high-value owner-occupied homes with mortgage",
+       x="Age of primary household maintainer",y="",fill="Shelter cost to income")
+```
+
+That rounds off the overview of high-value owner-occupiers. As mentioned at the beginning, unfortunately I am not able to share the data for this post. The [code is available](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-01-09-high-value-homes.Rmarkdown) as usual in case people have question on details or want more information on the variables used. Hopefully we will find time to take a look into other aspects of the data sometime in the near future.
+
+```{r}
+DBI::dbDisconnect(con)
+```
+
+
