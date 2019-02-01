@@ -19,6 +19,8 @@ type: "post"
 
 A couple of days ago the New York Times published an opinion documenting several aspects of how [US Millenials are getting fleeced](https://www.nytimes.com/2019/01/27/opinion/buttigieg-2020-millennials.html?action=click&module=Opinion&pgtype=Homepage). [Generation Squeeze](https://www.gensqueeze.ca) has been doing a good job of highlighting what has changed for millennials compared to people their age in the past. The NYT article had some interesting data, and two charts in particular drew my interest, the change in median income by age group and the change in median net worth. So I decided to replicate them with Canadian data to see how they compare.
 
+{{<tweet 1089708537314529280>}}
+
 Straight-up comparisons across countries are always tricky, but since we are mostly looking at changes, issues due to slight differences in methods tend to divide out.
 
 

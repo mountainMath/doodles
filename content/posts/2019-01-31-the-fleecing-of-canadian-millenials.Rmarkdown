@@ -29,6 +29,8 @@ library(cansim)
 
 A couple of days ago the New York Times published an opinion documenting several aspects of how [US Millenials are getting fleeced](https://www.nytimes.com/2019/01/27/opinion/buttigieg-2020-millennials.html?action=click&module=Opinion&pgtype=Homepage). [Generation Squeeze](https://www.gensqueeze.ca) has been doing a good job of highlighting what has changed for millennials compared to people their age in the past. The NYT article had some interesting data, and two charts in particular drew my interest, the change in median income by age group and the change in median net worth. So I decided to replicate them with Canadian data to see how they compare.
 
+{{<tweet 1089708537314529280>}}
+
 Straight-up comparisons across countries are always tricky, but since we are mostly looking at changes, issues due to slight differences in methods tend to divide out.
 
 
@@ -148,7 +150,7 @@ ggplot(pd,aes(x=Date,y=Value,color=`Age group`)) +
   ggrepel::geom_text_repel(data=ed,aes(label=`Age group`),hjust=-0.1,guide=FALSE,color='black',direction="y",size=3.5) +
   scale_y_continuous(labels=scales::dollar) +
   facet_wrap("`Economic family type`") +
-  labs(title="Net worth by age group in Canada",
+  labs(title="Median net worth by age group in Canada",
        x="",y="Constant 2016 dollars",
        caption="MontainMath, StatCan Table 11-10-0239")
 
@@ -167,8 +169,8 @@ ggplot(pd,aes(x=Date,y=index,color=`Age group`)) +
   ggrepel::geom_text_repel(data=ed,aes(label=`Age group`),hjust=-0.1,guide=FALSE,color='black',direction="y",size=3.5) +
   facet_wrap("`Economic family type`") +
   scale_y_continuous(labels=scales::percent) +
-  labs(title="Net worth by age group in Canada",
-       x="",y="Change in inflation-adjusted income",
+  labs(title="Median net worth by age group in Canada",
+       x="",y="Change in inflation-adjusted net worth",
        caption="MontainMath, StatCan Table 11-10-0239")
 ```
 
@@ -196,7 +198,7 @@ ggplot(pd,aes(x=Date,y=VALUE,color=`Age group`)) +
   expand_limits(x=as.Date("2030-01-01")) +
   ggrepel::geom_text_repel(data=ed,aes(label=`Age group`),hjust=-0.1,guide=FALSE,color='black',direction="y",size=3) +
   scale_y_continuous(labels=scales::dollar) +
-  labs(title="Median income  by age group in Canadian CMAs",
+  labs(title="Median income by age group in Canadian CMAs",
        x="",y="Constant 2016 dollars",
        caption="MontainMath, StatCan Table 11-10-0239")
 ```
@@ -239,7 +241,7 @@ ggplot(pd,aes(x=Date,y=Value,color=`Age group`)) +
   ggrepel::geom_text_repel(data=ed,aes(label=`Age group`),hjust=-0.1,guide=FALSE,color='black',direction="y",size=3.5) +
   scale_y_continuous(labels=scales::dollar) +
   facet_wrap("GEO") +
-  labs(title="Net worth by age group in Canadian CMAs",
+  labs(title="Median net worth by age group in Canadian CMAs",
        x="",y="Constant 2016 dollars",
        caption="MontainMath, StatCan Table 11-10-0239")
 
@@ -258,8 +260,8 @@ ggplot(pd,aes(x=Date,y=index,color=`Age group`)) +
   ggrepel::geom_text_repel(data=ed,aes(label=`Age group`),hjust=-0.1,guide=FALSE,color='black',direction="y",size=3.5) +
   facet_wrap("GEO") +
   scale_y_continuous(labels=scales::percent) +
-  labs(title="Net worth by age group in Canadian CMAs",
-       x="",y="Change in inflation-adjusted income",
+  labs(title="Median net worth by age group in Canadian CMAs",
+       x="",y="Change in inflation-adjusted net worth",
        caption="MontainMath, StatCan Table 11-10-0239")
 
 ```
