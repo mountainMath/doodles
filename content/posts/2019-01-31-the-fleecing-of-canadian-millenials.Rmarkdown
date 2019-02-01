@@ -1,0 +1,271 @@
+---
+title: The Fleecing of Canadian Millenials
+author: Jens von Bergmann
+date: '2019-01-31'
+slug: the-fleecing-of-canadian-millenials
+categories:
+  - CANSIM
+tags: []
+description: "Income and net worth by age group in Canada."
+featured: 'indexed_income-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2019-01-31-the-fleecing-of-canadian-millenials_files/figure-html/indexed_income-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2019-01-31-the-fleecing-of-canadian-millenials_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 8,
+	cache = TRUE
+)
+library(tidyverse)
+library(cansim)
+```
+
+A couple of days ago the New York Times published an opinion documenting several aspects of how [US Millenials are getting fleeced](https://www.nytimes.com/2019/01/27/opinion/buttigieg-2020-millennials.html?action=click&module=Opinion&pgtype=Homepage). [Generation Squeeze](https://www.gensqueeze.ca) has been doing a good job of highlighting what has changed for millennials compared to people their age in the past. The NYT article had some interesting data, and two charts in particular drew my interest, the change in median income by age group and the change in median net worth. So I decided to replicate them with Canadian data to see how they compare.
+
+Straight-up comparisons across countries are always tricky, but since we are mostly looking at changes, issues due to slight differences in methods tend to divide out.
+
+
+## Income
+For income we turn to individual income of Canadians by age groups.
+
+```{r}
+income_data <- get_cansim("11-10-0239") %>%
+  normalize_cansim_values 
+income_age_groups <- c("16 to 24 years",    "25 to 34 years" ,   "35 to 44 years" ,   "45 to 54 years" ,"55 to 64 years",    "65 years and over")
+income_plot_data <- income_data %>%
+  filter(Sex=="Both sexes",
+         Statistics=="Median income (excluding zeros)",
+         `Income source`=="Total income",
+         `Age group` %in% income_age_groups) %>%
+  mutate(`Age group`=factor(`Age group`,levels=income_age_groups)) %>%
+  group_by(GEO,`Age group`) %>%
+  left_join((.) %>% filter(Date==min(Date)) %>% select(VALUE) %>% rename(first_value=VALUE)) %>%
+  mutate(index=VALUE/first_value-1)
+```
+
+
+```{r}
+pd <- income_plot_data %>% filter(GEO=="Canada") 
+ed <- pd %>% filter(Date==max(Date))
+
+ggplot(pd,aes(x=Date,y=VALUE,color=`Age group`)) +
+  geom_line() +
+  geom_point(data=ed) +
+  scale_color_brewer(palette="Dark2",guide=FALSE) +
+  theme_light() +
+  expand_limits(x=as.Date("2025-01-01")) +
+  ggrepel::geom_text_repel(data=ed,aes(label=`Age group`),hjust=-0.1,guide=FALSE,color='black',direction="y",size=4) +
+  scale_y_continuous(labels=scales::dollar) +
+  labs(title="Median income by age group in Canada",
+       x="",y="Constant 2016 dollars",
+       caption="MontainMath, StatCan Table 11-10-0239")
+```
+
+To compare with US data, we index it at the start of our time series in `r min(income_plot_data$REF_DATE)`.
+
+```{r indexed_income}
+ggplot(pd,aes(x=Date,y=index,color=`Age group`)) +
+  geom_line() +
+  geom_point(data=ed) +
+  scale_color_brewer(palette="Dark2",guide=FALSE) +
+  theme_light() +
+  expand_limits(x=as.Date("2025-01-01")) +
+  geom_text(data=ed,aes(label=`Age group`),hjust=-0.1,guide=FALSE,color='black') +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Median income by age group in Canada",
+       x="",y="Change in inflation-adjusted income",
+       caption="MontainMath, StatCan Table 11-10-0239")
+```
+
+It is quite striking how dramatically the income of seniors has increased. This pattern is also reflected In US data, but is not as pronounced. In US data, the 25 to 34 year old cohort came out even and all older age groups saw an inflation adjusted increase over the start year, whereas in Canada all age cohorts below the age of 45 came out negative. We should note here that indexing time series is sensitive to the start year, and the US data started a couple of years earlier. But this is unlikely to explain much of the discrepancy.
+
+
+## Net wealth
+Next up is net wealth. The only measure of net wealth we have in Canada is the Survey of Financial Securities, and we have only four time points. It is not as robust as our income data, so we have to be a little more careful, especially when indexing the data.
+
+```{r}
+
+inflation <- get_cansim("18-10-0004") %>%
+  normalize_cansim_values() %>% 
+  filter(grepl("Canada",GEO),
+         `Products and product groups`=="All-items") %>%
+  filter(grepl("-05$",REF_DATE)) %>%
+  mutate(Year=strftime(Date,"%Y") %>% as.integer) %>%
+  mutate(CPI=VALUE/filter(.,Year==2016)$VALUE) %>%
+  select(Year,CPI)
+
+age_groups <- c("Under 35 years","35 to 44 years" , "45 to 54 years",   "55 to 64 years" , "65 years and older")
+
+wealth_data <- get_cansim("11-10-0016") %>%
+  normalize_cansim_values() %>%
+  mutate(Year=strftime(Date,"%Y")%>% as.integer) %>%
+  left_join(inflation) %>%
+  filter(`Assets and debts`=="Net Worth (assets less debts)",
+       Statistics=="Median value for those holding asset or debt",
+       `Economic family type`!="Economic families and persons not in an economic family",
+       `Age group` %in% age_groups) %>%
+  mutate(Value=VALUE/CPI) %>%
+  mutate(`Age group`=factor(`Age group`,levels=age_groups)) 
+  
+
+wealth_plot_data <- wealth_data %>%
+  select(GEO,Date,`Age group`,`Confidence intervals`,`Economic family type`,Value) %>%
+  group_by(GEO,Date,`Age group`,`Economic family type`) %>%
+  spread(key="Confidence intervals",value="Value") %>%
+  group_by(GEO,`Age group`,`Economic family type`) %>%
+  rename(Value=Estimate,lower=`Lower bound of a 95% confidence interval`,upper=`Upper bound of a 95% confidence interval`) %>%
+  left_join((.) %>% filter(Date==min(Date)) %>% select(Value) %>% rename(first_value=Value)) %>%
+  mutate(index=Value/first_value-1) %>%
+  mutate(
+    index_lower=index-(upper-Value)/first_value+(Value-lower)/first_value/first_value,
+    index_upper=index+(upper-Value)/first_value+(Value-lower)/first_value/first_value
+         ) %>%
+  mutate(index_lower=ifelse(Date==min(.data$Date),index,index_lower)) %>%
+  mutate(index_upper=ifelse(Date==min(.data$Date),index,index_upper))
+
+```
+
+Again we start out with total net wealth over time. Splitting up net worth of families to individual family members is hard, so we report the net worth by economic family type, where we group by age of the primary household maintainer. Treating economic families and unattached individuals separately avoids bias due to compositional issues.
+
+```{r}
+pd <- wealth_plot_data %>% filter(GEO=="Canada")
+ed <- pd %>% filter(Date==max(pd$Date))
+
+ggplot(pd,aes(x=Date,y=Value,color=`Age group`)) +
+  geom_line() +
+  geom_point(data=ed) +
+  scale_color_brewer(palette="Dark2",guide=FALSE) +
+  theme_light() +
+  geom_ribbon(aes(ymin=lower,ymax=upper),fill="grey",alpha=0.3,size=0) +
+  expand_limits(x=as.Date("2025-01-01")) +
+  ggrepel::geom_text_repel(data=ed,aes(label=`Age group`),hjust=-0.1,guide=FALSE,color='black',direction="y",size=3.5) +
+  scale_y_continuous(labels=scales::dollar) +
+  facet_wrap("`Economic family type`") +
+  labs(title="Net worth by age group in Canada",
+       x="",y="Constant 2016 dollars",
+       caption="MontainMath, StatCan Table 11-10-0239")
+
+```
+
+This suggests that the Canadian net worth picture is decidedly different from the US numbers where net worth declined for all age groups below 55. 
+
+```{r}
+ggplot(pd,aes(x=Date,y=index,color=`Age group`)) +
+  geom_line() +
+  geom_point(data=ed) +
+  scale_color_brewer(palette="Dark2",guide=FALSE) +
+  theme_light() +
+  expand_limits(x=as.Date("2025-01-01")) +
+  geom_ribbon(aes(ymin=index_lower,ymax=index_upper),fill="grey",alpha=0.3,size=0) +
+  ggrepel::geom_text_repel(data=ed,aes(label=`Age group`),hjust=-0.1,guide=FALSE,color='black',direction="y",size=3.5) +
+  facet_wrap("`Economic family type`") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Net worth by age group in Canada",
+       x="",y="Change in inflation-adjusted income",
+       caption="MontainMath, StatCan Table 11-10-0239")
+```
+
+To understand changes over time we move to indexed data, although that leads to quite large confidence intervals. When looking at economic families we see through the board gains in net value. For unattached individuals the best-guess medians only show a decline for the 45 to 54 year range, although the confidence intervals are quite large so that this age group may well come out positive, or other age groups also may show a negative trend.
+
+
+## Vancouver, Toronto, Montreal and Calgary
+We can look for regional variations, picking out the larges four CMAs. 
+```{r}
+cmas <- c("Toronto, Ontario","Vancouver, British Columbia" ,"Montréal, Quebec","Calgary, Alberta")
+```
+
+
+### Income 
+```{r}
+pd <- income_plot_data %>% filter(GEO %in% cmas) 
+ed <- pd %>% filter(Date==max(Date))
+
+ggplot(pd,aes(x=Date,y=VALUE,color=`Age group`)) +
+  geom_line() +
+  geom_point(data=ed) +
+  scale_color_brewer(palette="Dark2",guide=FALSE) +
+  theme_light() +
+  facet_wrap("GEO") +
+  expand_limits(x=as.Date("2030-01-01")) +
+  ggrepel::geom_text_repel(data=ed,aes(label=`Age group`),hjust=-0.1,guide=FALSE,color='black',direction="y",size=3) +
+  scale_y_continuous(labels=scales::dollar) +
+  labs(title="Median income  by age group in Canadian CMAs",
+       x="",y="Constant 2016 dollars",
+       caption="MontainMath, StatCan Table 11-10-0239")
+```
+
+There are some regional variations, but the big picture is similar, confirming that this is largely a Canadian and not a regional story.
+
+```{r}
+ggplot(pd,aes(x=Date,y=index,color=`Age group`)) +
+  geom_line() +
+  geom_point(data=ed) +
+  scale_color_brewer(palette="Dark2",guide=FALSE) +
+  theme_light() +
+  facet_wrap("GEO") +
+  expand_limits(x=as.Date("2030-01-01")) +
+  ggrepel::geom_text_repel(data=ed,aes(label=`Age group`),hjust=-0.1,guide=FALSE,color='black',direction="y",size=3) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Median income by age group in Canadian CMAs",
+       x="",y="Change in inflation-adjusted income",
+       caption="MontainMath, StatCan Table 11-10-0239")
+```
+
+Toronto and Vancouver have negative income growth for all age groups except seniors over our timeframe, Calgary and Montreal manage to squeeze in two more age groups with positive income growth. 
+
+### Wealth
+CMA level data has smaller sample sizes and larger confidence intervals and some suppressed data. So we focus on economic families that have better data, and drop age groups with missing values.
+
+```{r}
+pd <- wealth_plot_data %>% 
+  filter(GEO %in% cmas,`Economic family type`=="Economic families") %>%
+  filter(!is.na(sum(Value)))
+ed <- pd %>% filter(Date==max(pd$Date))
+
+ggplot(pd,aes(x=Date,y=Value,color=`Age group`)) +
+  geom_line() +
+  geom_point(data=ed) +
+  scale_color_brewer(palette="Dark2",guide=FALSE) +
+  theme_light() +
+  geom_ribbon(aes(ymin=lower,ymax=upper),fill="grey",alpha=0.3,size=0) +
+  expand_limits(x=as.Date("2025-01-01")) +
+  ggrepel::geom_text_repel(data=ed,aes(label=`Age group`),hjust=-0.1,guide=FALSE,color='black',direction="y",size=3.5) +
+  scale_y_continuous(labels=scales::dollar) +
+  facet_wrap("GEO") +
+  labs(title="Net worth by age group in Canadian CMAs",
+       x="",y="Constant 2016 dollars",
+       caption="MontainMath, StatCan Table 11-10-0239")
+
+```
+
+
+
+```{r}
+ggplot(pd,aes(x=Date,y=index,color=`Age group`)) +
+  geom_line() +
+  geom_point(data=ed) +
+  scale_color_brewer(palette="Dark2",guide=FALSE) +
+  theme_light() +
+  expand_limits(x=as.Date("2025-01-01")) +
+  geom_ribbon(aes(ymin=index_lower,ymax=index_upper),fill="grey",alpha=0.3,size=0) +
+  ggrepel::geom_text_repel(data=ed,aes(label=`Age group`),hjust=-0.1,guide=FALSE,color='black',direction="y",size=3.5) +
+  facet_wrap("GEO") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Net worth by age group in Canadian CMAs",
+       x="",y="Change in inflation-adjusted income",
+       caption="MontainMath, StatCan Table 11-10-0239")
+
+```
+
+Only Toronto has small enough confidence intervals to be reasonably certain that net worth grew across age groups, but indexed growth for all CMAs is consistently above zero, with the exception of the 55 to 64 year old age group in Calgary. From this we can't conclude that there are significant regional differences in the change of net worsth across these CMAs.
+
+
+## Next steps
+In summary we see some parallels and some differences compared to the US. It would be interesting to dig deeper into these differences, or to pull out different components of net wealth, and treat housing separately. Maybe even treating primary and secondary residences separately. The code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-01-31-the-fleecing-of-canadian-millenials.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
