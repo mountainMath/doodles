@@ -63,6 +63,11 @@ So parties matter, but people vote for candidates and not parties. And no party 
 
 As to be expected, the hierarchical clustering again brings out the parties even though we did not use party affiliation to make this graph. The fact that there was only one vote for mayoral office shows in anti-correlations between all mayoral candidates. The clustering into parties is not perfect, and it is interesting to investigate differences within the party blocks, as well as between candidates that don't follow party lines. Even though the clustering did not place One City next to the COPE-Greens-Vision block we can still see the strong correlation. Some independent candidates also show correlation with that block, in particular Sarah Blyth and Shauna Sylvester and to a weaker extent Adrian Crook, Taqdir Kaur Bhandal, and Wade Grant, who cluster close to One City, but also correlate with the COPE-Greens-Vision block. NPA anti-correlating with everyone else points to lots of full-slate votes with the few votes there are to spare spreading out. Erin Shum seems also correlates with these particular independent candidates, but also with the Coalition Vancouver block but not the COPE-Greens-Vision or One City block that these other independent candidates clustered around.
 
+We can use the data to identify adjacencies of independent candidates with parties.
+
+<img src="/posts/2019-02-04-vancouver-election-individual-ballots_files/figure-html/unnamed-chunk-8-1.png" width="768" />
+
+We see Wei Qiao Zhang standing out as Vision-asligned, which is to be expected as the ballot showed him as a Vision candidate, although Vision did disavow him shortly before election day. Sarah Blyth seems strongly adjacent to One City, as  well as the other Liberal parties.
 
 ## The new urban/preservationist scale
 The [Cambie Report](https://cambiereport.ca) introduced the urbanist/preservationist axis of Vancouver municipal politics, next to the usual Left/Right social-economic axis. It's an interesting new way to look at things, [Nathan has a good rundown](https://homefreesociology.com/2018/10/10/a-very-imby-election/). The Camie Report crowd-sourced the scoring of the parties and major independent mayoral candidates [and relased the data](https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4LHNGSjT5S5vx-TYFdZev1MuupM4QrdrvGxXO9sPrUQK7f4zW0bWWFVj1QMauWc4I7FITauJgV_JS/pubhtml?gid=428148822&single=true). That makes it easy for us to use this for analysis.
@@ -83,12 +88,12 @@ In total this scheme gives the sum of 12 scores if the ballot also had a vote fo
 
 
 
-<img src="/posts/2019-02-04-vancouver-election-individual-ballots_files/figure-html/unnamed-chunk-9-1.png" width="768" />
+<img src="/posts/2019-02-04-vancouver-election-individual-ballots_files/figure-html/unnamed-chunk-10-1.png" width="768" />
 
 Using the methods we chose it does not appear that there is a strong urbanist cluster visible in the data. Partially that is due to the urbanist vote spanning across several parties that also strongly correlate with preservationist parties. And looking at recent council votes, it does not seem that councils vote in block on these issues. Taking the Broadway subway extension vote, squarely an "urbanist" issue, the (only) COPE councillor together with one NPA councillors voted against, whereas all three Green councillors voted in favour - a move that was [at least partially attributed to Greens recognizing the shifting makup of their base](https://www.theglobeandmail.com/canada/british-columbia/article-vancouver-green-party-councillors-embrace-skytrain-expansion/?utm_medium=Referrer:+Social+Network+/+Media&utm_campaign=Shared+Web+Article+Links). It will take more time to observe if the crowd-sourced scores still hold after the election, and if having just one score for e.g. NPA candidates is appropriate.
 
 
-Given our methods we still have a fairly high correlation  of urbanist/preservationist and  Liberal/Conservative scores of ballots (coefficient of 0.7) as is also evident from the graph.
+Given our methods we still have a fairly high correlation  of urbanist/preservationist and  Liberal/Conservative scores of ballots (coefficient of 0.68) as is also evident from the graph.
 
 
 ## Next steps

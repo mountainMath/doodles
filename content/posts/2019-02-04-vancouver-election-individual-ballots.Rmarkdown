@@ -141,9 +141,9 @@ greens <- c("CARR, Adriane","FRY, Pete","WIEBE, Michael","WONG, David HT")
 cope <- c("O'KEEFE, Derrick","SWANSON, Jean","ROBERTS, Anne")
 coalition_van <-c("YOUNG, Wai","CHARKO, Ken","LIN, James","MUSSIO, Penny","XIE, Jason","CHERNEN, Glen","LI, Morning","PETA, Franco")
 pro_van <- c("CHEN, David","MIRZA, Raza","CRELLIN, Breton","KRISTIANSEN, Lisa","REZEL, Rohana")
-van1 <-c("HARDING, Fred","MOLLINEAUX, Michelle","BASRA, Nycki","LOW, Ken")
+van1 <-c("HARDING, Fred","MOLLINEAUX, Michelle","BASRA, Nycki","LOW, Ken","TAYLOR, Elizabeth","JOHL, Jesse","MALUSA, John","PEROSA, Elishia")
 vision <- c("DEAL, Heather","PAZ, Tanya","CARDONA, Diego","EVANS, Catherine")
-yes_van <- c("BREMNER, Hector","VIRDI, Jaspreet","TANG, Phyllis","BAINS, Brinder","OSTLER, Stephanie")
+yes_van <- c("BREMNER, Hector","VIRDI, Jaspreet","TANG, Phyllis","BAINS, Brinder","OSTLER, Stephanie","CHAN, Glynnis")
 one_city <- c("BOYLE, Christine","YAN, Brandon")
 npa <- c("SIM, Ken","DE GENOVA, Melissa","HARDWICK, Colleen","DOMINATO, Lisa","BLIGH, Rebecca","KIRBY-YUNG, Sarah","GREWAL, David","GOODRICH, Justin P","QUIMPO, Jojo")
 party_candidates <- c(greens,cope,coalition_van,pro_van,vision,yes_van,one_city,npa,van1)
@@ -276,17 +276,13 @@ ggplot(plot_data,aes(x=reorder(parties_string,n),y=n)) +
 A more comprehensive view that also takes into account the number of votes each party got can be gotten by looking at correlations across all parties.
 
 ```{r party_correlation}
-party_cor_data<-cancensusHelpers::simpleCache(
-  mayor_council_ballots_long %>%
-    select(Ballot,Candidate,Party,Vote) %>%
-    group_by(Ballot,Candidate) %>%
-    spread(key="Party",value="Vote") %>%
-    ungroup %>%
-    select(-Candidate) %>%
-    mutate_at(vars(-one_of("Ballot")),as.numeric) %>%
-    group_by(Ballot) %>%
-    summarize_all(sum,na.rm=TRUE),
-  "party_cor_data")
+party_cor_data <- mayor_council_ballots_long %>%
+  select(Ballot,Party,Vote) %>%
+  group_by(Ballot,Party) %>%
+  summarize(Vote=sum(Vote)) %>%
+  group_by(Ballot) %>%
+  spread(key="Party",value="Vote") %>%
+  ungroup
 
 ggcorrplot::ggcorrplot(cor(party_cor_data %>% select(-Ballot)),hc.order=TRUE) +
   labs(title="2018 City of Vancouver municipal election",
@@ -325,6 +321,28 @@ ggcorrplot::ggcorrplot(cor(mayor_council_ballots %>% select(c(top_council_candid
 
 As to be expected, the hierarchical clustering again brings out the parties even though we did not use party affiliation to make this graph. The fact that there was only one vote for mayoral office shows in anti-correlations between all mayoral candidates. The clustering into parties is not perfect, and it is interesting to investigate differences within the party blocks, as well as between candidates that don't follow party lines. Even though the clustering did not place One City next to the COPE-Greens-Vision block we can still see the strong correlation. Some independent candidates also show correlation with that block, in particular Sarah Blyth and Shauna Sylvester and to a weaker extent Adrian Crook, Taqdir Kaur Bhandal, and Wade Grant, who cluster close to One City, but also correlate with the COPE-Greens-Vision block. NPA anti-correlating with everyone else points to lots of full-slate votes with the few votes there are to spare spreading out. Erin Shum seems also correlates with these particular independent candidates, but also with the Coalition Vancouver block but not the COPE-Greens-Vision or One City block that these other independent candidates clustered around.
 
+We can use the data to identify adjacencies of independent candidates with parties.
+
+```{r}
+party_independent_ballots <- mayor_council_ballots %>% 
+  select("Ballot",independents) %>%
+  left_join(mayor_council_ballots_long %>% 
+              filter(Party!="Independent") %>% 
+              select(Ballot,Party,Vote) %>%
+              group_by(Ballot,Party) %>%
+              summarize(Vote=sum(Vote)) %>%
+              group_by(Ballot) %>%
+              spread(key="Party",value="Vote"))
+
+party_independent_cors <- cor(party_independent_ballots %>% select(independents),party_independent_ballots %>% select(unique(as.character(party_lookup))))
+
+ggcorrplot::ggcorrplot(party_independent_cors,tl.cex = 8) +
+  labs(title="2018 City of Vancouver municipal election",
+       caption="MountainMath, CoV Open Data")
+
+```
+
+We see Wei Qiao Zhang standing out as Vision-asligned, which is to be expected as the ballot showed him as a Vision candidate, although Vision did disavow him shortly before election day. Sarah Blyth seems strongly adjacent to One City, as  well as the other Liberal parties.
 
 ## The new urban/preservationist scale
 The [Cambie Report](https://cambiereport.ca) introduced the urbanist/preservationist axis of Vancouver municipal politics, next to the usual Left/Right social-economic axis. It's an interesting new way to look at things, [Nathan has a good rundown](https://homefreesociology.com/2018/10/10/a-very-imby-election/). The Camie Report crowd-sourced the scoring of the parties and major independent mayoral candidates [and relased the data](https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4LHNGSjT5S5vx-TYFdZev1MuupM4QrdrvGxXO9sPrUQK7f4zW0bWWFVj1QMauWc4I7FITauJgV_JS/pubhtml?gid=428148822&single=true). That makes it easy for us to use this for analysis.
