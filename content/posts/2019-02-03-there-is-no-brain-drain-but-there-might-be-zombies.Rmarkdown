@@ -56,7 +56,7 @@ data_2016 <- get_sqlite_xtab("98-400-X2016241","https://www12.statcan.gc.ca/cens
 data_2006 <- get_sqlite_xtab("97-560-XCB2006007","https://www12.statcan.gc.ca/census-recensement/2006/dp-pd/tbt/OpenDataDownload.cfm?PID=93609",format="xml") %>% filter(`Sex`=="Total - Sex",
          `Age groups`!="Total - Age groups") %>%
   rename(GEO_NAME=Geography,
-         Age=`Age groups`) %>%
+       Age=`Age groups`) %>%
   select(GeoUID,GEO_NAME,Age,Value,`Highest certificate, diploma or degree`) %>%
   as_tibble()
 ```

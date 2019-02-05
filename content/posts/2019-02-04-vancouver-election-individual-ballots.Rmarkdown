@@ -1,0 +1,451 @@
+---
+title: Vancouver election individual ballots
+author: Jens von Bergmann
+date: '2019-02-04'
+slug: vancouver-election-individual-ballots
+categories:
+  - Vancouver
+tags: []
+description: "Individual ballot data is great, let's put it to work!"
+featured: 'party_correlation-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2019-02-04-vancouver-election-individual-ballots_files/figure-html/party_correlation-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2019-02-04-vancouver-election-individual-ballots_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	fig.width = 8,
+	warning = FALSE
+)
+
+library(tidyverse)
+
+url_2018 <- "ftp://webftp.vancouver.ca/OpenData/csv/2018MunicipalElectionAnonymousBallotMarking.csv"
+url_2017 <- "ftp://webftp.vancouver.ca/OpenData/csv/2017MunicipalBy-ElectionAnonymousBallotMarking.csv"
+
+read_ftp_csv <- function(url) {
+  tmp <- tempfile(fileext = ".csv")
+  download.file(url,tmp)
+  readr::read_csv(tmp,locale=locale(encoding = "Windows-1252"),col_types = cols(.default = "c"))
+}
+```
+
+```{r}
+ballot_group_vars <- c("CountingGroup", "Voting Place ID", "Voting Place", "BallotType")
+
+ballots_2018 <- cancensusHelpers::simpleCache(
+  read_ftp_csv(url_2018) %>%
+    mutate_at(vars(-one_of(ballot_group_vars)),as.numeric),
+  "vancouver_ballots_2018")
+
+mayoral_candidates <- c("AUBICHON, Maynard",
+"BREMNER, Hector",
+"BUDAY, Gölök Z",
+"CASSIDY, Sean",
+"CHAN, Ping",
+"CHEN, David",
+"FOGAL, Connie",
+"HANSEN, Mike",
+"HARDING, Fred",
+"KAISER, Sophia Cherryes Kaur",
+"LAMARCHE, Jason",
+"LE ROUGETEL, Katy",
+"LY, Tim",
+"MASSEY, Lawrence",
+"ROLLERGIRL",
+"SHOTTHA, Satie",
+"SIM, Ken",
+"STEWART, Kennedy",
+"SYLVESTER, Shauna",
+"YANO, John",
+"YOUNG, Wai")
+
+council_candidates <- c("ALM, Kelly",
+"BAINS, Brinder",
+"BASRA, Nycki",
+"BHANDAL, Taqdir Kaur",
+"BLIGH, Rebecca",
+"BLYTH, Sarah",
+"BOYLE, Christine",
+"BUCHANAN, Barbara",
+"CARDONA, Diego",
+"CARR, Adriane",
+"CAUDWELL, Justin",
+"CHAN, Glynnis",
+"CHARKO, Ken",
+"CHERNEN, Glen",
+"COOK, Graham",
+"COPELAND, Cord ''Ted''",
+"CRELLIN, Breton",
+"CROOK, Adrian",
+"DE GENOVA, Melissa",
+"DEAL, Heather",
+"DOMINATO, Lisa",
+"EL-RAYES, Hamdy",
+"EVANS, Catherine",
+"FALLS, Larry",
+"FRANSON, Marlo",
+"FRY, Pete",
+"FU, Hsin-Chen",
+"GOODRICH, Justin P",
+"GRANT, Wade",
+"GREWAL, David",
+"HARDWICK, Colleen",
+"HUGHES, Ashley",
+"JOHL, Jesse",
+"KENNEDY, Gordon T",
+"KHAN, Abubakar",
+"KIRBY-YUNG, Sarah",
+"KOUTALIANOS, Anastasia",
+"KRISTIANSEN, Lisa",
+"LI, Morning",
+"LIN, James",
+"LOW, Ken",
+"MALUSA, John",
+"MCDOWELL, Rob",
+"MIEDZYGORSKI, Herschel",
+"MIRZA, Raza",
+"MOLLINEAUX, Michelle",
+"MUSSIO, Penny",
+"NOBLE, Penny",
+"O'KEEFE, Derrick",
+"OSTLER, Stephanie",
+"PAZ, Tanya",
+"PEROSA, Elishia",
+"PETA, Franco",
+"PORTER, Elke",
+"QUIMPO, Jojo",
+"RAMDEEN, Katherine",
+"RAUNET, Françoise",
+"REZEL, Rohana",
+"ROBERTS, Anne",
+"SHUM, Erin",
+"SPARK, John",
+"SPIKE",
+"SWANSON, Jean",
+"TANG, Phyllis",
+"TAYLOR, Elizabeth",
+"VIRDI, Jaspreet",
+"WIEBE, Michael",
+"WONG, David HT",
+"XIE, Jason",
+"YAN, Brandon",
+"ZHANG, Wei Qiao")
+
+greens <- c("CARR, Adriane","FRY, Pete","WIEBE, Michael","WONG, David HT")
+cope <- c("O'KEEFE, Derrick","SWANSON, Jean","ROBERTS, Anne")
+coalition_van <-c("YOUNG, Wai","CHARKO, Ken","LIN, James","MUSSIO, Penny","XIE, Jason","CHERNEN, Glen","LI, Morning","PETA, Franco")
+pro_van <- c("CHEN, David","MIRZA, Raza","CRELLIN, Breton","KRISTIANSEN, Lisa","REZEL, Rohana")
+van1 <-c("HARDING, Fred","MOLLINEAUX, Michelle","BASRA, Nycki","LOW, Ken")
+vision <- c("DEAL, Heather","PAZ, Tanya","CARDONA, Diego","EVANS, Catherine")
+yes_van <- c("BREMNER, Hector","VIRDI, Jaspreet","TANG, Phyllis","BAINS, Brinder","OSTLER, Stephanie")
+one_city <- c("BOYLE, Christine","YAN, Brandon")
+npa <- c("SIM, Ken","DE GENOVA, Melissa","HARDWICK, Colleen","DOMINATO, Lisa","BLIGH, Rebecca","KIRBY-YUNG, Sarah","GREWAL, David","GOODRICH, Justin P","QUIMPO, Jojo")
+party_candidates <- c(greens,cope,coalition_van,pro_van,vision,yes_van,one_city,npa,van1)
+independents <- setdiff(council_candidates,party_candidates)
+
+set_party_name <- function(candidates,party) purrr::map(candidates,function(x)c(set_names(party,x))) %>% unlist
+party_lookup <- c(
+  set_party_name(greens,"Greens"),
+  set_party_name(npa,"NPA"),
+  set_party_name(cope,"COPE"),
+  set_party_name(one_city,"One City"),
+  set_party_name(vision,"Vision"),
+  set_party_name(yes_van,"YES Vancouver"),
+  set_party_name(pro_van,"Pro Vancouver"),
+  set_party_name(coalition_van,"Coalition Vancouver")
+)
+
+mayor_council_ballots <- ballots_2018 %>% 
+  select(c(ballot_group_vars,mayoral_candidates,council_candidates)) %>%
+  mutate(votes=factor(rowSums(select(.,-one_of(ballot_group_vars))))) %>%
+  mutate(council_votes=factor(rowSums(select(.,council_candidates)))) %>%
+  filter(!is.na(votes)) %>%
+  mutate(Ballot=row_number()) 
+  
+council_ballots <- mayor_council_ballots %>% 
+  select("Ballot",ballot_group_vars,council_candidates,"votes","council_votes") 
+
+mayor_council_ballots_long <- mayor_council_ballots %>%
+  gather(key="Candidate",value="Vote",-one_of("Ballot",ballot_group_vars,"votes","council_votes")) %>%
+  group_by(Candidate) %>%
+  left_join(tibble(Candidate=names(party_lookup),Party=as.character(party_lookup))) %>%
+  replace_na(list(Party="Independent")) %>%
+  mutate(Race=ifelse(Candidate %in% mayoral_candidates,"Mayor","Council")) %>%
+  ungroup
+
+  
+ballot_theme <- list(
+  theme_light(),
+  labs(title="2018 City of Vancouver municipal election",
+       caption="MountainMath, CoV Open Data")
+)
+```
+
+The City of Vancouver [made individual ballot data available](https://data.vancouver.ca/datacatalogue/anonymousBallotMarking.htm). So the vote choice on each individual ballot. It's been out for a couple of days now, and I have been quietly hoping someone else would write something up. But I got too curious, so here is a super-fast write-up. We focus on mayor and council votes only. There were `r length(mayoral_candidates)` candidates for mayor and `r length(council_candidates)` for council to choose from, and each voter was allowed to vote for (at most) one mayoral candidate and up to ten council candidates on their ballot.
+
+## Number of votes per ballot
+There were `r scales::comma(nrow(mayor_council_ballots))` valid ballots by people eligible to vote for mayor and council. The first question we have is how people were using their votes. Did people make use of all their 11 possible votes for mayor and council candidates, or did the vote for fewer, either because there weren't 11 they liked on the list (unlikely, given the large choice), or because they did not want to go through the troubles of evaluating all individual candidates and just went with one party only, or because they were 'plumping' their votes. Plumping refers to people voting for a few first-choice candidates and denying their second-choice candidates a vote in case they might narrowly overtake their first-choice candidates in the overall counts.
+
+```{r}
+ggplot(mayor_council_ballots,aes(x=votes)) +
+  geom_bar(fill="steelblue") +
+  ballot_theme +
+  scale_y_continuous(labels=scales::comma) +
+  labs(x="Number of mayor/council votes per ballot",
+       y="Number of ballots")
+
+votes_per_ballot <- mayor_council_ballots %>% group_by(votes) %>% count
+```
+
+We see that a slight majority of people `r scales::percent(filter(votes_per_ballot,votes==11)$n /votes_per_ballot$n %>% sum)` made use of all their votes, the other ballots had fewer than 11 mayor and council votes. To take a better look into that we are showing the party makeup of all votes by number of total votes per ballot. With our strong showing of independent mayoral candidates we focus only on council votes for this.
+
+```{r}
+plot_data <- mayor_council_ballots_long %>% 
+  filter(Vote==1,Race=="Council") 
+ggplot(plot_data,aes(x=council_votes,fill=Party)) +
+  geom_bar(position="fill") +
+  ballot_theme +
+  scale_y_continuous(labels=scales::percent) +
+  labs(x="Number of council votes per ballot",
+       y="Share of votes")
+```
+
+We see that the ballots with exactly 8 council votes are dominated by votes for the NPA -- which incidentally ran 8 candidates. 
+
+```{r}
+
+party_ballots  <- mayor_council_ballots_long %>% 
+  filter(Race=="Council") %>%
+  group_by(Ballot) %>%
+  filter(Vote==1) %>%
+  mutate(cv=as.numeric(council_votes)) %>%
+  summarize(parties=list(unique(Party) %>% sort),
+            council_votes=factor(first(cv))) %>%
+  mutate(number_of_parties=map(parties,function(p)length(unlist(p))) %>% unlist) %>%
+  mutate(parties_string=map(parties,function(p)paste0(unlist(p),collapse = ", ")) %>% unlist)
+  
+
+pure_ballots <- party_ballots %>%
+  filter(number_of_parties==1) %>%
+  group_by(parties_string) %>%
+  count
+
+mixed_ballots <- party_ballots %>%
+  group_by(parties_string) %>%
+  count %>%
+  arrange(-n)
+
+
+```
+
+
+## Party votes
+This brings us to the next section, where we investigate the role parties played in the election. The previous graph  leads us to look into **single party ballots**, that is ballots where only a single party got votes.
+
+```{r}
+ggplot(pure_ballots,aes(x=reorder(parties_string,n),y=n,fill=parties_string)) +
+  geom_bar(stat="identity") +
+  scale_fill_discrete(guide=FALSE) +
+  #scale_fill_manual(values=party_fill) +
+  ballot_theme +
+  coord_flip() +
+  scale_y_continuous(labels=scales::comma) +
+  labs(x="Party",y="Number of single party ballots",subtitle="(council votes only)")
+
+```
+
+This shows that NPA lead in the number of single-party-only ballots, but with 8 candidates they also have the advantage of single-party-only ballots not "wasting" too many votes. Compared with e.g. One City, where single-party-votes "wastes" 8 votes as there were only two candidates. It's interesting to see that quite a few ballots only had independent candidates. 
+
+We can widen the scope slightly to look at combination of parties.
+
+```{r}
+plot_data <- mixed_ballots %>% ungroup %>% top_n(.,20,n)
+ggplot(plot_data,aes(x=reorder(parties_string,n),y=n)) +
+  geom_bar(stat="identity",fill="brown") +
+  coord_flip() +
+  ballot_theme +
+  labs(x="Party combinations",y="Number of ballots",subtitle = "(top 20 combinations, council votes only)")
+```
+
+A more comprehensive view that also takes into account the number of votes each party got can be gotten by looking at correlations across all parties.
+
+```{r party_correlation}
+party_cor_data<-cancensusHelpers::simpleCache(
+  mayor_council_ballots_long %>%
+    select(Ballot,Candidate,Party,Vote) %>%
+    group_by(Ballot,Candidate) %>%
+    spread(key="Party",value="Vote") %>%
+    ungroup %>%
+    select(-Candidate) %>%
+    mutate_at(vars(-one_of("Ballot")),as.numeric) %>%
+    group_by(Ballot) %>%
+    summarize_all(sum,na.rm=TRUE),
+  "party_cor_data")
+
+ggcorrplot::ggcorrplot(cor(party_cor_data %>% select(-Ballot)),hc.order=TRUE) +
+  labs(title="2018 City of Vancouver municipal election",
+       caption="MountainMath, CoV Open Data")
+```
+
+This shows that NPA votes anti-correlate with every other party, with Coalition Vancouver and YES Vancouver showing the lowest negative correlation. We also see a emergence of a weak voting block made up of COPE, Greens, One City and Vision. Coalition Vancouver also anti-correlates with all other parties, although having almost neutral correlation with Pro Vancouver and YES Vancouver. Independents show the highest correlation with One City.
+
+The ordering of the parties in the plot was done by hierarchical clustering on the correlations, and it interesting how well it picks out adjacencies in the parties. Independents scatter a bit, showing some correlation with One City and (to a weaker extent) Vision, and also some weak  correlation with Pro Vancouver and YES Vancouver.   
+
+
+## Candidates
+So parties matter, but people vote for candidates and not parties. And no party got all their candidates elected, so people did pick and choose among party candidates. Looking at the top 30 council candidates (by total votes) and top 5 mayoral candidates, we can correlate the votes on each ballot just like we did with the parties. Apologies to the candidates that got dropped off, the good news is that it only takes a [one-line change in the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-02-04-vancouver-election-individual-ballots.Rmarkdown) to change that in case someone wants to slice the data differently.
+
+
+```{r fig.height=7}
+top_council_candidates <- mayor_council_ballots %>%
+  select(council_candidates) %>% 
+  summarise_all(sum) %>% 
+  gather(key,value) %>% 
+  top_n(30,value) %>% 
+  arrange(-value) %>% 
+  pull(key)
+top_mayoral_candidates <- mayor_council_ballots %>% 
+  select(mayoral_candidates) %>% 
+  summarise_all(sum) %>% 
+  gather(key,value) %>% 
+  top_n(5,value) %>% 
+  arrange(-value) %>% 
+  pull(key)
+
+ggcorrplot::ggcorrplot(cor(mayor_council_ballots %>% select(c(top_council_candidates,top_mayoral_candidates))),hc.order=TRUE,tl.cex = 8) +
+  labs(title="2018 City of Vancouver municipal election",
+       caption="MountainMath, CoV Open Data")
+```
+
+As to be expected, the hierarchical clustering again brings out the parties even though we did not use party affiliation to make this graph. The fact that there was only one vote for mayoral office shows in anti-correlations between all mayoral candidates. The clustering into parties is not perfect, and it is interesting to investigate differences within the party blocks, as well as between candidates that don't follow party lines. Even though the clustering did not place One City next to the COPE-Greens-Vision block we can still see the strong correlation. Some independent candidates also show correlation with that block, in particular Sarah Blyth and Shauna Sylvester and to a weaker extent Adrian Crook, Taqdir Kaur Bhandal, and Wade Grant, who cluster close to One City, but also correlate with the COPE-Greens-Vision block. NPA anti-correlating with everyone else points to lots of full-slate votes with the few votes there are to spare spreading out. Erin Shum seems also correlates with these particular independent candidates, but also with the Coalition Vancouver block but not the COPE-Greens-Vision or One City block that these other independent candidates clustered around.
+
+
+## The new urban/preservationist scale
+The [Cambie Report](https://cambiereport.ca) introduced the urbanist/preservationist axis of Vancouver municipal politics, next to the usual Left/Right social-economic axis. It's an interesting new way to look at things, [Nathan has a good rundown](https://homefreesociology.com/2018/10/10/a-very-imby-election/). The Camie Report crowd-sourced the scoring of the parties and major independent mayoral candidates [and relased the data](https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4LHNGSjT5S5vx-TYFdZev1MuupM4QrdrvGxXO9sPrUQK7f4zW0bWWFVj1QMauWc4I7FITauJgV_JS/pubhtml?gid=428148822&single=true). That makes it easy for us to use this for analysis.
+
+Unfortunately, we don't have data for the independent candidates, which means that there is a lot of missing data in the analysis in this section Moreover, candidates within each party may also scatter a bit around the average party position, which we won't be able to pick up on. Maybe someone will collect scores for the independent candidates and even individualize party scores.
+
+This means we are filtering the voting data down to only the ones that the Cambie Report has scored, that is party candidates as well as the two major independent mayoral candidates, Shauna Sylvester and Kennedy Stewart. Fortunately this covers all people on council right now, so it is maybe not as bad as it seems.
+
+While we now have scores for each individual candidate, it is not clear how to aggregate up the votes on a ballot to assign scores to each ballot. We will fill this with some heuristics:
+
+1. Votes for mayoral candidates carry double weight, votes for unscored mayoral candidates are discarded.
+2. Scores for party-affiliated council candidates are added up and scaled up as if there were 10 votes.
+
+In total this scheme gives the sum of 12 scores if the ballot also had a vote for a scored mayoral candidate or 10 otherwise, so we normalize the result by dividing by 12 or 10. Alternative ways would be to count the absence of votes with a negative weight, but it is not clear how much sense that makes as we can't distinguish e.g. a candidate that just missed the first 10 that fit on a ballot or if the candidate got left off a ballot because the voter had a strong aversion.
+
+
+```{r}
+# From https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4LHNGSjT5S5vx-TYFdZev1MuupM4QrdrvGxXO9sPrUQK7f4zW0bWWFVj1QMauWc4I7FITauJgV_JS/pubhtml?gid=428148822&single=true
+party_scores <-tribble(
+ ~`Party`, ~`Economics`,	~`StDev1`,	~`Social`,	~`StDev2`,	~`Municipal`, ~`StDev3`, ~`Socio-eco`,
+ "NPA",	4.37,	0.70,	3.55,	0.90,	3.83,	0.90,	3.96,							
+ "Vision",	2.78,	0.90,	1.88,	0.69,	2.29,	0.47,	2.33,							
+ "COPE",	1.18,	0.47,	1.29,	0.57,	3.41,	0.97,	1.24,							
+ "Greens",	2.98,	0.97,	2.30,	0.93,	3.66,	0.73,	2.64,							
+ "One City",	1.73,	0.73,	1.36,	0.68,	1.77,	0.99,	1.54,							
+ "Pro Vancouver",	3.68,	0.99,	3.44,	1.05,	3.90,	0.85,	3.56,							
+ "YES Vancouver",	4.11,	0.85,	2.92,	1.03,	1.72,	0.50,	3.51,							
+ "Coalition Vancouver",	4.88,	0.50,	4.92,	0.30,	4.63,	1.03,	4.90
+)
+independant_mayoral_candidate_scores <- tribble(
+ ~`Candidate`, ~`Economics`,	~`StDev1`,	~`Social`,	~`StDev2`,	~`Municipal`, ~`StDev3`, ~`Socio-eco`,
+ "STEWARDT, Kennedy",	2.02,	0.68,	1.71,	0.72,	2.62,	0.83,	1.86,
+ "SYLVESTER, Shauna",	2.43,	0.74,	1.83,	0.72,	2.39,	0.76,	2.1
+)
+
+party_mayors <- c(filter(mayor_council_ballots_long,Party!="Independent",Race=="Mayor") %>% pull(Candidate) %>% unique)
+
+score_data <- mayor_council_ballots_long %>%
+  filter(Party!="Independent",Race=="Council") %>%
+  group_by(Ballot) %>%
+  mutate(party_votes=sum(Vote)) %>%
+  left_join(party_scores) %>%
+  bind_rows(
+    mayor_council_ballots_long %>%
+      filter(Candidate %in% independant_mayoral_candidate_scores$Candidate) %>%
+      mutate(mayor_votes=1) %>%
+      left_join(independant_mayoral_candidate_scores)
+  ) %>%
+  bind_rows(
+    mayor_council_ballots_long %>%
+      filter(Candidate %in% party_mayors) %>%
+      mutate(mayor_votes=1) %>%
+      left_join(party_scores)
+  )
+  
+
+scale_function <- function(data,scale) {
+  filter(Candidate %in% council_candidates)
+  log(mean(Vote*exp(scale-3)))+3
+}
+scale_function_simple <- function(Vote,scale) {
+  mean(scale)
+}
+
+
+
+plot_data <- score_data %>%
+  filter(Vote == 1,Race=="Council") %>%
+  group_by(Ballot) %>%
+  summarize(
+    urbanist_council_score=sum(Municipal/party_votes),
+    socio_economic_council_score=sum(`Socio-eco`/party_votes),
+    council_votes=factor(n(),levels=1:11)) %>%
+  left_join(
+    score_data %>%
+      filter(Vote == 1,Race=="Mayor") %>%
+      group_by(Ballot) %>%
+      summarize(
+        urbanist_mayor_score=sum(mayor_votes*Municipal),
+        socio_economic_mayor_score=sum(mayor_votes*`Socio-eco`)
+        ) %>%
+      select(Ballot,urbanist_mayor_score,socio_economic_mayor_score) %>%
+      mutate(mayor_votes=1)
+  ) %>%
+  mutate(urbanist_score=ifelse(is.na(mayor_votes),urbanist_council_score,(10*urbanist_council_score+2*urbanist_mayor_score)/12),
+         socio_economic_score=ifelse(is.na(mayor_votes),socio_economic_council_score,(10*socio_economic_council_score+2*socio_economic_mayor_score)/12))
+
+party_score_data <- party_scores %>% 
+  bind_rows(independant_mayoral_candidate_scores %>% rename(Party=Candidate)) %>%
+  mutate(urbanist_score=Municipal,socio_economic_score=`Socio-eco`) %>%
+  mutate(urbanist_score=round(urbanist_score,2),socio_economic_score=round(socio_economic_score,2)) 
+```
+
+
+
+```{r fig.height=6.4}
+ggplot(plot_data,aes(y=urbanist_score,x=socio_economic_score)) +
+  scale_fill_distiller(palette=4, direction=1,trans="log") +
+  #scale_fill_viridis_c(option = "inferno",trans="log",guide=FALSE) +
+  stat_density_2d(bins=50,aes(fill = ..level..), geom = "polygon",contour=TRUE,show.legend = FALSE) +
+  scale_x_continuous(limits=c(1,5)) +
+  scale_y_continuous(limits=c(1,5)) +
+  #scale_color_brewer(palette = "Set3") +
+  theme_light() +
+  geom_point(data=party_score_data,aes(color=Party)) +
+  labs(title="Vancouver municipal elections",subtitle="(only counting votes for party candidates)",
+       x="Liberal <-> Conservative",
+       y="Urbanist <-> Preservationist",
+       fill="",
+       caption="Vancouver Open Data, Cambie Report")
+ 
+```
+
+Using the methods we chose it does not appear that there is a strong urbanist cluster visible in the data. Partially that is due to the urbanist vote spanning across several parties that also strongly correlate with preservationist parties. And looking at recent council votes, it does not seem that councils vote in block on these issues. Taking the Broadway subway extension vote, squarely an "urbanist" issue, the (only) COPE councillor together with one NPA councillors voted against, whereas all three Green councillors voted in favour - a move that was [at least partially attributed to Greens recognizing the shifting makup of their base](https://www.theglobeandmail.com/canada/british-columbia/article-vancouver-green-party-councillors-embrace-skytrain-expansion/?utm_medium=Referrer:+Social+Network+/+Media&utm_campaign=Shared+Web+Article+Links). It will take more time to observe if the crowd-sourced scores still hold after the election, and if having just one score for e.g. NPA candidates is appropriate.
+
+```{r}
+usc <- (plot_data %>% select(urbanist_score,socio_economic_score) %>% cor)[1,2]
+```
+Given our methods we still have a fairly high correlation  of urbanist/preservationist and  Liberal/Conservative scores of ballots (coefficient of `r round(usc,2)`) as is also evident from the graph.
+
+
+## Next steps
+There are plenty of ways to refine this. One can look into Park Board votes or ballot questions, or analyse data by voting place or voting type (general voting, advanced voting, mail, ...). Refining  the Cambie Report scores would certainly be interesting. For those interested in expanding on the analysis, or folding in new data, or looking at some of the lower-ranking candidates that got dropped off the list, the code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-02-04-vancouver-election-individual-ballots.Rmarkdown) as usual.
+
