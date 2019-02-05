@@ -67,10 +67,10 @@ We can use the data to identify adjacencies of independent candidates with parti
 
 <img src="/posts/2019-02-04-vancouver-election-individual-ballots_files/figure-html/unnamed-chunk-8-1.png" width="768" />
 
-We see Wei Qiao Zhang standing out as Vision-asligned, which is to be expected as the ballot showed him as a Vision candidate, although Vision did disavow him shortly before election day. Sarah Blyth seems strongly adjacent to One City, as  well as the other Liberal parties.
+We see Wei Qiao Zhang standing out as Vision-aligned, which is to be expected as the ballot showed him as a Vision candidate, although Vision did disavow him shortly before election day. Sarah Blyth seems strongly adjacent to One City, as  well as the other Liberal parties.
 
 ## The new urban/preservationist scale
-The [Cambie Report](https://cambiereport.ca) introduced the urbanist/preservationist axis of Vancouver municipal politics, next to the usual Left/Right social-economic axis. It's an interesting new way to look at things, [Nathan has a good rundown](https://homefreesociology.com/2018/10/10/a-very-imby-election/). The Camie Report crowd-sourced the scoring of the parties and major independent mayoral candidates [and relased the data](https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4LHNGSjT5S5vx-TYFdZev1MuupM4QrdrvGxXO9sPrUQK7f4zW0bWWFVj1QMauWc4I7FITauJgV_JS/pubhtml?gid=428148822&single=true). That makes it easy for us to use this for analysis.
+The [Cambie Report](https://cambiereport.ca) introduced the urbanist/preservationist axis of Vancouver municipal politics, next to the usual Left/Right social-economic axis. It's an interesting new way to look at things, [Nathan has a good rundown](https://homefreesociology.com/2018/10/10/a-very-imby-election/). The Cambie Report crowd-sourced the scoring of the parties and major independent mayoral candidates [and relased the data](https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4LHNGSjT5S5vx-TYFdZev1MuupM4QrdrvGxXO9sPrUQK7f4zW0bWWFVj1QMauWc4I7FITauJgV_JS/pubhtml?gid=428148822&single=true). That makes it easy for us to use this for analysis.
 
 Unfortunately, we don't have data for the independent candidates, which means that there is a lot of missing data in the analysis in this section Moreover, candidates within each party may also scatter a bit around the average party position, which we won't be able to pick up on. Maybe someone will collect scores for the independent candidates and even individualize party scores.
 
