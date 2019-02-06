@@ -314,7 +314,9 @@ top_mayoral_candidates <- mayor_council_ballots %>%
   arrange(-value) %>% 
   pull(key)
 
-ggcorrplot::ggcorrplot(cor(mayor_council_ballots %>% select(c(top_council_candidates,top_mayoral_candidates))),hc.order=TRUE,tl.cex = 8) +
+top_candidates <- c(top_council_candidates,top_mayoral_candidates)
+
+ggcorrplot::ggcorrplot(cor(mayor_council_ballots %>% select(top_candidates)),hc.order=TRUE,tl.cex = 8) +
   labs(title="2018 City of Vancouver municipal election",
        caption="MountainMath, CoV Open Data")
 ```
@@ -467,3 +469,72 @@ Given our methods we still have a fairly high correlation  of urbanist/preservat
 ## Next steps
 There are plenty of ways to refine this. One can look into Park Board votes or ballot questions, or analyse data by voting place or voting type (general voting, advanced voting, mail, ...). Refining  the Cambie Report scores would certainly be interesting. For those interested in expanding on the analysis, or folding in new data, or looking at some of the lower-ranking candidates that got dropped off the list, the code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-02-04-vancouver-election-individual-ballots.Rmarkdown) as usual.
 
+
+## Update
+[Chad Skelton](https://twitter.com/chadskelton) did a [really nice interactive](https://public.tableau.com/profile/cskelton#!/vizhome/VancouverBallot2018/Dashboard1) looking at the votes. He used a different metric to show adjacency, for each pair of candidates A and B he computed what share of candidates that voted for A also voted for B. That's a much more interpretable metric than my correlations, and may be better at picking up what's going on with candidates that did not get that many votes. Overall, we don't expect much different results, but it is worth exploring how these metrics differ.
+
+Let's first compute the vote matrix based on likelihood. Just to keep things simple, we cut down by the 
+
+```{r fig.height=7}
+mayor_council_candidates <- c(mayoral_candidates,council_candidates)
+names(mayor_council_candidates)=mayor_council_candidates
+likelihoods <- cancensusHelpers::simpleCache(outer(mayor_council_candidates ,mayor_council_candidates, Vectorize(function(a,b){
+    v=ballots_2018 %>% filter(!!as.name(a)==1) %>% select(b)
+    colSums(v)/nrow(v) 
+})),"yancouver_election_likelihoods.rda")
+
+clusters <- hclust(dist(1-likelihoods))
+order_candidates <- mayor_council_candidates[clusters$order]
+
+plot_data <- likelihoods %>% 
+  as_tibble() %>% 
+  mutate(first=rownames(likelihoods)) %>%
+  replace(.,is.na(.),0) %>%
+  gather(key=second,value=Value,-first) %>%
+  mutate(dv=cut(Value,breaks=c(-Inf,seq(0.1,0.9,0.1),Inf),labels=c("<10%","10%-20%","20%-30%","30%-40%","40%-50%","50%-60%","60%-70%","70%-80%","80%-90%","90%-100%"))) %>%
+  mutate(first=factor(first,levels=order_candidates),
+         second=factor(second,levels=order_candidates))
+
+# frequent_candidates <- plot_data %>% 
+#   mutate(Value=ifelse(Value>0.4,1,0)) %>%
+#   group_by(first) %>%
+#   summarize(Count=sum(Value)-1) %>%
+#   filter(Count>0) %>%
+#   pull(first)
+
+pd <- plot_data %>% 
+  filter(first %in% top_candidates,second %in% top_candidates) 
+
+ggplot(pd,aes(y=first,x=second,fill=dv)) +
+  geom_tile() +
+  ballot_theme +
+  scale_fill_brewer(palette="PiYG",na.value="grey") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust=0.5)) +
+  labs(y="People that voted for this candidate ...",x="... voted for this candidate with frequency given by the colour.",fill="Likelihood")
+```
+
+The matrix looks quite similar to the correlation matrix, with the advantage that it's not symmetric and the asymmetry reveals more information. For example, people that got a high number of votes tend to have greener columns than rows.
+
+The order of candidates is slightly different from our correlation plot, that's due to us using hierarchical clustering on the likelihoods in this case. The result of the clustering is interesting in itself, the hierarchical clustering gives us information about the voters' opinion on adjacencies of candidates. To conclude the post, we will give more details on the clusterings. And this time around, we will show the data for all candidates.
+
+First up, clustering based on the likelihoods.
+
+```{r fig.height=7, fig.width=10}
+
+plot(clusters,  main="Vancouver election individual ballot candidate adjacency (using mutual likelihood)",xlab="",sub="Vancouver Open Data",cex = 0.6)
+
+```
+
+The "height" gives us information about the separation between different groups. NPA did best at distinguishing itself from the other candidates, as is evident by all candidates coming together at low height. As discussed earlier, this is favoured  by the NPA running 8 council candidates plus one mayoral candidate, so people voting for the full slate have little opportunity to establish other adjacencies. 
+
+We can compare this to clustering based on correlations.
+
+```{r fig.height=7, fig.width=10}
+clusters2 <- hclust(dist(cor(mayor_council_ballots %>% select(mayor_council_candidates))))
+
+plot(clusters2,  main="Vancouver election individual ballot candidate adjacency (using correlations)",xlab="",sub="Vancouver Open Data",cex = 0.6)
+```
+
+The picture is quite similar, with again NPA coming together out at very low height. The order of the branches, so which side is on the left and which is on the right, is not very important, it's the branching points that matter. This graph places Sarah Blyth adjacent to Shauna Sylvester and then the Greens, whereas the likelihood based graph places Sarah Blyth next to One City, and then Kennedy Stewarts and COPE.
+
+It would be interesting to explore these subtleties further.

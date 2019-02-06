@@ -99,3 +99,28 @@ Given our methods we still have a fairly high correlation  of urbanist/preservat
 ## Next steps
 There are plenty of ways to refine this. One can look into Park Board votes or ballot questions, or analyse data by voting place or voting type (general voting, advanced voting, mail, ...). Refining  the Cambie Report scores would certainly be interesting. For those interested in expanding on the analysis, or folding in new data, or looking at some of the lower-ranking candidates that got dropped off the list, the code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-02-04-vancouver-election-individual-ballots.Rmarkdown) as usual.
 
+
+## Update
+[Chad Skelton](https://twitter.com/chadskelton) did a [really nice interactive](https://public.tableau.com/profile/cskelton#!/vizhome/VancouverBallot2018/Dashboard1) looking at the votes. He used a different metric to show adjacency, for each pair of candidates A and B he computed what share of candidates that voted for A also voted for B. That's a much more interpretable metric than my correlations, and may be better at picking up what's going on with candidates that did not get that many votes. Overall, we don't expect much different results, but it is worth exploring how these metrics differ.
+
+Let's first compute the vote matrix based on likelihood. Just to keep things simple, we cut down by the 
+
+<img src="/posts/2019-02-04-vancouver-election-individual-ballots_files/figure-html/unnamed-chunk-12-1.png" width="768" />
+
+The matrix looks quite similar to the correlation matrix, with the advantage that it's not symmetric and the asymmetry reveals more information. For example, people that got a high number of votes tend to have greener columns than rows.
+
+The order of candidates is slightly different from our correlation plot, that's due to us using hierarchical clustering on the likelihoods in this case. The result of the clustering is interesting in itself, the hierarchical clustering gives us information about the voters' opinion on adjacencies of candidates. To conclude the post, we will give more details on the clusterings. And this time around, we will show the data for all candidates.
+
+First up, clustering based on the likelihoods.
+
+<img src="/posts/2019-02-04-vancouver-election-individual-ballots_files/figure-html/unnamed-chunk-13-1.png" width="960" />
+
+The "height" gives us information about the separation between different groups. NPA did best at distinguishing itself from the other candidates, as is evident by all candidates coming together at low height. As discussed earlier, this is favoured  by the NPA running 8 council candidates plus one mayoral candidate, so people voting for the full slate have little opportunity to establish other adjacencies. 
+
+We can compare this to clustering based on correlations.
+
+<img src="/posts/2019-02-04-vancouver-election-individual-ballots_files/figure-html/unnamed-chunk-14-1.png" width="960" />
+
+The picture is quite similar, with again NPA coming together out at very low height. The order of the branches, so which side is on the left and which is on the right, is not very important, it's the branching points that matter. This graph places Sarah Blyth adjacent to Shauna Sylvester and then the Greens, whereas the likelihood based graph places Sarah Blyth next to One City, and then Kennedy Stewarts and COPE.
+
+It would be interesting to explore these subtleties further.
