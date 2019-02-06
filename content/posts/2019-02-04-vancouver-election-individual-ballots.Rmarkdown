@@ -521,7 +521,7 @@ First up, clustering based on the likelihoods.
 
 ```{r fig.height=7, fig.width=10}
 
-plot(clusters,  main="Vancouver election individual ballot candidate adjacency (using mutual likelihood)",xlab="",sub="Vancouver Open Data",cex = 0.6)
+plot(clusters,  main="Vancouver election individual ballot candidate adjacency (using mutual likelihood)",xlab="",sub="MountainMath, Vancouver Open Data",cex = 0.6)
 
 ```
 
@@ -532,7 +532,7 @@ We can compare this to clustering based on correlations.
 ```{r fig.height=7, fig.width=10}
 clusters2 <- hclust(dist(cor(mayor_council_ballots %>% select(mayor_council_candidates))))
 
-plot(clusters2,  main="Vancouver election individual ballot candidate adjacency (using correlations)",xlab="",sub="Vancouver Open Data",cex = 0.6)
+plot(clusters2,  main="Vancouver election individual ballot candidate adjacency (using correlations)",xlab="",sub="MountainMath, Vancouver Open Data",cex = 0.6)
 ```
 
 The picture is quite similar, with again NPA coming together out at very low height. The order of the branches, so which side is on the left and which is on the right, is not very important, it's the branching points that matter. This graph places Sarah Blyth adjacent to Shauna Sylvester and then the Greens, whereas the likelihood based graph places Sarah Blyth next to One City, and then Kennedy Stewarts and COPE.
