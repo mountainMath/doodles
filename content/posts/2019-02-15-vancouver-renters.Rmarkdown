@@ -1,0 +1,635 @@
+---
+title: Vancouver renters
+author: Jens von Bergmann
+date: '2019-02-15'
+slug: vancouver-renters
+categories:
+  - cancensus
+  - CANSIM
+  - CensusMapper
+  - rental
+  - Vancouver
+tags: []
+description: "Understanding renter households in Vancouver"
+featured: 'renters-age-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2019-02-15-vancouver-renters_files/figure-html/renters-age-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2019-02-15-vancouver-renters_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 8,
+	cache=TRUE
+)
+library(tidyverse)
+library(cansim)
+library(cmhc)
+library(cancensus)
+library(cancensusHelpers)
+
+sqlite_file <- file.path(getOption("custom_data_path"),"Movers1Xtab.sqlite")
+xtab_data <- DBI::dbConnect(RSQLite::SQLite(), dbname=sqlite_file) %>% tbl("MoversData")
+fields <- xtab_data %>% head %>% as_tibble %>% names()
+
+base_fields <- c("Mob Status_PHM", "Age group (PHM)", "Household type", "HH Tenure", "Shelter-cost", "CondoStat/Type", "HH Income group")
+
+my_theme <- list(
+  theme_light(),
+  labs(caption="MountainMath, StatCan 2016 Census custom tabulation")
+)
+
+
+unique_values <- function(data,column){
+  select(data,column) %>% distinct  %>% as_tibble() %>% pull(column)
+}
+
+tenure_types <- xtab_data %>% unique_values("HH Tenure")
+household_types <- xtab_data %>% unique_values("Household type")
+income_groups <-  xtab_data %>% unique_values("HH Income group")
+age_groups <-  xtab_data %>% unique_values("Age group (PHM)")
+mobility_groups <-  xtab_data %>% unique_values("Mob Status_PHM")
+dwelling_types <-  xtab_data %>% unique_values("CondoStat/Type")
+shelter_cost_types <- xtab_data %>% unique_values("Shelter-cost")
+
+bedroom_fields <- c(
+  "Total private households by number of bedrooms",
+  "No bedroom",
+  "1 bedroom",
+  "2 bedrooms",
+  "3 or more bedrooms")
+
+basic_movers <- c("Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)",
+  "Did not move in the past year (located at the same address one year ago)",
+  "Moved in the past year (located at a different address one year ago)")
+
+income_levels <- c(
+  "Total - Household income",
+  "Less than $25,000",
+  "$25,000 to $49,999",
+  "$50,000 to $74,999",
+  "$75,000 to $99,999",
+  "$100,000 to $124,999",
+  "$125,000 to $149,999",
+  "$150,000 to $199,999",
+  "$200,000 and above"
+)
+
+pure_shelter_levels <- c(
+  "Less than 15%",
+  "15% to less than 30%",
+  "30% to less than 50%",
+  "50% to less than 100%",                
+  "100% or more"
+  )
+
+earner_ages <- c("25 to 34 years" ,    "35 to 44 years" ,    "45 to 54 years"   ,  "55 to 64 years")
+
+```
+
+## Disclaimer
+Apologies up front, this is a bit of a hodge podge of a blog post. I have about half a dozen stubs on rental data and affordability that I looked at at some point while trying to understand some aspect of rental affordability. But it's a large and complex topic, and I never took the time to distill out coherent storylines. Rather than keep pushing things off I decided to grab a couple of relevant pieces and put them together in a short blog post. Some of this is based on public census release data, other parts are based on a a custom tabulation [that I have also used in a previous post](https://doodles.mountainmath.ca/blog/2019/01/09/high-value-homes/) and that I am unfortunately not at liberty to share the raw data.
+
+There is no clear storyline in the data, rather its a bunch of different aspects that partially intersect and that illuminate some aspects of rental affordability in the City of Vancouver. Hopefully someone will find some of this useful
+
+## What is affordability?
+In Vancouver we talk a lot about affordability. Different people have different definitions of what affordability is. And affordability is not the only metric that counts. [StatCan says](https://www12.statcan.gc.ca/census-recensement/2016/ref/dict/households-menage037-eng.cfm) a household is in *core housing need* if the household does not meet at least one of the adequacy, affordability or suitability standards. A dwelling unit is *adequate* if it does not need major repairs, *affordable* if the household spends no more than 30% of total income on shelter costs, and *suitable* if it is not overcrowded (meets NOS standards). The universe excludes non-family households with at least one maintainer between the ages of 15 to 29 attending school full-time, as well as households with shelter-cost-to-income ratios at 100% or above. Additionally CMHC ran estimates for rents by number of bedrooms (in good repair) in each community, and it [does not consider a household in core housing need](https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/chn-biml/index-eng.cfm) if such rents would be affordable to a household that currently does not meet the core housing criteria.
+
+Affordability is part of core housing needs, but there are households in core housing need whose housing is affordable and households that don't meet the affordability cutoff that are not considered in core housing needs.
+
+Often we see the affordability metric being used without the nuances that the core housing metrics introduce, and StatCan reports the proportion of households with income greater than zero spending more than 30% of income on shelter in their regular census releases, as well as the proportion of households spending 100% or more of income on shelter. 
+
+The latter category is difficult to interpret. Sometimes people exclude these when reporting household affordability statistics just like the core housing need definition does, as these are generally dominated by student households and households that otherwise don't fall into the usual framework of people struggling for housing. In Vancouver, owner households in that category have been interpreted as a sign of undeclared income. [Income volatility](https://td-capa.s3.amazonaws.com/prod/default/0001/02/a5a362538f70b81df4ae6ea6d66e8171cbd444ca.pdf) is at the root of another segment of such households.
+
+At other times people include these households when reporting on affordability metrics. As mentioned above, CMHC excludes student households on top of that, which adds an additional filter to separate out households that CMHC considers in 'transitional' stages. Another worthwhile approach would be to take the cost of student housing into consideration and model affordability changes of students separately.
+
+Custom tabulations can separate out renter and owner households, renter households in subsidized housing and market rental, households spending 50% or more of their income on shelter or less than 15% of income on shelter. For specific questions, one can tailor custom tabulations to report different cutoffs and slice by other variables of interest.
+
+## Affordability standards and City of Vancouver affordability
+Census data shows that using shelter-cost-to-income ratios, **City of Vancouver affordability has slightly improved** [from the 2006 and 2011 censuses to the the 2016 census](https://doodles.mountainmath.ca/blog/2017/10/26/a-first-look-at-vancouver-housing-data/). This is of course in stark contrast to some other affordability metrics like [median multiples](https://censusmapper.ca/maps/897) that compare median home values to median incomes. So what's going on? These metrics measure different things. Shelter-cost-to-income ratios, taken at the individual level, focus on how individual households are handling their housing costs. Ecological level median multiples look take median incomes in an area and compare these to median home prices. There are a number of underlying assumption behind median multiples to ensure this is a useful metric, for example that either everyone does or should buy a home, or that dwelling values are reflected in people's rent, and that the composition of households in terms of seniors, students and working people is uniform.
+
+These two metrics, shelter-cost-to-income ratio and median multiples, tell diverging stories of affordability in Vancouver. While researchers have been struggling with this since October 2017, it is curious that the media has so far been able to largely ignore this. News searches reveal that there are stories about the change in the shelter-cost-to-income ratio in Toronto, but nothing in Vancouver. It is probably no coincidence that affordability according to this metric worsened in Toronto, but improved in Vancouver.
+
+So how can we interpret the improving of the shelter-cost-to-income metrics in Vancouver? We already separated out renters and owners, as [renter households](https://censusmapper.ca/maps/890) are far more likely to be stressed for shelter cost than [owner households](https://censusmapper.ca/maps/889). And the metric still improved for owners and renters when separated out.
+
+Another view into this is using a [custom tabulation](https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/chn-biml/index-eng.cfm) put out by StatCan and CMHC to look specifically at core housing need. 
+
+```{r}
+core_housing_data <- read_csv("https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/chn-biml/CSD_SDR.csv",
+                              locale=locale(encoding = "Windows-1252"),
+                              col_types = cols(.default = "c")) %>%
+  rename(GeoUID=`Geographic code / Code géographique`,
+         level=`Geographic level, English / Niveau géographique, anglais`,
+         level2=`Geography level, English / Niveau géographique, anglais`,
+         long_name=`Geography name, type, province or territory abbreviation, English / Nom de la géographie, type, province ou territoire abréviation, anglais`,
+         name=`Geography name, English / Nom de la géographie, anglais`,
+         type=`Type, English / Type, anglais`,
+         quality=`Long-form data quality flag / Indicateur relatif à la qualité des données`,
+         gnr=`Global non-response rate (GNR), long-form census questionnaire / Taux global de non-réponse (TGN), questionnaire détaillé`) %>%
+  select(-`Geographic level, French / Niveau géographique, français`,
+         -`Geography name, type, province or territory abbreviation, French / Nom de la géographie, type, province ou territoire abréviation, français`,
+         -`Geography name, French / Nom de la géographie, français`,
+         -`Type, French / Type, français`,
+         -`Geography level, French / Niveau géographique, français`) %>% 
+  set_names(gsub("\\ *\\(\\d+\\)$","",gsub("\\ */.+$","",names(.)))) %>%
+  gather(key="Characteristic",value="Value",-one_of("GeoUID","level","long_name","name","type","level2","quality","gnr")) %>%
+  mutate(Year=str_extract(Characteristic,"\\d{4}$")) %>%
+  mutate(Characteristic=gsub(", \\d{4}$","",Characteristic)) %>%
+  mutate(Value=as.numeric(Value))
+
+plot_data <- core_housing_data %>%
+  filter(name=="Vancouver",Characteristic=="Rate of core housing need")
+ggplot(plot_data,aes(x=Year,y=Value/100)) +
+  geom_bar(stat="identity",fill="brown") +
+  my_theme +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Share of households in core housing need",x="",y="",
+       caption="MountainMath, StatCan 2016, 2011, 2006 custom tabulation")
+```
+
+Again, we see that the share of households in core housing need has slightly decreased in the City of Vancouver. This custom tabulation also allows us to better understand the nuances in the core housing definition, in particular how it is applied and what population is excluded from the universe.
+
+Overall the share of households in the City of Vancouver considered in core housing need was `r scales::percent(filter(plot_data,Year==2016)$Value/100)` in 2016. This includes households not meeting one of the three core housing need standards, including the affordability standard. But this is significantly lower than the share of shelter-burdened households often pegged at 36.6%.
+
+It is instructional to look at the difference between the straight-up 36.6% of households (with income greater than zero) and the portion of them that CMHC deems in core housing need.
+
+```{r}
+core_affordability_levels <- c("Unaffordable housing in core need","Unaffordable housing not in core need", "Unaffordable housing not applicable for core need")
+
+core_grep_string = " not in core need$| not applicable for core need$| in core need$"
+
+plot_data <- core_housing_data %>%
+  filter(name=="Vancouver") %>%
+  filter(grepl(core_grep_string,Characteristic)) %>%
+  mutate(Need=gsub(core_grep_string,"",Characteristic),
+         Category=str_extract(Characteristic,core_grep_string) %>% gsub("^ i","I",.) %>% gsub("^ n","N",.)) %>%
+  mutate(Category=factor(Category,levels=rev(c("In core need","Not in core need","Not applicable for core need"))))
+
+
+ggplot(plot_data,aes(x=Need,y=Value,fill=Category)) +
+  geom_bar(stat="identity") +
+  scale_fill_brewer(palette="Set1",direction = -1) +
+  scale_y_continuous(labels=scales::comma) +
+  my_theme +
+  labs("City of Vancouver shelter-cost-burdened",fill="Core housing need",y="",x="")
+```
+
+The bottom bar in each of these stacks count the number of households in core housing need not meeting the specified metric. The top bar counts the number of households with (income greater than zero and) shelter cost higher than income that were excluded from the core housing universe, and that don't meet the specified standards. The middle bar counts households not meeting the standard that could afford a suitable and adequate accommodation in the community, as well as the non-family full-time student households that don't meet the specified standard but have higher household income than shelter cost.
+
+This explains the differences we see in how these metrics are applied. We can slice the data further to better understand the households that are facing affordability challenges in Vancouver. From the high-level numbers we see that renters in particular are having a hard time making ends meet in Vancouver, so for the rest of this post we want to focus on the City of Vancouver and explore the affordability of rental households in more detail.
+
+## Regional context
+```{r}
+library(rmapzen)
+library(sf)
+
+vancouver <- get_census("CA16",regions=list(CMA="59933"),geo_format = "sf")
+bbox=st_bbox(vancouver)
+vector_tiles <- simpleCache(get_vector_tiles(bbox),"metro_vancouver_vector_tiles")
+# vector tiles return all layers (roads, water, buildings, etc) in a list
+roads <- as_sf(vector_tiles$roads) %>% filter(kind != "ferry")
+water <- as_sf(vector_tiles$water) 
+
+```
+
+```{r fig.height=3.5}
+geo_data <- get_census("CA16",regions=list(CMA="59933"),level="CSD",geo_format="sf") %>%
+  left_join(core_housing_data %>% filter(Characteristic=="Rate of core housing need"),
+            by="GeoUID") %>%
+  filter(!is.na(Year))
+
+ggplot(geo_data) +
+  geom_sf(aes(fill=Value/100)) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
+  theme_void() +
+  scale_fill_viridis_c(option="magma",labels=scales::percent) +
+  coord_sf(datum=NA, xlim=c(bbox$xmin,bbox$xmax), ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Share of households in unaffordable housing and in core housing need",
+       caption="MountainMath, StatCan 2016 custom tabulation",fill="") +
+  facet_wrap("Year")
+```
+
+This highlights how households in unaffordable housing in core housing need are more prevalent in central regions, although the City of Langley is a curious outlier. Typically outlying regions make up for there more affordable housing options with higher transportation costs. We have explored the tradeoff between housing and transportation costs [in the past (using 2011 data)](https://censusmapper.ca/maps/112) at the ecological level, it would be worthwhile to revisit this with 2016 data, as well as computing this at the individual household level via a custom tabulation.
+
+## Shelter-cost-to-income ratios of renter households
+Renters are at the core of affordability. Canadians value home ownership, but ownership is not a core housing need. As discussed above, CMHC explicitly excludes shelter-cost burdened homeowners that could afford to rent a suitable dwelling in the community from their core housing need data. But if someone can't afford to rent in the community, they are getting displaced.
+
+```{r}
+
+characteristics <- c(bedroom_fields,
+           "Average - total income of household ($)","Median - total income of household ($)",
+           "Average rent monthly cash ($)" ,"Median rent monthly cash ($)")
+
+renters_data <- xtab_data %>%
+  filter(`Mob Status_PHM`=="Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)",
+         `HH Tenure` %in% c("Subsidized housing","Not subsidized housing"),
+         `Age group (PHM)`=="Total - age groups",
+         #`Age group (PHM)` %in% earner_ages,
+         GEO=="City of Vancouver",
+         `CondoStat/Type`== "Total - Condominium status and structural type of dwelling",
+         `Household type`=="Total - household type",
+         `Shelter-cost` %in% pure_shelter_levels) %>%
+  select(c("HH Income group","Age group (PHM)","Shelter-cost","HH Tenure",characteristics)) %>%
+  collect() %>%
+  gather(key="Characteristics",value="Value",characteristics) %>%
+  mutate(`HH Income group`=factor(`HH Income group`,levels=income_levels),
+        `Shelter-cost`=factor(`Shelter-cost`,levels=pure_shelter_levels))
+
+renter_counts <- renters_data %>%
+  filter(Characteristics %in% c("Total private households by number of bedrooms"),
+         grepl("Total",`HH Income group`)) %>%
+  group_by(`HH Tenure`) %>% 
+  summarize(Value=sum(Value)) %>%
+  ungroup %>%
+  mutate(Share=Value/sum(Value))
+```
+
+When looking at renter households, we like to distinguish those in subsidized housing from those in market housing. We expect different types of households and different types of rent between these groups, so it is useful to keep them separate. Overall, `r scales::percent(renter_counts$Share[renter_counts["HH Tenure"]=="Subsidized housing"])` of renter households are in subsidized housing in the City of Vancouver. That includes cases where the unit is subsidized, or where the household receives cash rent subsidies. 
+
+
+```{r}
+plot_data <- renters_data %>%
+  filter(Characteristics %in% c("Total private households by number of bedrooms"),
+         grepl("Total",`HH Income group`))
+
+ggplot(plot_data,aes(x=`HH Tenure`,y=Value,fill=fct_rev(`Shelter-cost`))) +
+  geom_bar(stat="identity",position="fill") + 
+  scale_fill_viridis_d(direction = -1) +
+  coord_flip() +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  labs(title="City of Vancouver renter households",x="Household income",y="Number of households",fill="Shelter-cost-to-income")
+```
+
+When looking at the overall affordability picture there are fewer comfortably housed renter households, those paying less than 15% or less than 30% of income on shelter costs, in subsidized housing than in market rentals, which is to be expected. Comfortably housed households tend to be more affluent and won't qualify for subsidized housing. However at the high end, we see that there is a higher share of severely shelter-cost burdened households, those paying 50% to 100% of their income on housing, than in market housing. As to be expect, the portion of households spending 100% or more of their income on housing is larger in market housing. As we have seen above, these are hard to interpret and CMHC does not consider these in their core housing need categories.
+
+To get a better idea of these households, we proceed to slice the data by different variables. 
+
+```{r renters-age}
+age_levels <- c(
+  "Under 25 years", 
+  "25 to 34 years",
+  "35 to 44 years",
+  "45 to 54 years",
+  "55 to 64 years",
+  "65 to 74 years",
+  "75 years and over" 
+)
+
+renter_age_data <- xtab_data %>%
+  filter(`Mob Status_PHM`=="Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)",
+         `HH Tenure` %in% c("Subsidized housing","Not subsidized housing"),
+         `Age group (PHM)`!="Total - age groups",
+         #`Age group (PHM)` %in% earner_ages,
+         GEO=="City of Vancouver",
+         `CondoStat/Type`== "Total - Condominium status and structural type of dwelling",
+         `Household type`=="Total - household type",
+         `Shelter-cost` %in% pure_shelter_levels) %>%
+  select(c("HH Income group","Age group (PHM)","Shelter-cost","HH Tenure",characteristics)) %>%
+  collect() %>%
+  gather(key="Characteristics",value="Value",characteristics) %>%
+  mutate(`HH Income group`=factor(`HH Income group`,levels=income_levels),
+        `Shelter-cost`=factor(`Shelter-cost`,levels=pure_shelter_levels)) %>%
+  filter(Characteristics %in% c("Total private households by number of bedrooms"),
+         grepl("Total",`HH Income group`))  %>%
+  mutate(`Age group (PHM)`=factor(`Age group (PHM)`,levels=age_levels))
+
+ggplot(renter_age_data,aes(x=`Age group (PHM)`,y=Value,fill=fct_rev(`Shelter-cost`))) +
+  geom_bar(stat="identity") + 
+  scale_fill_viridis_d(direction = -1) +
+  coord_flip() +
+  scale_y_continuous(labels=scales::comma) +
+  my_theme +
+  facet_wrap("`HH Tenure`") +
+  labs(title="City of Vancouver renter households",x="Age of primary household maintainer",y="Number of households",fill="Shelter-cost-to-income")
+
+```
+
+We see that renter households in the City of Vancouver are overwhelmingly young. Households below the age of 25 have a quite different affordability pattern, a good portion consists likely of student households. Senior renter households also show a declining share being comfortably housed. For now, we will focus on households between the ages of 25 and 64 to approximate the labour force.
+
+
+
+```{r}
+renters_income_data <- xtab_data %>%
+  filter(`Mob Status_PHM`=="Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)",
+         `HH Tenure` %in% c("Subsidized housing","Not subsidized housing"),
+         #`Age group (PHM)`=="Total - age groups",
+         `Age group (PHM)` %in% earner_ages,
+         GEO=="City of Vancouver",
+         `CondoStat/Type`== "Total - Condominium status and structural type of dwelling",
+         `Household type`=="Total - household type",
+         `Shelter-cost` %in% pure_shelter_levels) %>%
+  select(c("HH Income group","Age group (PHM)","Shelter-cost","HH Tenure",characteristics)) %>%
+  collect() %>%
+  gather(key="Characteristics",value="Value",characteristics) %>%
+  mutate(`HH Income group`=factor(`HH Income group`,levels=income_levels),
+        `Shelter-cost`=factor(`Shelter-cost`,levels=pure_shelter_levels))
+
+```
+
+
+```{r}
+plot_data <- renters_income_data %>%
+  filter(Characteristics %in% c("Total private households by number of bedrooms"),
+         !grepl("Total",`HH Income group`))
+ggplot(plot_data,aes(x=`HH Income group`,y=Value,fill=fct_rev(`Shelter-cost`))) +
+  geom_bar(stat="identity") + 
+  scale_fill_viridis_d(direction = -1) +
+  coord_flip() +
+  scale_y_continuous(labels=scales::comma) +
+  my_theme +
+  facet_wrap("`HH Tenure`") +
+  labs(title="City of Vancouver renter households aged 25-64",x="Household income",y="Number of households",fill="Shelter-cost-to-income")
+```
+```{r}
+rich_subsidized <- plot_data %>% filter(`HH Income group` %in% c("$100,000 to $124,999","$125,000 to $149,999" ,"$150,000 to $199,999", "$200,000 and above"),
+                     `HH Tenure`=="Subsidized housing") %>% pull(Value) %>% sum
+
+comfortable_market <- plot_data %>% filter(`Shelter-cost` == "Less than 15%",
+                     `HH Tenure`!="Subsidized housing") %>% pull(Value) %>% sum
+```
+
+As can be expected, renters with income below $25,000 are severely strained, unless they are in subsidized housing. But even there the vast majority is shelter-cost burdened to severely shelter-cost burdened. 
+It's surprising to see `r scales::comma(rich_subsidized)` households with income above $100k in subsidized housing, as well as `r scales::comma(comfortable_market)` households in market rentals spending less than 15% of income on housing, so being able to afford double their rent and utilities and still being comfortably housed spending less than 30% of income on shelter.
+
+
+```{r}
+dwelling_levels <- c(
+  "Not part of a condominium, Single detached",
+  "Not part of a condominium, apartment",
+  "Not part of a condominium, movable dwelling",
+  "Not part of a condominium, other multiple dwelling",
+  "Part of a condominium, apartment",
+  "Part of a condominium, movable dweling",
+  "Part of a condominium, other multiple dwelling",
+  "Part of a condominium, single detached"
+  )
+renters_dwelling_data <- xtab_data %>%
+   filter(`Mob Status_PHM`=="Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)",
+          `HH Tenure` %in% c("Subsidized housing","Not subsidized housing"),
+         `Age group (PHM)`=="Total - age groups",
+          GEO=="City of Vancouver",
+          `CondoStat/Type` %in% dwelling_levels,
+          `Household type`=="Total - household type",
+          `HH Income group`=="Total - Household income",
+          `Shelter-cost` %in% pure_shelter_levels) %>%
+   select(c("CondoStat/Type","Shelter-cost","HH Tenure",characteristics)) %>%
+   collect() %>%
+  gather(key="Characteristics",value="Value",characteristics) %>%
+  mutate(`CondoStat/Type`=factor(`CondoStat/Type`, levels= dwelling_levels),
+         `Shelter-cost`=factor(`Shelter-cost`,levels=pure_shelter_levels)) %>%
+  filter(Characteristics %in% c("Total private households by number of bedrooms")) %>%
+  group_by(`CondoStat/Type`,`HH Tenure`) %>%
+  filter(sum(Value)>10)
+ 
+ggplot(renters_dwelling_data,aes(x=`CondoStat/Type`,y=Value,fill=fct_rev(`Shelter-cost`))) +
+  geom_bar(stat="identity") + 
+  scale_fill_viridis_d(direction = -1) +
+  coord_flip() +
+  scale_y_continuous(labels=scales::comma) +
+  my_theme +
+  facet_wrap("`HH Tenure`") +
+  labs(title="City of Vancouver renter households",x="Dwelling type",y="Number of households",fill="Shelter-cost-to-income")
+```
+
+The 'apartment' category here captures apartments, either below 5 storeys or 5 storeys and above, as well as the census category 'duplex', which captures main units or suites in suited single family homes. We see that this category dominates the rental dwellings in Vancouver, with condo apartments a distant second place.
+
+Lastly we can check what kind of households are renting. 
+
+
+```{r}
+household_levels <- c("Couple with children",
+                      "Couple without children",
+                      "Lone-parent family",
+                      "One person household",
+                      "Other types of households")
+
+renters_hh_data <- xtab_data %>%
+   filter(`Mob Status_PHM`=="Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)",
+          `HH Tenure` %in% c("Subsidized housing","Not subsidized housing"),
+         `Age group (PHM)`=="Total - age groups",
+          GEO=="City of Vancouver",
+         `CondoStat/Type`== "Total - Condominium status and structural type of dwelling",
+          `Household type` %in% household_levels,
+          `HH Income group`=="Total - Household income",
+          `Shelter-cost` %in% pure_shelter_levels) %>%
+   select(c("Household type","Shelter-cost","HH Tenure",characteristics)) %>%
+   collect() %>%
+  gather(key="Characteristics",value="Value",characteristics) %>%
+  mutate(`Household type`=factor(`Household type`, levels= household_levels),
+         `Shelter-cost`=factor(`Shelter-cost`,levels=pure_shelter_levels)) %>%
+  filter(Characteristics %in% c("Total private households by number of bedrooms")) 
+ 
+ggplot(renters_hh_data,aes(x=`Household type`,y=Value,fill=fct_rev(`Shelter-cost`))) +
+  geom_bar(stat="identity") + 
+  scale_fill_viridis_d(direction = -1) +
+  coord_flip() +
+  scale_y_continuous(labels=scales::comma) +
+  my_theme +
+  facet_wrap("`HH Tenure`") +
+  labs(title="City of Vancouver renter households",x="Household type",y="Number of households",fill="Shelter-cost-to-income")
+
+renters_by_hh_type <- renters_hh_data %>% 
+  group_by(`Household type`) %>% 
+  summarize(Value=sum(Value)) %>% 
+  ungroup() %>%
+  mutate(Share=Value/sum(Value))
+
+```
+
+Almost half of all renter households are one-person households. To better understand what kind of rentals these different family types are in we can look at the number of bedrooms.
+
+```{r}
+bedroom_levels <- c("No bedroom",
+                    "1 bedroom",
+                    "2 bedrooms",
+                    "3 or more bedrooms")
+
+renters_bedroom_data <- xtab_data %>%
+   filter(`Mob Status_PHM`=="Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)",
+          `HH Tenure` %in% c("Subsidized housing","Not subsidized housing"),
+         `Age group (PHM)`=="Total - age groups",
+          GEO=="City of Vancouver",
+         `CondoStat/Type`== "Total - Condominium status and structural type of dwelling",
+          `Household type` %in% household_levels,
+          `HH Income group`=="Total - Household income",
+          `Shelter-cost` =="Total - Shelter-cost-to-income ratio") %>%
+   select(c("Household type","Shelter-cost","HH Tenure",characteristics)) %>%
+   collect() %>%
+  gather(key="Bedrooms",value="Value",characteristics) %>%
+  filter(Bedrooms %in% bedroom_levels) %>%
+  mutate(Bedrooms=factor(Bedrooms,levels=bedroom_levels),
+         `Household type`=factor(`Household type`, levels= household_levels))
+ 
+ggplot(renters_bedroom_data,aes(x=`Household type`,y=Value,fill=fct_rev(Bedrooms))) +
+  geom_bar(stat="identity") + 
+  scale_fill_viridis_d(direction = -1,option="inferno") +
+  coord_flip() +
+  scale_y_continuous(labels=scales::comma) +
+  my_theme +
+  facet_wrap("`HH Tenure`") +
+  labs(title="City of Vancouver renter households",x="Household type",y="Number of households",fill="Bedrooms")
+
+```
+
+The couple with children and lone parent households in 1 bedroom units likely feel crowded, and they won't meet the CMHC suitability metric. Subsidized housing is better at right-sizing, which is usually part of their mandate.
+
+Lastly we can look at household rents, in this case excluding utilities unless utilities were already folded into the rents.
+
+
+```{r}
+renters_rent_data <- xtab_data %>%
+   filter(`Mob Status_PHM`=="Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)",
+          `HH Tenure` %in% c("Subsidized housing","Not subsidized housing"),
+         `Age group (PHM)`=="Total - age groups",
+          GEO=="City of Vancouver",
+         `CondoStat/Type`== "Total - Condominium status and structural type of dwelling",
+          `Household type` %in% household_levels,
+          `HH Income group`=="Total - Household income",
+          `Shelter-cost` =="Total - Shelter-cost-to-income ratio") %>%
+   select(c("Household type","Shelter-cost","HH Tenure",characteristics)) %>%
+   collect() %>%
+  gather(key="Rent",value="Value",characteristics) %>%
+  filter(Rent %in% c("Average rent monthly cash ($)","Median rent monthly cash ($)")) %>%
+  mutate(`Household type`=factor(`Household type`, levels= household_levels))
+ 
+ggplot(renters_rent_data,aes(x=`Household type`,y=Value,fill=fct_rev(Rent))) +
+  geom_bar(stat="identity",position="dodge") + 
+  scale_fill_brewer(palette="Set2") +
+  coord_flip() +
+  scale_y_continuous(labels=scales::dollar) +
+  my_theme +
+  theme(legend.position = "bottom") +
+  facet_wrap("`HH Tenure`") +
+  labs(title="City of Vancouver renter households",x="Household type",y="Rent",fill="")
+```
+
+As expected, rents in subsidized units tend to be substantially lower. Averages out-perform medians, indicating the skewedness of the rent distribution. People that have been renting for a while typically pay significantly lower rents than people that moved into their rental unit more recently. We have explored the [moving penalty](https://doodles.mountainmath.ca/blog/2018/11/28/moving-penalty/), the ratio between turnover and in-place rents, before. To gain further insight, we can separate out households that have moved into their rental unit within the year preceding the census from those that did not. 
+
+
+```{r}
+renters1_rent_data <- xtab_data %>%
+   filter(`Mob Status_PHM` %in% c("Did not move in the past year (located at the same address one year ago)","Moved in the past year (located at a different address one year ago)"),
+          `HH Tenure` %in% c("Not subsidized housing"),
+         `Age group (PHM)`=="Total - age groups",
+          GEO=="City of Vancouver",
+         `CondoStat/Type`== "Total - Condominium status and structural type of dwelling",
+          `Household type` %in% household_levels,
+          `HH Income group`=="Total - Household income",
+          `Shelter-cost` =="Total - Shelter-cost-to-income ratio") %>%
+   select(c("Household type","Mob Status_PHM",characteristics)) %>%
+   collect() %>%
+  gather(key="Rent",value="Value",characteristics) %>%
+  filter(Rent %in% c("Average rent monthly cash ($)","Median rent monthly cash ($)")) %>%
+  mutate(`Household type`=factor(`Household type`, levels= household_levels)) %>%
+  mutate(`Mob Status_PHM`=recode(`Mob Status_PHM`,"Did not move in the past year (located at the same address one year ago)"="Did not move in past year","Moved in the past year (located at a different address one year ago)"="Moved in past year"))
+
+ 
+ggplot(renters1_rent_data,aes(x=`Household type`,y=Value,fill=fct_rev(Rent))) +
+  geom_bar(stat="identity",position="dodge") + 
+  scale_fill_brewer(palette="Set2") +
+  coord_flip() +
+  scale_y_continuous(labels=scales::dollar) +
+  my_theme +
+  facet_wrap("`Mob Status_PHM`") +
+  theme(legend.position = "bottom") +
+  labs(title="City of Vancouver market renter households, moved in the preceding year",x="Household type",y="Rent",fill="")
+```
+
+To bring this out more clearly we can compute the moving penalty, the rent increase that people that did not move in the past year would have experienced if they had moved.
+
+```{r}
+cut_by <- function(data,column,value) {
+  data %>% filter(!!as.name(column)==!!value) %>% select(-!!as.name(column))
+}
+penalty_data <- left_join(
+          renters1_rent_data %>% cut_by("Mob Status_PHM","Moved in past year") %>% rename(Movers=Value),
+          renters1_rent_data %>% cut_by("Mob Status_PHM","Did not move in past year")) %>%
+  mutate(penalty=Movers/Value-1)
+
+ggplot(penalty_data,aes(x=`Household type`,y=penalty,fill=fct_rev(Rent))) +
+  geom_bar(stat="identity",position="dodge") + 
+  scale_fill_brewer(palette="Set2") +
+  coord_flip() +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  theme(legend.position = "bottom") +
+  labs(title="City of Vancouver market renter households, moved in the preceding year",x="Household type",y="Moving penalty",fill="")
+
+```
+
+This highlights to what degree couple with children families in particular are stuck in their current living arrangements, although the moving penalty is quite steep overall, and the overall ratios square quite nicely with [our previous work on this using CMHC Rms data](https://doodles.mountainmath.ca/blog/2018/11/28/moving-penalty/), indicating that a similar moving penalty persisted in 2018 two years after the census.
+
+To round things off we want to compare condo apartments to non-condo apartment rents.
+
+```{r}
+renters_apartment_data <- xtab_data %>%
+   filter(`Mob Status_PHM`=="Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)",
+          `HH Tenure` %in% c("Not subsidized housing"),
+         `Age group (PHM)`=="Total - age groups",
+          GEO=="City of Vancouver",
+         `CondoStat/Type` %in% c("Not part of a condominium, apartment","Part of a condominium, apartment"),
+          `Household type` == "Total - household type",
+          `HH Income group`=="Total - Household income",
+          `Shelter-cost` =="Total - Shelter-cost-to-income ratio") %>%
+   select(c("CondoStat/Type",characteristics)) %>%
+   collect() %>%
+  gather(key="Rent",value="Value",characteristics) %>%
+  filter(Rent %in% c("Average rent monthly cash ($)","Median rent monthly cash ($)"))
+ 
+ggplot(renters_apartment_data,aes(x=`CondoStat/Type`,y=Value,fill=fct_rev(Rent))) +
+  geom_bar(stat="identity",position="dodge") + 
+  scale_fill_brewer(palette="Set2") +
+  coord_flip() +
+  scale_y_continuous(labels=scales::dollar) +
+  my_theme +
+  theme(legend.position = "bottom") +
+  labs(title="City of Vancouver non-subsidized renter households",x="",y="Rent",fill="")
+```
+
+This shows how non-condo apartments (including single family with secondary suites) tend to rent for less than condo apartments. However, surveys show that renters are generally prepared to pay more for living in purpose built rental than on the secondary condo market, all else being equal. Unfortunately we don't have granular enough data to filter by location and building age as proxies for quality to test this.
+
+What we can do here is key out very rough building ages.
+
+```{r}
+dwelling_ages <- c("Dwelling constructed before 1996",
+                   "Dwelling constructed during the period 1996 to 2010",
+                   "Dwelling constructed during the period 2011 to 2016" )
+
+renters_apartment_data <- xtab_data %>%
+   filter(`Mob Status_PHM`=="Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)",
+          `HH Tenure` %in% c("Not subsidized housing"),
+         `Age group (PHM)`=="Total - age groups",
+          GEO=="City of Vancouver",
+         `CondoStat/Type` %in% c("Not part of a condominium, apartment","Part of a condominium, apartment"),
+          `Household type` == "Total - household type",
+          `HH Income group`=="Total - Household income",
+          `Shelter-cost` =="Total - Shelter-cost-to-income ratio") %>%
+   select(c("CondoStat/Type",dwelling_ages)) %>%
+   collect() %>%
+  gather(key="Ages",value="Value",dwelling_ages,factor_key = TRUE) 
+ 
+ggplot(renters_apartment_data,aes(x=`CondoStat/Type`,y=Value,fill=fct_rev(Ages))) +
+  geom_bar(stat="identity",position="fill") + 
+  scale_fill_brewer(palette="Set2") +
+  coord_flip() +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  theme(legend.position = "bottom") +
+  guides(fill = guide_legend(ncol=1)) +
+  labs(title="City of Vancouver non-subsidized renter households",x="",y="Rent",fill="")
+```
+
+This shows that the condo apartments skew much more recent than non-stratified market rental buildings, confirming our suspicion that the rent differential may be due to dwelling quality. It would be interesting to get finer data on location and building age, as well as separate out secondary suites from non-condo apartment rentals, to better understand what drives the difference in attractiveness of these dwelling units that get reflected in the market rents they are able to fetch.
+
+
+## Next steps
+This post opens up more questions than it answers. Hopefully I will find the time to add to this by adding posts on different aspects, or maybe others pick things up and continue from here. As always, the code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-02-15-vancouver-renters.Rmarkdown), although I am currently not at liberty to share some of the custom tabulations used in this post.
+
