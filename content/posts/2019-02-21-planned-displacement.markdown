@@ -16,7 +16,7 @@ categories:
 tags: []
 description: "How can we ensure that densifying Vancouver won't be taken out on the backs of the most vulnerable?"
 featured: 'renter_density_map.png'
-images: ["https://doodles.mountainmath.ca/posts/2019-02-21-planned-displacement_files/figure-html/renters-age-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2019-02-21-planned-displacement_files/figure-html/renter_density_map.png"]
 featuredalt: ""
 featuredpath: "/posts/2019-02-21-planned-displacement_files/figure-html"
 linktitle: ''
