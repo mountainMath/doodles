@@ -15,41 +15,14 @@ categories:
   - rental
 tags: []
 description: "How can we ensure that densifying Vancouver won't be taken out on the backs of the most vulnerable?"
-featured: 'renter_density_map.png'
-images: ["https://doodles.mountainmath.ca/posts/2019-02-21-planned-displacement_files/figure-html/renter_density_map.png"]
+featured: 'renters_density_map.png'
+images: ["https://doodles.mountainmath.ca/posts/2019-02-21-planned-displacement_files/figure-html/renters_density_map.png"]
 featuredalt: ""
 featuredpath: "/posts/2019-02-21-planned-displacement_files/figure-html"
 linktitle: ''
 type: "post"
 ---
 
-<style>
-.btn {
-font-family: inherit;
-font-size: .875rem;
-font-weight: 700;
-font-weight: 500;
-cursor: pointer;
-display: inline-block;
-line-height: 1.125rem;
-padding: .5rem 1rem;
-margin: 0;
-height: auto;
-border: 1px solid transparent;
-vertical-align: middle;
--webkit-appearance: none;
-color: inherit;
-background-color: transparent;
-}
-.btn-primary {
-color: #fff;
-background-color: #0074d9;
-border-radius: 3px;
-}
-.btn, .btn:hover {
-text-decoration: none;
-}
-</style>
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
@@ -176,6 +149,34 @@ Growth should be focused in areas with many transportation options - frequent tr
 But are there places in the region with abundant transportation that can be developed without displacement?
 
 Let's unpack these two notions: *abundant transportation* and *displacement*.
+
+<style>
+.btn {
+font-family: inherit;
+font-size: .875rem;
+font-weight: 700;
+font-weight: 500;
+cursor: pointer;
+display: inline-block;
+line-height: 1.125rem;
+padding: .5rem 1rem;
+margin: 0;
+height: auto;
+border: 1px solid transparent;
+vertical-align: middle;
+-webkit-appearance: none;
+color: inherit;
+background-color: transparent;
+}
+.btn-primary {
+color: #fff;
+background-color: #0074d9;
+border-radius: 3px;
+}
+.btn, .btn:hover {
+text-decoration: none;
+}
+</style>
 
 
 ## Abundant Transportation (Frequent Transit)

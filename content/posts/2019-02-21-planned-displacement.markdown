@@ -15,13 +15,32 @@ categories:
   - rental
 tags: []
 description: "How can we ensure that densifying Vancouver won't be taken out on the backs of the most vulnerable?"
-featured: 'renter_density_map.png'
-images: ["https://doodles.mountainmath.ca/posts/2019-02-21-planned-displacement_files/figure-html/renter_density_map.png"]
+featured: 'renters_density_map.png'
+images: ["https://doodles.mountainmath.ca/posts/2019-02-21-planned-displacement_files/figure-html/renters_density_map.png"]
 featuredalt: ""
 featuredpath: "/posts/2019-02-21-planned-displacement_files/figure-html"
 linktitle: ''
 type: "post"
 ---
+
+
+
+
+When we (Denis and Jens) got together for coffee the other day, Denis showed off some maps of renter density in the frequent transit network that he was working on. The idea immediately clicked and we decided to work this out together. Motivated by the issue of renter demoviction caused by the [2017 Metrotown Plan](https://www.burnaby.ca/City-Services/Policies--Projects---Initiatives/Community-Development/Community-Plans/Metrotown-Downtown-Plan.html), we set out to quantify how one could **plan for displacement** on a regional level, instead of treating it as an unwelcome consequence of development at the lot level. Denis has some [great context and explanations on his blog, be sure to check it out too](http://denisagar.com/where-should-new-homes-go-a-map-of-renter-density/)!
+
+## Where should new housing go?
+Displacement can be traumatic. Local news outlets like [The Tyee](https://thetyee.ca/News/2016/08/29/Burnaby-Boom-Inev-Redev/) have shed light on the human impact of displacement experienced by people in Metro Vancouver. But there has been little public discussion about how to incorporate the spectre of displacement into regional planning.
+
+As Metro Vancouver is growing, we have a choice where and how to accommodate growth. Being mostly
+built out at this point, and having policies in place to protect natural, agricultural, and industrial land, growth will in many cases take the form of densification on existing residential land. This may lead to displacement, but the risk of displacement will vary enormously from lot to lot.
+
+A new resident's access to jobs, schools, and amenities will also vary enormously from lot to lot. Concentrating development on the distant edge of the region would solve the displacement problem, but would also limit those new residents' access to the places they need to go, and would force them to be dependent on a car.
+
+Growth should be focused in areas with many transportation options - frequent transit, good bike routes, carshare vehicles, and amenities within walking distance. 
+
+But are there places in the region with abundant transportation that can be developed without displacement?
+
+Let's unpack these two notions: *abundant transportation* and *displacement*.
 
 <style>
 .btn {
@@ -50,24 +69,6 @@ border-radius: 3px;
 text-decoration: none;
 }
 </style>
-
-
-
-When we (Denis and Jens) got together for coffee the other day, Denis showed off some maps of renter density in the frequent transit network that he was working on. The idea immediately clicked and we decided to work this out together. Motivated by the issue of renter demoviction caused by the [2017 Metrotown Plan](https://www.burnaby.ca/City-Services/Policies--Projects---Initiatives/Community-Development/Community-Plans/Metrotown-Downtown-Plan.html), we set out to quantify how one could **plan for displacement** on a regional level, instead of treating it as an unwelcome consequence of development at the lot level. Denis has some [great context and explanations on his blog, be sure to check it out too](http://denisagar.com/where-should-new-homes-go-a-map-of-renter-density/)!
-
-## Where should new housing go?
-Displacement can be traumatic. Local news outlets like [The Tyee](https://thetyee.ca/News/2016/08/29/Burnaby-Boom-Inev-Redev/) have shed light on the human impact of displacement experienced by people in Metro Vancouver. But there has been little public discussion about how to incorporate the spectre of displacement into regional planning.
-
-As Metro Vancouver is growing, we have a choice where and how to accommodate growth. Being mostly
-built out at this point, and having policies in place to protect natural, agricultural, and industrial land, growth will in many cases take the form of densification on existing residential land. This may lead to displacement, but the risk of displacement will vary enormously from lot to lot.
-
-A new resident's access to jobs, schools, and amenities will also vary enormously from lot to lot. Concentrating development on the distant edge of the region would solve the displacement problem, but would also limit those new residents' access to the places they need to go, and would force them to be dependent on a car.
-
-Growth should be focused in areas with many transportation options - frequent transit, good bike routes, carshare vehicles, and amenities within walking distance. 
-
-But are there places in the region with abundant transportation that can be developed without displacement?
-
-Let's unpack these two notions: *abundant transportation* and *displacement*.
 
 
 ## Abundant Transportation (Frequent Transit)
