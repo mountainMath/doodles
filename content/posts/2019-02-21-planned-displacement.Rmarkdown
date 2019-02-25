@@ -1,0 +1,650 @@
+---
+title: Planned displacement
+author: Jens von Bergmann
+date: '2019-02-21'
+slug: planned-displacement
+categories:
+  - cancensus
+  - CensusMapper
+  - land use
+  - OSM
+  - Transportation
+  - Vancouver
+  - zoning
+  - density
+  - rental
+tags: []
+description: "How can we ensure that densifying Vancouver won't be taken out on the backs of the most vulnerable?"
+featured: 'renter_density_map.png'
+images: ["https://doodles.mountainmath.ca/posts/2019-02-21-planned-displacement_files/figure-html/renters-age-1.png"]
+featuredalt: ""
+featuredpath: "/posts/2019-02-21-planned-displacement_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+<style>
+.btn {
+font-family: inherit;
+font-size: .875rem;
+font-weight: 700;
+font-weight: 500;
+cursor: pointer;
+display: inline-block;
+line-height: 1.125rem;
+padding: .5rem 1rem;
+margin: 0;
+height: auto;
+border: 1px solid transparent;
+vertical-align: middle;
+-webkit-appearance: none;
+color: inherit;
+background-color: transparent;
+}
+.btn-primary {
+color: #fff;
+background-color: #0074d9;
+border-radius: 3px;
+}
+.btn, .btn:hover {
+text-decoration: none;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	fig.width = 8,
+	dev="svg",
+	cache=TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+library(tidyverse)
+library(cancensus)
+library(cancensusHelpers)
+library(sf)
+library(mapdeck)
+library(transitland)
+library(tongfen)
+library(dotdensity)
+
+
+# URLs for meto vancouver data
+land_use_path <- "http://www.metrovancouver.org/data/Data/LandUse/Landuse2011.zip"
+frequent_transit_development_areas_path <- "http://www.metrovancouver.org/data/Data/FTDA/FTDA_RCS.zip"
+land_use_designation_path <- "http://www.metrovancouver.org/data/Data/MetroLandDesignation/Metro2040LandDesignation.zip"
+urban_containment_path <- "http://www.metrovancouver.org/data/Data/UrbanContainment/Metro2040UrbanContainmentBoundary.zip"
+urban_centres_path <- "http://www.metrovancouver.org/data/Data/UrbanCentre/UrbanCentre.zip"
+
+# labels and explanations for land use codes
+residential_land_use_codes <- c("S230","S235","S131","S135","S130","S110","S410")
+land_use_labels <- list(
+    "S110"="Residential - Single Detached & Duplex",
+    "S131"="Residential – Townhouse",
+    "S130"="Residential - Low-rise Apartment",
+    "S135"="Residential - High-rise Apartment",
+    "S410"="Residential - Institutional and Non-Market Housing",
+    "S200"="Commercial",
+    "S230"="Mixed Residential Commercial - Low-rise Apartment",
+    "S235"="Mixed Residential Commercial - High-rise Apartment",
+    "S400"="Institutional",
+    "A500"="Agriculture",
+    "S300"="Industrial",
+    "R100"="Recreation, Open Space and Protected Natural Areas",
+    "S420"="Cemetery",
+    "U100"="Undeveloped and Unclassified",
+    "M300"="Industrial – Extractive",
+    "S120"="Residential – Rural",
+    "S100"="Residential - Mobile Home Park",
+    "S700"="Rail, Rapid Transit, Other Transportation, Utility and Communication",
+    "S600"="Port Metro Vancouver",
+    "R200"="Lakes, Large Rivers and Other Water",
+    "S500"="Road Right-of-Way",
+    "W400"="Protected Watershed",
+    "S650"="Airport/Airstrip",
+    "F100"="Harvesting and Research"
+)
+
+land_use_simple_labels <- list(
+    "S110"="Single/Duplex",
+    "S131"="Townhouse",
+    "S130"="Low-rise",
+    "S135"="Mid/High-rise",
+    "S410"="Institutional / Non-Market",
+    "S200"="Commercial",
+    "S230"="Mixed Low-rise",
+    "S235"="Mixed High-rise",
+    "S400"="Institutional",
+    "A500"="Agriculture",
+    "S300"="Industrial",
+    "R100"="Parks",
+    "S420"="Cemetery",
+    "U100"="Undeveloped and Unclassified",
+    "M300"="Industrial",
+    "S120"="Residential",
+    "S100"="Mobile Home Park",
+    "S700"="Transportation/Utilities",
+    "S600"="Port Metro Vancouver",
+    "R200"="Water",
+    "S500"="Road Right-of-Way",
+    "W400"="Protected Watershed",
+    "S650"="Airport/Airstrip",
+    "F100"="Harvesting and Research"
+)
+
+colorMap <- c(
+            "R100"="#006400",
+            "M300"="#8B4513",
+            "S120"="#FFDAB9",
+            "S130"="#fffd0a",
+            "A500"="#A0522D",
+            "S100"="#FFA07A",
+            "S235"="#800000",
+            "S131"="#b4d600",
+            "S700"="#4d0000",
+            "S230"="#DC143C",
+            "S600"="#4d004d",
+            "S420"="#008000",
+            "S400"="#00BFFF",
+            "U100"="#505050",
+            "S410"="#40E0D0",
+            "R200"="#0000CD",
+            "S500"="#f5f5dc",
+            "S300"="#DEB887",
+            "S200"="#FF0000",
+            "W400"="#00008B",
+            "S110"="#d8ff0a",
+            "S135"="#FFA500",
+            "S650"="#670067",
+            "F100"="#FF1493"
+)
+```
+
+When we (Denis and Jens) got together for coffee the other day, Denis showed off some maps of renter density in the frequent transit network that he was working on. The idea immediately clicked and we decided to work this out together. Motivated by the issue of renter demoviction caused by the [2017 Metrotown Plan](https://www.burnaby.ca/City-Services/Policies--Projects---Initiatives/Community-Development/Community-Plans/Metrotown-Downtown-Plan.html), we set out to quantify how one could **plan for displacement** on a regional level, instead of treating it as an unwelcome consequence of development at the lot level. Denis has some [great context and explanations on his blog, be sure to check it out too](http://denisagar.com/where-should-new-homes-go-a-map-of-renter-density/)!
+
+## Where should new housing go?
+Displacement can be traumatic. Local news outlets like [The Tyee](https://thetyee.ca/News/2016/08/29/Burnaby-Boom-Inev-Redev/) have shed light on the human impact of displacement experienced by people in Metro Vancouver. But there has been little public discussion about how to incorporate the spectre of displacement into regional planning.
+
+As Metro Vancouver is growing, we have a choice where and how to accommodate growth. Being mostly
+built out at this point, and having policies in place to protect natural, agricultural, and industrial land, growth will in many cases take the form of densification on existing residential land. This may lead to displacement, but the risk of displacement will vary enormously from lot to lot.
+
+A new resident's access to jobs, schools, and amenities will also vary enormously from lot to lot. Concentrating development on the distant edge of the region would solve the displacement problem, but would also limit those new residents' access to the places they need to go, and would force them to be dependent on a car.
+
+Growth should be focused in areas with many transportation options - frequent transit, good bike routes, carshare vehicles, and amenities within walking distance. 
+
+But are there places in the region with abundant transportation that can be developed without displacement?
+
+Let's unpack these two notions: *abundant transportation* and *displacement*.
+
+
+## Abundant Transportation (Frequent Transit)
+Canadian cities can generally be divided into two zones: areas where a car is absolutely essential for daily life, and areas where there are other options. Those other options (active transportation, transit, carshare) tend to flock together, being highly complementary in nature. A quick look at [Modo's map of vehicle locations](https://www.modo.coop/map/) confirms the idea that carshare needs transit-, walking-, and cycling-friendly locations to survive. Same thing goes for all the other modes. As options improve in these areas, a positive feedback loop leads to further improvement.
+
+For the purpose of this post, we are focusing on places served by *frequent transit* because it is the most widely-used and most easily-definable of the bunch. We think it can be used as a proxy for places that have an abundance of transportation options. The code is [available in GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-02-21-planned-displacement.Rmarkdown) to those who may want to analyse other measures of transportation abundance like Walkscore, carshare networks, or measures of accesibility.
+
+There is no universal definition for frequent transit. We are working with an approximation of TransLink's [Frequent Transit Network definition](https://www.translink.ca/Plans-and-Projects/Frequent-Transit-Network.aspx).
+
+*Our definition of Frequent Transit Coverage*
+
+Between 6am-9pm Weekdays, 7am-9pm Saturdays, 8am-9pm Sundays & Holidays:
+
+* Transit riders wait no more than 16 minutes, 80% of the time
+* Transit riders wait no more than 20 minutes, 95% of the time
+* Maximum wait during this period is 30 minutes
+* Transit riders are willing to travel 400m to a bus stop, 600m to a B-Line stop, and 800m to a rapid transit stop
+
+To draw a coverage area around the transit stops, we assume that riders are willing to travel 400m to a bus stop, 600m to a B-Line stop, and 800m to a rapid transit stop.
+
+For this post, we have not yet incorporated the expansions funded by TransLink's [Ten Year Vision](https://tenyearvision.translink.ca/) like increased frequency, new B-lines and the Millennium Line extension. Anyone interested in including this is invited to grab the code and make the appropriate adjustments.
+
+At the same time, we will keep parks and green space, agricultural land, institutional land (like schools), industrial land, and roads off-limits to development. So we focus on residential and mixed-use land use with frequent transit service.
+
+
+```{r}
+# grab landuse data
+land_use_data <- simpleCache(get_shapefile(land_use_path),"metro_van_land_use_data")
+
+
+# Metro Vancouver outline
+region <- list_census_regions("CA16") %>% filter(name=="Vancouver",level=="CMA")
+metro_vancouver <- get_census("CA16",regions=as_census_region_list(region),geo_format = "sf")
+bbox=st_bbox(metro_vancouver)
+
+# finer region selection, remove first nations territories
+geo_uid=region$region
+finer_regions <- list_census_regions("CA16") %>% filter(level=="CSD",CMA_UID==geo_uid,municipal_status!="IRI")
+
+# grab transit stops
+stops <- simpleCache(get_transit_stops(list(bbox=bbox,per_page=1000),get_all=TRUE),"metro_yvr_transit_stops") %>%
+  st_transform(4326) %>%
+  filter(st_intersects(.,metro_vancouver) %>% as.logical %>% replace_na(FALSE))
+
+# transit frequency
+mon_params <- list(bbox=bbox,
+               per_page=10000,
+               origin_departure_between="06:00:00,21:00:00",
+               date="2018-11-19")
+schedule_stops_monday <- simpleCache(get_transit_schedule_stops(mon_params,get_all = TRUE),"yvr_schedule_11-19") %>% 
+    filter(origin_onestop_id %in% stops$onestop_id )
+sat_params <- list(bbox=bbox,
+               per_page=10000,
+               origin_departure_between="07:00:00,21:00:00",
+               date="2018-11-17")
+schedule_stops_saturday <- simpleCache(get_transit_schedule_stops(sat_params,get_all = TRUE),"yvr_schedule_11-17") %>% 
+    filter(origin_onestop_id %in% stops$onestop_id )
+sun_params <- list(bbox=bbox,
+               per_page=10000,
+               origin_departure_between="08:00:00,21:00:00",
+               date="2018-11-18")
+schedule_stops_sunday <- simpleCache(get_transit_schedule_stops(sun_params,get_all = TRUE),"yvr_schedule_11-18") %>% 
+    filter(origin_onestop_id %in% stops$onestop_id )
+  
+get_schedule_stop_data <- function(){
+
+  add_time <- function(data,time){
+    data %>% 
+      bind_rows(tibble(origin_onestop_id=unique(data$origin_onestop_id),origin_departure_time=time))
+  }
+  
+  summarize_stop_data <- function(data,hours,start_time,end_time){
+    data %>%
+      add_time(start_time) %>%
+      add_time(end_time) %>%
+      group_by(origin_onestop_id) %>%
+      arrange(origin_departure_time) %>%
+      mutate(time=paste0("2018-11-19 ",origin_departure_time)) %>%
+      mutate(previous_time=lag(time)) %>%
+      mutate(wait_time=difftime(time,previous_time,units="mins") %>% as.numeric) %>%
+      summarise(wait_times=list(wait_time),
+                departure_times=list(origin_departure_time),
+                departures_per_hour=(length(origin_departure_time)-2)/hours)
+      #summarize(count=n()/hours, max_wait=max(wait_time,na.rm=TRUE),name=first(name))
+  }
+  
+  # count departures and weight by times and days
+  # assume weekdays are all the same, only get Monday data
+  bind_rows(
+    schedule_stops_monday %>% summarize_stop_data(15,"06:00:00","21:00:00") %>% mutate(weekday="Monday"),
+    schedule_stops_saturday %>% summarize_stop_data(14,"07:00:00","21:00:00") %>% mutate(weekday="Saturday"),
+    schedule_stops_sunday %>% summarize_stop_data(13,"08:00:00","21:00:00") %>% mutate(weekday="Sunday")
+  ) 
+}
+
+schedule_stop_data <- simpleCache(get_schedule_stop_data(),"yvr_schedule_stops_computed",refresh = FALSE) %>%
+  mutate(count=lengths(wait_times)-2) %>%
+  mutate(max_wait=map(wait_times,max,na.rm=TRUE) %>% unlist) %>%
+  mutate(wait_80=map(wait_times,function(x)quantile(x,0.8,na.rm=TRUE)) %>% unlist) %>%
+  mutate(wait_95=map(wait_times,function(x)quantile(x,0.95,na.rm=TRUE)) %>% unlist)
+  
+
+frequency_counts <- schedule_stop_data %>% 
+  group_by(origin_onestop_id) %>%
+  mutate(weight=case_when(weekday=="Monday"~5,TRUE~1)) %>%
+  summarize(count=sum(count*weight)/7,max_wait=max(max_wait),wait_80=max(wait_80),wait_95=max(wait_95))   %>%
+  mutate(frequent=wait_95<=20,wait_80<=16,max_wait<=30)
+```
+To compute the frequent transit coverage we pull the transit data from the [Transitland datastore](https://transit.land/documentation/datastore/api-endpoints.html) using our [transitland R package](https://github.com/mountainMath/transitland) and compute the required metrics for each stop.
+
+```{r fig.height=4}
+ggplot(schedule_stop_data %>% filter(max_wait<60),aes(x=max_wait,fill=..x..)) +
+  geom_histogram() +
+  scale_y_continuous(labels=scales::comma) +
+  facet_wrap("weekday",labeller = as_labeller(c("Monday"="Monday 7am-9pm","Saturday"="Saturday 8am-9pm","Sunday"="Sunday 8am-9pm"))) +
+  scale_fill_viridis_c(guide=FALSE,direction = -1) +
+  #theme_light() +
+  scale_y_continuous(labels=scales::comma) +
+  scale_x_continuous(labels=function(x)paste0(round(x),"m")) +
+  labs(title="Maximum wait times by stop in Metro Vancouver",
+       x="Maximum wait time (capped at 1 hour)",y="Number of stops",
+       caption="MountainMath, TransitLand")
+```
+
+We are looking for stops that fit our metric for weekdays as well as weekends.
+
+```{r eval=FALSE, include=FALSE}
+location <- c(-123.1,   49.24914)
+
+cutoffs <- c(-Inf,5,10,15,17.5,20,25,30,45,60,Inf)
+
+vector_to_string <- function(vector){
+  map(vector,function(x)paste0(x,collapse = ", "))
+}
+
+schedule_stop_plot_data <- stops %>%
+  inner_join(schedule_stop_data,by=c("onestop_id"="origin_onestop_id")) %>%
+  mutate(departures_per_hour=round(departures_per_hour,2)) %>%
+  select(name,max_wait,wait_80,count,wait_times,departures_per_hour,departure_times,weekday) %>%
+  mutate(departure_times = vector_to_string(departure_times) %>% unlist,
+         wait_times=vector_to_string(wait_times) %>% unlist)
+  
+
+write_sf(schedule_stop_plot_data,"data/wait_times.geojson",delete_dsn = TRUE)
+
+
+mapdeck(token = getOption("mapbox_token"), style = mapdeck_style('dark')) %>%
+  mapdeck_view(location, zoom = 10) %>%
+  add_pointcloud(data = schedule_stop_plot_data %>% 
+                   mutate(max_wait_d=as.character(cut(max_wait,breaks=cutoffs))), 
+              fill_colour = "max_wait_d",
+              #tooltip = "info",
+              legend=TRUE,
+              fill_opacity=180,
+              palette = "magma",
+              update_view=FALSE,
+              legend_options = list( title = "Max wait time" ),
+              #stroke_width = NA,
+              layer_id = "frequent_renters") %>%
+  add_path(data=transit_routes %>% select(info,type),
+           update_view=FALSE,
+           stroke_opacity = 125,
+           tooltip = "info",
+           stroke_colour="type",
+           layer_id="transit")
+
+```
+
+
+
+```{r}
+# compute frequent transit stops
+bline_routes="099|095|096"
+skytrain_routes=" Line"
+frequent_stops <- stops %>% 
+  right_join(filter(frequency_counts,frequent) %>% select(max_wait,wait_80,count,origin_onestop_id),by=c("onestop_id"="origin_onestop_id")) %>%
+  mutate(routes=lapply(routes_serving_stop,function(x){fromJSON(x)$route_name %>% unique()})) %>% 
+  mutate(routes_string = lapply(routes,function(x){paste(x,collapse=",")})) %>%
+  mutate(bline=grepl(bline_routes,routes_string)) %>%
+  mutate(skytrain=grepl(skytrain_routes,routes_string)) %>%
+  mutate(radius=case_when(skytrain ~ 800, bline ~ 600, TRUE ~ 400)) 
+
+# compute frequent transit netowrk area
+frequent_transit_areas <- frequent_stops %>% 
+  st_transform(26910) %>%
+  st_buffer(.,frequent_stops$radius) %>%
+  st_transform(4326) %>% 
+  st_union %>% 
+  st_sf
+
+# intersect frequent transit network with residential/mixed use areas
+frequent_residential <- land_use_data %>% 
+  filter(LU_Code %in% residential_land_use_codes) %>% 
+  st_intersection(frequent_transit_areas %>% st_transform(st_crs(land_use_data)))
+
+```
+
+```{r}
+library(rmapzen)
+bbox <- st_bbox(metro_vancouver)
+vector_tiles <- simpleCache(get_vector_tiles(bbox),"metro_van_vector_tiles")
+roads <- as_sf(vector_tiles$roads) %>% filter(kind != "ferry")
+water <- as_sf(vector_tiles$water) 
+```
+
+Applying our metric leaves us with a map of frequent transit coverage.
+
+```{r}
+bbox2 <- st_bbox(frequent_transit_areas)
+ggplot(frequent_transit_areas) +
+  geom_sf(fill="darkorange",color=NA) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
+  theme_void() +
+  coord_sf(datum=NA,xlim = c(bbox2$xmin,bbox2$xmax), ylim=c(bbox2$ymin,bbox2$ymax)) +
+  labs(title="Metro Vancouver frequent transit coverage area",caption="MountainMath, Transitland, OSM")
+
+```
+
+Again, the frequent transit network can change over time, and it most certainly will expand and intensify in [the near future](https://tenyearvision.translink.ca/). For this post we will stick with the current network.
+
+## Exposure and vulnerability
+When planning for displacement, we have two goals in mind:
+
+1) minimize exposure to displacement, and
+2) minimize vulnerability of the exposed population.
+
+We measure exposure by population density. Vulnerability is a more complex metric, for this post we use tenure as a first-level approximation.
+
+<a href="https://upload.wikimedia.org/wikipedia/commons/e/ea/Edith_Macefield%27s_house.jpg" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/e/ea/Edith_Macefield%27s_house.jpg" style="height:180px;float:right;"/></a> The effect of the displacement depends strongly on tenure. Strictly speaking, owner households only experience
+voluntary displacement, as they can choose to sell their property or to stay put. The
+immediate neighbourhood around them may change though, so their familiar surroundings may get displaced. 
+
+Tenant households have no choice in this. If the building owner sells their building to make space for denser development,
+they lose their home and often won't be able to find a comparable rental accommodation nearby.
+
+Homeowners may feel negative impacts from neighbourhood change, but it cannot be compared with the much more impactful hardship of eviction.
+
+We have excluded First Nations Reserves from our analysis as it was not clear to us how to our vulnerability metrics would apply to those regions and because some of census data was suppressed.
+
+## Methods
+With our simplistic definitions, measuring exposure and vulnerability is straight-forward. All we need is the frequent transit coverage area, land use data and census data. And a way to wrangle it all together. Fortunately we have worked with all these pieces before, so it just requires our [cancensus package](https://github.com/mountainMath/cancensus) to access the census data and the [Metro Vancouver land use data](http://www.metrovancouver.org/data) that we [worked with before](https://doodles.mountainmath.ca/blog/2016/01/31/land-use/).
+
+To tie things together we will need to estimate data for our custom geographies using our [tongfen package](https://github.com/mountainMath/tongfen), together with proportional re-aggregation based on dissemination block population, dwelling and household counts as this gives the most reliable results as we [explained here](https://doodles.mountainmath.ca/blog/2018/10/22/toronto-wards/).
+
+
+```{r}
+cut_db_data <- function(base_geography){
+  get_census("CA16",regions=as_census_region_list(region),geo_format = "sf",level="DB") %>%
+  st_transform(st_crs(base_geography)) %>% 
+    st_intersection(base_geography %>% st_union) %>%
+    mutate(cut_area=st_area(geometry))
+}
+
+
+# load census data and cut to frequent transit netowrk
+frequent_transit_census_data <- function(base_geography,target_geography) {
+  vectors <- c("TotalTenure"="v_CA16_4836","Owner"="v_CA16_4837","Renter"="v_CA16_4838","Band"="v_CA16_4839")
+  da_data <- get_census("CA16",regions=as_census_region_list(region),level = "DA", vectors = vectors) %>%
+     filter(CSD_UID %in% finer_regions$region) 
+  db_data <- simpleCache(cut_db_data(land_use_data),"landuse_db_data") %>%
+    filter(CSD_UID %in% finer_regions$region) %>%
+    proportional_reaggregate(parent_data=da_data,geo_match = c("DA_UID"="GeoUID"),
+                                          categories = names(vectors),base = "Households")
+  
+  # tongfen to target_geography
+  tongfen_estimate(target_geography, db_data, c("Population","Households","Dwellings",names(vectors))) %>%
+    mutate(area=st_area(geometry))
+}
+
+metres_per_acre=4046.86
+
+ta_data <- simpleCache(frequent_transit_census_data(
+  land_use_data %>% filter(LU_Code %in% residential_land_use_codes),
+  frequent_residential
+),"frequent_transit_census_data.Rd",refresh = TRUE) %>%
+  mutate(pop_per_acre=Population/as.numeric(area)*metres_per_acre) %>%
+    mutate(renters_per_acre=Renter/as.numeric(area)*metres_per_acre) %>%
+    mutate(dw_per_acre=Dwellings/as.numeric(area)*metres_per_acre)
+```
+
+
+## Net and gross density
+We want to explore renter density within the frequent transit coverage area. For that we want to distinguish between two different types of density, **net density** and **gross density**. Gross density is based on the total area of a region, net density is just based on the area of the residential lots, so it ignores road right of ways, parks, schools, and other non-residential land uses. Net density is the concepts that we will be using here, as the property lots is what matters in our context.
+
+## Displacement vulnerability
+So where within the frequent transit coverage area do people live? Where do renters live? All that is left to do is to estimate the net renter density for all residential (or mixed use) areas within the frequent transit network. 
+
+```{r}
+
+colors_to_matrix <- function(cs){
+  c=gsub("#","",paste0(cs,collapse = ""))
+  matrix(data=substring(c, seq(1, nchar(c), 2), seq(2, nchar(c), 2)),ncol=4,byrow = TRUE)
+}
+
+#quantile(ta_data$renter_density,seq(0,1,0.1))
+renter_breaks=c(-Inf,1,2,5,10,50,100,Inf)
+renter_labels <- c("Fewer than 1", "1 to 2","2 to 5","5 to 10","10 to 50","50 to 100","Over 100")
+#renter_colours <- set_names(rev(viridis::magma(length(renter_labels))),renter_labels)
+renter_colours <- set_names(rev(viridis::magma(length(renter_labels)+2))[1:length(renter_labels)],renter_labels)
+#quantile(ta_data$pop_per_acre,seq(0,1,0.1))
+pop_breaks=c(-Inf,5,10,25,50,100,250,Inf)
+pop_labels <- c("Fewer than 5","5 to 10", "10 to 25","25 to 50","50 to 100","100 to 250","Over 250")
+pop_colours <- set_names(rev(viridis::viridis(length(pop_labels))),pop_labels)
+#quantile(ta_data$dw_per_acre,seq(0,1,0.1))
+dw_breaks=c(-Inf,6,10,20,50,100,200,Inf)
+dw_labels <- c("Fewer than 6", "6 to 10","10 to 20","20 to 50","50 to 100","100 to 200","Over 200")
+dw_colours <- set_names(rev(viridis::plasma(length(dw_labels))),dw_labels)
+
+
+renter_labels_map <- c(
+  "Fewer than 1"="a) Fewer than 1", 
+  "1 to 2"="b) 1 to 2",
+  "2 to 5"="c) 2 to 5",
+  "5 to 10"="d) 5 to 10",
+  "10 to 50"="e) 10 to 50",
+  "50 to 100"="f) 50 to 100",
+  "Over 100"="g) Over 100"
+)
+  
+plot_data <- ta_data %>%
+  #st_cast("POLYGON") %>%
+  st_transform(4326) %>%
+  mutate(info=paste0("<h4>Net density</h4><p>",round(renters_per_acre,1)," renters per acre</p><p>",round(pop_per_acre,1)," people per acre</p><p>",round(dw_per_acre,1)," dwellings per acre</p>")) %>%
+  mutate(rd=cut(renters_per_acre,breaks=renter_breaks,labels=renter_labels)) %>%
+  mutate(dd=cut(dw_per_acre,breaks=dw_breaks,labels=dw_labels)) %>%
+  mutate(pd=cut(pop_per_acre,breaks=pop_breaks,labels=pop_labels)) %>%
+  mutate(rrd=renter_labels_map[rd])
+
+```
+
+Overall our frequent transit network covers `r scales::comma(plot_data$area %>% as.numeric %>% sum/metres_per_acre)` acres using net residential density, only counting residential or mixed land use. 
+
+```{r fig.height=4}
+pd <- plot_data %>% 
+  st_set_geometry(NULL) %>% 
+  group_by(pd) %>% 
+  summarize(area=sum(as.numeric(area))/metres_per_acre)
+ggplot(pd,aes(x=pd,y=area,fill=pd)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::comma) +
+  #theme_light() +
+  scale_fill_manual(values=pop_colours) +
+  #scale_fill_viridis_d(option = "viridis") +
+  labs(title="Population density in the frequent transit network",
+       x="People per acre",
+       y="Acres",
+       fill="Population density",
+       caption="MountainMath, Transitland, Metro Vancouver Land Use Data")
+```
+
+Most of our frequent transit network is comprised of population densities around 10 to 25 people her acre. 
+
+Planners usually look at dwelling units per acre as a metric, so let's look at what our frequent transit network looks like in terms of this. [Pricetags did an overview on Jane Jacob's view on dwellings per acre a while back](https://pricetags.ca/2012/06/01/jane-jacobs-style-density-it-may-not-be-what-you-think/), Jacobs called 6 or fewer dwellings per acre *very low* density which "can make out well in the suburbs", between 10 and 20 dwelling units per acre can "yields a kind of semisuburb", then the "in between densities" until "the point at which lively diversity and public life can arise" which she pegs at starting at around 100 dwelling units per acre, although she modifies that with "As a general rule, I think 100 dwellings per acre will be found to be too low." Just for reference, 100 dwelling units per acre is roughly the density found in the Olympic Village.
+
+
+```{r fig.height=4}
+dd <- plot_data %>% 
+  st_set_geometry(NULL) %>% 
+  group_by(dd) %>% 
+  summarize(area=sum(as.numeric(area))/metres_per_acre)
+ggplot(dd,aes(x=dd,y=area,fill=dd)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::comma) +
+  #theme_light() +
+  scale_fill_manual(values=dw_colours) +
+  #scale_fill_viridis_d(option = "plasma") +
+  labs(title="Dwelling density in the frequent transit network",
+       x="Dwelling units per acre",
+       y="Acres",
+       fill="Dwelling density",
+       caption="MountainMath, Transitland, Metro Vancouver Land Use Data")
+```
+
+Using Jacob's cutoffs, we see that almost half of our frequent transit network has very low dwelling densities suited for suburbs. The next largest chunk still sits below the 10 to 20 dwelling unit "semisuburb". The "in between" densities take up most of the rest, with only a tiny fraction of our frequent transit network reaching densities "at which lively diversity and public life can arise".
+
+More important for us when looking at displacement is renter density, as renters are the ones most vulnerable when displaced.
+
+```{r fig.height=4}
+rd <- plot_data %>% 
+  st_set_geometry(NULL) %>% 
+  group_by(rd) %>% 
+  summarize(area=sum(as.numeric(area))/metres_per_acre)
+ggplot(rd,aes(x=rd,y=area,fill=rd)) +
+  scale_y_continuous(labels=scales::comma) +
+  geom_bar(stat="identity") +
+  #theme_light() +
+  scale_fill_manual(values=renter_colours) +
+  #scale_fill_viridis_d(option = "magma") +
+  labs(title="Renter density in the frequent transit network",
+       x="Renters per acre",
+       y="Acres",
+       fill="Renter density",
+       caption="MountainMath, Transitland, Metro Vancouver Land Use Data")
+```
+
+Here we see that many areas have fewer than one renter per acre. The bottom brackets are spaced quite closely as to give more detail on the distribution. When minimizing displacement vulnerability we probably want to avoid re-developing areas with higher number of renters. Looking at the graph, that should not be very hard.
+
+So where are these areas with low renter density? Time for a map. Anticipating that people may want to zoom in and view things more closely, we made it interactive.
+```{r message=FALSE, warning=FALSE, include=FALSE}
+transit_routes <- simpleCache(get_transit_routes(list(bbox=st_bbox(metro_vancouver),per_page=1000),get_all = TRUE), 
+                              key="metr_yvr_routes") %>%
+  filter(name!="Amtrak Cascades") %>%
+  mutate(type=case_when(grepl(bline_routes,name) ~ "B-Line", 
+                        grepl(skytrain_routes,name) ~ "Skytrain", 
+                        name=="SeaBus" ~ "SeaBus",
+                        operated_by_name=="BC Transit - Fraser Valley Express" ~ "Fraser Valley Express",
+                        name=="WCE" ~ "West Coast Express", 
+                        TRUE ~ "Bus")) %>%
+  mutate(info=paste0("<h4>",type,"</h4><p>",name,"<p>"))
+  
+plot_data %>%  
+  rename(r=renters_per_acre,d=dw_per_acre,p=pop_per_acre) %>%
+  select(r,d,p) %>% 
+  st_write(here::here("data/frequent_densities.geojson"),delete_dsn=TRUE)
+
+transit_routes %>% 
+  rename(i=info,t=type) %>% 
+  select(i,t) %>% 
+  st_write(here::here("data/transit_network.geojson"),delete_dsn=TRUE)
+
+frequent_stops  %>% 
+  mutate(c=round(count,1),
+         r=case_when(skytrain==TRUE ~ 800,bline~600,TRUE~400)) %>% 
+  select(c,r) %>% 
+  st_write(here::here("data/frequent_stops.geojson"),delete_dsn=TRUE)
+
+```
+
+```{r eval=FALSE, include=FALSE}
+location <- c(-123.1,   49.24914)
+
+mapdeck(token = getOption("mapbox_token"), style = mapdeck_style('dark')) %>%
+  mapdeck_view(location, zoom = 10) %>%
+  add_polygon(data = plot_data %>% 
+                select(renters_per_acre,pop_per_acre,info,rrd) %>%
+                mutate(rrd=as.character(rrd)), 
+              fill_colour = "rrd",
+              tooltip = "info",
+              legend=TRUE,
+              fill_opacity=180,
+              palette = "magma",
+              update_view=FALSE,
+              legend_options = list( title = "Renter density" ),
+              stroke_width = NA,
+              layer_id = "frequent_renters") %>%
+  add_path(data=transit_routes %>% select(info,type),
+           update_view=FALSE,
+           stroke_opacity = 125,
+           tooltip = "info",
+           stroke_colour="type",
+           layer_id="transit")
+
+```
+
+<iframe src="https://mountainmath.ca/planned_displacement_map.html" width="100%" height="500px"></iframe>
+
+<a class="btn btn-primary" href="https://mountainmath.ca/planned_displacement_map.html" target="_blank">View Fullscreen</a>
+
+
+## Planned Displacement
+
+We can now use this map to examine the parts of Metrotown affected by demoviction, for example. With 20 to 40 renters per acre, it's one of the most renter-dense neighbourhoods in the region. Meanwhile, lots across the street hold 1 or 2 renters per acre, and they are not subject to redevelopment plans. One can't help but think that renters are being directly targeted, despite how much more vulnerable they are to eviction. (In this particular case, [local activists](http://www.stopdisplacement.ca/stop-demovictions-burnaby/) composed a ["People's Plan"](http://www.stopdisplacement.ca/wp-content/uploads/2017/08/PeoplesPlan4Metrotown.pdf) recommending that denser development be permitted in the area south of Metrotown that has few renters. The People's Plan was part of the inspiration for this post.)
+
+The map shows many other examples of great locations for "development without displacement". There should no longer be any doubt that we can protect renters and increase housing supply at the same time.
+
+
+
+## Upshot
+This is just a start to open the conversation about how discussions around displacement could enter planning our growth. We could keep going forever on this, refine the vulnerability model, allow for changes in the transit network, etcetera. We could combine stops for those counts at transit nodes. 
+
+As always, the [code for the analysis and visualizations is available for anyone to grab](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-02-21-planned-displacement.Rmarkdown) and adapt this for their purposes.
