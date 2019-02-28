@@ -1,6 +1,8 @@
 ---
 title: Tax Speculations
-author: Jens von Bergmann, Nathan Lauster
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
 date: '2019-02-27'
 slug: tax-speculations
 categories:
@@ -915,6 +917,6 @@ Reading through the requirements one can't help but think that the BC government
 
 The BC Speculation and Vacancy Tax [has been reported to](https://vancouversun.com/news/politics/government-tables-legislation-on-speculation-tax) affect about 32,000 homes, about 20,000 of which will be British Columbians  with the remaining 12,000 foreigners or residents of other provinces, and generate around $200M in revenue. While we're not certain where these figures come from, given our estimates above they actually seem pretty reasonable. We're guessing about 8,800 properties will be considered vacant and non-exempt from the tax, overlapping with 46,000 properties owned by “foreign” owners and subject to the tax if left unattached to a decent rental contract. A sizable 45,000 households may be at risk of being identified (or audited) as satellite families, mostly living in pricey single-family detached (or suited) dwellings. As we note, around a third of these households will be headed by Canadian-born residents, but it's likely many investor class immigrants will also be hit, and the vast majority affected will be in Metro Vancouver. Finally, the tax will probably generate a lot of revenue indirectly by increasing income tax compliance, quite possibly topping its direct revenue. We'll be watching to see how it unfolds! 
 
-For those interested in more details on our methods, or people that would like to make different assumptions and continue to investigate along these lines, the [code for the analysis is availabel on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-02-27-tax-speculations.Rmarkdown).
+For those interested in more details on our methods, or people that would like to make different assumptions and continue to investigate along these lines, the [code for the analysis is available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-02-27-tax-speculations.Rmarkdown).
 
   
