@@ -663,7 +663,7 @@ plot_data <- pumf_data %>%
 
 ggplot(plot_data %>%  filter(test,cases>30)) +
   married_common_law_graph +
-  labs(title=test_title)
+  labs(title=test_title,x="Landing year of primary household maintainer")
 ```
 
 Higher numbers of non-immigrants (i.e. Canadian born) fail our test than any ten-year immigration arrival bracket. Non-immigrants especially dominate the set of single people with lower incomes than expected by housing values, but they also appear in great numbers for married people. This is a striking finding, but also reflects the greater overall size of the non-immigrant population. Looking at immigrants by period, we tend to see what we expect: recent immigrants fail the test more often than more established immigrants. Recent immigrants failing our test also tend to be dominated by married couples, unlike what we see for non-immigrants, but this gap diminishes over time as immigrant patterns come to look increasingly like Canadian born patterns. 
@@ -673,7 +673,7 @@ Looking at the share of owners failing our test in each immigrant category, as o
 ```{r}
 ggplot(plot_data %>% filter(test,cases>30)) +
   married_common_law_share_graph +
-  labs(title=test_title)
+  labs(title=test_title,x="Landing year of primary household maintainer")
 ```
 
 Here we see that higher proportions of recent immigrant owners fail the adjusted imputed rent test than for non-immigrant owners or more established immigrant owners. Reading shares by period of arrival sideways, the evidence would suggest that more recent arrivals owning homes will likely move toward non-immigrant patterns for home owners the longer they remain in Canada. But culture and wealth of immigrants may vary with period, so there may be other explanations at play as well.
@@ -714,7 +714,7 @@ ggplot(plot_data %>%
          group_by(status)%>%
          filter(sum(cases)>=30)) +
   married_common_law_graph +
-  labs(title=test_title)
+  labs(title=test_title,x="Place of birth of primary household maintainer")
 ```
 
 Here Chinese born and Canadian born household maintainers contribute the most to owners failing our adjusted imputed rent test. But other sizable contributors to possible audits include those from Hong Kong, other East Asian countries, and the United Kingdom. The United Kingdom may seem unexpected as a group likely to face audits, but we have already seen some of the relevant cases [documented in the news](https://www.castanet.net/news/Kelowna/249333/Held-hostage-by-spec-tax). Let's look at share of owners failing our adjusted imputed rent test by place of birth.
@@ -729,7 +729,7 @@ ggplot(plot_data %>%
          group_by(status) %>%
          filter(sum(cases)>=30)) +
   married_common_law_share_graph +
-  labs(title=test_title)
+  labs(title=test_title,x="Place of birth of primary household maintainer")
 ```
 
 Diving into the share of owners likely to trigger audits, we see in all cases that it’s a minority of owners at risk from each country. The uncertainty ranges are too large to sensibly rank the data by place of birth. We grouped immigrants from birth places with fewer than 30 (unweighted) combined cases into larger groups. Nevertheless there are sizable proportions of owners arriving from China, Hong Kong, and Other Eastern Asian countries at risk of being audited. This likely reflects Canadian immigration programs selecting for wealth, like investor class programs, [popular in these countries](https://www150.statcan.gc.ca/n1/pub/11-626-x/11-626-x2019001-eng.htm). Comparing investor immigrants living in the speculation tax regions to all immigrants by place of birth, we notice how the investor program leans heavily toward Pacific Rim countries.
