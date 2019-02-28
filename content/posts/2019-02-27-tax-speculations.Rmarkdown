@@ -1,0 +1,920 @@
+---
+title: Tax Speculations
+author: Jens von Bergmann, Nathan Lauster
+date: '2019-02-27'
+slug: tax-speculations
+categories:
+  - cancensus
+  - CANSIM
+  - CensusMapper
+  - Empty Homes
+  - taxes
+  - Vancouver
+tags: []
+description: "Estimating what to expect from the Speculation and Vacancy Tax."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2019-02-27-tax-speculations_files/figure-html/unoccupied-regions-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = TRUE,
+	fig.width = 8,
+	cache=TRUE
+)
+library(tidyverse)
+library(cancensus)
+library(cansim)
+library(statcanXtabs)
+```
+
+```{r}
+cmas <- c("Vancouver","Kelowna – Abbotsford","Victoria")
+path=file.path(getOption("custom_data_path"),"pumf/pumf_2016/Data","Census_2016_Individual_PUMF.sav")
+#pathz <- file.path(getOption("custom_data_path"),"pumf/pumf_2016/Data","Census_2016_Individual_PUMF_SPSS_sav")
+pumf_data <- foreign::read.spss(path) %>%
+  as_tibble() %>%
+  set_names(names(.) %>% toupper) %>%
+  filter(CMA %in% cmas) %>%
+  mutate(lower=case_when(HHINC=="Under $2,000" ~ 0,
+                   TRUE ~ as.numeric(gsub("\\$|,","",str_extract(as.character(HHINC),"^\\$[\\d,]+")))),
+     upper=case_when(HHINC=="$250,000 and over" ~ 300000,
+                     TRUE~as.numeric(gsub("\\$|,","",str_extract(as.character(HHINC),"\\$[\\d,]+$"))))) %>%
+  mutate(married_common_law=as.character(MARSTH)) %>%
+  mutate(married_common_law=case_when(married_common_law %in% c("Legally married (and not separated)","Living common law") ~"Married or common law",
+                                      TRUE ~ "Not married or common law"))
+
+replicate_weights <- paste0("WT",seq(1,16))
+all_weights <- c("WEIGHT",replicate_weights)
+
+estimate_and_standard_error_old <- function(data,...){
+  standard_deviation <- function(data,ws) {
+    (as.matrix(data[ws]) %>% matrixStats::rowSds())/sqrt(length(ws))
+  }
+  
+  d<-data %>%
+    mutate(cases=1) %>%
+    group_by(...) %>%
+    summarize_at(c(all_weights,"cases"),sum) %>%
+    mutate(count=WEIGHT) %>%
+    #rename(count=WEIGHT) %>%
+    ungroup() %>%
+    mutate(standard_error=standard_deviation(.,replicate_weights))# %>%
+    #select(-one_of(replicate_weights))
+}
+
+estimate_and_standard_error_share_old <- function(data,...){
+  squared_function <- function(x)x^2
+  sum_squared <- function(x)sum(squared_function(x))
+  
+  data %>%
+    mutate(gggg="1") %>%
+    left_join((.) %>%
+      estimate_and_standard_error(...,gggg) %>%
+      select(...,gggg,count,standard_error) %>%
+      rename(total=count,total_error=standard_error)) %>%
+    mutate(share=count/total) %>%
+    mutate(share_error=sqrt((standard_error/total)^2+(total_error*count/total^2)^2)) %>%
+    select(-gggg)
+}
+
+
+
+gather_weights <- function(data) {
+  data %>% gather(key="weight",value="Value",all_weights)
+}
+
+estimate_and_standard_error <- function(data,...){
+  standard_deviation <- function(data,ws) {
+    (as.matrix(data[ws]) %>% matrixStats::rowSds())/sqrt(length(ws))
+  }
+  
+  data %>%
+    group_by(weight,...) %>%
+    summarize(Value=sum(Value),cases=n()) %>%
+    ungroup %>%
+    mutate(gggg=1) %>%
+    left_join((.) %>%
+                filter(weight!="WEIGHT") %>% 
+                group_by(...,gggg) %>%
+                select(...,gggg,Value) %>%
+                summarize(standard_error=sd(Value)/sqrt(length(replicate_weights)))) %>%
+    select(-gggg)
+}
+
+compute_shares <- function(data,...) {
+  data %>%
+    group_by(weight,...) %>%
+    mutate(Total=sum(Value)) %>%
+    mutate(Share=Value/Total) %>%
+    ungroup %>%
+    mutate(gggg=1) %>%
+    left_join((.) %>%
+                filter(weight!="WEIGHT") %>% 
+                group_by(...,gggg) %>%
+                select(...,gggg,Total) %>%
+                summarize(total_error=sd(Total)/sqrt(length(replicate_weights)))) %>%
+    select(-gggg) 
+}
+
+estimate_and_standard_error_share <- function(data,...){
+  data %>%
+    left_join((.) %>%
+                 filter(weight!="WEIGHT") %>% 
+                group_by(...) %>%
+                summarize(share_error=sd(Share)/sqrt(length(replicate_weights)))
+             ) 
+}
+
+```
+
+```{r test, eval=FALSE, include=FALSE}
+# example 6
+d <- foreign::read.spss(path) %>%
+  as_tibble() %>%
+  set_names(names(.) %>% toupper) %>%
+  filter(CMA == "Montréal")
+
+plot_data2 <- d %>%
+  gather_weights %>%
+  estimate_and_standard_error(IMMSTAT) %>%
+  compute_shares() %>%
+  estimate_and_standard_error_share(IMMSTAT) %>%
+  filter(weight=="WEIGHT")
+
+# example 7
+d <- foreign::read.spss(path) %>%
+  as_tibble() %>%
+  set_names(names(.) %>% toupper) %>%
+  filter(CMA == "Vancouver",
+         SEX == "Male",
+         AGEGRP %in% c("20 to 24 years", "25 to 29 years", "30 to 34 years", "35 to 39 years","40 to 44 years"))
+
+plot_data2 <- d %>%
+  gather_weights %>%
+  estimate_and_standard_error(MARSTH) %>%
+  compute_shares() %>%
+  estimate_and_standard_error_share(MARSTH) %>%
+  filter(weight=="WEIGHT")
+
+
+```
+
+
+
+BC has introduced the [Speculation and Vacancy Tax](https://www2.gov.bc.ca/gov/content/taxes/property-taxes/speculation-and-vacancy-tax) and instructions for filling out the declarations are in the mail. The tax targets homes in [major urban centres](https://www2.gov.bc.ca/gov/content/taxes/property-taxes/speculation-and-vacancy-tax/taxable-regions) that are left empty, or that are owned by “foreign and domestic speculators” that “don’t pay [income] taxes” in BC. The [tax rate](https://www2.gov.bc.ca/gov/content/taxes/property-taxes/speculation-and-vacancy-tax/tax-rates) is 0.5% of the assessed value in 2018. From 2019 onward rates increase to 2% for foreigners (not permanent residents nor Canadian citizens) as well as citizens or permanent residents that are deemed members of “satellite families.” A “satellite family” is defined as a family – combining spousal incomes - where [less than 50% of total worldwide income is declared (and taxed) in Canada](https://www2.gov.bc.ca/gov/content/taxes/property-taxes/speculation-and-vacancy-tax/exemptions-speculation-and-vacancy-tax/individuals/international-income#satellite-family).
+
+The portion targeting empty homes follows along similar lines as the [City of Vancouver Empty Homes tax](https://vancouver.ca/home-property-development/empty-homes-tax.aspx), with similar exemptions. Homes are generally exempt from the tax when owner-occupied or rented out for at least half of the year. Importantly, foreign and satellite family owners face additional burdens in renting out homes. Tenants must either be [arm’s length](https://www2.gov.bc.ca/gov/content/taxes/property-taxes/speculation-and-vacancy-tax/exemptions-speculation-and-vacancy-tax/individuals/tenancy-requirements), meaning they have no special relationship with the landlord, or, if non-arm’s length, they must be permanent residents or Canadian citizens with Canadian income at last three times the annual fair market value of the rent for the entire residential property.
+
+The tax [has been reported to](https://vancouversun.com/news/politics/government-tables-legislation-on-speculation-tax) affect about 32,000 homes, about 20,000 of which will be British Columbians  with the remaining 12,000 foreigners or residents of other provinces, and generate around $200M in revenue. Unfortunately the province has not shared a more detailed breakdown of how many homes are in each of the category the tax targets, the empty homes, the foreign owners, or the satellite families.
+
+Like everyone, we’re curious how it’s all going to work! Here we want to try and put out some preliminary guesses as to how many a) empty homes and b) foreign owners might get taxed. We also want to think a bit more about satellite families and imagine how possible consumption audits might work. This enables us to make some educated guesses about c) the population at risk of being audited. Surely some of those audited will either have to pay the speculation tax or end up referred for income tax avoidance. Others will have ready explanations for why their property holdings fail to match their reported incomes, likely explaining their lifestyles as products of income volatility or legal gifts (falling beyond combined spousal income). Finally, we want to address the possibility of better rental income reporting as a result of the Speculation and Vacancy Tax. Might there be even more d) revenue gained from better reporting rental income relative to direct Speculation and Vacancy tax revenue? Let’s find out!
+
+#### TLDR: 
+We’re guessing from various sources detailed below that the BC Speculation and Vacancy Tax will identify about 8,800 properties as vacant and subject to the tax (i.e. not exempt). An overlapping 46,000 properties owned by “foreign” owners may be subject to the tax if they don’t secure qualifying tenants for their properties. Another overlapping 45,000 households may be at risk of being identified (or audited) as satellite families, mostly living in pricey single-family detached (or suited) dwellings. Around a third of these households will be headed by Canadian-born residents, and investor class immigrants will likely end up overrepresented within immigrant households at risk of being ID'd as satellite families. Metro Vancouver will be most affected by the tax. The collection of income and property value data together with the registration of tenants in rented properties will potentially bring in more revenue indirectly, by increasing compliance with reporting of rental income and reducing tax avoidance/evasion more broadly, than by direct payment of the Speculation and Vacancy Tax.
+
+```{r}
+total_renter <- pumf_data %>% filter(
+  TENUR=="Rented or Band housing",
+  PRIHM=="Person is primary maintainer",
+  !(DTYPE=="Apartment" & CONDO=="No, not part of a condominium development"),
+  SUBSIDY == "No, not a subsidized dwelling",
+) %>%
+  mutate_at(.vars = all_weights,
+             .funs = list(~(.*SHELCO*12))) %>%
+  gather_weights() %>%
+  estimate_and_standard_error() %>%
+  filter(weight=="WEIGHT") %>%
+  pull(Value)
+```
+
+
+
+## Empty homes
+
+```{r}
+rs <- list_census_regions("CA16")
+tax_regions <- 
+  bind_rows(
+  filter(rs,CMA_UID=="59933",!grepl(" A$|^Bowen|^Lions Bay",name),level=="CSD",municipal_status !="IRI"),
+  filter(rs,CMA_UID=="59935",!grepl("^Juan de Fuca",name),level=="CSD",municipal_status !="IRI"),
+  filter(rs,name %in% c("Nanaimo","Lantzville"),level=="CSD"),
+  filter(rs,name %in% c("Kelowna","West Kelowna"),level=="CSD"),
+  filter(rs,name %in% c("Abbotsford","Mission","Chilliwack"),level=="CSD"),
+  tibble(name="UBC",region=c("9330069.02","9330069.01"),level="CT")
+  )
+
+
+regions <- get_census("CA16",regions=as_census_region_list(tax_regions),geo_format = "sf") %>%
+  sf::st_transform(3005) %>%
+  mutate(uubur=Dwellings-Households) %>%
+  mutate(uuburr=uubur/Dwellings)
+
+unoccpied_xtab <- get_sqlite_xtab("unoccupied2016")
+unoccupied_data <- unoccpied_xtab %>%
+  filter(GeoUID %in% c(regions$GeoUID)) %>%
+  collect() %>%
+  mutate(Value=`Total - Structural type of dwelling`) %>%
+  select(GeoUID,GEO_NAME,`Document Type`,Value) %>%
+  spread(key="Document Type",value="Value") %>%
+  mutate(share=Unoccupied/`Total - Private dwellings by document type`)
+close_sqlite_xtab(unoccpied_xtab)
+
+unoccupied_regions <- regions%>%
+  sf::st_transform(3005) %>%
+  left_join(
+    unoccupied_data %>%
+      select(GeoUID,Unoccupied,share) 
+  ) %>%
+  mutate(Unoccupied = coalesce(Unoccupied,uubur),
+         share=coalesce(share,uuburr))
+
+total_unoccupied <- unoccupied_data %>% 
+  ungroup %>%
+  summarize_at(c("Occupied by foreign/temporary-present persons", "Private dwellings occupied by usual residents" ,"Total - Private dwellings by document type", "Unoccupied" , "Unoccupied or occupied by foreign/temporary-present persons"),sum)
+
+#property_count <- (regions$uubur %>% sum)
+#scale_factor1 <- filter(regions,name=="Vancouver (CY)")$uubur/12000
+#scale_factor2 <- filter(regions,name=="Vancouver (CY)")$uubur/2538
+
+property_count <- (unoccupied_regions$Unoccupied %>% sum)
+vancouver_unoccupied <- filter(unoccupied_regions,name=="Vancouver (CY)")$Unoccupied
+scale_factor1 <- vancouver_unoccupied/12000
+scale_factor2 <- vancouver_unoccupied/2538
+
+
+
+```
+
+How many empty homes will the tax effect? Empty homes are hard to estimate. The City of Vancouver commissioned [a study](https://council.vancouver.ca/20160308/documents/rr1EcotagiousReport.pdf) based on BC Hydro data to estimate the number of empty homes in the city in a similar manner to how the tax applies, coming up with 10,800 to 13,500 empty homes in the city. In the first year, [2,538](https://vancouver.ca/files/cov/empty-homes-tax-annual-report.pdf) properties were subject to the tax (roughly half declared themselves so with the rest failing an audit or failing to file or appeal). Another 5,385 were declared [exempt](https://council.vancouver.ca/20190227/documents/pspc2.pdf) (some of the exempt properties were not in the universe of the [Ecotagious study](https://council.vancouver.ca/20160308/documents/rr1EcotagiousReport.pdf)). It is unclear how much of the difference is due to previously empty homes getting occupied or evasion. It is difficult to use this to estimate the total number of empty homes affected by the speculation tax, but one very rough estimate would be to take the number homes unoccupied on census day and scale the numbers down by a factor `r round(scale_factor2,1)`, roughly the ratio of the `r scales::comma(vancouver_unoccupied)` homes unoccupied on census day in the City of Vancouver to 2,538 empty homes paying the empty homes tax.
+
+```{r unoccupied-regions}
+vector_tiles <- cancensusHelpers::simpleCache(
+  cancensusHelpers::get_vector_tiles(bbox=sf::st_bbox(regions %>% sf::st_transform(4326))),
+  "speculation_tax_vector_tiles")
+# vector tiles return all layers (roads, water, buildings, etc) in a list
+roads <- rmapzen::as_sf(vector_tiles$roads) %>% filter(kind != "ferry")
+water <- rmapzen::as_sf(vector_tiles$water) 
+
+bbox=sf::st_bbox(regions)
+
+ggplot(unoccupied_regions) + 
+  geom_sf(aes(fill=uuburr),size=0.1) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  scale_fill_viridis_c(trans="log",labels=scales::percent) +
+  geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
+  coord_sf(datum=NA, xlim=c(bbox$xmin,bbox$xmax), ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Unoccupied dwellings",subtitle="BC Speculation Tax regions",fill="Share",
+       caption="StatCan Census 2016, OSM and contributors")
+```
+
+Overall there were `r scales::comma(property_count)` dwelling units that were unoccupied on census day in the regions where the Speculation and Vacancy Tax applies. If we use the Ecotageous study for the City of Vancouver as a guide, we would expect `r scales::comma(property_count/scale_factor1)` empty properties using the definitions from the Speculation Tax, and `r scales::comma(property_count/scale_factor2)` properties that will pay the tax. This might be a low-ball, given that the province has more effective means in checking for evaders entering into "fake rental" agreements and that the tax rate is lower (for the first year, and for permanent residents and Canadian citizens that make up the bulk of the affected owners in the years after) than in the City of Vancouver, and that the tax can be offset against BC income taxes, potentially inducing fewer people to sell or rent out their property in response to the tax. 
+
+## Foreign owners
+
+```{r}
+renters_data <- pumf_data %>% filter(
+  TENUR=="Rented or Band housing",
+  PRIHM=="Person is primary maintainer",
+  !(DTYPE=="Apartment" & CONDO=="No, not part of a condominium development"),
+  SUBSIDY == "No, not a subsidized dwelling",
+) %>%
+  mutate(nonPR=IMMSTAT=="Non-permanent residents") %>%
+  #filter(CMA=="Vancouver") %>%
+  #filter(!is.na(lower)) %>%
+  mutate(tax_tenant=upper<SHELCO*12*3 | nonPR) %>%
+  mutate(status=case_when(nonPR~"Non PR",tax_tenant~"Low income",is.na(tax_tenant)~"Unknown",TRUE~"Ok")) 
+
+total_data <- renters_data %>% 
+  gather_weights %>%
+  estimate_and_standard_error(tax_tenant) %>%
+  compute_shares() %>%
+  estimate_and_standard_error_share(tax_tenant) %>%
+  filter(tax_tenant,weight=="WEIGHT")
+```
+How many foreign owners will the tax affect? Foreign owners are defined as those owning property without being a citizen or permanent resident in Canada. Keep in mind that foreign owners won’t face any speculation tax so long as they rent out their properties to an arm’s length tenant or so long as the deal seems plausible for a non-arm's length tenant (right now `r scales::percent(total_data$Share)` of all secondary market renters in the regions affected wouldn't meet the specified plausibility requirements, but that's mostly due to their income being too low and that doesn't matter for arm's length tenants). Only if the foreign owner themselves occupies the property, leaves it empty, or keeps family members (like children) housed upon the property will they face the tax. 
+
+Ever since instituting the Foreign Buyer Tax in 2016, BC has been tracking data on how many purchases are made by foreign buyers. But for a variety of reasons, this kind of transaction data is a poor reflection of the number of foreign owners at any given point in time. Statistics Canada has sought to better collect data on foreign property ownership through its CHSP program, but the definitions differ from tax policy definitions. For CHSP purposes, it’s the primary residence of owners that matters rather than citizenship or permanent residence status – in other words, do owners live at foreign addresses or Canadian addresses? Some people with overseas primary residences will have Canadian permanent residence or citizenship. Some people with primary residence in Canada will not have Canadian permanent residence or citizenship (this status, for example, covered both authors of this blog post when they first moved to Canada). While imperfect, the measure of primary residence probably isn’t a terrible proxy for who will face taxation. 
+
+```{r}
+residency_data <- get_cansim("46-10-0018") %>%
+  normalize_cansim_values() %>%
+  filter(`Property type`=="Total, all property types",
+         `Period of construction`=="Total, all periods of construction") %>%
+  mutate(GeoUID=gsub("\\[|\\]","",GeoUID))
+
+cma_geo_data <- regions%>%
+  mutate(GeoUID=ifelse(Type=="CT","5915020",GeoUID)) %>%
+  sf::st_transform(3005) %>%
+  left_join(
+    residency_data %>% 
+      rename(non_resident=VALUE) %>% 
+      filter(Estimates=="Percentage",
+            `Residency status`=="Non-resident") %>%
+      select(GeoUID,GEO,non_resident) 
+  ) 
+
+total_non_resident <- residency_data %>%
+  filter(Estimates=="Number",
+         `Residency status`=="Non-resident") %>%
+  filter(GeoUID %in% cma_geo_data$GeoUID) %>%
+  pull(VALUE) %>% sum(na.rm=TRUE)
+```
+
+
+Extrapolating from the CHSP data for the region covered by the Speculation and Vacancy Tax suggests that `r scales::comma(total_non_resident)` "foreign" owned properties might face the tax, in addition to the relatively small number of foreign individuals likely registering their properties through corporate ownership. It's important to remember that there may be a significant overlap between the empty properties we looked at above and the properties of non-resident owners likely to face the tax, so these are non-exclusive categories. But we don't yet have any good data on the degree of overlap. 
+
+```{r}
+ownership_residency_data <- get_cansim("46-10-0019") %>%
+  normalize_cansim_values() %>%
+  filter(`Property type`=="Total, all property types",
+         `Period of construction`=="Total, all periods of construction",
+         `Ownership type`!="Total, all ownership types",
+         Estimates=="Number") %>%
+  mutate(GeoUID=gsub("\\[|\\]","",GeoUID)) %>%
+  filter(GeoUID %in% cma_geo_data$GeoUID) %>%
+  select(GeoUID,GEO,`Ownership type`,VALUE) %>%
+  group_by(GeoUID,GEO) %>%
+  spread(key=`Ownership type`,value=VALUE) %>%
+  left_join(
+    residency_data %>%
+      filter(Estimates=="Number") %>%
+      select(GeoUID,GEO,`Residency status`,VALUE) %>%
+      filter(GeoUID %in% cma_geo_data$GeoUID) %>%
+      group_by(GeoUID,GEO) %>%
+      spread(key=`Residency status`,value=VALUE)  
+    ) %>%
+  mutate(Resident=Individual-`Non-resident`) %>%
+  gather(key="Type",value="Value",c("Resident","Non-individual","Non-resident"),factor_key = TRUE) %>%
+  group_by(GeoUID) %>%
+  mutate(share=Value/sum(Value)) %>%
+  mutate(GEO=factor(GEO,levels=(.) %>% filter(Type=="Non-resident") %>% arrange(share) %>% pull(GEO)))
+
+ggplot(ownership_residency_data,aes(x=GEO,y=Value,fill=Type)) +
+  geom_bar(stat="Identity",position="fill") +
+  coord_flip() +
+  theme_light() +
+  scale_fill_brewer(palette = "Set2") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Ownership and residency status of properties",subtitle="BC Speculation Tax regions",
+       fill="", y="Share",x="Municipality",
+     caption="StatCan Tables 46-10-0018, 46-10-0019")
+
+```
+
+
+Of note, so far we can report that the impact from the Speculation and Vacancy Tax will vary widely by geography. Many municipalities have very few empty properties or foreign owners. Others, as near UBC (Metro Vancouver A) have a lot. Of course it's worth noting that the housing around UBC is unusual for many reasons, including its student population (often boosting census unoccupied counts and highly transnational). Moreover, Electoral Area A weirdly extends into the mountains of the North Shore, where a small number of empty cabins complicate the picture, but there aren't too many, so we don't show that part on the map.
+
+```{r}
+ggplot(cma_geo_data) + 
+  geom_sf(aes(fill=non_resident),size=0.1) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  scale_fill_viridis_c(trans="log",labels=scales::percent,option="inferno") +
+  geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
+  coord_sf(datum=NA, xlim=c(bbox$xmin,bbox$xmax), ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Non-resident Owners",subtitle="BC Speculation Tax regions",fill="Share",
+       caption="StatCan Table 46-10-0018")
+```
+
+
+
+
+
+## Satellite families
+
+What about satellite families? Brace yourself for a much longer discussion, necessarily delving into the definition of satellite families, the methods BC may attempt to use to audit those they suspect of being satellite families, and the limits of the information we can gather about satellite families. 
+
+In common parlance, satellite families refer to families where income earners live and work in one place while children and spouses live in another. Within the family sociology literature, this includes a variety of spousal and spouse-like relationships grouped as Living-Apart-Together (LAT). It also includes adult children being supported by parents who live elsewhere, and minor children who might be living with other caregivers (like grandparents) while receiving parental support. Within the immigration literature, satellite families might also be understood to include a wide variety of ways families work around and across borders, often sending different family members to places where they're likely to see the most economic opportunities, but involving remittances sent back across borders for the good of the family as a whole. The Philippines and Mexico are perhaps the places most studied where families send workers abroad who return remittances back home, usually with a long term goal of reuniting the family. But other countries, including China and even Canada, have similar traditions. Satellite families create transnational ties, constituted in part through the flow of resources across borders but between family members. Vancouver likely has a lot of satellite family members engaged on both sides of transnational income sharing, both as [wage earners](https://www.upress.umn.edu/book-division/books/families-apart) supporting those abroad, and [family members](https://academic.oup.com/socpro/article-abstract/64/4/497/3065799) supported by those abroad.
+
+Vancouver also has a lot of wealthy residents, including both immigrants and non-immigrants. And if there's one thing we know about [wealthy residents](https://www.cbc.ca/news/canada/british-columbia/damien-reynolds-panama-papers-cra-1.4818326), it's that they often don't pay their [fair share](https://www.theglobeandmail.com/politics/article-high-income-earners-paid-46-billion-less-in-taxes-in-2016-despite/) of taxes. In the specific context of BC's Speculation and Vacancy Tax, the debate over satellite families has often emphasized tax avoidance. Satellite families are frequently suspected of gaming tax systems for their own advantage by deriving their income from another country, leaving it untaxed by Canadian income tax. Income tax, of course, helps to fund many services (e.g. education, healthcare) enjoyed by Canadian permanent residents and citizens. Property tax also funds many services, though as many observers have noted, BC has very low property tax rates. So it's possible to game tax systems - entirely legally - by one family member working in a location (outside of Canada) where income tax rates are lower than BC's and paying income taxes there, while other family members buy property and enjoy many of the services of BC, where property taxes are often lower than elsewhere. This is the situation the Speculation and Vacancy Tax is meant to correct, though of course it also potentially creates problems for transnational families who aren't attempting to game tax systems. It also has no impact on satellite families who rent rather than own. Aside from identifying satellite families, the joining of property data with income data also has the potential to identify tax evasion. As revealed by recent [CRA audits](https://www.richmond-news.com/b-c-real-estate-audits-reveal-widespread-tax-evasion-1.23643194), tax evasion among wealthy Vancouverites is probably pretty common. 
+
+How many satellite families are there? We really don't know yet. There's no good data on the issue, especially since families filling out census forms may, or may not, choose to list members regularly working overseas as resident in BC (and census residence is different from tax residence). That said, we have a better sense of who might be at risk for either listing themselves as satellite families or being audited under suspicion of tax avoidance or evasion. But we have to make some guesses about what might trigger audits. 
+
+First, let's remind ourselves of what data is being collected. The declaration form for the Speculation and Vacancy Tax asks about worldwide income for property owners, including the combined worldwide incomes of spouses. This is attached to property tax data from the assessment rolls. So the tax authorities should have declared data on worldwide income, income taxed in Canada, and property values. Recall that owners with less than half of their worldwide income declared in Canada are considered satellite families. Some people will identify themselves as satellite families. But in other cases, they may provide false declarations regarding their worldwide income. This opens up a variety of auditing opportunities for BC and the CRA. How will they decide who to audit for compliance?
+
+We already know the CRA has identified [lifestyle audits](https://www.richmond-news.com/b-c-real-estate-audits-reveal-widespread-tax-evasion-1.23643194) as a lucrative means of tracking tax evasion. We also know they've got a rule in place regarding rents deemed legitimate for non-arm's length tenants. We can build on this to explore cases likely to trigger audits if undeclared as satellite families. Keep in mind there may be many explanations for discrepancies between property value and income, including family [income volatility](https://td-capa.s3.amazonaws.com/prod/default/0001/01/2ed95a1a680ea5b78ab53646f1f432f51405bc02.pdf); dramatic appreciation of housing purchased long ago; or living off savings, inheritance, or gifts. But other explanations will identify home owners as “satellite families.” Of note, still other explanations may be referred to the CRA or police authorities when they suggest tax avoidance, tax evasion and/or work in illegal economies. So how many people are at risk of being audited as satellite families?
+
+Wait, just a few more methodological caveats! We will try to estimate the number of households at risk of being audited or labeled as satellite families using the recently released 2016 PUMF data. 2016 data is, of course, now somewhat dated, being collected prior to a number of policy changes of interest to what we're exploring, including (but not limited to) the imposition of the Foreign Buyer's Tax in 2016, the imposition of the Empty Homes Tax in the City of Vancouver, and the slow roll-out of the Speculation and Vacancy Tax itself. We also won't be able to achieve a perfect match with the regions the speculation tax applies in, having to make due with using Census Metropolitan Areas. The largest discrepancy is that this drops the Nanaimo area region. PUMF data is based on a weighted subsample, so estimates based on PUMF data are never counts as when using the census, but ranges based on different weightings. In most cases, actual census counts will be contained in these ranges, so PUMF data adds a conceptual nuance we usually don't see when using census data. At this point it is good to remind ourselves that what we are really interested in is not the census counts but the actual numbers on the ground that the census is trying to estimate, but as usual we will gloss over this last step and be satisfied with estimating census counts. Here we will use the primary household maintainer as a proxy for the owner, and we will ignore dual or multiple ownership scenarios where owners fall into different categories. The speculation tax puts heavy emphasis on **spousal income**, which is different from family income or household income. That makes it a bit difficult to use census data to compare, we would need another custom tabulation to extract the income of spouses only. For this post we will gloss over this issue and just use household income instead. While family income may be closer to spousal income, we simply felt that household income is a more appropriate measure in the context of the Speculation Tax. People that favour different preferences are welcome to [grab the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-02-27-tax-speculations.Rmarkdown) and make the appropriate adjustments. A related issue is what counts as a "satellite family", in particular it is not clear if it applies to individuals who are not married or living common law. While only married (including common-law) tax residents in BC would appear to be at risk of declaring themselves part of satellite families, single individuals could also be flagged for lifestyle audits to determine tax compliance, so we include both, but we separate them. Throughout we will exclude immigrants that came in 2015 or 2016, as their 2015 Canadian income may not correctly reflect their subsequent Canadian income. Moreover, we exclude households that have moved within the preceding year, as well as properties worth less than $150,000, as these are exempt from the tax. Generally we don't report if a category contained fewer than 30 (unweighted) cases.
+
+
+```{r}
+standard_exclusions_and_filters <- function(data,cap_rate=0.03,income_factor=3/2) {
+  senior_ages <- c("65 to 69 years", "70 to 74 years" , "75 to 79 years","80 to 84 years","85 years and over")
+  child_ages <-c("0 to 4 years", "5 to 6 years", "7 to 9 years", "10 to 11 years", "12 to 14 years", "15 to 17 years")
+  young_ages <-c("18 to 19 years","20 to 24 years")
+  hh_type_labels <-c(
+    "One-census-family household without additional persons: Couple without children" = "Couple without children",
+    "One-census-family household without additional persons: Couple with children" =  "Couple with children",
+    "One-census-family household with additional persons: Couple without children" = "Couple without children", 
+    "One-census-family household with additional persons: Couple with children" = "Couple with children",     
+    "One-census-family household without additional persons: Lone parent family"  = "Lone parent family",   
+    "One-census-family household with additional persons: Lone parent family" = "Lone parent family",        
+    "Multiple-census-family household" = "Multiple-family household",                                              
+    "Non-census-family households One person household" = "One person household",
+    "Non-census-family household: Two or more person non-census-family household" = "Two or more person non-family household"
+  )
+  
+  data %>% filter(
+    TENUR=="Owned by a member of the household",
+    PRIHM=="Person is primary maintainer",
+    MOB1=="Non-movers",
+    VALUE>150000,
+    VALUE<88888888,
+    upper<90000,
+    !(YRIMM %in% c("2015 to 2016"))
+    ) %>%
+    mutate(small_hh_type=hh_type_labels[as.character(HHTYPE)]) %>%
+    mutate(imputed_rent_factor=case_when(MOB1!="Non-movers"~1,
+                            MOB5=="Non-movers"~0.5,
+                            TRUE ~ 0.8)) %>%
+    mutate(imputed_rent=VALUE/12*cap_rate) %>%
+    mutate(imputed_rent_test=upper<imputed_rent*12*income_factor) %>%
+    mutate(adjusted_imputed_rent_test=upper<imputed_rent*12*imputed_rent_factor*income_factor) %>%
+    mutate(shelter_cost_test=upper<SHELCO*12*income_factor) %>%
+    mutate(shelter_cost_test2=upper<SHELCO*12) %>%
+    mutate(immigrant_status=case_when(IMMCAT5=="Non-permanent residents"~"Non-permanent resident",
+                                      IMMCAT5=="Non-immigrants"~"Non-immigrant",
+                                      TRUE~"Immigrant")) %>%
+    mutate(immigrant_status=factor(immigrant_status,levels=c("Non-permanent resident","Immigrant","Non-immigrant"))) %>%
+    mutate(age_cat=case_when(AGEGRP %in% senior_ages~"Senior",
+                             AGEGRP %in% child_ages~"Child",
+                             AGEGRP %in% young_ages~"Young adult (18-25yo)",
+                             TRUE ~ "Working age")) %>%
+    mutate(student=ATTSCH!="Did not attend school") %>%
+    mutate(school_senior=case_when(student~"Student",age_cat=="Senior"~"Senior",TRUE~"Other")) %>%
+    mutate(school_senior=factor(school_senior,levels=c("Student","Senior","Other"))) %>%
+    mutate(yrimm=as.character(YRIMM)) %>%
+    mutate(immigration_year_cat=case_when(grepl("Before| to |Not available|Not applicable",yrimm)~yrimm,
+                          yrimm %in% seq(1990,1994) ~ "1990 to 1994",
+                          yrimm %in% seq(1995,1999) ~ "1995 to 1999",
+                          yrimm %in% seq(2000,2004) ~ "2000 to 2004",
+                          yrimm %in% seq(2005,2009) ~ "2005 to 2009",
+                          yrimm %in% seq(2010,2014) ~ "2010 to 2014",
+                          TRUE~"Else",
+                          )) %>%
+    mutate(immigration_year_cat2=case_when(grepl("Not available",yrimm)~yrimm,
+                                           yrimm == "Not applicable" ~ "Non-immigrant Canadians",
+                          yrimm %in% c("Before 1955","1955 to 1959","1960 to 1964","1965 to 1969","1970 to 1974") ~ "Before 1975",
+                          #yrimm %in% c("1965 to 1969","1970 to 1974") ~ "1965 to 1974",
+                          yrimm %in% c("1975 to 1979","1980 to 1984") ~ "1975 to 1984",
+                          yrimm %in% c("1985 to 1989") ~ "1985 to 1994",
+                          yrimm %in% seq(1990,1994) ~ "1985 to 1994",
+                          yrimm %in% seq(1995,2004) ~ "1995 to 2004",
+                          yrimm %in% seq(2005,2014) ~ "2005 to 2014",
+                          TRUE~"Else",
+                          )) %>%
+    mutate(immigration_year_cat2=factor(immigration_year_cat2,levels=c("Else","Not available","Before 1975","1975 to 1984","1985 to 1994","1995 to 2004","2005 to 2014","Non-immigrant Canadians"))) %>%
+    mutate(test=adjusted_imputed_rent_test) 
+}
+
+test_title="Owner households failing adjusted imputed rent test"
+
+married_common_law_colors <- c(
+  "Married or common law"="#D4AF37",
+    "Not married or common law"="#C0C0C0"
+)
+
+married_common_law_dark_colors <- c(
+  "Married or common law"="#996515",
+    "Not married or common law"="#606060"
+)
+
+married_common_law_theme <- list(
+  theme_light(),
+  scale_fill_manual(values=married_common_law_colors),
+  scale_color_manual(values=married_common_law_dark_colors,guide=FALSE),
+  theme(legend.position = "bottom"),
+  labs(fill="")
+)
+
+
+married_common_law_graph <- list(
+  geom_crossbar(aes(ymax=Value+2*standard_error,ymin=pmax(0,Value-2*standard_error),
+                    x=status,y=Value,
+                    group=interaction(status,married_common_law), fill=married_common_law,colour=..fill..),
+                position="dodge"),
+  coord_flip(),
+  married_common_law_theme,
+  scale_y_continuous(labels=scales::comma,limits = c(0,NA)),
+  labs(y="Number of owner households",x="Primary household maintainer",
+       caption="StatCan 2016 PUMF")
+)
+
+married_common_law_share_graph <- list(
+  geom_crossbar(aes(x=status,y=Share,ymax=pmin(1,Share+2*share_error),ymin=pmax(0,Share-2*share_error),
+                    fill=married_common_law,colour=..fill..,group=interaction(status,married_common_law)),
+                position="dodge"),
+  coord_flip(),
+  married_common_law_theme,
+  scale_y_continuous(labels=scales::percent,limits = c(0,NA)),
+  labs(y="Share of owner households",x="Primary household maintainer",
+       caption="StatCan 2016 PUMF")
+)
+```
+
+
+### Home-value-to-income based triggers
+
+Assessed home value to income ratios could serve as a trigger for consumption based audits. But what's a good ratio to use? For a foreigner renting out their property to a non-arm's length tenant, the tax requires the income of a tenant to be at least three times the (fair market value of the) rent in order for a foreign owner to be exempt from the tax. We take this as a hint we can use this as an implicit definition of a satellite family. A satellite family may be identified as a household with declared income taxed in Canada that is less than 50% of three times the imputed rent. Why? There's the expectation encoded in the non-arm's length definition that housing costs will take up no more than one third of income. And if more than 50% of the household's combined spousal worldwide income is declared outside of Canada, one is considered a satellite family. To estimate imputed rent we use a gross cap rate of 3%. This test is effectively asking that owner households spend at most two-thirds of their total Canadian income on shelter cost based on imputed rent.
+
+However, this will catch quite a few "house-rich but income-poor" people. Take for example a senior that bought their house a long time ago for a lot less money than it would take today. If their house is now worth, say, $2M, then the imputed rent comes out to be $5k a month, or $60k a year, requiring an total annual income of at least $90k to pass our test. Given the fairly large appreciation of property, especially in the [years before the census](https://doodles.mountainmath.ca/blog/2017/01/18/bumper-year-for-thumb-twiddlers/), it seems reasonable to adjust the trigger by how long the property has been held. The province will have the exact time the property was purchased to fine-tune this, but using census data we can only check if the person lived in the same residence one and five years prior. As we are exempting people that moved within the year before the census (analogous to the Speculation Tax exempting properties in the year they transacted), this leaves us with the five year timeframe. 
+
+Given the explosive rise in property values in the year before the census, we discount the imputed rent by a factor of 0.8 if the household maintainer moved into the property between one and five years before the census, and by a factor of 0.5 if the maintainer moved in more than 5 years before -- reflecting the roughly doubling of property values within the five years before the census. We call this the *adjusted imputed rent test*.
+
+Of note: our data is top-coded for dwelling-values above $2M, which can lead to some mis-classification for some properties with very high dwelling values, but ultimately different ways of adjusting for this have little big impact on the high-level numbers. We added an additional filter excluding households with household income above $90k, which softens potential issues around top-coded dwelling values.
+
+```{r}
+plot_data <- pumf_data %>% 
+  standard_exclusions_and_filters %>%
+  gather_weights() %>%
+  estimate_and_standard_error(test,married_common_law) %>%
+  #compute_shares(married_common_law) %>%
+  #estimate_and_standard_error_share(test,married_common_law) %>%
+  filter(weight=="WEIGHT")
+
+ggplot(filter(plot_data,test) %>% mutate(status=married_common_law)) +
+  married_common_law_graph +
+  labs(title=test_title)
+```
+
+Combined spousal income determines satellite family status under the Speculation and Vacancy Tax, so we separate out our estimate of those failing our adjusted imputed rent test (and hence at risk of being audited) by marital status. This yields an almost identical number of single vs married or common law households failing the test, combining for around `r scales::comma(round(sum(filter(plot_data,test)$Value),-3))` in total. While only married (or common-law) people would seem to be at risk of being labeled satellite families given the focus on combined spousal incomes ("gifts" to children and other family members don't count the same), it's possible that auditors will still include single people in the pool of those at risk of being audited for tax evasion and failing to accurately report worldwide income. So we'll keep both singles and marrieds in the analysis, but treat them separately.
+
+#### Household Status
+
+We also want to look at other statuses that might matter. Students and seniors come to mind as being particularly vulnerable to audit because of their lower incomes. In addition, seniors may be especially likely to have purchased their homes long in the past, meaning their homes may have done much more than double in value since they've lived in them. So let's see what happens when we separate out these groups.
+
+```{r}
+plot_data <- pumf_data %>% 
+  standard_exclusions_and_filters %>%
+  mutate(status=school_senior) %>%
+  gather_weights() %>%
+  estimate_and_standard_error(status,test,married_common_law) %>%
+  #compute_shares(married_common_law) %>%
+  #estimate_and_standard_error_share(status,test,married_common_law) %>%
+  filter(weight=="WEIGHT")
+
+ggplot(filter(plot_data,test)) +
+  married_common_law_graph +
+  labs(title=test_title)
+```
+
+We see that in particular single seniors make up a good portion of households at risk of being audited, but the bulk is taken up by working age population that is not attending school. Household type gives a different way to understand the makeup. If satellite families mostly involve an overseas wage earner supporting a spouse and children, do we see a lot of these types of households?
+
+```{r}
+plot_data <- pumf_data %>% 
+  standard_exclusions_and_filters %>%
+  mutate(status=small_hh_type) %>%
+  gather_weights() %>%
+  estimate_and_standard_error(status,test,married_common_law) %>%
+  #compute_shares(married_common_law) %>%
+  #estimate_and_standard_error_share(status,test,married_common_law) %>%
+  filter(weight=="WEIGHT")
+
+ggplot(plot_data %>% filter(cases>=30,test)) +
+  married_common_law_graph +
+  labs(title=test_title)
+
+```
+
+As it turns out, there are relatively few people who report being married but living as a lone parent who fail our adjusted imputed rent to income test. There are only around `r scales::comma(round(filter(plot_data,status=="Lone parent family",married_common_law=="Married or common law",test)$Value,-2))` married or common law household maintainers that show up in lone parent households, making up a small proportion of those failing our test overall. But it's possible that many respondents filling out census forms still report their spouses as belonging to the household, even if they spend a significant amount of time working overseas, so we shouldn't count out other married and common-law categories, split between those with and without children, from being considered satellite families. 
+
+#### Dwellings
+
+What kinds of dwellings are people who fail our test living in? First let's talk about dwelling values. By our metric, the disjuncture between dwelling value and reported income triggers possible audits. Higher dwelling values have a mechanical effect on increasing the income needed to avoid an audit, so we'd expect households with higher dwelling values to be more likely to fail our test. Is this what we actually see?
+
+```{r}
+
+dwelling_cutoffs <- c(140000,250000,500000,1000000,1500000,2000001,Inf)
+
+plot_data <- pumf_data %>% 
+  standard_exclusions_and_filters %>%
+  mutate(status=cut(VALUE,breaks=dwelling_cutoffs,labels=c("$150k-$250k","$250k-$500k","$500k-$1M","$1M-$1.5M","$1.5M-$2M","Over $2M"))) %>%
+  gather_weights() %>%
+  estimate_and_standard_error(status,test,married_common_law) %>%
+  #compute_shares(married_common_law) %>%
+  #estimate_and_standard_error_share(status,test,married_common_law) %>%
+  filter(weight=="WEIGHT")
+
+middle_value_mean <- plot_data %>% filter(test,status %in% c("$500k-$1M","$1M-$1.5M","$1.5M-$2M")) %>% pull(Value) %>% mean
+
+ggplot(filter(plot_data,test,cases>30)) +
+  married_common_law_graph +
+  labs(title=test_title,x="Dwelling value")
+```
+
+As one would expect, relatively few lower dwelling value homes are impacted. But each half a million dollar value bracket between $500k and $2M seems fairly evenly filled by about `r scales::comma(round(middle_value_mean,-3))` households, jumping to higher number for homes above $2M, especially those occupied by married or common law household maintainers. Those most at risk of being audited would appear to be those living in the most expensive homes. 
+
+
+What structural sorts of dwellings are the people who fail our adjusted imputed rent to income test living in? [Condo apartments](https://homefreesociology.com/2018/12/18/how-are-condos-used/)? [Single detached homes](https://homefreesociology.com/2018/06/13/how-to-become-a-resort-city/)? Both dwelling type and condominium status will be available to government auditors. Our data only has three dwelling types: single detached, apartment and other. In our focus on owner-occupied dwellings and taken together with the condominium variable, we're mostly separating condominium apartments from single-detached houses, with the latter showing up either as a single-detached house or a non-condominium apartment (i.e., house with a secondary suite or "duplex"). But there will be some other types of non-condo apartments and other types of structure (e.g. rowhouses) showing up as both condos and non-condos.
+
+```{r}
+
+dwelling_condo_labels <-c(
+  "Apartment - No, not part of a condominium development"="Suited Single Family & other non-condo apartment",
+  "Apartment - Yes, part of a condominium development"="Condo apartment",
+  "Not available - No, not part of a condominium development"="Not available",
+  "Not available - Not available"="Not available",
+  "Not available - Yes, part of a condominium development"="Not available",
+  "Other dwelling - No, not part of a condominium development"="Other non-condo",
+  "Other dwelling - Yes, part of a condominium development"="Other condo",
+  "Single-detached house - No, not part of a condominium development"="Single detached",
+  "Single-detached house - Yes, part of a condominium development"="Single detached condo")
+
+plot_data <- pumf_data %>% 
+  standard_exclusions_and_filters %>%
+  mutate(status=paste0(DTYPE," - ",CONDO)) %>%
+  gather_weights() %>%
+  estimate_and_standard_error(status,test,married_common_law) %>%
+  #compute_shares(married_common_law) %>%
+  #estimate_and_standard_error_share(status,test,married_common_law) %>%
+  filter(weight=="WEIGHT") %>%
+  ungroup %>%
+  mutate(status=recode(status,!!!dwelling_condo_labels))
+
+ggplot(filter(plot_data,test,cases>30)) +
+  married_common_law_graph +
+  labs(title=test_title)
+```
+
+Most of those at risk of being audited would appear to live in single-detached houses, with or without suites, with condominium apartments taking a distant second. It would appear that not too many other kinds of housing will be targeted, or at least we don't see enough of them to provide reliable estimates of their frequency. But this analysis by itself is interesting in policy terms. As a reminder, some condominium apartments will be temporarily exempted from the tax if they have restrictions on rentals - an out not available to other dwelling types (and also not available for long!) Detached houses with secondary suites have another potential loophole. Regardless of their status, property owners might be able to avoid paying the Speculation and Vacancy Tax on their house as a whole so long as they rent out one of the suites on the property to an arm's length tenant, pointing toward the categorical flexibility houses with suites repeatedly demonstrate in policy terms.  
+
+
+#### Immigration
+
+In the context of satellite families we often think of immigrant households. These are the households expected to maintain transnational connections, though overseas income earning may diminish with time (and generation). Of course, non-immigrants can also find themselves earning incomes (or partnered to those earning incomes) outside of Canada. Moreover, we know Canadians of many stripes and backgrounds attempt to evade taxes, just as they also have "bad years" where their incomes may drop out of the normal. So let's look into immigration by period, including non-immigrants in the mix. How does immigration relate to risk of being audited as a satellite family using our adjusted imputed rent test?
+
+```{r}
+plot_data <- pumf_data %>% 
+  standard_exclusions_and_filters %>%
+  mutate(status=immigration_year_cat2) %>%
+  gather_weights() %>%
+  estimate_and_standard_error(status,test,married_common_law) %>%
+  compute_shares(status,married_common_law) %>%
+  estimate_and_standard_error_share(status,test,married_common_law) %>%
+  filter(weight=="WEIGHT")
+
+ggplot(plot_data %>%  filter(test,cases>30)) +
+  married_common_law_graph +
+  labs(title=test_title)
+```
+
+Higher numbers of non-immigrants (i.e. Canadian born) fail our test than any ten-year immigration arrival bracket. Non-immigrants especially dominate the set of single people with lower incomes than expected by housing values, but they also appear in great numbers for married people. This is a striking finding, but also reflects the greater overall size of the non-immigrant population. Looking at immigrants by period, we tend to see what we expect: recent immigrants fail the test more often than more established immigrants. Recent immigrants failing our test also tend to be dominated by married couples, unlike what we see for non-immigrants, but this gap diminishes over time as immigrant patterns come to look increasingly like Canadian born patterns. 
+
+Looking at the share of owners failing our test in each immigrant category, as opposed to their total numbers, helps clarify these patterns further. 
+
+```{r}
+ggplot(plot_data %>% filter(test,cases>30)) +
+  married_common_law_share_graph +
+  labs(title=test_title)
+```
+
+Here we see that higher proportions of recent immigrant owners fail the adjusted imputed rent test than for non-immigrant owners or more established immigrant owners. Reading shares by period of arrival sideways, the evidence would suggest that more recent arrivals owning homes will likely move toward non-immigrant patterns for home owners the longer they remain in Canada. But culture and wealth of immigrants may vary with period, so there may be other explanations at play as well.
+
+Where are those who fail our test coming from? Let's take a look, using place of birth! Of note, sending countries vary from period to period, meaning the period analysis (above) influences the place of birth analysis (below) and vice-versa. Arrivals from China, in particular, tend to be more recent. We should remind ourselves that place of birth is not necessarily the same as the place people immigrated from. In particular in the of China, sizable portions of immigrants from Taiwan and Hong Kong that were born in China.
+
+```{r}
+other_europe <- c("Germany","France","Other Northern and Western Europe","Poland" ,"Other Eastern Europe","Italy","Portugal","Other Southern Europe")
+largest_pob <- c("Canada","China","Hong Kong","Other Eastern Asia","United Kingdom")
+americas <- c("United States","Central America","Jamaica","Other Caribbean and Bermuda", "South America")
+africa <- c("Eastern Africa","Northern Africa" , "Other Africa")
+se_asia <- c("Philippines", "Viet Nam","Other Southeast Asia")
+south_asia <- c("India", "Pakistan","Sri Lanka","Other Southern Asia")
+
+plot_data <- pumf_data %>% 
+  standard_exclusions_and_filters %>%
+  mutate(status=as.character(POB)) %>%
+  mutate(status=case_when(status %in% largest_pob ~ status,
+                          status %in% americas ~ "Other",
+                          status %in% other_europe ~ "Other Europe",
+                          status %in% south_asia ~ "Other",
+                       status=="South Korea"~"Other Eastern Asia",
+                       status %in% se_asia~"Southeast Asia",
+                       status == "Not available" ~ "Other",
+                       TRUE ~ "Other"
+                       )) %>%
+  gather_weights() %>%
+  estimate_and_standard_error(status,test,married_common_law) %>%
+  compute_shares(status,married_common_law) %>%
+  estimate_and_standard_error_share(status,test,married_common_law) %>%
+  filter(weight=="WEIGHT") 
+  
+ggplot(plot_data %>% 
+         ungroup %>%
+         filter(test) %>%
+         arrange(Value) %>%               
+         mutate(status = factor(status, unique(status))) %>%
+         group_by(status)%>%
+         filter(sum(cases)>=30)) +
+  married_common_law_graph +
+  labs(title=test_title)
+```
+
+Here Chinese born and Canadian born household maintainers contribute the most to owners failing our adjusted imputed rent test. But other sizable contributors to possible audits include those from Hong Kong, other East Asian countries, and the United Kingdom. The United Kingdom may seem unexpected as a group likely to face audits, but we have already seen some of the relevant cases [documented in the news](https://www.castanet.net/news/Kelowna/249333/Held-hostage-by-spec-tax). Let's look at share of owners failing our adjusted imputed rent test by place of birth.
+
+
+```{r owners-pob-share}
+ggplot(plot_data %>% 
+         filter(test) %>%
+         ungroup %>%
+         arrange(Share) %>%               
+         mutate(status = factor(status, unique(status))) %>%
+         group_by(status) %>%
+         filter(sum(cases)>=30)) +
+  married_common_law_share_graph +
+  labs(title=test_title)
+```
+
+Diving into the share of owners likely to trigger audits, we see in all cases that it’s a minority of owners at risk from each country. The uncertainty ranges are too large to sensibly rank the data by place of birth. We grouped immigrants from birth places with fewer than 30 (unweighted) combined cases into larger groups. Nevertheless there are sizable proportions of owners arriving from China, Hong Kong, and Other Eastern Asian countries at risk of being audited. This likely reflects Canadian immigration programs selecting for wealth, like investor class programs, [popular in these countries](https://www150.statcan.gc.ca/n1/pub/11-626-x/11-626-x2019001-eng.htm). Comparing investor immigrants living in the speculation tax regions to all immigrants by place of birth, we notice how the investor program leans heavily toward Pacific Rim countries.
+ 
+
+```{r}
+census_cmas <- c("Victoria","Vancouver","Abbotsford - Mission")
+
+birth_member_ids <- setdiff(seq(103,373),c(104,287,314,288,323,105,335,165,166,106,176,190,223,149,263,205,110,119,344,281,242,271))
+imm_status <- c(
+  #"Before 1980",                                       
+  "1980 to 1990",                                      
+  "1991 to 2000",                                      
+  "2001 to 2005",                                      
+  "2006 to 2010",                                      
+  "2011 to 2016"
+)
+iip_member_ids <- seq(20,22)
+
+iip_by_countries_xtab <- get_sqlite_xtab("98-400-X2016203","http://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=112452&OFT=CSV") 
+iip_by_countries <- iip_by_countries_xtab %>%
+  filter(GEO_NAME %in% census_cmas) %>%
+  rename(Value=`Dim: Sex (3): Member ID: [1]: Total - Sex`) %>%
+    select(GEO_NAME,`Admission category and applicant type`,`Member ID: Admission category and applicant type`,
+           `Immigrant status and period of immigration`,Age,
+           `Selected demographic, cultural, labour force and educational characteristics`,
+           `Member ID: Selected demographic, cultural, labour force and educational characteristics`,Value) %>% 
+  filter(`Member ID: Selected demographic, cultural, labour force and educational characteristics` %in% birth_member_ids,
+           Age=="Total - Age",
+           Value!=0) %>%
+   filter(`Immigrant status and period of immigration` %in% imm_status,
+          `Member ID: Admission category and applicant type` %in% c("1","20")) %>%
+  collect() %>%
+  mutate(Category=recode(`Admission category and applicant type`,
+                         `Total - Admission category and applicant type`="All immigrants")) 
+close_sqlite_xtab(iip_by_countries_xtab)
+
+top_countries <- c("China","Taiwan","Hong Kong","Korea, South", "Iran","Philippines","India","United States","Singapore","Japan","Macao")
+
+plot_data <- iip_by_countries %>%
+  mutate(`Place of Birth`=factor(ifelse(`Selected demographic, cultural, labour force and educational characteristics` %in% top_countries,`Selected demographic, cultural, labour force and educational characteristics`,"Other Countries"),levels=c(top_countries,"Other Countries")))
+
+ggplot(plot_data, aes(fill=`Place of Birth`,
+                      y=Value,
+                      x=`Immigrant status and period of immigration`)) +
+  geom_bar(stat="identity",position="fill") +
+  scale_fill_brewer(palette="Set3") +
+  theme_bw() +
+  facet_wrap("Category") +
+  coord_flip() +
+  scale_y_continuous(label=scales::percent) +
+  labs(title="Investor vs all immigrants in SVT regions",x="Landing year",y="Share",
+       fill="Place of birth",caption="StatCan Census 98-400-X2016203")
+
+```
+
+
+We know just over 22,000 property owners in Metro Vancouver were identified as investor class immigrants in [2018 CHSP data](https://www150.statcan.gc.ca/t1/tbl1/en/cv.action?pid=4610002601). We also know that the incomes of the investor class immigrants reported in Canada have tended to be [lower than for other streams](https://www.canada.ca/content/dam/ircc/migration/ircc/english/pdf/pub/e2-2013_fbip.pdf), as confirmed in the 2016 census data below.
+
+```{r fig.height=5}
+income_deciles <- c("In the bottom decile",
+                    "In the second decile",
+                    "In the third decile",
+                    "In the fourth decile",
+                    "In the fifth decile",
+                    "In the sixth decile",
+                    "In the seventh decile",
+                    "In the eighth decile",
+                    "In the ninth decile",
+                    "In the top decile")
+
+income_xtab <- get_sqlite_xtab("98-400-X2016367","http://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=112465&OFT=CSV") 
+plot_data <- income_xtab %>%
+  filter(GEO_NAME %in% census_cmas) %>%
+  filter(`Admission category and applicant type` %in% c("Investors","Total - Admission category and applicant type"), #c("Admission category - not applicable","Entrepreneurs","Investors","Self-employed"),
+         `Immigrant status and period of immigration`!="Total - Immigrant status and period of immigration",
+         #Age==age_group,
+         Age=="Total - Age",
+         `Selected income characteristics` %in% income_deciles) %>%
+  collect() %>%
+  mutate(`Selected income characteristics`=factor(`Selected income characteristics`,levels=income_deciles)) %>%
+  statcanXtabs::standardize_xtab() %>%
+  filter(Sex=="Total - Sex") %>%
+  mutate(Category=recode(`Admission category and applicant type`,
+                         `Total - Admission category and applicant type`="All immigrants")) %>%
+  mutate(status=`Immigrant status and period of immigration`) %>%
+  group_by(status,`Selected income characteristics`,Category) %>%
+  summarize_at("Value",sum,na.rm=TRUE) %>%
+  filter(!(status %in% c("Non-immigrants","Immigrants","Before 1980","2001 to 2010")))
+close_sqlite_xtab(income_xtab)
+
+ggplot(plot_data,aes(x=status,y=Value,fill=fct_rev(`Selected income characteristics`)))+
+  geom_bar(stat="identity",position="fill") +
+  coord_flip() +
+  theme_light() +
+  facet_wrap("Category") +
+  scale_y_continuous(labels=scales::percent)+
+  scale_fill_viridis_d(direction = -1) +
+  labs(y="Shares",x="Landing year",fill="Adjusted family income",
+       title="Investor vs all immigrants in SVT regions",
+       caption="StatCan Census 98-400-X2016367")
+
+```
+
+Looking at the adjusted family income deciles, the bottom decile is very strongly represented, with incomes slowly rising the longer the immigrants have been here. While we don't know how these roughly `r scales::comma(round(sum(filter(plot_data,Category=="Investors")$Value),-3))` investor immigrants group into households and household types and break up into renter and the 22k owner households, this does provide more circumstantial evidence that a fair number of investor class immigrants will get caught by the adjusted imputed rent audit trigger.
+
+East Asian ownership patterns may also reflect [price discrepancies](https://homefreesociology.com/2017/10/16/lottery-winners-of-the-pacific-rim/) that make Vancouver real estate seem [especially cheap](https://homefreesociology.com/2018/10/25/checking-in-with-numbeo/) to immigrants arriving from across the Pacific Rim. Arrival with wealth, whether from the sale of a pricey residence overseas or other sources, enables movers to quickly purchase housing in Vancouver. Once arrived, they could become satellite families by returning income earners to countries of origin where they see stronger job prospects (and less discrimination), or they could simply be living off of their savings as they adjust to life in Canada as [homemaking migrants](https://academic.oup.com/socpro/article-abstract/64/4/497/3065799) ([ungated version](https://open.library.ubc.ca/cIRcle/collections/facultyresearchandpublications/52383/items/1.0364272)). In this, immigrants may constitute a special case of [income volatility](https://td-capa.s3.amazonaws.com/prod/default/0001/01/2ed95a1a680ea5b78ab53646f1f432f51405bc02.pdf) in the years after their arrival. And of course let's not forget that where there is wealth, no matter the source, there are likely to be attempts at tax avoidance and evasion! 
+
+#### Regional Variation
+Lastly we quickly check on how properties likely to be declared as satellite families or audited for lifestyle discrepancies are distributed over the CMAs that we consider. Not surprisingly, in terms of sheer numbers, the Speculation and Vacancy Tax is overwhelmingly going to target Metro Vancouver. Almost all of the properties failing our test are in Metro Vancouver. Which isn't too surprising since it's where all the people live.
+
+```{r}
+plot_data <- pumf_data %>% 
+  standard_exclusions_and_filters %>%
+  mutate(status=CMA) %>%
+  gather_weights() %>%
+  estimate_and_standard_error(status,test,married_common_law) %>%
+  compute_shares(status,married_common_law) %>%
+  estimate_and_standard_error_share(status,test,married_common_law) %>%
+  filter(weight=="WEIGHT")
+  
+ggplot(plot_data %>% 
+         ungroup %>%
+         filter(test) %>%
+         arrange(Value) %>%               
+         mutate(status = factor(status, unique(status))) %>%
+         group_by(status) %>%
+         filter(sum(cases)>=30)) +
+  married_common_law_graph +
+  labs(title=test_title)
+```
+
+But what about in terms of share? Metro Vancouver is also where the highest value homes are located and the area with the most transnational ties. So perhaps it's not surprising that the share of households likely to declare as satellite families or be audited as such looks highest in Metro Vancouver. But by share it's more clear that Victoria, Kelowna, and Abbotsford pull at least some weight. 
+
+```{r}
+ggplot(plot_data %>% 
+         ungroup %>%
+         filter(test) %>%
+         arrange(Share) %>%               
+         mutate(status = factor(status, unique(status))) %>%
+         group_by(status) %>%
+         filter(sum(cases)>=30)) +
+  married_common_law_share_graph +
+  labs(title=test_title)
+```
+
+
+#### Comparing to Shelter-cost-to-income triggers
+
+Another measure that has been in the public discussion regarding satellite families is the shelter-cost-to-income ratio. Instead of (adjusted) imputed rent, we can take the actual shelter cost from census data. This won't be directly available to the government for audit purposes, but the government could try to approximate this using the mortgage registered against the property from their land title database.
+
+Replacing our adjusted imputed rent with shelter cost we now can ask that owners have enough income to cover three times their shelter cost. Folding in the Speculation Tax definition of spouses having to declare at least half their joint spousal income in Canada we arrive at a shelter-cost-to-income cutoff of 66.7%. That's something that's reasonably easy to check in Census data, just like we did for renters near the top.
+
+The total numbers of owner households failing the shelter-cost-to-income test is very similar to those failing our adjusted imputed rent test, but the populations don't fully overlap as the following graph demonstrates.
+
+
+```{r}
+plot_data_t <- pumf_data %>% 
+  standard_exclusions_and_filters %>%
+  mutate(status=case_when(
+    test & shelter_cost_test ~ "Both tests",
+    test ~ "Only adjusted imputed rent test",
+    shelter_cost_test ~ "Only shelter cost test",
+    TRUE ~ "OK"
+  )) %>%
+  gather_weights() %>%
+  estimate_and_standard_error(status,married_common_law) %>%
+  #compute_shares(married_common_law) %>%
+  #estimate_and_standard_error_share(status,married_common_law) %>%
+  filter(weight=="WEIGHT")
+
+ggplot(plot_data_t %>% filter(status!="OK")) +
+  married_common_law_graph +
+  labs(title="Owner households failing test")
+```
+
+This shows that the tests are quite sensitive to the definitions, and using these kind of tests for audits will not be entirely straight-forward. Provincial auditors will likely be busy, and will require a robust data-driven audit system in order to be effective.
+
+
+## Rental Income Tax Reporting Compliance
+
+Reading through the requirements one can't help but think that the BC government will make use of detailed individual tax return data to enforce the regulation. They may be able to use rental income on tax returns to verify the that arm's length tenancies were correctly declared. At the same time, this should prove a very effective measure to ensure rental income is properly declared by landlords, which in turn forces proper declaration of capital gains taxes in case of a sale of a secondary residence, both of which are suspected to have low compliance. To get a rough idea of the impact, we use census data to estimate the total rent being paid by tenants. The aggregate shelter cost of tenants not in purpose-built, social housing or basement suites in our regions is `r paste0("$",round(total_renter/1000000000,2),"B")`. Here we exclude basement suites because they are affected differently by the speculation tax. Rent is generally a bit lower than shelter costs, because rent may not include utilities. Combined with this, as well as tax write-offs, we assume an effectively 15% of this total is due as tax on rental income. If we take the current compliance rate to be 50%, the compliance rate that was [recently estimated for  artisinal landlords in London](https://www.theguardian.com/business/2017/aug/13/half-of-landlords-in-one-london-borough-fail-to-declare-rental-income), and assume that the speculation tax increases compliance to 100%, this would generate an additional `r paste0("$",round(total_renter/1000000*0.15/2),"M")` of tax revenue at the federal and provincial level, which is the same order of magnitude as the projected direct tax revenue from the Speculation Tax. On top of this, declaring rental income makes it harder to evade capital gains tax at the time of sale of as secondary property.
+
+## Conclusion
+
+The BC Speculation and Vacancy Tax [has been reported to](https://vancouversun.com/news/politics/government-tables-legislation-on-speculation-tax) affect about 32,000 homes, about 20,000 of which will be British Columbians  with the remaining 12,000 foreigners or residents of other provinces, and generate around $200M in revenue. While we're not certain where these figures come from, given our estimates above they actually seem pretty reasonable. We're guessing about 8,800 properties will be considered vacant and non-exempt from the tax, overlapping with 46,000 properties owned by “foreign” owners and subject to the tax if left unattached to a decent rental contract. A sizable 45,000 households may be at risk of being identified (or audited) as satellite families, mostly living in pricey single-family detached (or suited) dwellings. As we note, around a third of these households will be headed by Canadian-born residents, but it's likely many investor class immigrants will also be hit, and the vast majority affected will be in Metro Vancouver. Finally, the tax will probably generate a lot of revenue indirectly by increasing income tax compliance, quite possibly topping its direct revenue. We'll be watching to see how it unfolds! 
+
+For those interested in more details on our methods, or people that would like to make different assumptions and continue to investigate along these lines, the [code for the analysis is availabel on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-02-27-tax-speculations.Rmarkdown).
+
+  
