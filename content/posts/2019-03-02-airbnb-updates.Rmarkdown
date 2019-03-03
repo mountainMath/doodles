@@ -1,0 +1,746 @@
+---
+title: Airbnb updates
+author: Jens von Bergmann
+date: '2019-03-02'
+slug: airbnb-updates
+categories:
+  - Vancouver
+  - rental
+tags: []
+description: "Checking in on the state of Airbnb in Vancouver."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2019-03-02-airbnb-updates_files/figure-html/airbnb-room-type-map-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 9,
+	cache=TRUE
+)
+library(PostGisConnections)
+library(cancensus)
+library(fuzzyjoin)
+library(rmapzen)
+library(sf)
+library(cancensusHelpers)
+library(tidyverse)
+
+
+preprocess <- function(data){
+  licences=data$license %>% gsub("^STR8","18-",.)
+  na_list <- is.na(licences)
+  exempt_list <- (licences == "Exempt") & !na_list
+  clean_list <- gsub("[^0-9]", "", licences)
+
+  accepted_list <- grepl("^18|^19|^\\d{6}$",clean_list) & !na_list
+  
+  licences[accepted_list] <-
+    paste0(substr(clean_list[accepted_list],1,2),"-",substr(clean_list[accepted_list],3,100))
+  
+  data %>% mutate(licence=licences) %>%
+    mutate(licence_status=case_when(
+      is.na(licence) ~ "Missing",
+      grepl("exempt",licence,ignore.case = TRUE) ~ "Exempt",
+      grepl("^18-|^19-",licence) ~ "Valid format",
+      TRUE ~"Invalid format"
+    )) %>%
+    mutate(city=trimws(city)) 
+}
+
+get_str_data <- function(year=2019){
+  if (year==2019) {
+    url="ftp://webftp.vancouver.ca/OpenData/csv/business_licences_csv.zip"
+  } else {
+    url=paste0("ftp://webftp.vancouver.ca/OpenData/csv/",year,"business_licences_csv.zip")
+  }
+  tmp <- tempfile()
+  download.file(url,tmp)
+  tmp_dir <- tempdir()
+  file<-utils::unzip(tmp,exdir = tmp_dir)
+  unlink(tmp)
+  data <- read_csv(file)
+  unlink(file)
+  data
+}
+
+
+my_theme <- list(
+  theme_bw(),
+  labs(caption="MountainMath, Airbnb, CoV Open Data")
+)
+
+my_map_theme <- list(
+  theme_void(),
+  labs(caption="MountainMath, Airbnb (locations not exact), CoV Open Data")
+)
+
+licence_status_levels = c("Issued", "Pending", "Exempt", "Missing", "Invalid format", "Valid format", "Inactive","Cancelled")
+
+licence_status_colors <- setNames(
+  RColorBrewer::brewer.pal(8,"Paired"),
+  c("Valid format", "Invalid format", "Pending", "Issued", "Missing", "Exempt", "Inactive", "Cancelled")
+)
+```
+
+
+```{r}
+city_region <- list(CT=c("9330069.01","9330069.02"),CSD=c("5915022","5915803"))
+
+vancouver <- get_census(dataset='CA16', regions=city_region,
+                               vectors=c(), labels="short", 
+                               geo_format='sf', level='Regions')
+bbox2=st_bbox(vancouver)
+vector_tiles2 <- simpleCache(get_vector_tiles(bbox2),"van_city_ubc_vector_tiles")
+# vector tiles return all layers (roads, water, buildings, etc) in a list
+roads2 <- rmapzen::as_sf(vector_tiles2$roads) %>% filter(kind != "ferry")
+water2 <- rmapzen::as_sf(vector_tiles2$water)
+
+```
+
+```{r}
+all_licenses <- get_str_data() %>% bind_rows(get_str_data(2018)) %>%
+  mutate(Status=recode(Status,"Gone Out of Business"="Inactive"))
+all_licenses_2017 <- simpleCache(get_str_data(2017),"str_for_airbnb_2017") # cache data to fix for post
+str_data <- all_licenses %>% filter(BusinessType=="Short-Term Rental") %>%
+  mutate(LocalArea=sub("Central Business/","",LocalArea))  
+
+last_issued <- str_data$IssuedDate %>% sort %>% last
+last_extracted <- str_data$ExtractDate %>% sort %>% last
+
+issued_pending <- filter(str_data,Status %in% c("Issued","Pending"))
+revoked <-  filter(str_data,!(Status %in% c("Issued","Pending"))) %>% mutate(licenceStatus="Revoked")
+issued_pending_not_revoked <- issued_pending %>% filter(!(LicenceNumber %in% revoked$LicenceNumber)) %>% mutate(licenceStatus="Valid")
+
+valid_licences <- issued_pending_not_revoked$LicenceNumber  %>% unique
+
+other_licenses <- all_licenses %>% filter(!(LicenceNumber %in% c(revoked$LicenceNumber,issued_pending_not_revoked$LicenceNumber)))
+```
+
+```{r}
+process_airbnb_for_cov <- function(data,filter_vancouver=TRUE){
+  d<-data$Date %>% sort %>% last
+  data %>% preprocess %>%
+    st_join(vancouver %>% select(GeoUID,name) %>% rename(city_name=name)) %>%
+    mutate(geo_match=case_when(
+      city=="Vancouver" & city_name=="Vancouver (CY)" ~ "City name and geography",
+      city=="Vancouver" & (is.na(city_name) | city_name!="Vancouver (CY)") ~ "City name only",
+      city!="Vancouver" & city_name=="Vancouver (CY)" ~ "Geography only",
+      TRUE ~ "None"
+    )) %>%
+    mutate(str_type=ifelse(minstay<30,"STR","Long term")) %>%
+    filter((city_name=="Vancouver (CY)" & !(longitude>-123.027648 & city == "Burnaby"))| !filter_vancouver) %>%
+    #filter(city=="Vancouver") %>%
+    left_join(bind_rows(revoked,issued_pending_not_revoked,other_licenses) %>%
+                filter(is.na(IssuedDate) | IssuedDate <= d) %>%
+                select(LicenceNumber,licenceStatus,Status,IssuedDate,BusinessName),by=c("licence"="LicenceNumber")) %>%
+    mutate(licence_status_verified=factor(coalesce(Status,licence_status),levels=licence_status_levels)) %>%
+    mutate(licence_year=substr(licence,1,2)) %>%
+    mutate(licence_year=ifelse(licence_year %in% c("18","19"),licence_year,NA))
+}
+
+get_airbnb_listings <- function(){
+  con <- RPostgreSQL::dbConnect(RPostgreSQL::PostgreSQL(),
+                         dbname = getOption("airbnb.dbname"),
+                         host=getOption("airbnb.host"),
+                         user=getOption("airbnb.user"),
+                         password=getOption("airbnb.password"))
+
+  surveys <- con %>% 
+    tbl("survey") %>% 
+    select(survey_id,survey_date) %>%
+    filter(survey_id!=35) %>%
+    collect() %>%
+    cancensusHelpers::to_named_vector("survey_id","survey_date")
+
+
+  airbnb_data <- lapply(names(surveys), function(s){
+    sf::st_read(con, query = paste0("SELECT * from room WHERE survey_id = ",s)) %>%
+      rename(geometry=location) %>% 
+      mutate(Date=as.Date(surveys[s])) %>% 
+      process_airbnb_for_cov
+  }) %>% 
+    bind_rows %>%
+    as_tibble() %>%
+    st_as_sf()
+
+  RPostgreSQL::dbDisconnect(con)
+
+  airbnb_data
+}
+```
+
+
+```{r}
+airbnb <- get_airbnb_listings() %>% 
+  st_as_sf %>%
+  st_set_crs(4326)
+  
+airbnb_latest <- airbnb %>% filter(Date==max(Date))
+
+```
+
+
+About half a year ago I did a [post on Airbnb data](https://doodles.mountainmath.ca/blog/2018/08/21/airbnb-and-str-licences/) back when enforcement of the Short Term Rental (STR) regulation came into full effect starting September 2018 and have not really writing things up since then. Probably time for an update post. What has happened since, and what have we learned?
+
+## Overview
+Let's take a look how listings evolved. 
+
+```{r}
+ggplot(airbnb,aes(x=as.character(Date),fill=licence_status_verified)) +
+  geom_bar(position="stack") +
+  scale_fill_manual(values=licence_status_colors,na.value="grey") +
+  scale_y_continuous(labels=scales::comma) +
+  my_theme +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1.2,vjust=1.2)) +
+  labs(fill="Licence status",y="Number of listings",x="",title="Listings by date and licence status")
+
+```
+
+After the initial purge of listings before the start of enforcement, not much changed. The initial purge removed a bunch of listings, and flipped listings without a licence number to a minimum stay of 30 days.
+
+The number of listings has been slowly creeping up, with a couple of dips along the way. 
+
+```{r}
+minstay_cutoffs <- c(0,1.5,2.5,3.5,6.5,7.5,13.5,14.5,29.5,30.5,Inf)
+minstay_lables <- c("1","2","3","4-6","7","8-13","14","15-29","30","Over 30")
+
+minstay_data <- airbnb_latest %>% 
+  st_set_geometry(NULL) %>% 
+  mutate(minstay_d=cut(minstay,breaks=minstay_cutoffs,labels=minstay_lables,ordered_result = TRUE)) %>%
+  group_by(minstay_d,licence_status_verified) %>% 
+  summarize(Count=n())
+
+ggplot(minstay_data,aes(x=minstay_d,y=Count,fill=licence_status_verified))+
+  geom_bar(stat="identity") +
+  my_theme +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=licence_status_colors,na.value="grey") +
+  labs(y="Number of listings",x="Minimum stay (days)",title=paste0("Listings in City of Vancouver on ",airbnb_latest$Date %>% unique," by minimum stay"),fill="Licence status")
+```
+
+Viewed by minimum stay, the minimum number of nights a listing can be booked through the Airbnb website, we see that the vast majority of the listings with *missing* licence information are "long term" (30 days or more) listings. These are not covered by the STR rules. Some listings are *exempt* as they are cross-listings of regular hotels or B&Bs, but we have no way to verify the legitimacy using our data without going through the listings one by one. Some other listings have licence numbers that are malformed, or have the correct format but have no match in the City of Vancouver STR licence database.
+
+```{r}
+room_type_colors <- set_names(RColorBrewer::brewer.pal(3,"Set2"),c("Entire home/apt", "Private room", "Shared room"))
+
+minstay_data <- airbnb_latest %>% 
+  st_set_geometry(NULL) %>% 
+  mutate(minstay_d=cut(minstay,breaks=minstay_cutoffs,labels=minstay_lables,ordered_result = TRUE)) %>%
+  group_by(minstay_d,room_type) %>% 
+  summarize(Count=n())
+
+minstay_summary <- minstay_data %>%
+  group_by(room_type) %>%
+  summarize(Count=sum(Count)) %>%
+  ungroup %>%
+  mutate(share=Count/sum(Count))
+
+ggplot(minstay_data,aes(x=minstay_d,y=Count,fill=room_type))+
+  geom_bar(stat="identity") +
+  my_theme +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=room_type_colors,na.value="grey") +
+  labs(y="Number of listings",x="Minimum stay (days)",
+       title=paste0("Listings in City of Vancouver on ",airbnb_latest$Date %>% unique," by minimum stay"),
+       fill="Listing type")
+```
+
+## Short term rentals
+For the rest of the post we focus exclusively on short term rentals, that is listings with minimum stay of fewer than 30 days.
+
+```{r}
+room_type_colors <- set_names(RColorBrewer::brewer.pal(3,"Set2"),c("Entire home/apt", "Private room", "Shared room"))
+
+plot_data <- airbnb %>% 
+  filter(minstay<30) %>%
+  st_set_geometry(NULL) %>% 
+  group_by(Date,room_type) %>% 
+  summarize(Count=n()) %>%
+  group_by(Date) %>%
+  mutate(share=Count/sum(Count)) %>%
+  ungroup
+
+ggplot(plot_data)+
+  geom_line(aes(x=Date,y=Count,color=room_type)) +
+  geom_vline(xintercept = as.Date("2018-09-01"),size=0.25) +
+  geom_text(x= as.Date("2018-09-01"),y=200,label="Sept 1, 2018",hjust=-0.05) +
+  my_theme +
+  scale_y_continuous(labels=scales::comma) +
+  scale_color_manual(values=room_type_colors,na.value="grey") +
+  labs(y="Number of listings",x="Minimum stay (days)",
+       title=paste0("City of Vancouver STR listings"),
+       color="Listing type")
+```
+
+Currently `r scales::percent(filter(plot_data,Date==max(Date),room_type=="Entire home/apt")$share)` of the STR listings are *Entire home/apt* with almost all of the the remainder being private rooms. The number of *Entire home/apt* has been slowly increasing while the number of *private rooms* has been fairly stable.
+
+```{r airbnb-room-type-map}
+background_fill <- c("9330069.01"="#e0e0e0","9330069.02"="#e0e0e0","5915022"="#ffffff","5915803"="#e0e0e0")
+ggplot(airbnb_latest %>% filter(minstay<30,licence_status_verified=="Issued")) +
+  geom_sf(data=vancouver,aes(fill=GeoUID),color=NA) +
+  scale_fill_manual(values=background_fill,guide=FALSE) +
+  geom_sf(data=roads2,size=0.1,color="darkgrey",fill=NA) +
+  geom_sf(data = water2, fill = "lightblue", colour = NA) +
+  my_map_theme +
+  theme(panel.background = element_rect(fill="#a0a0a0"),
+        text = element_text(family = "Arial Unicode MS")) +
+  scale_color_brewer(palette="Dark2") +
+  geom_sf(aes(color=room_type),size=0.5,show.legend = "point") +
+  guides(colour = guide_legend(override.aes = list(size=2.5))) +
+  coord_sf(datum=NA,
+           xlim=c(bbox2$xmin,bbox2$xmax),
+           ylim=c(bbox2$ymin,bbox2$ymax)) +
+  labs(title=paste0("Airbnb STR listings ",max(airbnb_latest$Date)," with valid licence"),color="Listing type",caption="MountainMath, Airbnb (location not exact)") 
+```
+
+To better understand the flow of new listings coming online and old listings getting discontinued, we colour by time the listings first came online.
+
+```{r}
+plot_data <- airbnb %>%
+  st_set_geometry(NULL) %>%
+  filter(minstay<30) %>%
+  group_by(room_id,room_type) %>%
+  mutate(first_seen=min(Date)) %>%
+  group_by(first_seen,Date,room_type) %>%
+  count %>%
+  filter(room_type != "Shared room")
+
+ggplot(plot_data,aes(x=as.factor(Date),y=n,fill=fct_rev(as.factor(first_seen)))) +
+  geom_bar(position="stack",stat="identity") +
+  facet_wrap("room_type",ncol=1,scales="free_y") +
+  scale_fill_viridis_d(direction = -1,guide=FALSE) +
+  my_theme +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="STR listings by time first seen",x="",y="Number of listings") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1.2,vjust=1.2))
+```
+
+This shows that there has been a steady decline in listings from before the Sept 1, 2018 deadline, with new listings coming online to take their place. It is not clear if or to what extent the new listings coming online are just re-brandings of the same physical home that went offline earlier, or if these sets of homes are disjoint.
+
+## Compliance
+Determining compliance is hard. Part of that is that I am still not entirely clear on the STR rules. It is my understanding that short term rentals are allowed if 
+
+* the host has a valid licence for the listing,
+* the host rents out at most one listing,
+* the home is the primary residence of the host, and
+* the listing is either the hosts primary residence, or it is a room (or section) of hosts' home.
+
+In particular, hosts are not allowed to rent out multiple listings, and each licence can only be used for one specific booking at a time. Moreover, owners of a property cannot STR a property unless it is their own primary residence, renting it out for half a year long term so it is someone else's primary residence and then renting it out short term for the rest of the year violates the rules.
+
+### Valid licences
+Advertising a short term rental in the City of Vancouver requires a licence. The city has been handing out licences since the rollout about a year ago.
+
+```{r}
+plot_data <- str_data %>% 
+  mutate(Date=as.Date(IssuedDate)) %>% 
+  #filter(Date>=as.Date("2018-05-01")) %>%
+  mutate(value=ifelse(Status=="Issued",1,-1)) %>%
+  group_by(Date,Status) %>%
+  summarise(Count=sum(value))
+ggplot(plot_data,aes(x=Date,y=Count,fill=Status)) +
+  geom_bar(stat="identity") +
+  my_theme +
+  scale_fill_manual(values=licence_status_colors,na.value="grey") +
+  labs(title="City of Vancouver STR licences",x="Issue Date",y="Number",caption="CoV Open Data")
+  
+```
+
+The graphs shows the initial spike when the city started the licence process, although the bunching at the first date may well be an artifact of the dataset lumping all previous licences together to the date when the dataset first started. The next spike we see coincides with the STR enforcement coming into full effect September 1, 2018. Then we see a spike in December, continuing into January, renewing the 2018 licences for 2019.
+
+This process is still underway, only around half of all licences have been renewed for 2019 as of now.
+
+```{r}
+plot_data <-
+  airbnb_latest %>%
+  st_set_geometry(NULL) %>%
+  filter(minstay<30) %>%
+  mutate(licence_status_complete=case_when(
+    is.na(licence_year)~as.character(licence_status_verified),
+    TRUE ~ paste0(licence_status_verified," 20",licence_year)))
+
+ggplot(plot_data,aes(x=licence_status_complete,fill=licence_status_verified)) +
+  geom_bar() +
+  my_theme +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=licence_status_colors,na.value="grey") +
+  coord_flip() +
+  labs(title=paste0("Airbnb STR listings ",max(airbnb_latest$Date)," by licence status"),fill="Licence status",x="",y="Number of listings")
+```
+
+It's unclear to me what the cutoff is by when people have to have their 2019 licence in place, whether it's January 1st, or if there is a grace period. Some don't seem to be in any rush to get their 2019 licence.
+
+The *valid format* licences are licences that are formatted like proper City of Vancouver STR licenses, but don't match anything in the city licence database. These could be cases of typos or made-up licences, we were too lazy to run a fuzzy-match to identify possible typos. 
+
+Licence with *invalid format* are entries in the licence field that don't come close to match the STR licence format and can [be quite creative at times](https://www.cbc.ca/news/canada/british-columbia/thousands-of-vancouver-airbnb-listings-still-without-licence-in-lead-up-to-deadline-analyst-1.4805152). Licences marked as *exempt* are hosts self-declaring exempt status. Hotels or registered B&Bs are exempt from the licence requirement, and it requires manual work going through the listings to judge if they likely fall under these categories, which we have not done.
+
+Some listings have *pending*, *inactive* or *cancelled* licences. I am unsure if listing with pending licences complies with regulations, but using licences marked by the city as *inactive* or *cancelled* surely  won't.
+  
+
+The cases with *missing* licences are a mixture of regular hotels or B&Bs cross-listing on Airbnb, as well as people evading the licence field requirement by tagging their listing as being in a different municipality (sometimes using a different language for the city name) while geo-locating in Vancouver as [has been reported before](https://bc.ctvnews.ca/loophole-appears-to-help-some-airbnb-hosts-evade-city-rules-ctv-investigation-1.4225376). 
+
+```{r}
+plot_data <- airbnb %>% 
+  filter(minstay<30,licence_status_verified=="Missing") %>%
+  filter(Date>=as.Date("2018-09-01")) %>%
+  mutate(`City field`=ifelse(city=="Vancouver","Vancouver","Other city/text"))
+
+ggplot(plot_data,aes(x=as.character(Date),fill=`City field`)) +
+  geom_bar() +
+  my_theme +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1.2,vjust=1.2)) +
+  labs(title="STR listings without a license",x="",y="Number of listings",fill="City field")
+```
+
+Spot checks show that listings with field correctly labelled as "Vancouver" seem to be mostly hotels that are cross-posting, except for the surge of these in January. The ones that have different text in the city field seem to be individuals that appear to have found a way around the Airbnb licence requirements, possibly inadvertently so.
+
+```{r}
+ggplot(plot_data %>% filter(Date==max(Date),`City field` != "Vancouver")) +
+  geom_sf(data=vancouver,aes(fill=GeoUID),color=NA) +
+  scale_fill_manual(values=background_fill,guide=FALSE) +
+  geom_sf(data=roads2,size=0.1,color="darkgrey",fill=NA) +
+  geom_sf(data = water2, fill = "lightblue", colour = NA) +
+  my_map_theme +
+  theme(panel.background = element_rect(fill="#a0a0a0"),
+        text = element_text(family = "Arial Unicode MS")) +
+  scale_color_brewer(palette="Dark2") +
+  geom_sf(aes(color=city),size=2,show.legend = "point") +
+  guides(colour = guide_legend(override.aes = list(size=5))) +
+  coord_sf(datum=NA,
+           xlim=c(bbox2$xmin,bbox2$xmax),
+           ylim=c(bbox2$ymin,bbox2$ymax)) +
+  labs(title=paste0("Airbnb listings ",max(plot_data$Date)," with no data in licence field and minimum stay < 30 days"),color="Airbnb Jurisdiction field",caption="MountainMath, Airbnb (location not exact)") 
+```
+
+
+
+### Multiple listings per host or licence
+I am guessing that hosts having multiple listings or there being multiple listings on the same licence is ok as long as hosts only book one listing per host and/or licence at any given time. For example, a host has several rooms in their home that they list as STR, dynamically deciding which one to rent out on demand but never booking more than one simultaneously. This is probably in concordance with legislation, but it is hard to verify that only one of the listings is booked at any given point in time and it opens the doors to abuse.
+
+The situation becomes much clearer when there are several *entire home/apt* units listed by a single host or on a single licence, as a host can't possibly have more than one primary residence.
+
+```{r}
+
+room_type_summary <- function(rt){
+  #print("xxxxxxxxx")
+  #print(rt)
+  ru=unique(rt)
+  er=sum(grepl("Entire home/apt",rt))
+  result <- ifelse(length(ru)==1, 
+                   ifelse(rt=="Entire home/apt","Multiple entire home/apts","Multiple private rooms"),
+                   ifelse(er>=2, "Several entire home/apts and private room(s)", "One entire home/apt and private room(s)"))
+  #print(result)
+  result
+}
+
+count_multiple <- function(data){
+  data  %>%
+    mutate(room_type=as.character(room_type)) %>%
+    summarize(multiple_count=n()-1,
+              room_type=room_type_summary(room_type)) %>%
+    filter(multiple_count>0) %>%
+    #mutate(room_type=map(room_type,room_type_summary) %>% unlist) %>%
+    group_by(Date,room_type) %>%
+    summarize(multiple_count=sum(multiple_count))
+}
+
+multiples_timeline <- bind_rows(
+  airbnb %>% 
+    st_set_geometry(NULL) %>%
+    filter(minstay<30,room_type %in% c("Entire home/apt","Private room")) %>%
+    group_by(Date,host_id) %>%
+    count_multiple %>% 
+    mutate(Series="Per host"),
+  airbnb %>% 
+    st_set_geometry(NULL) %>%
+    filter(minstay<30,licence_status_verified=="Issued",room_type %in% c("Entire home/apt","Private room")) %>%
+    group_by(Date,licence) %>%
+    count_multiple %>% 
+    mutate(Series="Per valid licence")
+) 
+
+
+multiples_timeline2 <- bind_rows(
+  airbnb %>% 
+    st_set_geometry(NULL) %>%
+    filter(minstay<30,licence_status_verified=="Issued",room_type %in% c("Entire home/apt")) %>%
+    group_by(Date,host_id) %>%
+    summarize(multiple_count=n()-1) %>%
+    filter(multiple_count>0) %>%
+    mutate(Series="Per host"),
+  airbnb %>% 
+    st_set_geometry(NULL) %>%
+    filter(minstay<30,licence_status_verified=="Issued",room_type %in% c("Entire home/apt")) %>%
+    group_by(Date,licence) %>%
+    summarize(multiple_count=n()-1) %>%
+    filter(multiple_count>0) %>%
+    mutate(Series="Per valid licence")
+) 
+
+multiple_home_summary <- multiples_timeline %>% 
+  ungroup %>% 
+  filter(room_type=="Multiple entire home/apts",Date==max(Date)) %>%
+  group_by(Series) %>%
+  summarize(multiple_count=sum(multiple_count))
+
+
+ggplot(multiples_timeline) +
+  geom_line(aes(x=Date,color=room_type,group=(room_type),y=multiple_count)) +
+  my_theme +
+  facet_wrap("Series",scales="free_y",ncol=1) +
+  scale_color_brewer(palette = "Set1") +
+  scale_y_continuous(labels=scales::comma,limits=c(0,NA)) +
+  geom_vline(xintercept = as.Date("2018-09-01"),size=0.25) +
+  #geom_text(x= as.Date("2018-09-01"),y=200,label="Sept 1, 2018",hjust=-0.05) +
+  labs(title="Number of simultaneous STR listings in excess of one per host or licence",
+       x="",y="Aggregate count",color="")
+```
+
+Looking at timelines we note how the initial purge dramatically decreased the aggregate number of STR listings in excess of one listing per host. When only looking at listings with a valid licence, the aggregate number of listings in excess of one listing per licence is lower and did not see a drop with the deadline coming in, mostly because people were still scrambling to obtain a licence. Both timelines hint at a slight decline in the recent months, but it takes some imagination to paint that as a success for compliance.
+
+Most of the hosts or licences that have more than one listing list multiple *private rooms*, followed by hosts or licences simultaneously advertising two or more *entire home/apts*. These, together with hosts or licences with two more more *entire home/apts* as well as one or more *private room(s)*, are probably the most obviously problematic listings, as each host can have at most one primary residence. Taken together, there are `r filter(multiples_timeline2%>% ungroup,Series=="Per host",Date==max(Date)) %>% nrow()` hosts with valid licence and multiple *entire home/apts* listed, totalling `r filter(multiples_timeline2 %>% ungroup,Series=="Per host",Date==max(Date))$multiple_count %>% sum()` listings above the one *entire home/apt* per host that the rules might allow.
+
+This seems to be a persistent problem.
+
+```{r}
+ggplot(multiples_timeline2 %>% group_by(Date,Series) %>% summarize(multiple_count=sum(multiple_count))) +
+  geom_line(aes(x=Date,color=Series,group=(Series),y=multiple_count)) +
+  my_theme +
+  scale_color_brewer(palette = "Set1") +
+  scale_y_continuous(labels=scales::comma,limits=c(0,NA)) +
+  geom_vline(xintercept = as.Date("2018-09-01"),size=0.25) +
+  labs(title="Number of simultaneous eiture home/apt STR listings with valid slicence\nin excess of one per host or licence",
+       x="",y="Aggregate count",color="")
+```
+
+Counts per licence are lower because there are hosts using multiple licences. Licences with more than one *enture home/apt* strikes me as a clear violation of STR rules, what is less clear to me is if aribnb "hosts" can act as agents for individual STR landlords and manage the airbnb presence for them. If allowed, this would mean some of the multiple *entire home/apt* listings per host may be compliant with STR rules.
+
+### Non-primary residence *entire home/apt*
+For an entire home/apt to be used as a STR, it needs to be the hosts primary residence, For example if the host lives at the home most of the times, but is out of town over the weekend, or away on vacation, and uses it as a STR during those times, that's in perfect compliance with the STR rules.
+
+If however the host uses the home full-time for Airbnb, or maybe uses it for half of the year and then rents it out long-term for the other half of the year, this would be in violation to Airbnb rules.
+
+This is where things get tricky. We don't actually know how long a home gets rented out. Airbnb does not share that data, although some jurisdictions have [managed to obtain court injunctions to force Aibnb to release bookings data](https://www.sueddeutsche.de/muenchen/airbnb-muenchen-klage-1.4249813). For now all we can do is make some educated guesses based on the availability indicated in the calendar, as well as the number of reviews left on Airbnb. Calendar availability is quite tricky, we don't know why some days are blocked and others are open. Are days blocked because the listing is booked or because it serves as primary residence during that time? When there are large open periods in the calendar available for booking we could infer that all of them could be booked out. But some hosts may set a high price and wait for some people to pick a selection of time slots and go on a mini-vacation during those times only. Which could be in compliance with the regulation, depending on how often this occurs.
+
+Reviews are a clearer indication of an actual booking. Not every Airbnb visit will result in a review, but if a new review is posted there was a visit sometime before.
+```{r}
+review_data  <- airbnb %>%
+  st_set_geometry(NULL) %>%
+  filter(minstay<30,room_type=="Entire home/apt",licence_status_verified=="Issued") %>%
+  group_by(room_id) %>%
+  filter(min(Date)<=as.Date("2018-09-01"),
+         max(Date)>=as.Date("2019-02-01"),
+         Date>=as.Date("2018-09-01")) %>%
+  mutate(min_reviews=min(reviews),max_reviews=max(reviews)) %>%
+  mutate(review_count=max_reviews-min_reviews) %>%
+  ungroup
+
+```
+
+To this end, we look at STR listings that are *entire home/apt* with valid licences that were online on or before Sept. 1, 2018 and also in February 2019, and we count the number of reviews they have gained in this time period.
+
+```{r}
+plot_data <- review_data %>%
+  filter(Date==max(Date)) %>%
+  count(review_count) 
+
+ggplot(plot_data,aes(x=review_count,fill=..x..,y=n)) +
+  geom_bar(stat="identity") +
+  my_theme +
+  scale_fill_viridis_c(guide=FALSE,option = "magma") +
+  labs(title="STR listings with valid licence and active since Sept 1, 2018",
+       x="Number of reviews since Sept 1, 2018",
+       y="Number of listings")
+```
+
+We see a lot of listings with very few reviews, which is consistent with use as a principal residence. But there are also listings that accumulated more than 20, more than 40 and even more than 60 reviews in this six month time period. Depending on the average length of stay, and the rate of guests leaving reviews, these numbers are indicative of full-time STR use.
+
+Looking at the cumulative distribution helps understand how many listings have at least 20 or 30 reviews.
+
+```{r}
+plot_data <- review_data %>%
+  filter(Date==max(Date)) %>%
+  count(review_count) %>%
+  ungroup %>%
+  arrange(-review_count) %>%
+  mutate(c=cumsum(n))
+
+
+ggplot(plot_data,aes(x=review_count,fill=..x..,y=c)) +
+  geom_bar(stat="identity") +
+  my_theme +
+  scale_x_reverse() +
+  scale_fill_viridis_c(guide=FALSE,option = "viridis") +
+  labs(title="STR listings with valid licence and active since Sept 1, 2018",
+       x="Number of reviews since Sept 1, 2018",
+       y="Cumulative number of listings")
+
+```
+
+We see that there are `r scales::comma(filter(plot_data,review_count==20)$c)` listings with at least 20 reviews, where it becomes questionable whether these listings are really primary residences of the host.
+
+To take this even further we mix in data from we started to collect data. Murray Cox, who is running [Inside Airbnb](https://twitter.com/InsideAirbnb) has [made his scrapes available](http://insideairbnb.com/get-the-data.html). He has earlier scrapes, and we can fold them into our analysis,
+
+```{r}
+
+inside_dates <- c("2018-08-14","2018-07-10","2018-07-10","2018-04-11","2017-10-06","2017-04-07","2015-12-03")
+
+get_inside_airbnb_data <- function(date){
+  read_csv(paste0("http://data.insideairbnb.com/canada/bc/vancouver/",date,"/data/listings.csv.gz")) %>%
+  mutate(Date=as.Date(date)) %>%
+  st_as_sf(coords = c("longitude", "latitude"), 
+               crs = 4326, agr = "constant")
+}
+
+
+#inside_airbnb <- lapply(inside_dates,get_inside_airbnb_data)
+
+inside_airbnb_2018_04_11 <- get_inside_airbnb_data("2018-04-11")
+
+```
+
+```{r}
+review_data2 <- airbnb_latest %>%
+  st_set_geometry(NULL) %>%
+  filter(minstay<30,room_type=="Entire home/apt",licence_status_verified=="Issued") %>%
+  select(room_id,host_id,reviews) %>%
+  inner_join(
+    inside_airbnb_2018_04_11 %>% 
+      st_set_geometry(NULL) %>%
+      select(id,host_id,number_of_reviews),
+    by=c("room_id"="id","host_id")
+  ) %>%
+  mutate(review_count=reviews-number_of_reviews) 
+```
+
+
+Taking the scrape from April 11, 2018, we can compare that to our latest scrape for a roughly 10 months span. We get `r scales::comma(review_data %>% nrow)` listings that were active on both dates and are listed now as entire apartment short term rentals with valid licence. 
+
+```{r}
+plot_data <- review_data2 %>%
+  count(review_count) %>%
+  arrange(review_count)
+
+
+ggplot(plot_data,aes(x=review_count,fill=..x..,y=n)) +
+  geom_bar(stat="identity") +
+  my_theme +
+  scale_fill_viridis_c(guide=FALSE,option = "magma") +
+  labs(title="STR listings with valid licence and active since March 11, 2018",
+       x="Number of reviews since March 11, 2018",
+       y="Number of listings")
+
+```
+
+Again, a good portion of listings appear to comply with the STR regulation, but it is really hard to see how listings at the higher end of the review count spectrum can be principal residences.
+
+## Suites and laneways
+Suites and laneway houses are not allowed as STR unless they have a long-term tenant that rents them out with the landlord's permission. They can be hard to find in the data without manually looking though individual listings, but we can get a (lower bound) estimate by searching for terms like "laneway home" or "garden level suite" in the title and description of listings.
+
+```{r}
+
+detail_data_for_local_path <- function(survey_id,room_id){
+  path=file.path(getOption("cache_path"),"airbnb",survey_id,paste0(room_id,".html"))
+  
+  h<-xml2::read_html(path)
+  # hh<-rvest::html_node(h,"script[data-hypernova-key='spaspabundlejs']") %>%
+  #   rvest::html_text() %>%
+  #   substr(5,nchar(.)-3) %>%
+  #   jsonlite::fromJSON()
+  
+  tibble(local_path=path,
+    description=rvest::html_node(h,"meta[name='description']") %>% rvest::html_attr("content"),
+    title=rvest::html_node(h,"title") %>% rvest::html_text(),
+    room_id=room_id,
+    survey_id=survey_id)
+}
+
+get_listing_details <- function(data) {
+  seq(1,nrow(data))  %>% lapply(
+    function(index) {
+      row=data[index,]
+      detail_data_for_local_path(row$survey_id,row$room_id)
+    }
+  ) %>% bind_rows
+}
+
+
+airbnb_details <- airbnb_latest %>% 
+  filter(minstay<30,room_type=="Entire home/apt",licence_status_verified=="Issued") %>%
+  left_join(
+    simpleCache((.) %>% get_listing_details,paste0("airbnb_details_",max((.)$Date))),  by=c("room_id","survey_id")
+  )
+```
+
+
+```{r}
+suite_grep_string <- "Garden Suite|Garden level suite|garden studio|garden level studio"
+laneway_grep_string <- "laneway house|garden house|laneway home|laneway coach home"
+#airbnb_details %>% filter(grepl("laneway",title,ignore.case = TRUE)) %>% pull(title)
+
+airbnb_details <- airbnb_details %>%
+  mutate(Type=ifelse(
+    grepl(suite_grep_string,title,ignore.case = TRUE)|grepl(suite_grep_string,description,ignore.case = TRUE) ,"Secondary suite",ifelse(
+    grepl(laneway_grep_string,title,ignore.case = TRUE)|grepl(laneway_grep_string,description,ignore.case = TRUE), "Laneway house",
+    "Other")
+  )) %>%
+  left_join(review_data %>% filter(Date==max(Date)) %>% select(room_id,review_count),by="room_id")
+
+airbnb_detail_summary <- airbnb_details %>% 
+  st_set_geometry(NULL) %>% 
+  count(Type)
+```
+
+```{r}
+ggplot(airbnb_details %>% filter(Type != "Other")) +
+  geom_sf(data=vancouver,aes(fill=GeoUID),color=NA) +
+  scale_fill_manual(values=background_fill,guide=FALSE) +
+  geom_sf(data=roads2,size=0.1,color="darkgrey",fill=NA) +
+  geom_sf(data = water2, fill = "lightblue", colour = NA) +
+  my_map_theme +
+  theme(panel.background = element_rect(fill="#a0a0a0"),
+        text = element_text(family = "Arial Unicode MS")) +
+  scale_color_brewer(palette="Dark2") +
+  geom_sf(aes(color=Type),size=1,show.legend = "point") +
+  guides(colour = guide_legend(override.aes = list(size=5))) +
+  coord_sf(datum=NA,
+           xlim=c(bbox2$xmin,bbox2$xmax),
+           ylim=c(bbox2$ymin,bbox2$ymax)) +
+  labs(title=paste0("Airbnb STR entire home/apt listings ",max(airbnb_details$Date)," with valid licence"),color="Home type",caption="Airbnb (location not exact)") 
+```
+
+A fairly conservative search aimed to minimize false positives identifies `r filter(airbnb_detail_summary,Type=="Secondary suite")$n` secondary suites and `r filter(airbnb_detail_summary,Type=="Laneway house")$n` laneway houses that are currently listed as STR. Again, some of these only rent out occasionally and are in compliance if rented out by the long-term tenant of these units with permission from the owner.
+
+```{r}
+plot_data <- airbnb_details %>% filter(Type != "Other") %>%
+  ungroup %>%
+  count(review_count) %>%
+  arrange(review_count)
+
+
+ggplot(plot_data,aes(x=review_count,fill=..x..,y=n)) +
+  geom_bar(stat="identity") +
+  my_theme +
+  scale_fill_viridis_c(guide=FALSE,option = "magma") +
+  labs(title="STR suite and laneway listings with valid licence and active since Sept 1, 2018",
+       x="Number of reviews since Sept 1, 2018",
+       y="Number of listings")
+
+```
+
+Looking at the number of reviews, we notice again that some of these rent out at high volume and are unlikely to be principal residences.
+
+
+## Upshot
+Not much has changed in the overview statistics since the full STR rule enforcement in September. The data should strong indications that a portion of hosts aren't in compliance with the regulations. To go beyond some of the obvious cases or use this kind of overview data to inform audits, one would have to look deeper at individual listings. 
+
+Given the strong indication of ongoing abuse in overview data, as well as a flood of examples of individual cases that people browsing through listings have documented, it might be time for the city take another look at how to strengthen some of their existing regulations to increase enforceability. Regulations like this are are rarely one-shot wonders, but require some adjusting and tweaking to make more effective. 
+
+
