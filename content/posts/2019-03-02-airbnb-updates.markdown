@@ -117,7 +117,7 @@ This seems to be a persistent problem.
 
 <img src="/posts/2019-03-02-airbnb-updates_files/figure-html/unnamed-chunk-15-1.png" width="864" />
 
-Counts per licence are lower because there are hosts using multiple licences. Licences with more than one *enture home/apt* strikes me as a clear violation of STR rules, what is less clear to me is if aribnb "hosts" can act as agents for individual STR landlords and manage the airbnb presence for them. If allowed, this would mean some of the multiple *entire home/apt* listings per host may be compliant with STR rules.
+Counts per licence are lower because there are hosts using multiple licences. Licences with more than one *entire home/apt* strikes me as a clear violation of STR rules, what is less clear to me is if Airbnb "hosts" can act as agents for individual STR landlords and manage the airbnb presence for them. If allowed, this would mean some of the multiple *entire home/apt* listings per host may be compliant with STR rules.
 
 ### Non-primary residence *entire home/apt*
 For an entire home/apt to be used as a STR, it needs to be the hosts primary residence, For example if the host lives at the home most of the times, but is out of town over the weekend, or away on vacation, and uses it as a STR during those times, that's in perfect compliance with the STR rules.
