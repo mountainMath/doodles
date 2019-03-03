@@ -1,4 +1,4 @@
-baseurl = "http://doodles.mountainmath.ca/"
+baseurl = "https://doodles.mountainmath.ca/"
 languageCode = "en-us"
 title = "Mountain Doodles"
 theme = "hugo-future-imperfect"
