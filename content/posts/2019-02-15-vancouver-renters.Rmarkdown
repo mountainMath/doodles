@@ -257,7 +257,7 @@ When looking at renter households, we like to distinguish those in subsidized ho
 ```{r}
 plot_data <- renters_data %>%
   filter(Characteristics %in% c("Total private households by number of bedrooms"),
-         grepl("Total",`HH Income group`))
+         grepl("Total - ",`HH Income group`))
 
 ggplot(plot_data,aes(x=`HH Tenure`,y=Value,fill=fct_rev(`Shelter-cost`))) +
   geom_bar(stat="identity",position="fill") + 
@@ -265,7 +265,7 @@ ggplot(plot_data,aes(x=`HH Tenure`,y=Value,fill=fct_rev(`Shelter-cost`))) +
   coord_flip() +
   scale_y_continuous(labels=scales::percent) +
   my_theme +
-  labs(title="City of Vancouver renter households",x="Household income",y="Number of households",fill="Shelter-cost-to-income")
+  labs(title="City of Vancouver renter households",x="",y="Number of households",fill="Shelter-cost-to-income")
 ```
 
 When looking at the overall affordability picture there are fewer comfortably housed renter households, those paying less than 15% or less than 30% of income on shelter costs, in subsidized housing than in market rentals, which is to be expected. Comfortably housed households tend to be more affluent and won't qualify for subsidized housing. However at the high end, we see that there is a higher share of severely shelter-cost burdened households, those paying 50% to 100% of their income on housing, than in market housing. As to be expect, the portion of households spending 100% or more of their income on housing is larger in market housing. As we have seen above, these are hard to interpret and CMHC does not consider these in their core housing need categories.
@@ -629,6 +629,76 @@ ggplot(renters_apartment_data,aes(x=`CondoStat/Type`,y=Value,fill=fct_rev(Ages))
 
 This shows that the condo apartments skew much more recent than non-stratified market rental buildings, confirming our suspicion that the rent differential may be due to dwelling quality. It would be interesting to get finer data on location and building age, as well as separate out secondary suites from non-condo apartment rentals, to better understand what drives the difference in attractiveness of these dwelling units that get reflected in the market rents they are able to fetch.
 
+##  Update (March  4, 2018)
+I just saw [an interesting question](https://twitter.com/amoralorealis/status/1102651618711941121) about newer vs older rental units, and how affordability, as measured by shelter-cost-to-income ratios, relate to building age.
+
+```{r}
+renters_age_shelter_cost_data <- xtab_data %>%
+   filter(`Mob Status_PHM`=="Total - mobility status of the Primary Household Maintainer (1-year ago, 2015)",
+          `HH Tenure` %in% c("Not subsidized housing"),
+         `Age group (PHM)`=="Total - age groups",
+          GEO=="City of Vancouver",
+         `CondoStat/Type`== "Total - Condominium status and structural type of dwelling",
+          `Household type` == "Total - household type",
+          `HH Income group`=="Total - Household income",
+          `Shelter-cost` !="Total - Shelter-cost-to-income ratio") %>%
+   select(c("Shelter-cost",dwelling_ages)) %>%
+   collect() %>%
+  gather(key="Ages",value="Value",dwelling_ages,factor_key = TRUE) %>%
+  mutate(`Shelter-cost`=factor(`Shelter-cost`,levels=pure_shelter_levels))
+
+ 
+ggplot(renters_age_shelter_cost_data,aes(x=Ages,y=Value,fill=fct_rev(`Shelter-cost`))) +
+  geom_bar(stat="identity",position="fill") + 
+  scale_fill_viridis_d(direction = -1) +
+  coord_flip() +
+  scale_y_continuous(labels=scales::percent) +
+  scale_x_discrete(labels=c("Dwelling constructed before 1996"="Before 1996",
+                            "Dwelling constructed during the period 1996 to 2010"="1996 to 2010",
+                            "Dwelling constructed during the period 2011 to 2016"="2011 to 2016")) +
+  my_theme +
+  #theme(legend.position = "bottom") +
+  #guides(fill = guide_legend(ncol=1)) +
+  labs(title="City of Vancouver non-subsidized renter households",x="Period of construction",y="Share",fill="Shelter-cost-to-income")
+```
+
+And indeed there is a tendency of older stock having higher shares of households below the 30% shelter-cost-to-income cutoff. Looking at discussions on the *moving penalty* higher up, we suspect that at least some of this effect is due to newer dwelling units have a higher share of people that moved in recently, and thus not benefiting as much from rent control as renters in older units. We can check this by looking at households that did and did not move in the previous year separately. 
+
+
+```{r}
+renters_age_shelter_cost_data <- xtab_data %>%
+   filter(`Mob Status_PHM` %in% c("Did not move in the past year (located at the same address one year ago)",
+                                  "Moved in the past year (located at a different address one year ago)"),
+          `HH Tenure` %in% c("Not subsidized housing"),
+         `Age group (PHM)`=="Total - age groups",
+          GEO=="City of Vancouver",
+         `CondoStat/Type`== "Total - Condominium status and structural type of dwelling",
+          `Household type` == "Total - household type",
+          `HH Income group`=="Total - Household income",
+          `Shelter-cost` !="Total - Shelter-cost-to-income ratio") %>%
+   select(c("Shelter-cost","Mob Status_PHM",dwelling_ages)) %>%
+   collect() %>%
+  gather(key="Ages",value="Value",dwelling_ages,factor_key = TRUE) %>%
+  mutate(`Shelter-cost`=factor(`Shelter-cost`,levels=pure_shelter_levels))
+
+ 
+ggplot(renters_age_shelter_cost_data,aes(x=Ages,y=Value,fill=fct_rev(`Shelter-cost`))) +
+  geom_bar(stat="identity",position="fill") + 
+  scale_fill_viridis_d(direction = -1) +
+  coord_flip() +
+  scale_y_continuous(labels=scales::percent) +
+  scale_x_discrete(labels=c("Dwelling constructed before 1996"="Before 1996",
+                            "Dwelling constructed during the period 1996 to 2010"="1996 to 2010",
+                            "Dwelling constructed during the period 2011 to 2016"="2011 to 2016")) +
+  my_theme +
+  facet_wrap("`Mob Status_PHM`",labeller = as_labeller(c("Did not move in the past year (located at the same address one year ago)"="Did not move in past year",
+                                  "Moved in the past year (located at a different address one year ago)"="Moved in past year"))) +
+  #theme(legend.position = "bottom") +
+  #guides(fill = guide_legend(ncol=1)) +
+  labs(title="City of Vancouver non-subsidized renter households",x="Period of construction",y="Share",fill="Shelter-cost-to-income")
+```
+
+This shows that for people that have moved within the past year the share of people paying less than 30% of income on housing is independent of the age of the building, although the share of people paying very high shares of income on housing is lower in the pre-1996 stock. The picture for households that did not move in the preceding year aligns a little better than before taking out the recent movers, but still shows some variation. It would be good to come back to this again with a cross tabulation using the mobility 5 instead of the mobility 1 variable.
 
 ## Next steps
 This post opens up more questions than it answers. Hopefully I will find the time to add to this by adding posts on different aspects, or maybe others pick things up and continue from here. As always, the code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-02-15-vancouver-renters.Rmarkdown), although I am currently not at liberty to share some of the custom tabulations used in this post.

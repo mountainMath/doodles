@@ -143,6 +143,17 @@ What we can do here is key out very rough building ages.
 
 This shows that the condo apartments skew much more recent than non-stratified market rental buildings, confirming our suspicion that the rent differential may be due to dwelling quality. It would be interesting to get finer data on location and building age, as well as separate out secondary suites from non-condo apartment rentals, to better understand what drives the difference in attractiveness of these dwelling units that get reflected in the market rents they are able to fetch.
 
+##  Update (March  4, 2018)
+I just saw [an interesting question](https://twitter.com/amoralorealis/status/1102651618711941121) about newer vs older rental units, and how affordability, as measured by shelter-cost-to-income ratios, relate to building age.
+
+<img src="/posts/2019-02-15-vancouver-renters_files/figure-html/unnamed-chunk-18-1.png" width="768" />
+
+And indeed there is a tendency of older stock having higher shares of households below the 30% shelter-cost-to-income cutoff. Looking at discussions on the *moving penalty* higher up, we suspect that at least some of this effect is due to newer dwelling units have a higher share of people that moved in recently, and thus not benefiting as much from rent control as renters in older units. We can check this by looking at households that did and did not move in the previous year separately. 
+
+
+<img src="/posts/2019-02-15-vancouver-renters_files/figure-html/unnamed-chunk-19-1.png" width="768" />
+
+This shows that for people that have moved within the past year the share of people paying less than 30% of income on housing is independent of the age of the building, although the share of people paying very high shares of income on housing is lower in the pre-1996 stock. The picture for households that did not move in the preceding year aligns a little better than before taking out the recent movers, but still shows some variation. It would be good to come back to this again with a cross tabulation using the mobility 5 instead of the mobility 1 variable.
 
 ## Next steps
 This post opens up more questions than it answers. Hopefully I will find the time to add to this by adding posts on different aspects, or maybe others pick things up and continue from here. As always, the code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-02-15-vancouver-renters.Rmarkdown), although I am currently not at liberty to share some of the custom tabulations used in this post.
