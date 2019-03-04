@@ -154,6 +154,20 @@ Taking the scrape from April 11, 2018, we can compare that to our latest scrape 
 
 Again, a good portion of listings appear to comply with the STR regulation, but it is really hard to see how listings at the higher end of the review count spectrum can be principal residences.
 
+
+## Long term and short term
+Another possible violation of the requirement that homes be the principle residence of the host is scenarios where the a property is rented out full time, half the time as long term rental (which avoids the empty homes tax for the property), and then renting them out short term for the rest of the time.
+
+Looking at the second graph from the top of this post, properties with a valid STR licence listed on Airbnb as long term rentals stand out as curious. If people rent their property long term, they don't need an STR licence. Moreover, properties listed for long-term rentals are unlikely to be primary residences of the host. And if they are not primary residences of the host, they can't be rented out short term. 
+
+So let's take a look how many of these properties were listed for short term rental at some point in time.
+
+<img src="/posts/2019-03-02-airbnb-updates_files/figure-html/unnamed-chunk-22-1.png" width="864" />
+
+A large chunk of these homes were only listed as long term rentals. But there is also some switching between long and short term rentals going on, which possibly skirts STR rules only allowing hosts to rent out their own primary residence.
+
+
+
 ## Suites and laneways
 Suites and laneway houses are not allowed as STR unless they have a long-term tenant that rents them out with the landlord's permission. They can be hard to find in the data without manually looking though individual listings, but we can get a (lower bound) estimate by searching for terms like "laneway home" or "garden level suite" in the title and description of listings.
 
@@ -162,11 +176,11 @@ Suites and laneway houses are not allowed as STR unless they have a long-term te
 
 
 
-<img src="/posts/2019-03-02-airbnb-updates_files/figure-html/unnamed-chunk-24-1.png" width="864" />
+<img src="/posts/2019-03-02-airbnb-updates_files/figure-html/unnamed-chunk-25-1.png" width="864" />
 
 A fairly conservative search aimed to minimize false positives identifies 103 secondary suites and 24 laneway houses that are currently listed as STR. Again, some of these only rent out occasionally and are in compliance if rented out by the long-term tenant of these units with permission from the owner.
 
-<img src="/posts/2019-03-02-airbnb-updates_files/figure-html/unnamed-chunk-25-1.png" width="864" />
+<img src="/posts/2019-03-02-airbnb-updates_files/figure-html/unnamed-chunk-26-1.png" width="864" />
 
 Looking at the number of reviews, we notice again that some of these rent out at high volume and are unlikely to be principal residences.
 
