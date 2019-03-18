@@ -1,0 +1,308 @@
+---
+title: City density patterns
+author: Jens von Bergmann
+date: '2019-03-17'
+slug: city-density-patterns
+categories:
+  - density
+tags: []
+description: 'How do city densities compare around the globe?'
+images: ["https://doodles.mountainmath.ca/posts/2019-03-17-city-density-patterns_files/figure-html/vancouver_comparison-1.png"]
+featured: ''
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 8,
+	cache = TRUE
+)
+library(raster)
+library(sf)
+library(viridis)
+#library(cartography)
+library(tidyverse)
+library(tanaka)
+library(grid)
+library(gridExtra)
+
+get_GHS_for<-function(geo=NULL,type="1k"){
+  buffer <- ifelse(type=="1k",500,125)
+      raster_path = paste0(getOption("custom_data_path"),"GHS/GHS_POP_GPW42015_GLOBE_R2015A_54009_",type,"_v1_0/GHS_POP_GPW42015_GLOBE_R2015A_54009_",type,"_v1_0.tif")
+      if (!file.exists(raster_path)) {
+        temp=tempfile()
+        download.file("http://data.jrc.ec.europa.eu/dataset/jrc-ghsl-ghs_pop_gpw4_globe_r2015a/resource/cfd728a6-6b4d-42f4-bad5-2ddd03648c80",temp)
+        exdir=file.path(getOption("custom_data_path"),"GHS")
+        if (!dir.exists(exdir)) dir.create(exdir)
+        utils::unzip(temp,exdir = exdir)
+        if (!file.exists(raster_path)) 
+          stop("Downloading of raster file failed, probably needs some tweaking of the code.")
+      }
+    r <- raster(raster_path)
+    if (!is.null(geo)) {
+    vv <- as(geo %>% st_transform(as.character(projection(r))) %>% st_buffer(buffer),"Spatial")
+    rr <- crop(r,extent(vv)) 
+    rr <- mask(rr,vv) 
+    } else {
+      rr=r
+    }
+    #wgs_poj4 <- "+proj=longlat +datum=WGS84 +no_defs"
+   #rr %>% projectRaster(crs=wgs_poj4)
+    rr
+}
+
+
+labels_and_colors <-function(breaks) {
+  labels <- paste0(breaks[-length(breaks)], " to ",breaks[-1])
+  l <- set_names(inferno(length(labels)),labels)
+  names(l)[1]=paste0("Below ",breaks[2])
+  names(l)[length(l)]=paste0("Above ",breaks[length(breaks)-1])
+  l
+}
+
+legend_plot_for_breaks <- function(title="People/ha",
+                                   bks=c(1,2.50,5.00,7.50,10.00,17.50,25.00,50.00, 75.00,100.00,200),
+                                   remove_lowest=TRUE){
+  breaks <- c(-Inf,bks,Inf)
+  labels <- labels_and_colors(breaks)
+  if (remove_lowest) labels <- labels[-1]
+  plot_data <- tibble(cats=factor(names(labels),levels=names(labels)),count=1)
+  legend_plot <- ggplot(plot_data,aes(fill=cats,x=cats)) +
+    geom_bar() +
+    scale_fill_manual(values = labels) +
+    labs(fill=title)
+  legend_plot
+  #tmp <- ggplot_gtable(ggplot_build(legend_plot))
+  #leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  #legend <- tmp$grobs[[leg]]
+  #legend
+}
+
+
+
+
+grid_arrange_shared_legend <- function(plots, legend_plot, 
+                                       ncol = 3, 
+                                       nrow = ceiling(length(plots)/ncol),
+                                       position = c("bottom", "right"),caption=NA,legend_rows=2) {
+
+  position <- match.arg(position)
+  if (position=="bottom") {
+      g <- ggplotGrob(legend_plot + theme(legend.position = position) + 
+                           guides(fill=guide_legend(nrow=legend_rows)))$grobs
+  } else {
+      g <- ggplotGrob(legend_plot + theme(legend.position = position))$grobs
+  }
+  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+  lheight <- sum(legend$height)
+  lwidth <- sum(legend$width)
+  gl <- lapply(plots, function(x) x + theme(legend.position = "none"))
+  gl <- c(gl, nrow = nrow, ncol = ncol)
+
+  combined <- switch(position,
+                     "bottom" = arrangeGrob(do.call(arrangeGrob, gl),
+                                            legend,
+                                            ncol = 1,
+                                            heights = unit.c(unit(1, "npc") - lheight, lheight)),
+                     "right" = arrangeGrob(do.call(arrangeGrob, gl),
+                                           legend,
+                                           ncol = 2,
+                                           widths = unit.c(unit(1, "npc") - lwidth, lwidth)))
+  combined
+}
+
+
+map_plot_for_city <- function(location,title,radius=25000,smoothing=500,
+                                bks=c(1,2.50,5.00,7.50,10.00,17.50,25.00,50.00, 75.00,100.00,200),
+                              remove_lowest=TRUE) {
+  c <- st_coordinates(location) %>% as_tibble()
+  proj4string <- paste0("+proj=lcc +lat_1=",c$Y-1," +lat_2=",c$Y+1," +lat_0=",c$Y,
+                        " +lon_0=",c$X," +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+  pop2015 <- get_GHS_for(NULL,"250") 
+  center1 <- location %>% 
+    st_transform(st_crs(pop2015)) %>%
+    st_buffer(dist = 3*radius)
+  #bbox=sf::st_bbox(center1)
+  #vector_tiles <- cancensusHelpers::simpleCache(get_vector_tiles(bbox),paste0(city_name,"_density_vector_tiles"))
+  #roads <- rmapzen::as_sf(vector_tiles$roads) %>% filter(kind != "ferry")
+  #water <- rmapzen::as_sf(vector_tiles$water)
+  ras1 <- crop(pop2015, st_bbox(center1)[c(1,3,2,4)]) %>%
+    projectRaster(crs=proj4string)
+  center <- location %>% 
+    st_transform(st_crs(ras1)) %>%
+    st_buffer(dist = radius)
+  ras <- crop(ras1, st_bbox(center %>% st_buffer(radius*0.2))[c(1,3,2,4)]) * 4/100
+  #plot(ras)
+  mat <- focalWeight(x = ras, d = 500, type = "Gauss")
+  rassmooth <- focal(x = ras, w = mat, fun = sum, pad = TRUE, padValue = 30) 
+  shift=c(200,-200)
+
+
+  breaks <- c(-Inf,bks,Inf)
+  labels <- labels_and_colors(breaks)
+  upper_labels <- set_names(names(labels),breaks[-1])
+  lower_labels <- set_names(names(labels),breaks[-length(breaks)])
+
+  contours1 <- tanaka_contour(rassmooth, breaks = bks)  %>%
+    mutate(label=coalesce(as.character(upper_labels[as.character(max)]),
+                          as.character(lower_labels[as.character(min)]))) %>%
+    dplyr::mutate(f=labels[label],c=NA)
+  
+  
+  contours2 <- tanaka_contour(rassmooth %>% shift(x=shift[1],y=shift[2]), breaks = bks) %>%
+    dplyr::mutate(f="#000000aa",
+                  id=id-0.5,c="black")
+  contours3 <- tanaka_contour(rassmooth %>% shift(x=-shift[1]/2,y=-shift[2]/2), breaks = bks) %>%
+    dplyr::mutate(f="#ffffffaa",
+                  id=id-0.6,c="white")
+  contours <- dplyr::bind_rows(
+    contours1,
+    contours2,
+    contours3
+  ) %>% 
+    st_sf %>%
+    dplyr::mutate(id=factor(id,levels=.data$id %>% sort)) %>%
+    st_set_crs(proj4string)
+  
+  if (remove_lowest) contours <- contours %>% filter(max>bks[1])
+ 
+  mask <- center %>% 
+    st_buffer(2*radius) %>% 
+    st_difference(center) %>% 
+    st_transform(crs=proj4string)
+  
+  small_mask <- center %>% 
+    st_buffer(radius/20) %>% 
+    st_transform(crs=proj4string)
+
+  bbox <- st_bbox(center %>% st_transform(proj4string))
+  bbox2 <- st_bbox(center %>% st_transform(4326))
+
+  tile_cache <- paste0(gsub(" ","_",gsub(",.+$","",title)), "_",radius,"_density_vector_tiles")
+  vector_tiles <- cancensusHelpers::simpleCache(cancensusHelpers::get_vector_tiles(bbox2), tile_cache)
+  water <- rmapzen::as_sf(vector_tiles$water) %>%
+    st_transform(proj4string)
+  
+  ggplot(contours %>% st_intersection(small_mask)) + 
+    geom_sf(data=water  %>% st_intersection(small_mask),fill="lightblue",color=NA) +
+    geom_sf(aes(fill=f,color=c,group=id),show.legend = "none") +
+    geom_sf(data=mask,fill="white",color=NA) +
+    scale_colour_identity() +
+    scale_fill_identity() +
+    theme_void() +
+    coord_sf(datum=NA,xlim=c(bbox$xmin,bbox$xmax),ylim=c(bbox$ymin,bbox$ymax)) +
+    labs(title = title) +
+    theme(plot.title = element_text(hjust = 0.5))
+}
+
+# example to track down funny plot outline,
+# it appears that the mask does not quite overwrite the underlying plot
+# at the edges of the plot area.
+example <- function(){
+  l <- st_point(c(0,0))
+  center <- l %>% 
+    st_buffer(dist = 1)
+  bbox <- st_bbox(center)
+  mask <- center %>% 
+    st_buffer(2) %>% 
+    st_difference(center)
+  
+  #ggplot(center %>% st_buffer(2) %>% st_intersection(center %>% st_buffer(0.1))) + 
+  ggplot(center %>% st_buffer(2)) + 
+    geom_sf(fill="lightblue",color=NA,show.legend = "none") +
+    geom_sf(data=mask,fill="white",color="white") +
+     theme_void() +
+    coord_sf(datum=NA,xlim=c(bbox$xmin,bbox$xmax),ylim=c(bbox$ymin,bbox$ymax)) +
+    labs(title = "Test") +
+    theme(plot.title = element_text(hjust = 0.5))
+} 
+
+
+plot_facet <- function(city_names,bks=c(1,2.50,5.00,7.50,10.00,17.50,25.00,50.00, 75.00,100.00,200),
+                       radius_km=25,ncol=3) {
+  caption <- 'Data : European Commission, Joint Research Centre (JRC); Columbia University, CIESIN (2015): GHS population grid, derived from GPW4.'
+  
+  location<-maps::world.cities %>% 
+    tibble::as_tibble() %>% 
+    mutate(name=recode(name,"Xianggangdao"="Hong Kong","Soul"="Seoul","Bombay"="Mumbai")) %>%
+    dplyr::filter(name %in% city_names) %>% 
+    dplyr::group_by(name) %>% 
+    dplyr::top_n(1,pop) %>%
+    st_as_sf(coords = c("long", "lat"), crs = 4326, agr = "constant")
+
+  d=setdiff(city_names,location$name)
+  if (length(d)>0) stop(paste0("Could not find ",paste0(d,collapse = ", "),"."))
+  
+  plots <- lapply(city_names,function(c){
+    l <- location %>% filter(name==c)
+      map_plot_for_city(location=l,title=c,radius=radius_km*1000,bks=bks)
+    })
+
+  legend_plot <- legend_plot_for_breaks(bks,title="People/ha")
+  
+  g<-grid_arrange_shared_legend(plots,legend_plot,position="bottom",ncol=ncol,legend_rows = 1)
+  
+  grid.arrange(g, bottom=textGrob(caption, gp=gpar(fontsize=6)),
+               top=textGrob(paste0("Population density, ",radius_km,"km radius"), gp=gpar(fontsize=15,font=8)))
+}
+
+
+```
+  
+  
+
+I saw the [tanaka package](https://github.com/rCarto/tanaka) [fly by on twitter](https://twitter.com/rgeomatic/status/1105477591601987584), and in particular liked the application to the [world population grid](http://data.jrc.ec.europa.eu/dataset/jrc-ghsl-ghs_pop_gpw4_globe_r2015a). Cities are interesting beasts, and I like exploring the extent of cities free from political boundaries. I am travelling right now, but I like [looking at different ways to calculate and visualize density](https://doodles.mountainmath.ca/categories/density/) and could not resist running some inter-city density comparisons.
+
+For this, we only show areas with at least 4 people per hectare (or about 1000 people per square mile, the [cutoff used by US Census to designate areas as *urban*](https://www2.census.gov/geo/pdfs/reference/ua/Defining_Rural.pdf)), and pick some population density cutoffs above that to show grades of population density. We graph the cities on a 40km radius around the city centre to get an indication of the spatial extent of the functional metropolitan area. We are using the global 250m GHS 2015 population grid and smooth the data with a Guassian kernel with standard deviation 0.5km.
+
+```{r vancouver_comparison, fig.height=9.5, fig.width=9}
+city_names <- c("San Francisco","Toronto","Seattle", 
+                "Vienna","Vancouver","Athens",
+                "Taipei","Hong Kong","Singapore")
+              
+graph <- plot_facet(city_names,radius_km = 40,bks=c(4,7.5,10,17.5,25,50, 75,100.00,200),ncol=3)
+grid.draw(graph)
+```
+  
+Starting out with a selection of 9 cities, with selection influenced by cities I like to compare Vancouver to, we notice stark differences in the makeup. North American San Francisco, Toronto and Seattle look quite similar, they appear stretched out and bump with medium density centres.
+
+The European Vienna and Athens are compact with uniform density. Hong Kong, Taipei and Singapore have much higher density, and the 40km radius includes other cities, with Shenzhen to the north of Hong Kong, Malaysian and Indonesian cities to the north and south of Singapore, and Taoyuan to the west of Taipei showing up as separate metropolitan areas. In Taipei, the MRT, rail and HSR lines accumulate enough density to show the connection between different cities, drawing lines toward Taoyuan, as well as Tamsui to the north and Keelung to the east.
+
+## More cities
+The coverage of the dataset we are using is world wide, so let's take a look at other cities around the world.
+
+```{r world_comparison, fig.height=33.5, fig.width=9}
+city_names <- c("Paris","London","Berlin",
+                "Madrid","Barcelona","Moscow",
+                "Rome","Amsterdam","Copenhagen",
+                "Cairo","Casablanca", "Tehran",
+                "Melbourne","Sydney","New York",
+                "Delhi","Karachi", "Mumbai",
+                "Beijing","Shanghai","Chongqing",
+                "Chengdu","Kuala Lumpur","Jakarta",
+                "Tokyo","Seoul","Mexico City",
+                "Buenos Aires","Sao Paulo","Rio de Janeiro",
+                "Lima","Cape Town", "Lagos" )
+
+graph <- plot_facet(city_names,radius_km = 40,bks=c(4,7.5,10,17.5,25,50, 75,100.00,200))
+grid.draw(graph)
+```
+  
+
+The images highlight how different the cities are arranged. European cities tend to have fairly uniform density centres, with Paris and maybe Copenhagen (and Malmö across the Øresund) showing density gradually declining away from the centre. Tehran and Casablanca seem quite European this way too. Cairo density highlights how important the Nile is to the region, with a very-high density centre and lower density areas assembled along the river and delta.
+
+Melbourne, Sydney and New York fit better into the North American cities we have looked at earlier, although the central part of New York does have noticeably higher density. 
+
+The large Asian cities of Beijing, Shanghai, Chongqing, Chengdu and Seoul have very high density centres supported by high large high density surrounding areas. Tokyo and Jakarta are different in that they are lacking the very high density spikes but have uniform high density throughout the city. Mexico City, as well as the South American cities on our list follow a similar pattern of fairly uniform high density. Cape Town looks almost North American like a smaller version of New York. Lagos has some fairly large very-high density areas, which sets it apart from the Asian giants that typically have smaller very-high density spikes.
+  
+## Other cities
+We have to cut somewhere, sorry if a city you are interested in did not appear. But you can always [grab the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-03-17-city-density-patterns.Rmarkdown) and trow in other cities you like to see.
+  
+
