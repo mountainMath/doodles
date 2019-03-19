@@ -187,8 +187,16 @@ map_plot_for_city <- function(location,title,radius=25000,smoothing=500,
 
   tile_cache <- paste0(gsub(" ","_",gsub(",.+$","",title)), "_",radius,"_density_vector_tiles")
   vector_tiles <- cancensusHelpers::simpleCache(cancensusHelpers::get_vector_tiles(bbox2), tile_cache)
-  water <- rmapzen::as_sf(vector_tiles$water) %>%
-    st_transform(proj4string)
+  if (length(vector_tiles$water$features)==0) { 
+    # workaround if there is no water nearby
+    water=rmapzen::as_sf(vector_tiles$roads) %>% 
+      st_transform(proj4string) %>%
+     filter(kind=="xxx")
+  } else {
+    water=rmapzen::as_sf(vector_tiles$water) %>%
+      st_transform(proj4string) %>%
+      lwgeom::st_make_valid()
+  }
   
   ggplot(contours %>% st_intersection(small_mask)) + 
     geom_sf(data=water  %>% st_intersection(small_mask),fill="lightblue",color=NA) +
