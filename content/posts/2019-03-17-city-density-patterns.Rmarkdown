@@ -58,6 +58,11 @@ get_GHS_for<-function(geo=NULL,type="1k"){
     rr
 }
 
+city_locations <-   location<-maps::world.cities %>% 
+  tibble::as_tibble() %>%
+  mutate(name=recode(name,"Xianggangdao"="Hong Kong","Soul"="Seoul","Bombay"="Mumbai")) %>%
+  st_as_sf(coords = c("long", "lat"), crs = 4326, agr = "constant")
+
 
 labels_and_colors <-function(breaks) {
   labels <- paste0(breaks[-length(breaks)], " to ",breaks[-1])
@@ -237,13 +242,16 @@ plot_facet <- function(city_names,bks=c(1,2.50,5.00,7.50,10.00,17.50,25.00,50.00
                        radius_km=25,ncol=3) {
   caption <- 'Data : European Commission, Joint Research Centre (JRC); Columbia University, CIESIN (2015): GHS population grid, derived from GPW4.'
   
-  location<-maps::world.cities %>% 
-    tibble::as_tibble() %>% 
-    mutate(name=recode(name,"Xianggangdao"="Hong Kong","Soul"="Seoul","Bombay"="Mumbai")) %>%
-    dplyr::filter(name %in% city_names) %>% 
-    dplyr::group_by(name) %>% 
-    dplyr::top_n(1,pop) %>%
-    st_as_sf(coords = c("long", "lat"), crs = 4326, agr = "constant")
+  if ("sf" %in% class(cities)) {
+    location=cities
+    city_names <- cities$name
+  } else {
+    location<-city_locations %>%
+      dplyr::filter(name %in% cities) %>% 
+      dplyr::group_by(name) %>% 
+      dplyr::top_n(1,pop) 
+    city_names <- cities
+  }
 
   d=setdiff(city_names,location$name)
   if (length(d)>0) stop(paste0("Could not find ",paste0(d,collapse = ", "),"."))
