@@ -143,7 +143,7 @@ map_plot_for_city <- function(location,title,radius=25000,smoothing=500,
   center <- location %>% 
     st_transform(st_crs(ras1)) %>%
     st_buffer(dist = radius)
-  ras <- crop(ras1, st_bbox(center %>% st_buffer(radius*0.2))[c(1,3,2,4)]) * 4/100
+  ras <- crop(ras1, st_bbox(center %>% st_buffer(radius*0.2))[c(1,3,2,4)]) * 16/100
   #plot(ras)
   mat <- focalWeight(x = ras, d = 500, type = "Gauss")
   rassmooth <- focal(x = ras, w = mat, fun = sum, pad = TRUE, padValue = 30) 
@@ -238,7 +238,7 @@ example <- function(){
 } 
 
 
-plot_facet <- function(city_names,bks=c(1,2.50,5.00,7.50,10.00,17.50,25.00,50.00, 75.00,100.00,200),
+plot_facet <- function(cities,bks=c(1,2.50,5.00,7.50,10.00,17.50,25.00,50.00, 75.00,100.00,200),
                        radius_km=25,ncol=3) {
   caption <- 'Data : European Commission, Joint Research Centre (JRC); Columbia University, CIESIN (2015): GHS population grid, derived from GPW4.'
   
@@ -283,7 +283,7 @@ city_names <- c("San Francisco","Toronto","Seattle",
                 "Vienna","Vancouver","Athens",
                 "Taipei","Hong Kong","Singapore")
               
-graph <- plot_facet(city_names,radius_km = 40,bks=c(4,7.5,10,17.5,25,50, 75,100.00,200),ncol=3)
+graph <- plot_facet(city_names,radius_km = 40,bks=c(4,10,25,50, 75, 100.00,200,500),ncol=3)
 grid.draw(graph)
 ```
   
@@ -307,7 +307,7 @@ city_names <- c("Paris","London","Berlin",
                 "Buenos Aires","Sao Paulo","Rio de Janeiro",
                 "Lima","Cape Town", "Lagos" )
 
-graph <- plot_facet(city_names,radius_km = 40,bks=c(4,7.5,10,17.5,25,50, 75,100.00,200))
+graph <- plot_facet(city_names,radius_km = 40,bks=c(4,10,25,50, 75, 100,200,500))
 grid.draw(graph)
 ```
   
