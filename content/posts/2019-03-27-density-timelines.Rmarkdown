@@ -1,0 +1,589 @@
+---
+title: Density timelines
+author: Jens von Bergmann
+date: '2019-03-27'
+slug: density-timelines
+categories:
+  - density
+tags: []
+description: 'Global city density patterns across time.'
+images: ["https://doodles.mountainmath.ca/posts/2019-03-27-density-timelines_files/figure-html/shanghai-1.png"]
+featured: ''
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+In the [last post](https://doodles.mountainmath.ca/blog/2019/03/17/city-density-patterns/) we compared international city density patterns. While travelling and reading [Alain Bertaud's excellent book Order without Design](https://mitpress.mit.edu/books/order-without-design) I decided to slightly expand on the initial images and add bar graphs showing radial density to get an aggregate understanding of density patterns, as well as adding timelines to show how densities have developed over time. I am getting increasingly interested in modelling urban economics, and understanding and quantifying urban densities is a part of that.
+
+This aims to reproduce some of the results of Chapter 4 in Bertaud's book. There are differences in data processing, I am making use of the 250m GHS global population model for 1975, 1990, 2000 and 2015. To compute the population density in 1km wide annuli around city centres I decided to only count areas with densities higher than 1 person per hectare, thus eliminating large parks, bodies of water or otherwise uninhabited (or sparsely inhabitated) areas. This will lead to different results, especially in coastal cities or cities otherwise constrained. One may wish to modify this, as usual the [code for this post is available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-03-27-density-timelines.Rmarkdown) in case someone wants to modify the assumptions.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 12,
+	fig.height = 6.8,
+	cache = TRUE
+)
+library(raster)
+library(sf)
+library(viridis)
+#library(cartography)
+library(tidyverse)
+library(tanaka)
+library(grid)
+library(gridExtra)
+library(stars)
+library(latex2exp)
+```
+
+```{r}
+get_GHS_for<-function(geo=NULL,type=c("250","1k"),year=c("1975","1990","2000","2015")){
+  buffer <- ifelse(type=="1k",500,125)
+      raster_path = paste0(getOption("custom_data_path"),"GHS/GHS_POP_GPW4",year,"_GLOBE_R2015A_54009_",type,"_v1_0/GHS_POP_GPW4",year,"_GLOBE_R2015A_54009_",type,"_v1_0.tif")
+      if (!file.exists(raster_path)) {
+        temp=tempfile()
+        download.file(paste0("http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GPW4_GLOBE_R2015A/GHS_POP_GPW4",year,"_GLOBE_R2015A_54009_",type,"/V1-0/GHS_POP_GPW4",year,"_GLOBE_R2015A_54009_",type,"_v1_0.zip"),temp)
+        exdir=file.path(getOption("custom_data_path"),"GHS")
+        if (!dir.exists(exdir)) dir.create(exdir)
+        zip::unzip(temp,exdir = exdir)
+        if (!file.exists(raster_path)) 
+          stop("Downloading of raster file failed, probably needs some tweaking of the code.")
+      }
+    r <- raster(raster_path)
+    if (!is.null(geo)) {
+    vv <- as(geo %>% st_transform(as.character(projection(r))) %>% st_buffer(buffer),"Spatial")
+    rr <- crop(r,extent(vv)) 
+    rr <- mask(rr,vv) 
+    } else {
+      rr=r
+    }
+    #wgs_poj4 <- "+proj=longlat +datum=WGS84 +no_defs"
+   #rr %>% projectRaster(crs=wgs_poj4)
+    rr
+}
+
+
+
+city_locations <-   location<-maps::world.cities %>% 
+    tibble::as_tibble() %>%
+    mutate(name=recode(name,"Xianggangdao"="Hong Kong","Soul"="Seoul","Bombay"="Mumbai")) %>%
+  st_as_sf(coords = c("long", "lat"), crs = 4326, agr = "constant")
+
+
+labels_and_colors <-function(breaks) {
+  labels <- paste0(breaks[-length(breaks)], " to ",breaks[-1])
+  l <- set_names(inferno(length(labels)),labels)
+  names(l)[1]=paste0("Below ",breaks[2])
+  names(l)[length(l)]=paste0("Above ",breaks[length(breaks)-1])
+  l
+}
+
+legend_plot_for_breaks <- function(title="People/ha",
+                                   bks=c(1,2.50,5.00,7.50,10.00,17.50,25.00,50.00, 75.00,100.00,200),
+                                   remove_lowest=TRUE,
+                                   lowest_color=NULL){
+  breaks <- c(-Inf,bks,Inf)
+  labels <- labels_and_colors(breaks)
+  if (remove_lowest) labels <- labels[-1]
+  if (!is.null(lowest_color)) labels[1]=lowest_color
+  plot_data <- tibble(cats=factor(names(labels),levels=names(labels)),count=1)
+  legend_plot <- ggplot(plot_data,aes(fill=cats,x=cats)) +
+    geom_bar() +
+    scale_fill_manual(values = labels) +
+    labs(fill=title)
+  legend_plot
+  #tmp <- ggplot_gtable(ggplot_build(legend_plot))
+  #leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  #legend <- tmp$grobs[[leg]]
+  #legend
+}
+
+
+
+
+grid_arrange_shared_legend <- function(plots, legend_plot, 
+                                       ncol = 3, 
+                                       nrow = ceiling(length(plots)/ncol),
+                                       position = c("bottom", "right"),caption=NA,legend_rows=2) {
+
+  position <- match.arg(position)
+  if (position=="bottom") {
+      g <- ggplotGrob(legend_plot + theme(legend.position = position) + 
+                           guides(fill=guide_legend(nrow=legend_rows)))$grobs
+  } else {
+      g <- ggplotGrob(legend_plot + theme(legend.position = position))$grobs
+  }
+  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+  lheight <- sum(legend$height)
+  lwidth <- sum(legend$width)
+  gl <- lapply(plots, function(x) x + theme(legend.position = "none"))
+  gl <- c(gl, nrow = nrow, ncol = ncol)
+
+  combined <- switch(position,
+                     "bottom" = arrangeGrob(do.call(arrangeGrob, gl),
+                                            legend,
+                                            ncol = 1,
+                                            heights = unit.c(unit(1, "npc") - lheight, lheight)),
+                     "right" = arrangeGrob(do.call(arrangeGrob, gl),
+                                           legend,
+                                           ncol = 2,
+                                           widths = unit.c(unit(1, "npc") - lwidth, lwidth)))
+  combined
+}
+
+
+
+map_plot_for_city <- function(location,title,radius=25000,smoothing=500,
+                                bks=c(1,2.50,5.00,7.50,10.00,17.50,25.00,50.00, 75.00,100.00,200),
+                              year="2015",
+                              remove_lowest=TRUE,lowest_color=NULL,show_density_rings=FALSE) {
+  c <- st_coordinates(location) %>% as_tibble()
+  proj4string <- paste0("+proj=lcc +lat_1=",c$Y-1," +lat_2=",c$Y+1," +lat_0=",c$Y,
+                        " +lon_0=",c$X," +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+  ghs <- get_GHS_for(NULL,type="250",year=year) 
+  center1 <- location %>% 
+    st_transform(st_crs(ghs)) %>%
+    st_buffer(dist = 3*radius)
+
+  ras1 <- crop(ghs, st_bbox(center1)[c(1,3,2,4)]) %>%
+    projectRaster(crs=proj4string)
+  center <- location %>% 
+    st_transform(st_crs(ras1)) %>%
+    st_buffer(dist = radius)
+  ras <- crop(ras1, st_bbox(center %>% st_buffer(radius*0.2))[c(1,3,2,4)]) * 16/100
+
+  mat <- focalWeight(x = ras, d = 500, type = "Gauss")
+  rassmooth <- focal(x = ras, w = mat, fun = sum, pad = TRUE, padValue = 30) 
+  shift=c(200,-200)
+
+
+  breaks <- c(-Inf,bks,Inf)
+  labels <- labels_and_colors(breaks)
+  upper_labels <- set_names(names(labels),breaks[-1])
+  lower_labels <- set_names(names(labels),breaks[-length(breaks)])
+  if (!is.null(lowest_color)) labels[1+remove_lowest]=lowest_color
+
+  contours1 <- tanaka_contour(rassmooth, breaks = bks)  %>%
+    mutate(label=coalesce(as.character(upper_labels[as.character(max)]),
+                          as.character(lower_labels[as.character(min)]))) %>%
+    dplyr::mutate(f=labels[label],c=NA)
+  
+  
+  contours2 <- tanaka_contour(rassmooth %>% shift(x=shift[1],y=shift[2]), breaks = bks) %>%
+    dplyr::mutate(f="#000000aa",
+                  id=id-0.5,c="black")
+  contours3 <- tanaka_contour(rassmooth %>% shift(x=-shift[1]/2,y=-shift[2]/2), breaks = bks) %>%
+    dplyr::mutate(f="#ffffffaa",
+                  id=id-0.6,c="white")
+  contours <- dplyr::bind_rows(
+    contours1,
+    contours2,
+    contours3
+  ) %>% 
+    st_sf %>%
+    dplyr::mutate(id=factor(id,levels=.data$id %>% sort)) %>%
+    st_set_crs(proj4string)
+  
+  if (remove_lowest) contours <- contours %>% filter(max>bks[1])
+
+  mask <- center %>% 
+    st_buffer(2*radius) %>% 
+    st_difference(center) %>% 
+    st_transform(crs=proj4string)
+  
+  small_mask <- center %>% 
+    st_buffer(radius/20) %>% 
+    st_transform(crs=proj4string)
+
+  bbox <- st_bbox(center %>% st_transform(proj4string))
+  bbox2 <- st_bbox(center %>% st_transform(4326))
+
+  tile_cache <- paste0(gsub(" ","_",gsub(",.+$","",paste0(round(c,3),collapse = "_"))), "_",radius,"_density_vector_tiles")
+  vector_tiles <- cancensusHelpers::simpleCache(cancensusHelpers::get_vector_tiles(bbox2), tile_cache)
+  
+  if (length(vector_tiles$water$features)==0) { # workaround if there is no water nearby
+    water=rmapzen::as_sf(vector_tiles$roads) %>% 
+      st_transform(proj4string) %>%
+     filter(kind=="xxx")
+  } else {
+    water=rmapzen::as_sf(vector_tiles$water) %>%
+      st_transform(proj4string) %>%
+      lwgeom::st_make_valid()
+  }
+  
+  g<-ggplot(contours %>% st_intersection(small_mask)) + 
+    geom_sf(data=water  %>% st_intersection(small_mask),fill="lightblue",color=NA) +
+    geom_sf(aes(fill=f,color=c,group=id),show.legend = "none") +
+    geom_sf(data=mask,fill="white",color=NA) +
+    scale_colour_identity() +
+    scale_fill_identity() +
+    theme_void() +
+    labs(title = title) +
+    theme(plot.title = element_text(hjust = 0.5))
+  
+  if (show_density_rings) {
+    density_rings <- lapply(seq(1,floor(radius/5000)),function(r){
+      location %>% 
+        st_transform(crs=st_crs(contours)) %>%
+        st_buffer(r*5000) %>%
+        mutate(size=1) %>% #ifelse(r %% 5==1,1,0.25)) %>%
+        select(size)
+    }) %>%
+      bind_rows %>%
+      st_sf %>%
+      st_set_crs(proj4string)
+    
+    g <- g + geom_sf(data=density_rings, inherit.aes = FALSE,aes(size=size),fill=NA,color="#00000055") +
+      scale_size_identity()
+  }
+  
+  g +     coord_sf(datum=NA,xlim=c(bbox$xmin,bbox$xmax),ylim=c(bbox$ymin,bbox$ymax))
+}
+
+plot_facet <- function(cities,bks=c(1,2.50,5.00,7.50,10.00,17.50,25.00,50.00, 75.00,100.00,200),
+                       radius_km=25,ncol=3,years="2015",remove_lowest=TRUE,lowest_color=NULL) {
+  caption <- 'Data : European Commission, Joint Research Centre (JRC); Columbia University, CIESIN (2015): GHS population grid, derived from GPW4.'
+  
+  if ("sf" %in% class(cities)) {
+    location=cities
+    city_names <- cities$name
+  } else {
+    location<-city_locations %>%
+      dplyr::filter(name %in% cities) %>% 
+      dplyr::group_by(name) %>% 
+      dplyr::top_n(1,pop) 
+    city_names <- cities
+  }
+
+  d=setdiff(city_names,location$name)
+  if (length(d)>0) stop(paste0("Could not find ",paste0(d,collapse = ", "),"."))
+  
+  
+  plots <- map(city_names,function(c){
+    l <- location %>% filter(name==c)
+    years %>% map(function(y)map_plot_for_city(location=l,
+                                               title=paste0(c,", ",y),
+                                               radius=radius_km*1000,
+                                               bks=bks,year=y,
+                                               remove_lowest = remove_lowest,
+                                               lowest_color=lowest_color))
+  }) %>% 
+    unlist(recursive = FALSE)
+
+  legend_plot <- legend_plot_for_breaks(bks,title="People/ha",lowest_color=lowest_color,remove_lowest=remove_lowest)
+  
+  g<-grid_arrange_shared_legend(plots,legend_plot,position="bottom",ncol=ncol,legend_rows = 1)
+  
+  grid.arrange(g, bottom=textGrob(caption, gp=gpar(fontsize=6)),
+               top=textGrob(paste0("Population density, ",radius_km,"km radius"), gp=gpar(fontsize=15,font=8)))
+}
+
+density_profile_for_city <- function(location,max_radius_km=40,year="2015") {
+  c <- st_coordinates(location) %>% as_tibble()
+  proj4string <- paste0("+proj=lcc +lat_1=",c$Y-1," +lat_2=",c$Y+1," +lat_0=",c$Y,
+                        " +lon_0=",c$X," +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+  ghs <- get_GHS_for(NULL,type="250",year=year) 
+  radius=max_radius_km*1000
+  center1 <- location %>% 
+    st_transform(st_crs(ghs)) %>%
+    st_buffer(dist = 3*radius)
+  ras1 <- crop(ghs, st_bbox(center1)[c(1,3,2,4)]) %>%
+    projectRaster(crs=proj4string)
+  center <- location %>% 
+    st_transform(st_crs(ras1)) %>%
+    st_buffer(dist = radius)
+  ras <- crop(ras1, st_bbox(center %>% st_buffer(radius*0.2))[c(1,3,2,4)])
+  n=names(ras)
+  #rassmooth <- focal(x = ras, w = mat, fun = sum, pad = TRUE, padValue = 30) 
+  d<-seq(1,max_radius_km) %>% lapply(function(r){
+    annulus <- st_difference(location %>% st_transform(proj4string) %>% st_buffer(r*1000),
+                             location %>% st_transform(proj4string) %>% st_buffer((r-1)*1000))
+    rr <- st_as_stars(ras)[annulus]
+    rrr <- rr > 1
+    pop <- rr[[n]] %>% sum(na.rm=TRUE)
+    area <- (rr>1)[[n]] %>% sum(na.rm=TRUE) * 100/16
+    total_area <- (rr>=0)[[n]] %>% sum(na.rm=TRUE) * 100/16
+    tibble(OuterRadius=r,InnerRadius=r-1,Population=pop,PopulatedArea=area,totalArea=total_area)
+  }) %>% 
+    bind_rows %>%
+    mutate(name=location$name) %>%
+    arrange(OuterRadius) %>%
+    mutate(Density=Population/PopulatedArea) %>%
+    mutate(x=(OuterRadius+InnerRadius)/2) %>%
+    mutate(AnalyticalArea=pi*(OuterRadius**2-InnerRadius**2)*100)
+  d
+}
+
+
+
+density_model_for_profile <- function(d,allow_remove=FALSE){
+  model <-   nls(formula=Density ~ exp(a+b*x),start=list(a=0,b=0),data=d)
+  if (allow_remove) {
+    removed <- NULL
+    for (r in d$x) {
+      m <- nls(formula=Density ~ exp(a+b*x),start=list(a=0,b=0),data=d %>% filter(x != r))
+      if (summary(m)$sigma<summary(model)$sigma) {
+        model=m
+        removed=r
+      }
+    }
+    attr(model,"removed")=removed
+  }
+  model
+}
+
+
+density_plot_for_city <- function(location,max_radius_km=40,year="2015"){
+  caption <- 'Data : European Commission, Joint Research Centre (JRC); Columbia University, CIESIN (2015): GHS population grid, derived from GPW4.'
+  d <- density_profile_for_city(location,max_radius_km=max_radius_km,year=year)
+  model <- density_model_for_profile(d)
+  p<-model$m$getAllPars()
+  d <- d %>% mutate(f=ifelse(!is.null(attr(model,"removed")) && x==attr(model,"removed"),"grey","steelblue"))
+  ggplot(d,aes(x=x,y=Density)) +
+    geom_bar(stat="identity",aes(fill=f)) +
+    scale_fill_identity() +
+    theme_light() +
+    geom_line(data=tibble(Density=predict(model,list(x=d$x)),x=d$x),color="brown") +
+    geom_text(data=tibble(x=mean(d$x)*1.5,Density=max(d$Density)*0.9),
+                          label=paste0("Density = ",round(exp(p[1]))," * exp(",round(p[2],2)," * distance)"),color="brown") +
+    labs(caption=caption,title=paste0(location$name,", ",year),x="Distance from centre",y="Mean density (people/ha)")
+}
+
+density_plot_series <- function(location,years=c("1975","1990","2000","2015"),radius_km=30,max_density=NULL){
+  
+    caption <- 'Data : European Commission, Joint Research Centre (JRC); Columbia University, CIESIN (2015): GHS population grid, derived from GPW4.'
+    
+  d <- lapply(years,function(year) {
+    d<-density_profile_for_city(location,max_radius_km=radius_km,year=year) %>%
+      mutate(Year=year)
+    model <- density_model_for_profile(d)
+    p<-model$m$getAllPars()
+    d <- d %>% 
+      mutate(ModeledDensity=predict(model,list(x=d$x))) %>%
+      mutate(f=ifelse(!is.null(attr(model,"removed")) && x==attr(model,"removed"),"grey","steelblue")) %>%
+      mutate(D0=exp(p[1]),rho=p[2])
+    d
+  }) %>%
+    bind_rows
+
+  label_data <- d %>%
+    group_by(Year) %>%
+    summarise(x=mean(x)*1.4,
+              Density=max(Density)*0.9,
+              D0=first(D0),
+              rho=first(rho)) %>%
+    ungroup %>%
+    mutate(Density=max(Density))
+
+  ggplot(d,aes(x=x,y=Density)) +
+    geom_bar(stat="identity",aes(fill=f)) +
+    scale_fill_identity() +
+    theme_light() +
+    facet_wrap("Year",nrow=1) +
+    geom_line(aes(y=ModeledDensity),color="brown") +
+    geom_text(data=label_data, 
+              aes(label=TeX(paste0("$Density = ",round(D0)," e^{",round(rho,2)," \\cdot distance}$"), output = "character")),
+              color="brown",size=3, parse=TRUE) +
+    labs(caption=caption,title=paste0(location$name," density profile"),x="Distance from centre",y="Population density (people/ha)")
+}
+
+
+
+
+plot_density_facet <- function(cities,bks=c(4,10,25,50,100,200,500,1000),
+                       radius_km=40,years=c("1975","1990","2000","2015"),
+                       remove_lowest=TRUE,lowest_color=NULL,show_density_rings=TRUE) {
+  caption <- 'Data : European Commission, Joint Research Centre (JRC); Columbia University, CIESIN (2015): GHS population grid, derived from GPW4.'
+  ncol=4
+  legend_rows=1
+  if ("sf" %in% class(cities)) {
+    location=cities
+    city_names <- cities$name
+  } else {
+    location<-city_locations %>%
+      dplyr::filter(name %in% cities) %>% 
+      dplyr::group_by(name) %>% 
+      dplyr::top_n(1,pop) 
+    city_names <- cities
+  }
+
+  d=setdiff(city_names,location$name)
+  if (length(d)>0) stop(paste0("Could not find ",paste0(d,collapse = ", "),"."))
+  
+  plots <- map(city_names,function(c){
+    l <- location %>% filter(name==c)
+    years %>% map(function(y)
+      map_plot_for_city(location=l,
+                        title=NULL,
+                        radius=radius_km*1000,
+                        bks=bks,year=y,
+                        remove_lowest = remove_lowest,
+                        lowest_color=lowest_color,
+                        show_density_rings=show_density_rings))
+  }) %>%
+    unlist(recursive = FALSE)
+
+  
+  density_plots <- density_plot_series(location,years=c("1975","1990","2000","2015"),radius_km=radius_km,max_density=NULL) +
+    labs(title=NULL)
+  
+  legend_plot <- legend_plot_for_breaks(bks,title="People/ha",lowest_color=lowest_color,remove_lowest=remove_lowest)
+  
+  
+  g <- ggplotGrob(legend_plot + theme(legend.position = "bottom") + 
+                       guides(fill=guide_legend(nrow=legend_rows)))$grobs
+  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+  lheight <- sum(legend$height)
+  lwidth <- sum(legend$width)
+  gl <- lapply(plots, function(x) x + theme(legend.position = "none"))
+  gl <- c(gl, nrow = 1, ncol = 4)
+  dl <- c(density_plots,nrow=1,ncol=1)
+  
+  g <-arrangeGrob(do.call(arrangeGrob, gl),
+                                            legend,
+                                            ncol = 1,
+                                            heights = unit.c(unit(1, "npc") - lheight, lheight))
+  
+  
+  grid.arrange(g,density_plots, nrow=2,
+               top=textGrob(paste0(location$name," population density, ",radius_km,"km radius"), 
+                            gp=gpar(fontsize=15,font=8)))
+}
+```
+
+
+This time around we need to be a little more careful in correctly determining the **centre* of cities in order for the inner density annuli to make sense, so we will hand-pick the city centre locations instead of just grabbing them from the `maps` package.
+
+## Density Annuli
+To quantify city densities we focus on 1km concentric annuli emanating from the city centres. Bertaud explains that the basic urban model suggests that the densities decrease exponentially from the city centre. While a crude simplification, this works surprisingly well across metropolitan areas. Distance serves as an easily available stand-in for travel time to access jobs and amenities. We also added concentric rings for every 5km to the overview plots to make it easier to related them to the bar graphs for the radial density.
+
+Let's take a look at what this gives for various cities.
+
+### Vancouver
+
+```{r vancouver, echo=TRUE}
+st_sf(name="Vancouver",st_sfc(st_point(c(-123.1244,49.2819)),crs=4326)) %>% 
+  plot_density_facet(.,radius_km=30)
+```
+
+We fit an exponential density model to the data, and are in particular interested in the gradient given by the exponent coefficient. Bertaud noted that the gradient typically flattens over time, but in Vancouver we see the opposite. In 1975 our model estimates a coefficient of -0.14, which gradually increases (in magnitude) to -0.19 in 2015. We also note how the actual density distribution is not very well approximated by our density model. Vancouver starts out with fairly high densities in the city centre that drop off very fast to suburban densities just a couple of kilometres out.
+
+### Paris
+
+```{r paris, echo=TRUE}
+st_sf(name="Paris",st_sfc(st_point(c(2.3575,48.8554)),crs=4326)) %>% 
+  plot_density_facet(.,radius_km=40)
+```
+
+Here we notice a very good fit to our density model, with slightly flattening density gradient over time.
+
+## New York
+
+```{r new-york, echo=TRUE}
+st_sf(name="New York",st_sfc(st_point(c(-73.9956,40.7295)),crs=4326)) %>% 
+  plot_density_facet(.,radius_km=40)
+```
+
+New York City, together with the surrounding New Jersey cities, shows a density pattern similar to Vancouver, just at a higher density level. Densities are very high around downtown Manhattan, dropping of fast to uniformly high densities between 100 and 150 people per hectare until about 12km out where densities drop off.
+
+## Shanghai
+
+```{r shanghai, echo=TRUE}
+st_sf(name="Shanghai",st_sfc(st_point(c(121.4857,31.2456)),crs=4326)) %>% 
+  plot_density_facet(.,radius_km=40)
+```
+
+Shanghai has undergone spectacular growth, fitting our urban density model fairly well throughout. We note how the density initially decreased on the far outskirts of the city, which is likely a function of how we cut off areas with density below 1 person per hectare. In the density plot we notice a couple of separate cities in the 35km to 40km band in 1973, which subsequently grow and accumulate lower density bands around them, dragging down the overall density.
+
+
+## Moscow
+
+```{r moscow, echo=TRUE}
+st_sf(name="Moscow",st_sfc(st_point(c(37.6226,55.7526)),crs=4326)) %>% 
+  plot_density_facet(.,radius_km=40)
+```
+
+In Moscow we can observe a city that evolved under a planning economy for a good portion of time, which can lead to odd density patterns where the centre is surrounded by a higher density band.
+
+## Brasilia
+```{r brasilia, echo=TRUE}
+st_sf(name="Brasilia",st_sfc(st_point(c(-47.9014,-15.7881)),crs=4326)) %>% 
+  plot_density_facet(.,radius_km=40)
+```
+
+Brasilia, city that got designed by planners from the beginning rather than growing by market forces, shows peculiar density patterns. 
+
+
+## Beijing
+
+```{r beijing, echo=TRUE}
+st_sf(name="Beijing",st_sfc(st_point(c(116.3912,39.9176)),crs=4326)) %>% 
+  plot_density_facet(.,radius_km=40)
+```
+
+Beijing has similar growth like Shanghai, but the population in the central part is lower, possibly due to government, cultural and commercial functions crowding out residential space. We centred the map on the imperial palace.
+
+## Los Angeles
+
+```{r los-angels, echo=TRUE}
+st_sf(name="Los Angeles",st_sfc(st_point(c(-118.2554,34.0441)),crs=4326)) %>% 
+  plot_density_facet(.,radius_km=40)
+```
+
+Los Angeles is an example of a city with a consistently low density gradient. We notice some increase in density in the centre and some small changes in density patterns in some more outlying areas. 
+
+
+## Barcelona
+
+```{r barcelona, echo=TRUE}
+st_sf(name="Barcelona",st_sfc(st_point(c(2.1767,41.3856)),crs=4326)) %>% 
+  plot_density_facet(.,radius_km=20)
+```
+
+Barcelona stands out as having fairly high density throughout, that drops off dramatically once one leaves the central region.
+
+### Bangkok
+```{r bangkok, echo=TRUE}
+st_sf(name="Bangkok",st_sfc(st_point(c(100.4979,13.7517)),crs=4326)) %>% 
+  plot_density_facet(.,radius_km=40)
+```
+
+
+Bangkok is another city that experienced strong growth, all the while maintaining a fairly constant density gradient.
+
+### London
+```{r london, echo=TRUE}
+st_sf(name="London",st_sfc(st_point(c(-0.1132,51.5056)),crs=4326)) %>% 
+  plot_density_facet(.,radius_km=40)
+```
+
+The commercial and cultural uses in the inner city keep population density low in the central parts, with population density peaking around the 5km radius around the centre and declining from there on.
+
+## Tokyo
+```{r tokyo, echo=TRUE}
+st_sf(name="Tokyo",st_sfc(st_point(c(139.7536,35.6851)),crs=4326)) %>% 
+  plot_density_facet(.,radius_km=50)
+```
+
+Tokyo is a good example of the population density inversion we often see in city centres. We placed the *centre* into the imperial palace, the low density dip clearly visible in the maps. But that's not what's driving the low density at the centre, it's the concentration of office buildings crowding out (nighttime) residential density. This also highlights some of the problems when focusing exclusively on (nighttime) population density and neglecting commercial density.
+
+## Taipei
+```{r taipei, echo=TRUE}
+st_sf(name="Taipei",st_sfc(st_point(c(121.5437,25.0416)),crs=4326)) %>% 
+  plot_density_facet(.,radius_km=30)
+```
+
+In large cities in can be hard to select the *centre* of the city. In Taipei we went with the Zhongxiao Fuxing station as the centre, which is probably more a personal preference than anything scientific. We can clearly notice the density bump around 25km out, where nearby cities of Taoyuan and Keelong kick in.
+
+
+## Upshot
+We could go on forever, there are many other interesting cities to look at. The code for this post [is available](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-03-27-density-timelines.Rmarkdown) in case people are interested in other cities. Fair warning, the scripts will download a couple of gigabytes of data the first time the scripts are run, and the water layer in the maps expect a tile source with API keys to be set for the `rmapzen` package.
+
+It would be nice to add a function that locates the *centre* for any given city simply by analyzing the population density. But that did not fit into our blog post time budget that was confined to our flight home. Unfortunately that also means there was no time to clean up the code or speed it up a bit.
+
+We could also refine out model to account for cases where the inner city has lower (nighttime) population density, surrounded by a higher density ring. Similarly, we could add provisions where density increases again further out as we reach neighbouring cities as we have seen for example in case of Taipei. As a related project, one could try and delineate regions that function as separate metropolitan areas just by population density patterns.
+
