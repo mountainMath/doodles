@@ -25,8 +25,8 @@ knitr::opts_chunk$set(
 	message = FALSE,
 	warning = FALSE,
 	fig.width = 12,
-	fig.height = 6.8,
-	cache = TRUE
+	fig.height = 8.5,
+	cache = FALSE
 )
 library(raster)
 library(sf)
@@ -418,7 +418,7 @@ plot_density_facet <- function(cities,bks=c(4,10,25,50,100,200,500,1000),
     l <- location %>% filter(name==c)
     years %>% map(function(y)
       map_plot_for_city(location=l,
-                        title=NULL,
+                        title=y,
                         radius=radius_km*1000,
                         bks=bks,year=y,
                         remove_lowest = remove_lowest,
