@@ -7,8 +7,9 @@
 
 sources:
     osm:
-        type: TopoJSON
-        url:  //vector.mapzen.com/osm/all/{z}/{x}/{y}.topojson?api_key=vector-tiles-o7hC53g
+        type: MVT
+        url:  https://tile.nextzen.org/tilezen/vector/v1/256/all/{z}/{x}/{y}.mvt?api_key=S9LrJk1FTOuZGrdDC0seqg
+        #//vector.mapzen.com/osm/all/{z}/{x}/{y}.topojson?api_key=vector-tiles-o7hC53g
     local:
         type: GeoJSON
         url: /data/ubc-cycleways.geojson
