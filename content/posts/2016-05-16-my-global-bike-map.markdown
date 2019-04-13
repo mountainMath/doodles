@@ -43,10 +43,10 @@ for reference as available.
 This scheme is geared toward the safety conscious and motor-traffic-adverse cyclist in North America. In Europe other
 designations exist that might call for a different priority. MAMILs might want a different colour scheme altogether.
 
-<iframe src="/bike_global.html#14/49.2775/-123.1292" width="80%" height="450" style="margin: 5px 10%;"></iframe>
+<iframe src="/html/bike_global.html#14/49.2775/-123.1292" width="80%" height="450" style="margin: 5px 10%;"></iframe>
 
 To get a better view you can also
-<a href="/bike_global.html" target="_blank" class='btn btn-default'>take the map full-screen</a>. 
+<a href="/html/bike_global.html" target="_blank" class='btn btn-default'>take the map full-screen</a>. 
 
 ### Data Quality
 The data for the map comes right out of Open Streets Map. That means that if something is missing or not right you can
@@ -59,7 +59,7 @@ they will show up on the map on the map, so don't fret if things aren't up to da
 
 
 ### Global
-<a href="/bike_global.html#13/52.3617/4.9051" target="_blank"><img  src="/images/amsterdam_bike.png"  style="width:50%;float:left;margin-right:10px;"></a>
+<a href="/html/bike_global.html#13/52.3617/4.9051" target="_blank"><img  src="/images/amsterdam_bike.png"  style="width:50%;float:left;margin-right:10px;"></a>
 And this bike map is global. The quality of the map depends on the quality of OSM data, in the case of Amsterdam it makes
 it abundantly clear why casual cyclists keep dreaming about the infrastructure in this city.
 
