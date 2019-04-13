@@ -48,7 +48,7 @@ designations exist that might call for a different priority. MAMILs might want a
 To get a better view you can also
 <a href="/bike_global.html" target="_blank" class='btn btn-default'>take the map full-screen</a>. 
 
-###Data Quality
+### Data Quality
 The data for the map comes right out of Open Streets Map. That means that if something is missing or not right you can
 just go and fix it! To make things a little easier when you are on a desktop computer, just "shift-click" where the problem
 is and it will bring the open street map editor up for that position. You might have to log in first or create a free
@@ -58,7 +58,7 @@ There is a bit of a lag between changes being made in open street map and them f
 they will show up on the map on the map, so don't fret if things aren't up to date immediately.
 
 
-###Global
+### Global
 <a href="/bike_global.html#13/52.3617/4.9051" target="_blank"><img  src="/images/amsterdam_bike.png"  style="width:50%;float:left;margin-right:10px;"></a>
 And this bike map is global. The quality of the map depends on the quality of OSM data, in the case of Amsterdam it makes
 it abundantly clear why casual cyclists keep dreaming about the infrastructure in this city.
@@ -67,7 +67,7 @@ The choice of emphasis for the
 maps are based on North America, or more narrowly Vancouver, where I live. So this might need adjusting for local context
 to better fit local OSM conventions. Use the search bar and explore your region. 
 
-###The Real Deal
+### The Real Deal
 <a href="https://ride.report" target="_blank"><img  src="/images/ride_report.png"  style="width:50%;float:right;margin-left:10px;"></a>
 Sadly, all of this effort is really coming at things from the wrong angle. The best way to do this,
 [as we outlined earlier](http://doodles.mountainmath.ca/blog/2015/12/13/how-to-make-a-bike-map/), is to base a bike map
@@ -87,13 +87,13 @@ In this day and age of data driven decision making I would really like more muni
 that generate real meaningful data on transportation cycling. And as a by-product one could take cycling maps to the
 next level and add actual cycling usage and comfort.
 
-###Issues
+### Issues
 There are still some issues. Some bike infrastructure, for example OSM paths, only become visible at zoom level 13 or higher.
 That's just the way the vector tile service works. Secondary roads are only visible at zoom level 12 or higher, and this
 includes "bike boulevards". Cyclepaths are only visible at zoom level 11 or higher. If one wants to have high-level bike
 maps one probably needs a dedicated vector tile service for bike infrastructure.
 
-###Apologies
+### Apologies
 Since this is just a blog post I have not gone out of my way to make sure this map works on every computer and browser.
 Basically, I am leaveraging off of [Mapzen's](https://mapzen.com) awesome [Tangram](https://mapzen.com/projects/tangram/)
 mapping engine to keep things simple on my end, but that means the maps will only show on modern computers
