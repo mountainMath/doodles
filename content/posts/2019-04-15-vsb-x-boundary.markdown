@@ -46,7 +46,7 @@ We see that the number of children increased in Downtown, Olympic Village and Mo
 We have overlaid the catchment areas, which gives some indication which schools are struggling to attract students, and which are turning students away. To better understand why VSB had such a hard time dealing with areas experience student growth like Yaletown or Olympic Village, it's instructional to take a closer look at one example.
 
 ## UBC schools, a case study
-I am most familiar with the schools near UBC, since that's where my son goes. A little under five years ago Norma Rose Point opened, relleving a lot of the pressures on University Hill Elementary and Secondary schools. At the time, University Hill Elementary was reduced from K-7 to K-5, leading to lots of changes at the school from letting go of teachers to removal of portables that housed an after-school program. This was done based on enrolment projections done at the time. Past summer, four years after the downsizing of the school to K-5, the VSB board voted to change UHill Elementary back to K-7, based on the current enrolment realities. At the same time, the board also voted to postpone plans for the South Campus elementary school for at least a couple of years.
+I am most familiar with the schools near UBC, since that's where my son goes. A little under five years ago Norma Rose Point opened, relieving a lot of the pressures on University Hill Elementary and Secondary schools. At the time, University Hill Elementary was reduced from K-7 to K-5, leading to lots of changes at the school from letting go of teachers to removal of portables that housed an after-school program. This was done based on enrolment projections done at the time. Past summer, four years after the downsizing of the school to K-5, the VSB board voted to change UHill Elementary back to K-7, based on the current enrolment realities. At the same time, the board also voted to postpone plans for the South Campus elementary school for at least a couple of years.
 
 <img src="/images/uhill_study_area.png" width="50%" style="float:right;padding:5px;border:1px black solid;margin:5px;"/>
 The enrolment and capacity situation is summed up in the [Long Range Facilities Plan](https://www.vsb.bc.ca/District/Planning_and_Facilities/Long_Range_Facilities_Plan/Documents/sbfile/190225/LRFP-draft-feb25.pdf) on page 64 and following. 
@@ -138,5 +138,10 @@ This cements the notion that there is indeed an east-to-west migration in the cr
 This helps identify which schools see the heaviest east-west traffic, and which schools see the reverse. The schools are ordered from east-most to west-most. The east-most schools can only attract cross-boundary traffic from the west, so their mean westward travel distance has to be negative. It's remarkable how quickly schools located fairly east start to attract a net influx of westbound traffic.
 
 One caveat here is that we don't know the locations of the students within each catchment, but compute this based on the assumption that students are located at their catchment schools. However we should expect this to roughly average out in most cases.
+
+## Next steps
+This post turned out a little more rambling than usual, mostly because it was written in small chunks over a period of several weeks. Big thanks to all the people helping when I tried to make sense of the data, as well as related discussions in this [long twitter thread](https://twitter.com/VanDPAC/status/1107099214402613249). And sincere apologies to everyone that got tagged into this for having to endure it.
+
+There are lot of related questions that one could go after, but this post is already too long. We might pick this up again and drill down into related questions. Also, we only looked at elementary schools, at some point it would be good re-run this for secondary schools.
 
 
