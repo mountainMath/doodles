@@ -214,3 +214,31 @@ ul.bordered {
   text-align:center;
   font-weight:bold;
 }
+
+
+.btn {
+  font-family: inherit;
+  font-size: .875rem;
+  font-weight: 700;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-block;
+  line-height: 1.125rem;
+  padding: .5rem 1rem;
+  margin: 0;
+  height: auto;
+  border: 1px solid transparent;
+  vertical-align: middle;
+  -webkit-appearance: none;
+  color: inherit;
+  background-color: transparent;
+}
+.btn-primary {
+  color: #fff;
+  background-color: #0074d9;
+  border-radius: 3px;
+}
+.btn, .btn:hover {
+  text-decoration: none;
+}
+

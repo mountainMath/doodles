@@ -1,0 +1,968 @@
+---
+title: VSB X-Boundary
+author: Jens von Bergmann
+date: '2019-04-15'
+slug: vsb-x-boundary
+categories:
+  - Vancouver
+  - cancensus
+tags: []
+description: 'Examining VSB cross-boundary data.'
+images: ["https://doodles.mountainmath.ca/images/x-boundary_map.png"]
+featured: ''
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+<link rel="stylesheet" href="/css/custom.css" />
+
+District wide enrolment in VSB schools has been on a steady decline for over a decade. At the same time there are areas within the VSB that have seen strong growth in children requiring new schools to get built. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 9,
+	cache = TRUE
+)
+library(sf)
+library(tidyverse)
+library(cancensus)
+library(cancensusHelpers)
+library(tongfen)
+library(here)
+
+my_theme <- list(
+  theme_light(),
+  labs(caption = "MountainMath, VSB")
+)
+
+district_colors <- rlang::set_names(RColorBrewer::brewer.pal(3,"Accent"),c("All","Regular","District"))
+
+```
+
+```{r}
+bc_children <- read_csv(here("data/vsb_children_bc_stats.csv")) %>%
+  rename(Count=`5 - 17`) %>%
+  select(Year,Count) %>%
+  mutate(Series="BC Stats Children 5-17")
+
+bc_5_14 <- read_csv(here("data/vsb_children_bc_proj.csv")) %>%
+  mutate(Count=`5-9`+`10-14`) %>%
+  select(Year,Count) %>%
+  mutate(Series="BC Stats Children 5-14")
+
+extract_enrolment_page <- function(data){
+  d<-data %>% 
+    as.tibble %>%
+    set_names(data[2,]) %>%
+    rename(Capacity=Operating) %>%
+    slice(-c(1,2,3)) %>%
+    mutate(`School Name`=ifelse(`School Name`=="","Total",`School Name`)) 
+  
+  empties <- which(d$Capacity=="")
+  d$`School Name`[empties-1]=paste(d$`School Name`[empties-1],d$`School Name`[empties])
+  
+  d[-empties,]
+}
+
+enrolment_vsb <- tabulizer::extract_tables("https://www.vsb.bc.ca/District/Planning_and_Facilities/Long_Range_Facilities_Plan/Documents/Appendix-G.pdf") %>% 
+  lapply(extract_enrolment_page) %>% 
+  bind_rows %>%
+  gather(key=Year,value="Enrolment",-one_of("School Name","Capacity")) %>%
+  mutate_at(c("Year","Capacity","Enrolment"),as.numeric) %>%
+  select(-`School Name`) %>%
+  group_by(Year) %>%
+  summarise_all(sum) %>%
+  rename(`VSB Projection`=Enrolment,
+         `VSB Capacity`=Capacity) %>%
+  gather(key="Series",value="Count",c("VSB Projection","VSB Capacity")) 
+
+#projections <- read_csv("https://catalogue.data.gov.bc.ca/dataset/313a1b8a-e30a-4b15-8823-e7b0b0fc2154/resource/5d9229ff-27c8-4706-9cd3-2096aedadcea/download/eduproj2018jan-final-school-age-only.csv") %>%
+projections <- read_csv("https://catalogue.data.gov.bc.ca/dataset/313a1b8a-e30a-4b15-8823-e7b0b0fc2154/resource/c53d391e-c832-4660-94f9-e22df33952e1/download/eduproj2018jan-final-school-age-plus-adults.csv")   %>%
+  filter(District==39) %>%
+      select(Year,`All grades subtotal`,`Home school`) %>%
+      rename(`Provincial projection`=`All grades subtotal`,
+             `Provincial home school`=`Home school`) %>%
+      gather(key="Series",value="Count",c("Provincial projection"))
+
+plot_data <- bind_rows(
+  enrolment_vsb,
+  projections,
+  bc_children,
+  bc_5_14
+) %>%
+  filter(Year>=2001)
+
+ggplot(plot_data,aes(x=Year,y=Count,color=Series)) +
+  geom_line() +
+  scale_color_brewer(palette = "Dark2") +
+  scale_y_continuous(labels=scales::comma,limits = c(0,NA)) +
+  my_theme +
+  labs(title="School aged children, capacity and VSB attendance projections",
+       caption = "MountainMath, BC Stats, BC Ministry of Education, VSB")
+```
+
+Looking at a couple of time series for the VSB District we can see where the problem lies. The children aged 5-17 living in the VSB District is estimated by BC Stats based on a number of data sources, and the number has been declining over the years. We can see a similar decline in provincial (projection) data, which lists actual numbers for past years. The provincial enrolment data is somewhat lower than the VSB projections that reflect actual enrolment for the current year, we are not sure what causes this. Possible explanations are that provincial enrolment counts don't count children below school age, and we are not sure if they count international students.
+
+The most interesting feature is the very different trends of Ministry of Education and internal VSB enrolment projections, with the former starting to turn from declining to rising around 2019, whereas the internal VSB projections show a steady decline. 
+
+## Projections
+Projections are hard, and always wrong, some more than others. In cases where different methods give significantly different results, and it is important to get fairly accurate estimates for facility planning, the usual procedure would be to read through the methodology of the diverging models to better understand what causes the discrepancy and make informed decisions. Unfortunately this is not possible in this case. While the Ministry's projections are based on the BC Stats models, which is [described in depth on the BC Stats webesite](http://www.bcstats.gov.bc.ca/Files/37ba7f54-8836-4a21-8adb-604fc63cb2d9/PopulationExtrapolationforOrganizationalPlanningwithLessErrorPEOPLE.pdf), VSB internal projections are based on private black box methods by [Barager systems](https://baragar.com). 
+
+The BC Stats projection are publicly available for 5-year age brackets, and we show the 5-14 year old age group and we can see how the change lines up nicely with the change in enrolment projections done by the Ministry.
+
+While overall enrolment is a primary driver for the enrolment issues faced by VSB, it is not the only one. We also need to pay attention to the shifting distribution of students within VSB, which has lead to some schools overcrowding, and new schools being added, while other schools have been losing students.
+
+Census data can give a good indication of the changing spatial patterns.
+
+```{r}
+vsb_regions_2016=list(CSD=c("5915022","5915803"),CT=c("9330069.01","9330069.02"))
+vsb_regions_2006=list(CSD=c("5915022","5915803"),CT="9330069.00")
+
+children_2016 <- c("2016_5-9"="v_CA16_25","2016_10-14"="v_CA16_43")
+children_2006 <- c("M5-9"="v_CA06_6","M10-14"="v_CA06_7","F5-9"="v_CA06_24","F10-14"="v_CA06_25")
+
+data_2016 <-get_census("CA16",regions=vsb_regions_2016,geo_format = 'sf',level="CT",vectors = children_2016)
+data_2006 <-get_census("CA06",regions=vsb_regions_2006,geo_format = 'sf',level="CT",vectors = children_2006) %>%
+  mutate(`2006_5-9`=`M5-9`+`F5-9`,`2006_10-14`=`M10-14`+`F10-14`)
+
+data <- data_2006 %>% 
+  left_join(
+    tongfen_ct(data_2006,data_2016,c("2016_5-9","2016_10-14")) %>%
+      st_set_geometry(NULL),
+    by="GeoUID"
+  ) %>%
+  mutate(`2006_5-14`=`2006_5-9`+`2006_10-14`,
+         `2016_5-14`=`2016_5-9`+`2016_10-14`) %>%
+  mutate(change=`2016_5-14`-`2006_5-14`,
+         pct_change=`2016_5-14`/`2006_5-14`-1)
+breaks <- c(-Inf,-300,-200,-100,-50,-25,25,50,100,200,300,Inf)
+labels <- c("Below -300","-300 to -200","-200 to -100","-100 to -50","-50 to -25","-25 to 25","25 to 50","50 to 100","100 to 200","200 to 300","Over 300")
+colors <- RColorBrewer::brewer.pal(11,"BrBG")
+
+plot_data <- data %>%
+  mutate(change_d=cut(change,breaks=breaks,labels=labels))
+
+bbox=st_bbox(st_union(plot_data))
+vector_tiles <- simpleCache(get_vector_tiles(bbox),"vsb_vector_tiles")
+# vector tiles return all layers (roads, water, buildings, etc) in a list
+roads <- rmapzen::as_sf(vector_tiles$roads) %>% filter(kind != "ferry")
+water <- rmapzen::as_sf(vector_tiles$water)
+
+schools <- get_shapefile("ftp://webftp.vancouver.ca/OpenData/shape/schools_shp.zip","schools")
+boundaries <- get_shapefile("ftp://webftp.vancouver.ca/OpenData/shape/shape_public_places.zip","elementary_school_boundaries")
+
+ggplot(plot_data) +
+  geom_sf(aes(fill=change_d),size=0.1) +
+  scale_fill_manual(values=set_names(colors,labels)) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  geom_sf(data=boundaries,fill=NA,color="black") +
+  geom_sf(data=roads,size=0.1,color="darkgrey",fill=NA) +
+  #geom_sf(data=schools %>% filter(SCHOOL_CAT=="Public School",grepl("Elementary",NAME))) +
+  my_theme +
+  coord_sf(datum=NA,
+           xlim=c(bbox$xmin,bbox$xmax),
+           ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Absolute change in children aged 5-14, 2006-2016",fill="2006 to 2016",
+       caption="MountainMath, StatCan Census 2006, 2016")
+```
+
+This shows quite clearly the problems VSB is facing, which demand for schools building up in some areas, and dropping in others.
+
+We see that the number of children increased in Downtown, Olympic Village and Mount Pleasant along the Cambie Corridor, as well as UBC and pockets in Dunbar and Point Gray, and to a lesser extent in Kits. Other areas ranged from stable to very strong decreases, most pronounced in Arbutus ridge. It would be interesting to dig down further into what is driving these geographic patterns. Just taking a cursory look we see that traditional single family neighbourhoods are losing children, which we [have observed before](https://doodles.mountainmath.ca/blog/2017/09/05/young-families/).
+
+We have overlaid the catchment areas, which gives some indication which schools are struggling to attract students, and which are turning students away. To better understand why VSB had such a hard time dealing with areas experience student growth like Yaletown or Olympic Village, it's instructional to take a closer look at one example.
+
+## UBC schools, a case study
+I am most familiar with the schools near UBC, since that's where my son goes. A little under five years ago Norma Rose Point opened, relleving a lot of the pressures on University Hill Elementary and Secondary schools. At the time, University Hill Elementary was reduced from K-7 to K-5, leading to lots of changes at the school from letting go of teachers to removal of portables that housed an after-school program. This was done based on enrolment projections done at the time. Past summer, four years after the downsizing of the school to K-5, the VSB board voted to change UHill Elementary back to K-7, based on the current enrolment realities. At the same time, the board also voted to postpone plans for the South Campus elementary school for at least a couple of years.
+
+<img src="/images/uhill_study_area.png" width="50%" style="float:right;padding:5px;border:1px black solid;margin:5px;"/>
+The enrolment and capacity situation is summed up in the [Long Range Facilities Plan](https://www.vsb.bc.ca/District/Planning_and_Facilities/Long_Range_Facilities_Plan/Documents/sbfile/190225/LRFP-draft-feb25.pdf) on page 64 and following. 
+
+
+We see that the combined three schools in the area are operating at capacity, which is not a problem since VSB projects that enrolment will decline. UHill Secondary also has a good portion of international students that could be moved to other schools if the need arises, so there is a little more buffer than the graph suggests. However, anyone familiar with the university neighbourhoods will find the notion that enrolment will decline curious. The problem is that VSB does not take new developments like
+Block F into consideration, even though the developer did [provide projections on the children population](http://www.universityendowmentlands.gov.bc.ca/library/2015BlockFRezoningApplicationPackage.pdf) based on unit mix of the development and extrapolation from census counts for similar unit mix, coming up with around 170 additional children once built-out.
+<img src="/images/block_f_children.png" width="50%" style="float:right;padding:5px;border:1px black solid;margin:5px;"/>
+ 
+At the same time, development continues at the usual pace in South Campus, with several large multi-family buildings completing every year. This makes it really hard to understand the VSB insistence on working based on the assumption of declining future enrolment for the UBC area schools.
+
+At the same time it explains well what went wrong with planning regarding Yaletown and the Olympic Village, VSB is really bad at accounting for new development. These stresses leads to increased cross-boundary traffic. Which can be quite difficult for students, especially in geographically isolated areas like the UBC schools.
+
+## School enrolment patterns
+
+The VSB has made detailed cross-boundary data available, which gives us the ability to better understand the pressures each school faces and how children and parents work around these constraints.
+
+```{r}
+
+get_provincial_enrolment_data <- function() {
+  enrolment_types <- c("TOTAL_ENROLMENT","ABORIGINAL_ENROLMENT","ELL_ENROLMENT","FRENCH_IMMERSION_ENROLMENT","SPECIAL_NEEDS_ENROLMENT","NON_RESIDENT_ENROLMENT","ADULT_ENROLMENT")
+
+  tmp <- tempfile(fileext = ".csv")
+  download.file("https://catalogue.data.gov.bc.ca/dataset/2c53729a-2453-4633-92f3-6876a45f8bc4/resource/62851d48-f57c-45bf-a7a4-d1677c66c1ca/download/enrolment_and_fte_2004_2018.csv",tmp)
+  data <- read_csv(tmp,locale=locale(encoding = "Windows-1252"),col_types = cols(.default = "c")) %>%
+    filter(SCHOOL_YEAR=="2018/2019",DATA_LEVEL=="SCHOOL LEVEL",DISTRICT_NUMBER=="039",GRADE=="ALL ELEMENTARY") %>%
+    select(c("SCHOOL_NUMBER","SCHOOL_NAME",enrolment_types)) %>%
+    gather(key="ENROLMENT_TYPE",value="Count",enrolment_types) %>%
+    mutate(Count=as.integer(Count))
+}
+
+enrolment_data <- simpleCache(get_provincial_enrolment_data(),"vsb_provincial_enrolment")
+
+
+ attendance_metrics <- c("Total Enrolment" ,"Attend from Catchment(#)", "Attend from Catchment(%)", "Attend Cross Boundary(#)" ,"Attend Cross Boundary(%)")
+ catchment_metrics <- c("Catchment Total", "Attend In-Catchment(#)", "Attend In-Catchment(%)", "Attend Elsewhere(#)", "Attend Elsewhere(%)")
+ 
+get_elementary_xboundry_workbook <- function(refresh=FALSE){
+  cache_path=file.path(getOption("custom_data_path"),"vsb_elementary_xboundary_data.xlsx")
+  if (!file.exists(cache_path)||refresh) {
+    path="https://drive.google.com/uc?id=0B_jcy691GiNLUWJOZkFkMXBoWkJvZDZsbWRFMGVKemowc3Bv&authuser=0&export=download"
+    #tmp<-tempfile(fileext = ".xlsx")
+    download.file(path,cache_path)
+  }
+  wb <- XLConnect::loadWorkbook(cache_path, password="LRFP")
+}
+
+process_elementary_xboundry_data <- function(data){
+  names(data)=data[4,] %>% as.character
+  d<- data[-c(1:4),] %>% 
+    as_tibble() %>%
+    rename(Catchment=`Catchment of Residence`) 
+ no_enrolment <- d %>% filter(Catchment=="Total Enrolment") %>% 
+   select(-Catchment) %>% 
+   gather(key="Catchment",value="Count") %>%
+    filter(Count==0) %>% 
+   pull(Catchment)
+ 
+  d %>%
+  select(-one_of(no_enrolment)) %>%
+  gather(key="Attendance",value=Count,-one_of(c("Catchment",catchment_metrics))) %>%
+  full_join((.) %>%
+             filter(Catchment %in% attendance_metrics) %>%
+             select(Attendance,Count,Catchment) %>%
+             rename(metric=Catchment) %>%
+             group_by(Attendance) %>%
+             spread(key="metric",value=Count),
+           by="Attendance") %>%
+  filter(!(Catchment %in% c(attendance_metrics))) %>%
+  mutate_at(vars(matches("%")),function(x){as.numeric(gsub("%","",x))/100}) %>%
+  mutate_at(vars(-one_of("Catchment","Attendance")),as.numeric)
+}
+
+extract_xboundary_data <- function(d){
+  d %>% select(-one_of(attendance_metrics,catchment_metrics))
+}
+
+extract_catchment_summary_data <- function(d){
+  d %>% 
+    select("Catchment",catchment_metrics) %>%
+    group_by(Catchment) %>%
+    summarise_all(first) %>%
+    ungroup
+}
+extract_attendance_summary_data <- function(d){
+  d %>% 
+    select("Attendance",attendance_metrics) %>%
+    group_by(Attendance) %>%
+    summarise_all(first) %>%
+    ungroup
+}
+
+
+
+
+
+get_elementary_boundaries <- function(){
+  elementary_boundaries_renames <- list(
+    "Acadia Road Elementary"="Norma Rose Point Elementary Junior",
+    "Sir William Macdonald Communit"="Xpey' Elementary",
+    "Champlain Heights Community El"="Champlain Heights Community Elementary",
+    "Florence Nightingale Elementar"="Florence Nightingale Elementary",
+    "Graham Bruce Community Element"="Graham Bruce Community Elementary",
+    "J.W. Sexsmith Community Elemen"="J.W. Sexsmith Community Elementary",
+    "Lord Strathcona Community Elem"="Lord Strathcona Community Elementary",
+    "Pierre Elliott Trudeau Element"="Pierre Elliott Trudeau Elementary",
+    "Sir Alexander Mackenzie Elemen"="Sir Alexander Mackenzie Elementary",
+    "Sir Guy Carleton Community Ele"="Sir Guy Carleton Community Elementary",
+    "Sir Sandford Fleming Elementar"="Sir Sandford Fleming Elementary",
+    "Dr H N MacCorkindale Elementar"="Dr H N MacCorkindale Elementary"
+  )
+
+  get_shapefile("ftp://webftp.vancouver.ca/OpenData/shape/shape_public_places.zip","elementary_school_boundaries") %>%
+    mutate(CatchmentID=paste0("Catchment_",row_number())) %>%
+    mutate(NAME=ifelse(CatchmentID=="Catchment_42","Crosstown Elementary",NAME)) %>% 
+    mutate(NAME=recode(NAME,!!!elementary_boundaries_renames)) %>%
+    left_join(enrolment_data %>% select(SCHOOL_NUMBER, SCHOOL_NAME) %>% unique,by=c("NAME"="SCHOOL_NAME")) %>%
+    filter(NAME!="Xpey' Elementary") # remove Xpey', it's not a catchment area any more
+}
+
+
+
+get_provincial_school_locations <- function(){
+  st_read("http://www.bced.gov.bc.ca/reporting/odefiles/kml/bc_schools.kml") %>%
+    mutate(District=str_extract(Description,"District: \\d+ School Code: ") %>% gsub("District: | School Code: ","",.)) %>%
+    mutate(SCHOOL_NUMBER=str_extract(Description,"School Code: \\d+ School Name: ") %>% gsub("School Code: | School Name: ","",.)) %>%
+    mutate(NAME=str_extract(Description,"School Name: .+ Address: ") %>% gsub("School Name: | Address: ","",.)) %>%
+    filter(District=="39")
+}
+
+get_schoool_locations <- function(){
+  school_location_renames <- list(
+    "Sir William Macdonald Community"="Xpey' Elementary",
+    "L'Ecole Bilingue Elementary"="L'ecole Bilingue Elementary",
+    "Norma Rose Point School"="Norma Rose Point Elementary Junior"
+  )
+
+  s<-get_shapefile("ftp://webftp.vancouver.ca/OpenData/shape/schools_shp.zip","schools") %>%
+    filter(SCHOOL_CAT=="Public School") %>%
+    filter(!grepl("Norma",NAME)) %>%
+    st_transform(4326) %>%
+    bind_rows( # Data is out of date, do some fixes manually
+      st_read('{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"NAME":"University Hill Elementary","SCHOOL_CAT":"PublicSchool"},"geometry":{"type":"Point","coordinates":[-123.23698997497557,49.2746928828363]}},{"type":"Feature","properties":{"NAME":"Norma Rose Point Elementary Junior","SCHOOL_CAT":"PublicSchool"},"geometry":{"type":"Point","coordinates":[-123.2331705093384,49.26155941834184]}}]}')
+    ) %>%  
+    st_sf(crs=4326) %>%
+    mutate(NAME=recode(as.character(NAME),!!!school_location_renames)) %>%
+    left_join(enrolment_data %>% select(SCHOOL_NUMBER, SCHOOL_NAME) %>% unique,by=c("NAME"="SCHOOL_NAME")) %>%
+    filter(!is.na(SCHOOL_NUMBER))
+}
+
+
+get_capacity_data <- function(){
+  extract_enrolment_page <- function(data){
+    d<-data %>% 
+      as_tibble %>%
+      set_names(data[2,]) %>%
+      rename(Capacity=Operating) %>%
+      slice(-c(1,2,3)) %>%
+      mutate(`School Name`=ifelse(`School Name`=="","Total",`School Name`)) 
+    
+    empties <- which(d$Capacity=="")
+    for (e in empties %>% sort %>% rev) {
+        d$`School Name`[e-1]=paste(d$`School Name`[e-1],d$`School Name`[e])
+    }
+
+    d[-empties,]
+  }
+  
+  tabulizer::extract_tables("https://www.vsb.bc.ca/District/Planning_and_Facilities/Long_Range_Facilities_Plan/Documents/Appendix-G.pdf") %>% 
+    lapply(extract_enrolment_page) %>% 
+    bind_rows %>%
+    gather(key=Year,value="Enrolment",-one_of("School Name","Capacity")) %>%
+    mutate_at(c("Year","Capacity","Enrolment"),as.numeric)
+}
+```
+
+
+```{r}
+vsb_capacity_data <- simpleCache(get_capacity_data(),"vsb_capacity_data") %>%
+  filter(Year==2018) %>%
+  select(`School Name`,Capacity) %>%
+  rename(NAME=`School Name`)
+school_locations <- simpleCache(get_schoool_locations(),"vsb_school_locations")
+elementary_wb <- get_elementary_xboundry_workbook()
+elementary_all <- XLConnect::readWorksheet(elementary_wb,"AttendancePatternsElemAllPrg") %>% process_elementary_xboundry_data()
+elementary_regular <- XLConnect::readWorksheet(elementary_wb,"AttendancePatternElemRegOnly") %>% process_elementary_xboundry_data()
+elementary_boundaries  <- simpleCache(get_elementary_boundaries(),"vsb_elementary_boundaries")
+
+```
+
+```{r}
+
+
+elementary_data <- full_join(
+  elementary_all %>% 
+    extract_xboundary_data() %>%
+    rename(All=Count),
+  elementary_regular %>% 
+    extract_xboundary_data() %>%
+    rename(Regular=Count),
+  by=c("Catchment","Attendance")
+) %>%
+  mutate(Special=coalesce(All)-coalesce(Regular,0)) %>%
+  mutate(Special=na_if(Special,0))
+ 
+
+catchment_data <- elementary_all  %>% 
+  extract_catchment_summary_data() %>%
+  gather(key="Catchment metrics",value="Value",-Catchment)
+
+attendance_data <- full_join(
+  elementary_all  %>% 
+  extract_attendance_summary_data() %>%
+    gather(key="Attendance metrics",value="All",-Attendance),
+  elementary_regular  %>% 
+    extract_attendance_summary_data() %>%
+    gather(key="Attendance metrics",value="Regular",-Attendance)
+) %>%
+  mutate(Special=coalesce(All)-coalesce(Regular,0)) %>%
+  mutate(Special=na_if(Special,0))
+
+
+```
+
+
+```{r include=FALSE}
+
+# Linking the data, schools to provincial school numbers and provincial school numbers to catchments.
+
+d1 <- c(elementary_data$Catchment) %>% unique
+d2 <- c(elementary_data$Attendance) %>% unique
+d3 <- vsb_capacity_data$NAME
+b1 <- elementary_boundaries$NAME 
+p1 <- enrolment_data$SCHOOL_NAME %>% unique
+s1 <- school_locations$NAME 
+
+
+lookup<-d1 %>% lapply(function(d) {
+  #d<-gsub(" Annex","",d)
+  b=b1[grepl(d,b1)]
+  if (length(b)!=1) {
+    if (d=="Lord") {
+      b="Dr A R Lord Elementary"
+    } else if (d=="Xpey`") {
+      b="Sir William Macdonald Communit"
+    } else if (d=="L`Ecole Bilingue") {
+      b="L'Ecole Bilingue Elementary"
+    } else if (d=="Collingwood (Bruce Annex)") {
+      b="Collingwood Neighbourhood School"
+    } else if (d=="Tillicum (Hastings Annex)") {
+      b="Tillicum Community Annex"
+    } else if (d=="Queen Victoria (Secord Annex)") {
+      b= "Queen Victoria Annex"
+    } else if (grepl("Out of District",d)) {
+      b="Out of District"
+    } else {
+      print("problem")
+      print(d)
+      print(b)
+    }
+  }
+  tibble(name=d,boundary=b)
+  }) %>% bind_rows
+
+lookup2<-d2 %>% lapply(function(d) {
+  b=s1[grepl(d,s1)]
+  if (length(b)>1 && !grepl("Annex",d)) b=b[!grepl("Annex",b)]
+  if (length(b)!=1) {
+    if (d=="Lord") {
+      b="Dr A R Lord Elementary"
+    } else if (d=="Xpey`") {
+      b="Xpey' Elementary"
+    } else if (d=="L`Ecole Bilingue") {
+      b="L'ecole Bilingue Elementary"
+    } else if (d=="Collingwood (Bruce Annex)") {
+      b="Collingwood Neighbourhood School"
+    } else if (d=="Tillicum (Hastings Annex)") {
+      b="Tillicum Community Annex"
+    } else if (d=="Queen Victoria (Secord Annex)") {
+      b= "Queen Victoria Annex"
+    } else if (d=="VLN-E") {
+      b= "SD 39 DL Elementary"
+    } else if (d=="VLN-S") {
+      b= "SD 39 DL Secondary"
+    } else if (grepl("Out of District",d)) {
+      b="Out of District"
+    } else {
+      print("problem")
+      print(d)
+      print(b)
+    }
+  }
+  tibble(name=d,boundary=b)
+  }) %>% bind_rows
+
+lookup3<-d3 %>% lapply(function(d) {
+  b=s1[grepl(d,s1)]
+  if (length(b)>1 && !grepl("Annex",d)) b=b[!grepl("Annex",b)]
+  if (length(b)!=1) {
+    if (d=="Lord") {
+      b="Dr A R Lord Elementary"
+    } else if (d=="Xpey`") {
+      b="Xpey' Elementary"
+    } else if (d=="L`Ecole Bilingue") {
+      b="L'ecole Bilingue Elementary"
+    } else if (d=="Collingwood Annex") {
+      b="Collingwood Neighbourhood School"
+    } else if (d=="Tillicum Annex") {
+      b="Tillicum Community Annex"
+    } else if (d=="Queen Victoria Annex") {
+      b= "Queen Victoria Annex"
+    } else if (d=="Kingsford- Smith") {
+      b= "Sir Charles Kingsford-Smith"
+    } else if (grepl("VLN",d)) {
+      b= "SD 39 DL Elementary"
+    } else if (grepl("Out of District",d)) {
+      b="Out of District"
+    } else {
+      print("problem")
+      print(d)
+      print(b)
+    }
+  }
+  tibble(name=d,boundary=b)
+  }) %>% bind_rows
+
+
+add_catchment_name_number <- function(data){
+  data %>%
+    mutate(CatchmentName=as.character(to_named_vector(lookup,"name","boundary")[Catchment])) %>%
+      left_join(enrolment_data %>% 
+                  select(SCHOOL_NUMBER,SCHOOL_NAME) %>% 
+                  rename(CatchmentNumber=SCHOOL_NUMBER) %>% unique,
+            by=c("CatchmentName"="SCHOOL_NAME"))
+}
+
+add_attendance_name_number <- function(data){
+  data %>%
+    mutate(AttendanceName=as.character(to_named_vector(lookup2,"name","boundary")[Attendance])) %>%
+      left_join(enrolment_data %>% 
+                  select(SCHOOL_NUMBER,SCHOOL_NAME) %>% 
+                  rename(AttendanceNumber=SCHOOL_NUMBER) %>% unique,
+            by=c("AttendanceName"="SCHOOL_NAME"))
+}
+
+enrolment_capacity_data <- vsb_capacity_data %>% 
+  mutate(name=as.character(to_named_vector(lookup3,"name","boundary")[NAME])) %>%
+  filter(!is.na(name)) %>%
+  full_join(enrolment_data %>% spread(key=ENROLMENT_TYPE,value=Count),
+          by=c("name"="SCHOOL_NAME")) %>%
+  select(-SCHOOL_NUMBER) %>%
+  rename(AttendanceName=name) %>%
+  full_join(attendance_data %>%
+              gather(key="Program",value="Count",c("All","Regular","Special")) %>%
+              mutate(Metric=paste0(`Attendance metrics`,"_",Program)) %>%
+              select(-`Attendance metrics`,-Program) %>%
+              spread(key="Metric",value="Count") %>%
+              add_attendance_name_number,
+            by="AttendanceName")
+
+
+  
+
+xboundary_data <- elementary_data %>% 
+  add_attendance_name_number %>%
+  add_catchment_name_number
+
+
+catchment_centroid_coords <- elementary_boundaries %>% 
+  st_centroid() %>% 
+  select(NAME,SCHOOL_NUMBER) %>% 
+  st_transform(4326) %>% 
+  cbind(st_coordinates(.)) %>% 
+  st_set_geometry(NULL)
+
+school_location_coords <- school_locations %>%
+  select(NAME,SCHOOL_NUMBER) %>% 
+  st_transform(4326) %>% 
+  cbind(st_coordinates(.)) %>% 
+  st_set_geometry(NULL)
+
+
+
+```
+
+The VSB cross-boundary data allows to split enrolment into regular and "non-regular" programs, which includes district programs and international programs. The Ministry makes data on enrolment by program type available, and mixing the two one can get a good picture of enrolment patterns in schools. One caveat is that the two datasets may not line up perfectly due to timing of when they were pulled and some students dropping out or entering into the VSB program mid-year. In our data there are four schools where the total number of enrolled students differ by one between the two datasets, which gives us some confidence that the discrepancy is not large and it makes sense to merge the data from the two different sources.
+
+```{r fig.height=12}
+
+coalesce0 <- function(x){
+  coalesce(as.numeric(x),0.0)
+}
+
+plot_data <- enrolment_capacity_data %>% 
+  select(-AttendanceNumber,-NAME,-AttendanceName) %>%
+  mutate_at(vars(-Attendance),coalesce0) %>%
+  mutate(Regular=`Total Enrolment_Regular`,
+         All=`Total Enrolment_All`) %>%
+  mutate(Special=All-Regular) %>%
+  mutate(`Other Choice`=Special-NON_RESIDENT_ENROLMENT-FRENCH_IMMERSION_ENROLMENT) %>%
+  mutate(Else=Regular-ELL_ENROLMENT-ADULT_ENROLMENT-SPECIAL_NEEDS_ENROLMENT-ABORIGINAL_ENROLMENT) %>%
+  rename(International=NON_RESIDENT_ENROLMENT,
+         `French immersion`=FRENCH_IMMERSION_ENROLMENT,
+         ELL=ELL_ENROLMENT,
+         `Special needs`=SPECIAL_NEEDS_ENROLMENT,
+         Adult=ADULT_ENROLMENT,
+         Aboriginal=ABORIGINAL_ENROLMENT) %>%
+  gather(key="Program Type",value="Value",c("Regular","French immersion","Other Choice","International"),factor_key = TRUE)
+
+ggplot(plot_data,aes(x=reorder(Attendance,All),y=Value,fill=fct_rev(`Program Type`))) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  geom_boxplot(aes(y=Capacity),color="black",fill=NA) +
+  scale_fill_brewer(palette = "Set1") +
+  my_theme +
+  labs(title="VSB Attendance by Program Type",x="School",y="Count",fill="Program Type",
+       caption="MountainMath, Ministry of Education, VSB")
+```
+
+The black bars indicate the capacity of each of the schools, showing most schools operating below capacity, some by a lot. 
+
+We can similarly explore other within-school metrics.
+
+```{r fig.height=24}
+plot_data <- enrolment_capacity_data %>% 
+  select(Attendance,ABORIGINAL_ENROLMENT,ADULT_ENROLMENT,ELL_ENROLMENT,FRENCH_IMMERSION_ENROLMENT,NON_RESIDENT_ENROLMENT,SPECIAL_NEEDS_ENROLMENT,TOTAL_ENROLMENT) %>%
+  gather(key="Type",value="Count",c(ABORIGINAL_ENROLMENT,ADULT_ENROLMENT,ELL_ENROLMENT,FRENCH_IMMERSION_ENROLMENT,NON_RESIDENT_ENROLMENT,SPECIAL_NEEDS_ENROLMENT),factor_key = TRUE) %>%
+  mutate(Share=Count/TOTAL_ENROLMENT) %>%
+  filter(Type!="ADULT_ENROLMENT") %>%
+  group_by(Attendance) %>%
+  filter(sum(Share,na.rm=TRUE)>0)
+
+ggplot(plot_data,aes(x=reorder(Attendance,TOTAL_ENROLMENT),y=Share,fill=Type)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  my_theme +
+  scale_y_continuous(labels=scales::percent) +
+  facet_wrap("Type",scales="free_x",labeller = as_labeller(c("ABORIGINAL_ENROLMENT"="First Nations",
+                                                             "ELL_ENROLMENT"="ELL",
+                                                             "FRENCH_IMMERSION_ENROLMENT"="French",
+                                                             "NON_RESIDENT_ENROLMENT"="International",
+                                                             "SPECIAL_NEEDS_ENROLMENT"="Special Needs"))) +
+  scale_fill_brewer(palette = "Set2",guide=FALSE) +
+  labs(title="VSB Attendance by Student Category",x="School",y="Count",fill="Category",caption="MountainMath, Ministry of Education")
+
+```
+
+While enrolment has been the main metric employed by the VSB in school closure discussions, in-catchment population is another metric that should be of interest. The idea of neighbourhood schools is still important to many, including myself. This gets complicated by the abundance of district programs, some of which give priority to in-catchment children while others don't. It also raises the question about Annexes, which might be best treated as extensions of the main catchment schools in terms of their capacity.
+
+```{r}
+catchment_lookup <- list(
+  "Collingwood Neighbourhood School"="Graham Bruce Community Elementary",
+  "L'ecole Bilingue Elementary"=NA,
+  "Queen Elizabeth Annex"="Queen Elizabeth Elementary",
+  "Ecole Jules Quesnel Elementary"=NA,
+  "Lord Tennyson Elementary"=NA,
+  "Tyee Elementary"=NA,
+  "SD 39 DL Elementary"=NA,
+  "Xpey' Elementary"=NA,
+  "Tillicum Community Annex" ="Hastings Community Elementary",
+  "Sir James Douglas Annex"="Sir James Douglas Elementary",
+  "Queen Victoria Annex"="Laura Secord Elementary",
+  "Charles Dickens Annex"="Charles Dickens Elementary",
+  "Champlain Heights Annex"="Champlain Heights Community Elementary",
+  "Lord Selkirk Annex"="Lord Selkirk Elementary",
+  "Kerrisdale Annex"="Kerrisdale Elementary",
+  "Lord Roberts Annex"="Lord Roberts Elementary",
+  "Tecumseh Annex"="Tecumseh Elementary",
+  "Sir Richard McBride Annex"="Sir Richard McBride Elementary"
+)
+
+
+catchment_attendance_correspondance <- enrolment_capacity_data %>% 
+  select(AttendanceName) %>%
+    mutate(AttendanceCatchment=case_when(AttendanceName %in% names(catchment_lookup)~catchment_lookup[AttendanceName] %>% as.character %>% na_if(.,"NA") %>% coalesce(.,"District"),TRUE~ AttendanceName)) %>%
+  select(AttendanceCatchment,AttendanceName) %>%
+  unique
+  
+catchment_xboundary_data <- xboundary_data %>%
+  left_join(catchment_attendance_correspondance) %>%
+  mutate(inCatchment=ifelse(AttendanceCatchment==CatchmentName,"inCatchment","outCatchment")) %>%
+  group_by(AttendanceCatchment,inCatchment) %>%
+  summarise_at(c("All", "Regular", "Special"),sum,na.rm=TRUE) %>%
+  rename(!!!c("AllTo"="All","RegularTo"="Regular","SpecialTo"="Special")) %>%
+  rename(CatchmentName=AttendanceCatchment) %>%
+  left_join(
+    xboundary_data %>%
+      left_join(catchment_attendance_correspondance) %>%
+      mutate(inCatchment=ifelse(AttendanceCatchment==CatchmentName,"inCatchment","outCatchment")) %>%
+      group_by(CatchmentName,Catchment,inCatchment) %>%
+      summarise_at(c("All", "Regular", "Special"),sum,na.rm=TRUE) %>%
+      rename(!!!c("AllFrom"="All","RegularFrom"="Regular","SpecialFrom"="Special")),
+    by=c("CatchmentName","inCatchment")
+  )
+
+catchment_enrolment_data <- enrolment_capacity_data %>%
+  left_join(catchment_attendance_correspondance) %>%
+  group_by(AttendanceCatchment) %>%
+  summarise_at(c("TOTAL_ENROLMENT","Capacity"),sum,na.rm=TRUE)
+  
+catchment_with_annex_data <-
+  full_join(
+    catchment_xboundary_data %>%
+      gather(key="Program",value="Count",c("AllTo", "RegularTo", "SpecialTo","AllFrom", "RegularFrom", "SpecialFrom")) %>%
+      mutate(metric=paste0(inCatchment,Program)) %>%
+      select(-Program,-inCatchment) %>%
+      spread(key=metric,value=Count),
+    catchment_enrolment_data,
+    by=c("CatchmentName"="AttendanceCatchment")
+  ) 
+
+add_arcs <- function(data){
+  out_of_boundary=c(-123.00121307373047,49.19157675691453)
+
+  data %>% left_join(school_location_coords %>% select(-SCHOOL_NUMBER),by=c("CatchmentName"="NAME")) %>%
+    mutate(X=case_when(grepl("Out of District",Catchment)~out_of_boundary[1],TRUE~X),Y=case_when(grepl("Out of District",Catchment)~out_of_boundary[2],TRUE~Y)) %>%
+    rename(oX=X,oY=Y) %>%
+    left_join(school_location_coords %>% select(-SCHOOL_NUMBER),by=c("AttendanceName"="NAME")) %>%
+    mutate(X=case_when(grepl("Out of District",Attendance)~out_of_boundary[1],TRUE~X),Y=case_when(grepl("Out of District",Attendance)~out_of_boundary[2],TRUE~Y)) %>%
+    rename(dX=X,dY=Y)
+}
+
+```
+
+```{r fig.height=10}
+plot_data <- catchment_with_annex_data %>%
+  mutate(All=inCatchmentAllFrom/(inCatchmentAllFrom+outCatchmentAllFrom),
+         Regular=inCatchmentRegularFrom/(inCatchmentRegularFrom+outCatchmentRegularFrom),
+         District=inCatchmentSpecialFrom/(inCatchmentSpecialFrom+outCatchmentSpecialFrom) ) %>%
+  gather(key="Program",value="Share",c("All","Regular","District")) %>%
+  filter(Share>0,!is.na(Share)) %>%
+  left_join(xboundary_data %>% select(Catchment,CatchmentName) %>% unique) %>%
+  ungroup
+  
+ggplot(plot_data,aes(x=Catchment,y=Share,fill=Program)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  my_theme +
+  facet_wrap("Program") +
+  scale_fill_manual(values=district_colors,guide=FALSE) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Share of students staying in catchment") 
+```
+
+Looking at all students by catchment, we see that some of the variance in the rates of attendance in catchment schools (including annexes) is explained by varying proportion of students attending out-of-catchment district programs. Moreover, some catchment schools have in-house district programs, which students in that catchment seem to prefer over travelling to out-of-catchment district programs. This speaks to in-school district programs being quite attractive to students and their parents.
+
+We can investigate this further by looking at the share of students in each catchment that attend district programs.
+
+```{r fig.height=10}
+plot_data <- catchment_with_annex_data %>%
+  mutate(`In Catchment`=(inCatchmentSpecialFrom)/(inCatchmentAllFrom+outCatchmentAllFrom),
+         `Out Catchment`=(outCatchmentSpecialFrom)/(inCatchmentAllFrom+outCatchmentAllFrom)) %>%
+  left_join(xboundary_data %>% select(Catchment,CatchmentName) %>% unique) %>%
+  gather(key="District",value="Share",c("In Catchment","Out Catchment")) %>%
+  filter(Share>0,!is.na(Share)) %>%
+  ungroup
+  
+ggplot(plot_data,aes(x=Catchment,y=Share,fill=District)) +
+  geom_bar(stat="identity",position="stack") +
+  coord_flip() +
+  my_theme +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Share of catchment students attending district programs",fill="Attending")
+```
+
+Some of the higher rates of children attending district programs can be explained by district programs in catchment schools, but that still leaves significant variation unexplained.
+
+## Cross-boundary
+Of most interest to me are the cross-boundary movements of children. Here it is useful to distinguish movement to district programs like French Immersion from movements to regular programs.
+
+Before we get started, it's useful to first get a better overview of the cross-boundary movements. This interactive map allows one way to explore this, hovering over a school shows the origins and destinations of net flows, with the net flow arcs coloured red at their origins and green at their destinations. Net flows substantially under-state total flows. For example, there are 69 students in the University Hill Elementary catchment at attend Norma Rose Point and 64 children in the Norma Rose Point catchment that attend University Hill Elementary, resulting in a net flow of 5 students from University Hill Elementary catchment attending Norma Rose Point.
+
+Here we peg the origins at the "catchment schools" coloured in blue on the map, with "annex schools" in black and "district program schools" in green. For "annex schools" we chose to count students with the catchment of the associated school as "in catchment" and won't show them as flows from the catchment school to the annex. The radio buttons allow to show all flows, or just flows to regular programs or flows to district programs. We put the origin for students coming from out of district a little to the south-west of Vancouver. We don't have data on students within VSB that attend schools in other districts.
+
+
+
+```{r}
+
+cd <- elementary_boundaries %>% 
+  st_transform(4326)  %>%
+  select(NAME,SCHOOL_NUMBER,CatchmentID) %>% 
+  mutate(CatchmentName=NAME,
+         CatchmentNumber=SCHOOL_NUMBER) %>%
+  left_join(catchment_with_annex_data, by="CatchmentName") %>%
+  mutate(Utilization=`TOTAL_ENROLMENT`/Capacity,
+         ShareAttendanceToCatchment=TOTAL_ENROLMENT/(inCatchmentAllFrom+outCatchmentAllFrom),
+         inCatchment=inCatchmentAllFrom/(inCatchmentAllFrom+outCatchmentAllFrom),
+         fromCatchment=inCatchmentAllTo/TOTAL_ENROLMENT) %>%
+  mutate(AttendanceCatchment=CatchmentName)
+
+
+
+sl <- school_locations %>%
+  st_transform(4326)  %>%
+  select(SCHOOL_NUMBER) %>%
+  left_join(enrolment_capacity_data,
+    by=c("SCHOOL_NUMBER"="AttendanceNumber"))  %>%
+  left_join(catchment_attendance_correspondance,by=c("AttendanceName"="AttendanceName")) %>%
+  left_join(catchment_with_annex_data, by=c("AttendanceCatchment"="CatchmentName"),suffix=c("",".y")) %>%
+  mutate(SchoolType=case_when(is.na(AttendanceCatchment) | AttendanceCatchment=="District"~"District",
+                              AttendanceCatchment==AttendanceName ~ "Catchment",TRUE~"Annex")) %>%
+  left_join(xboundary_data %>% 
+    left_join(catchment_attendance_correspondance,by=c("AttendanceName"="AttendanceName")) %>%
+      mutate(status=ifelse(AttendanceCatchment==CatchmentName,"InCatchment","OutCatchment")) %>%
+      group_by(AttendanceName,status) %>%
+      summarize_at(c("All","Regular","Special"),sum,na.rm=TRUE) %>%
+      gather(key="group",value="Count",c("All","Regular","Special")) %>%
+      mutate(k=paste0(status,group)) %>%
+      select(-status,-group) %>%
+      spread(key=k,value=Count),
+    by="AttendanceName") %>%
+  mutate(`Catchment Total`=inCatchmentAllFrom+outCatchmentAllFrom,
+         `Total Enrolment_ALL_Catchment`=inCatchmentAllTo+outCatchmentAllTo) %>%
+  rename(name=AttendanceName,
+         catchment=AttendanceCatchment,
+         CatchmentAll=`Catchment Total`, # Total catchment population (Only catchment schools)
+         CatchmentCapacity=Capacity.y, # Catchment capacity also for Annex
+         AllEnrolment=`Total Enrolment_All`, # Number of enroled students
+         RegularEnrolment=`Total Enrolment_Regular`, # Number of enroled students in regular programs
+         FullCatchmentAll=`Total Enrolment_ALL_Catchment`,# Number of enroled students in catchment, including Annex
+         FirstNations=ABORIGINAL_ENROLMENT,
+         French=FRENCH_IMMERSION_ENROLMENT,
+         SpecialNeeds=SPECIAL_NEEDS_ENROLMENT,
+         ELL=ELL_ENROLMENT,
+         International=NON_RESIDENT_ENROLMENT
+         ) %>%
+  select(name,catchment,SchoolType,Capacity,CatchmentCapacity,CatchmentAll,
+         #AllEnrolment,RegularEnrolment,
+         FullCatchmentAll,
+         FirstNations,French,SpecialNeeds,ELL,International,
+         InCatchmentAll,InCatchmentRegular,OutCatchmentAll,OutCatchmentRegular) 
+
+
+
+ad <- xboundary_data %>%
+  gather(key="metric",value="Count",c("All","Regular","Special")) %>%
+  add_arcs() %>%
+  mutate(source=paste0(oX,",",oY,",",0) %>% map(function(c)strsplit(c,",") %>% unlist %>% as.numeric),
+         target=paste0(dX,",",dY,",",0) %>% map(function(c)strsplit(c,",") %>% unlist %>% as.numeric)) %>%
+  select(-oX,-oY,-dX,-dY) %>%
+  mutate(Count=coalesce(Count,0)) %>%
+  left_join((.) %>%
+              select(Catchment, Attendance, metric, Count) %>% 
+              rename(a=Attendance) %>% 
+              rename(Attendance=Catchment) %>%
+              rename(Catchment=a) %>%
+              rename(Count2=Count) %>%
+              filter(!Catchment==Attendance)) %>%
+  mutate(Count2=coalesce(Count2,0)) %>%
+  mutate(netFlow=Count-Count2) %>%
+  filter(netFlow>0) %>%
+  select("Catchment","CatchmentName", "Attendance","AttendanceName", "metric","source", "target", "netFlow" ) %>%
+  mutate(Catchment=case_when(grepl("Out of District",Catchment)~"Out of District",TRUE~Catchment)) %>%
+  group_by(Catchment,Attendance,metric) %>%
+  summarize(netFlow=sum(netFlow),target=first(target),source=first(source),CatchmentName=first(CatchmentName),AttendanceName=first(AttendanceName)) %>%
+  left_join(catchment_attendance_correspondance,by=c("AttendanceName"="AttendanceName")) %>%
+  filter(CatchmentName!=AttendanceCatchment) %>%
+  spread(key="metric",value="netFlow")
+
+
+```
+
+```{r eval=FALSE, include=FALSE}
+library(aws.s3)
+
+st_write(cd,"vsb_elementary_schools.geojson",delete_dsn=TRUE)
+R.utils::gzip("vsb_elementary_schools.geojson",overwrite=TRUE)
+put_object("vsb_elementary_schools.geojson.gz","vsb/vsb_elementary_schools.geojson.gz","mountainmath",
+           acl="public-read",headers=list("Content-Type"='application/json', "Content-Encoding"='gzip'))
+
+st_write(sl,"vsb_elementary_school_locations.geojson",delete_dsn=TRUE)
+R.utils::gzip("vsb_elementary_school_locations.geojson",overwrite=TRUE)
+put_object("vsb_elementary_school_locations.geojson.gz","vsb/vsb_elementary_school_locations.geojson.gz","mountainmath",
+           acl="public-read",headers=list("Content-Type"='application/json', "Content-Encoding"='gzip'))
+
+
+write_file(jsonlite::toJSON(ad),"vsb_elementary_movements.json")
+R.utils::gzip("vsb_elementary_movements.json",overwrite=TRUE)
+put_object("vsb_elementary_movements.json.gz","vsb/vsb_elementary_movements.json.gz","mountainmath",
+           acl="public-read",headers=list("Content-Type"='application/json', "Content-Encoding"='gzip'))
+```
+
+
+
+<iframe src="/html//vsb_elementary_schools.html" width="100%" height="600px"></iframe>
+
+<a class="btn btn-primary" href="/html/vsb_elementary_schools.html" target="_blank">View Fullscreen</a>
+
+Armed with this data, we can start to answer some basic questions about cross-boundary flows. Most importantly, what is the extent of net east-west flows?
+
+```{r}
+ontario <- -123.10556173324
+movements <- xboundary_data %>%
+  filter(!grepl("VLN",Attendance),
+         !grepl("Out of District",Catchment)) %>%
+  left_join(catchment_attendance_correspondance) %>%
+  filter(AttendanceCatchment!=CatchmentName) %>%
+  add_arcs() %>%
+  mutate(lat="49.25") %>%
+  filter(!is.na(dX)) %>%
+  mutate(source=st_as_sf(.,coords=c("oX","lat"),crs=4326, agr = "constant") %>% st_transform(26910) %>% st_geometry,
+         target=st_as_sf(.,coords=c("dX","lat"),crs=4326, agr = "constant") %>% st_transform(26910) %>% st_geometry) %>%
+  mutate(distance=st_distance(source,target,by_element = TRUE) %>% as.numeric) %>%
+  mutate(distance=sign(oX-dX)*distance) %>%
+  mutate(movement=case_when(distance< -2500 ~ "Far east",
+                            distance< -1000 ~ "East",
+                            distance <0 ~ "Slightly east",
+                            distance > 2500 ~ "Far west",
+                            distance > 1000 ~ "West",
+                            distance>0 ~ "Slightly west",
+                            TRUE ~ "Else")) %>%
+  mutate(movement=factor(movement,levels=c("Far east","East","Slightly east","Slightly west","West","Far west","Else"))) %>%
+  mutate(east_west_side=case_when(
+    oX<ontario & dX<ontario ~ "Within westside",
+    oX>ontario & dX>ontario ~ "Within eastside",
+    oX<ontario & dX>ontario ~ "West to eastside",
+    oX>ontario & dX<ontario ~ "East to westside",
+    TRUE ~ "Else"
+  )) %>%
+  mutate(east_west_side=factor(east_west_side,levels=c("West to eastside","Within eastside","Within westside","East to westside","Else")))
+
+ew1 <- movements %>%
+  group_by(movement) %>% 
+  summarize_at(c("All","Regular","Special"),sum,na.rm=TRUE) %>%
+  rename(District=Special) %>%
+  gather(key="Program",value="Count",c("All","Regular","District"))
+ew2 <- movements %>%
+  group_by(east_west_side) %>% 
+  summarize_at(c("All","Regular","Special"),sum,na.rm=TRUE) %>%
+  rename(District=Special) %>%
+  gather(key="Program",value="Count",c("All","Regular","District"))
+
+```
+
+We use two different ways to quantify east-west flows. One is a simple metric that looks at movements relative to the eastside/westside division that to this day plays a role in Vancouver's psyche and remains visible in demographic data.
+
+```{r}
+ggplot(ew2,aes(x=east_west_side,y=Count,fill=Program)) +
+  geom_bar(stat="identity",position="dodge") +
+  my_theme +
+  scale_fill_manual(values=district_colors) +
+  scale_y_continuous(labels = scales::comma) +
+  labs("VSB movements relative to east/west side",y="Cross-boundary students",x="") 
+```
+
+This crude but psychologically important metric shows that while most movement is contained within each east/west side of the city, we do see stronger flows from eastside to westside than vice versa.
+
+Next we quantify the general tendency to move east or west, focusing exclusively on the east-west component of moves and labelling moves farther than 2.5km along that component as "far" and moves closer than 1km as "near".
+
+```{r}
+ggplot(ew1,aes(x=movement,y=Count,fill=Program)) +
+  geom_bar(stat="identity",position="dodge") +
+  my_theme +
+  scale_fill_manual(values=district_colors) +
+  scale_y_continuous(labels = scales::comma) +
+  labs("VSB movements along east/west component",y="Cross-boundary students",x="") 
+```
+
+This cements the notion that there is indeed an east-to-west migration in the cross-boundary data. It is visible in district programs as well as regular programs, and most pronounced in "slight" east-west movements.  Another way to look at this is to take the mean east-west person distance travelled to each school.
+
+```{r fig.height=12}
+
+plot_data <- movements %>%
+  rename(District=Special) %>%
+  gather(key="Program",value="Count",c("All","Regular","District")) %>%
+  group_by(Attendance,Program) %>%
+  summarise(Value=mean(Count*distance,na.rm=TRUE)/sum(Count,na.rm=TRUE),
+            Count=sum(Count,na.rm=TRUE),
+            dX=first(dX)) %>%
+  filter(Program!="All",!is.na(Count),Count>0)
+
+ggplot(plot_data,aes(x=reorder(Attendance,dX),y=Value,color=Program,size=Count*40)) +
+  geom_point() +
+  my_theme +
+  scale_size_area() +
+  scale_y_continuous(labels=function(d)paste0(round(d/1000,1)),trans=scales::pseudo_log_trans()) +
+  scale_color_manual(values=district_colors) +
+  coord_flip() +
+  labs(title="Mean east-west student-distance of cross-boundary attendance",
+       x="School",y="Mean westward travel distance (log scale)",size="Count") 
+```
+
+This helps identify which schools see the heaviest east-west traffic, and which schools see the reverse. The schools are ordered from east-most to west-most. The east-most schools can only attract cross-boundary traffic from the west, so their mean westward travel distance has to be negative. It's remarkable how quickly schools located fairly east start to attract a net influx of westbound traffic.
+
+One caveat here is that we don't know the locations of the students within each catchment, but compute this based on the assumption that students are located at their catchment schools. However we should expect this to roughly average out in most cases.
+
+
