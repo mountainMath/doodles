@@ -863,7 +863,7 @@ put_object("vsb_elementary_movements.json.gz","vsb/vsb_elementary_movements.json
 
 
 
-<iframe src="/html//vsb_elementary_schools.html" width="100%" height="600px"></iframe>
+<iframe src="/html/vsb_elementary_schools.html" width="100%" height="600px"></iframe>
 
 <a class="btn btn-primary" href="/html/vsb_elementary_schools.html" target="_blank">View Fullscreen</a>
 
@@ -969,5 +969,7 @@ One caveat here is that we don't know the locations of the students within each 
 This post turned out a little more rambling than usual, mostly because it was written in small chunks over a period of several weeks. Big thanks to all the people helping when I tried to make sense of the data, as well as related discussions in this [long twitter thread](https://twitter.com/VanDPAC/status/1107099214402613249). And sincere apologies to everyone that got tagged into this for having to endure it.
 
 There are lot of related questions that one could go after, but this post is already too long. We might pick this up again and drill down into related questions. Also, we only looked at elementary schools, at some point it would be good re-run this for secondary schools.
+
+As usual, the code for the analysis is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-04-15-vsb-x-boundary.Rmarkdown) for anyone interested in looking into details or expanding on it.
 
 
