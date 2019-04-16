@@ -9,9 +9,9 @@ categories:
 tags: []
 description: 'Examining VSB cross-boundary data.'
 images: ["https://doodles.mountainmath.ca/images/x-boundary_map.png"]
-featured: ''
+featured: 'x-boundary_map.png'
 featuredalt: ""
-featuredpath: ""
+featuredpath: "/images"
 linktitle: ''
 type: "post"
 ---
