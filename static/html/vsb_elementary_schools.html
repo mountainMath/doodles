@@ -1,0 +1,611 @@
+<html>
+
+<head>
+    <title>VSB Elementary Schools</title>
+    <script src="https://unpkg.com/deck.gl@^6.2.0-beta.3/deckgl.min.js"></script>
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v0.50.0/mapbox-gl.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://api.tiles.mapbox.com/mapbox-gl-js/v0.50.0/mapbox-gl.css">
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style type="text/css">
+    body {
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+    }
+    #tooltip{
+      background:#111111;
+      margin:10px;
+      padding:10px;
+      width:220px;
+      height:200px;
+      position:absolute;
+      top:0;
+      left:0;
+      z-index:100;
+      border:1px solid whitesmoke;
+      border-radius:3px;
+      color:whitesmoke;
+      pointer-events: none;
+      display:none;
+    }
+    
+        .map-overlay {
+        position: absolute;
+        width: 180px;
+        top: 0;
+        left: 10px;
+        padding: 10px;
+        margin-left: 5px;
+        margin-top: 2px;
+        margin-bottom: 2px;
+        margin-right: 5px;
+        z-index: 1;
+    }
+    
+    #legend {
+      padding:10px;
+      //box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      line-height: 18px;
+      //top: auto;
+      //left: auto;
+      margin-bottom: 10px;
+      margin-right: 10px;
+      width: auto;
+      //right: 0px;
+      //bottom: 0px;
+      //border: 2px black solid;
+      border-radius: 5px;
+    }
+    
+    .my-overlay {
+      background: #000000A0;
+      color:#fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
+      border-radius: 3px;
+      padding: 10px;
+      z-index: 1;
+    }
+    
+    .legend-key {
+      display: inline-block;
+      border-radius: 20%;
+      width: 10px;
+      height: 10px;
+      margin-right: 5px;
+    }
+    
+    .my-overlay hr {
+      margin: 5px;
+      background: #808080;
+    }
+    
+    .map-overlay-inner fieldset {
+        border: none;
+        padding: 0;
+        margin: 0 0 10px;
+        z-index: 1;
+    }
+    /* Dark attribution */
+    
+    .mapboxgl-ctrl.mapboxgl-ctrl-attrib {
+        background: rgba(0, 0, 0, .8);
+    }
+    
+    .mapboxgl-ctrl.mapboxgl-ctrl-attrib a {
+        color: #fff;
+    }
+    /* Dark popup */
+    
+    .mapboxgl-popup-content {
+        background-color: #202020;
+        color: #fff;
+        margin-left: 5px;
+        margin-top: 2px;
+        margin-bottom: 2px;
+        margin-right: 5px;
+        z-index: 1000;
+    }
+    
+    .mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+        border-top-color: #202020;
+    }
+    
+    .mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+        border-bottom-color: #202020;
+    }
+    
+    .mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+        border-left-color: #202020;
+    }
+    
+    .mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+        border-right-color: #202020;
+    }
+    
+    .mapboxgl-popup-content {
+      background-color:#202020ad;
+    }
+    
+    #popup-menu ul,
+    #menu li {
+        margin: 0;
+        padding: 0;
+        z-index: 100;
+    }
+    
+    .mapboxgl-ctrl-group {
+        -webkit-filter: invert(100%);
+    }
+
+    </style>
+</head>
+
+<body>
+</body>
+  <div id="tooltip"></div>
+<script type="text/javascript">
+mapboxgl.accessToken = 'pk.eyJ1IjoiamVucy1tb3VudGFpbm1hdGgiLCJhIjoiTmJ2Z3FHNCJ9.ifMzNW0vPH1Yc6As93HP9A';
+  
+// Layers and functionsI need from deck.gl Mapbox class
+var { MapboxLayer, ArcLayer, ScatterplotLayer, GeoJsonLayer, TextLayer } = deck;
+
+// Data for arcs
+var DATA_URL = "https://s3.ca-central-1.amazonaws.com/mountainmath/vsb/vsb_elementary_movements.json.gz";
+
+// migrate out - red
+var SOURCE_COLOR = [222, 22, 22];
+// migrate in - blue
+var TARGET_COLOR = [22, 222, 22];
+
+
+class MyControl {
+    onAdd(map) {
+        this._map = map;
+        this._container = document.createElement('div');
+        this._container.className = 'mapboxgl-ctrl my-overlay';
+        var menu=document.createElement('div');
+        menu.innerHTML = '<div id="menu"><fieldset><label><h4>Select metric</h4></label><select id="prop" name="prop"><option value="attendanceToCatchment">Attendance to Catchment</option><option value="inCatchment">Share staying in catchment</option><option value="fromCatchment">Share coming from Catchment</option><!--option value="SpecialNeeds">Special Needs Share</option><option value="International">International Share</option><option value="French">French Immersion Share</option><option value="FirstNations">First Nations Share</option><option value="ELL">English Lanuguage Learners Share</option--></select></fieldset><fieldset><input type="radio" name="dim" value="All" checked> All<input type="radio" name="dim" value="Regular" > Regular<input type="radio" name="dim" value="Special" > District</fieldset>'
+        var legend=document.createElement('div');
+        legend.id="legend";
+        var attribution=document.createElement('div');
+        attribution.innerHTML='<b>Info/Details: <a href="https://doodles.mountainmath.ca/blog/2019/02/21/planned-displacement/" target="_blank">MountainDoodles</a></b>'
+        this._container.appendChild(menu);
+        this._container.appendChild(document.createElement('hr'));
+        this._container.appendChild(legend);
+        this._container.appendChild(document.createElement('hr'));
+        this._container.appendChild(attribution);
+                
+        //legend=this.container.
+        return this._container;
+    }
+
+    onRemove() {
+        this._container.parentNode.removeChild(this._container);
+        this._map = undefined;
+    }
+}
+
+
+//Create the Mapbox map
+var map = new mapboxgl.Map({
+    container: document.body,
+    style: 'mapbox://styles/mapbox/dark-v9?optimize=true',
+    center: [-123.13,49.254],
+    zoom: 11,
+    pitch: 35
+});
+        
+map.addControl(new MyControl(),'top-left');
+
+
+var arcsLayer;
+var catchmentLayer;
+var schoolsLayer;
+var textLayer;
+
+// Load the data and layers once Mapbox map style loads
+function init() {
+    //renderLayers({})
+};
+
+//Enable arc brushing on mousemove event from Mapbox
+map.on('mousemove', ({ point }) => {
+    if (arcsLayer) {
+        arcsLayer.setProps({ mousePosition: [point.x, point.y] });
+    }
+});
+
+let geoJsonProp="ShareAttendanceToCatchment";
+let programType="All";
+let catchment=null, schools=null, arcs=null
+
+function renderLayers({ catchment, schools, arcs }) {
+
+  catchmentLayer = new MapboxLayer({
+    type: GeoJsonLayer,
+    id: 'catchment',
+    data: catchment,
+    opacity: 0.8,
+    stroked: true,
+    filled: true,
+    lineWidthScale: 20,
+    lineWidthMinPixels: 2,
+    getLineWidth: d => 2,
+    extruded: false,
+    wireframe: true,
+    fp64: true,
+    //lightSettings: LIGHT_SETTINGS,
+    //getElevation: f => Math.sqrt(f.properties.Count) ,
+    geoJsonProp: geoJsonProp,
+    getFillColor: f => colorScale(f.properties[geoJsonProp]),
+    getLineColor: f => [22, 22, 22],
+    pickable: false,
+    updateTriggers: {
+        getFillColor: "geoJsonProp"
+    }
+    //onHover: updateTooltip
+  });
+
+     schoolsLayer = new MapboxLayer({
+        type: GeoJsonLayer,
+        id: 'schools',
+        data: schools,
+        opacity: 1,
+        pickable: true,
+        onHover: updateTooltip,
+        getRadius: d => 200,
+        getFillColor: d => schoolColor(d.properties.SchoolType),
+        getColor: d => schoolColor(d.properties.SchoolType)
+    });
+    
+     textLayer = new MapboxLayer({
+        type: TextLayer,
+        id: 'schoolLabels',
+        data: school_labels,
+        opacity: 1,
+        pickable: false,
+        getPosition: d => d.coordinates,
+        getText: d => d.name,
+        sizeUnits: 'meters',
+        getSize: 20,
+        getAngle: 0,
+        getPixelOffset: d => [0,20],
+        getColor: d => [22,22,222],
+        getTextAnchor: 'middle',
+        getAlignmentBaseline: 'center',
+    });
+ 
+    arcsLayer = new MapboxLayer({
+        type: ArcBrushingLayer,
+        id: 'arcs',
+        //data: arcs,
+        data: arcs,
+        brushRadius: 200,
+        widthUnits:'meters',
+        widthMaxPixels:200,
+        getStrokeWidth: d => d[programType]/2  ,
+        opacity: 1,
+        getSourcePosition: d => d.source,
+        getTargetPosition: d => d.target,
+        getSourceColor: SOURCE_COLOR,
+        getTargetColor: TARGET_COLOR
+    });
+
+    map.addLayer(catchmentLayer,'water')
+    map.addLayer(schoolsLayer,'waterway-label')
+    //map.addLayer(textLayer,'waterway-label')
+    map.addLayer(arcsLayer, 'waterway-label');
+}
+
+
+
+function colorScale2(x) {
+  //debugger
+  const cols=[[0,0,4] ,[29,17,71], [81,18,124], [130,38,129], [182,54,121], [230,81,100], [251,136,97], [254,194,135], [252,253,191]];
+  return cols[Math.floor((x-0.49)*10)] || cols[cols.length-1]
+}
+
+function colorScale(x) {
+  const cols=mapdef.colors;
+  const bins=mapdef.breaks;
+  //debugger;
+  let i=0;
+  while (i<bins.length-1 && x>bins[i]) {i++;}
+  //console.log(x+' -> '+i)
+  return cols[i];
+  //return COLOR_SCALE[Math.floor(x*10)]|| COLOR_SCALE[COLOR_SCALE.length - 1];
+}
+
+function schoolColor(x){
+  let c;
+  switch(x){
+  case "Annex": 
+    c=[22,22,22];
+    break;
+  case "District": 
+    c=[22,222,22];
+    break;
+  case "Catchment":
+    c=[22,22,222];
+    break;
+  default:
+    c=[44,44,44];
+  }
+  return c;
+}
+
+let selected=null;
+
+var popup=null;
+const showPopup = function(e,html){
+  const havePopup=popup!=null;
+  if (!html) {
+    if (havePopup) {
+      popup.remove();
+      popup=null;
+    }
+    return;
+  } 
+    if (!havePopup) popup = new mapboxgl.Popup({anchor:'top'})
+      popup.setLngLat(map.unproject(e.point))
+        .setHTML(html)
+      if (!havePopup) popup.addTo(map);
+}
+
+
+function updateTooltip({x, y, object}) {
+  console.log(object)
+  //if (object==selected) return;
+  selected=object;
+  //const tooltip = document.getElementById('tooltip');
+  if (object) {
+    let p=object.properties;
+    p.EnrolmentAll=p.InCatchmentAll+p.OutCatchmentAll;
+    p.EnrolmentRegular=p.InCatchmentRegular+p.OutCatchmentRegular;
+    p.inAll=p.OutCatchmentAll;
+    p.outAll=p.CatchmentAll-p.InCatchmentAll;
+    p.ShareStayInCatchment=p.InCatchmentAll/p.CatchmentAll;
+    p.Utilization=p.EnrolmentAll/p.Capacity
+    p.ShareFromCatchment=p.InCatchmentAll/p.EnrolmentAll
+    const cats=["French","FirstNations","International","ELL","SpecialNeeds"]
+    cats.forEach((c) => {
+      p["Share"+c]=p[c]/p.EnrolmentAll
+    })
+    htmlArray=[]
+    htmlArray.push(`<div style="font-size:14px;"><b>${p.name}</b></div>`)
+    if (p.SchoolType=="Annex") htmlArray.push(`<div style="font-size:14px;"><b>Catchment: ${p.catchment}</b></div>`)
+    htmlArray.push(`<div><b>Capacity: </b>${Math.round(p.Capacity)}</div>`)
+    htmlArray.push(`<div><b>Utilization: </b>${Math.round(p.Utilization*100)}%</div>`)
+    htmlArray.push(`<div><b>Total in Attendance: </b>${Math.round(p.EnrolmentAll)}</div>`);
+    htmlArray.push(`<div><b>In-Catchment Attendance: </b>${Math.round(p.InCatchmentAll)}</div>`)
+    if (p.SchoolType!="District") htmlArray.push(`<div><b>Total in Catchment: </b>${Math.round(p.CatchmentAll)}</div>`)
+    htmlArray.push(`<div><b>Inflow: </b>${Math.round(p.inAll)}</div>`);
+    let rest=`
+    <div><b>Outflow: </b>${Math.round(p.outAll)}</div>
+    <div><b>Share staying in Catchment: </b>${Math.round(p.ShareStayInCatchment * 100)}%</div>
+    <div><b>Share coming from Catchment: </b>${Math.round(p.ShareFromCatchment * 100)}%</div>
+    `;
+    if (p.SchoolType=="Catchment") htmlArray.push(rest);
+    cats.forEach((c) => {
+      htmlArray.push(`<div><b>${c}:</b> ${p[c]|0} (${Math.round(p["Share"+c]*100)}%)</div>`)
+    })
+    showPopup({point:[x,y]},htmlArray.join(''))
+    //tooltip.innerHTML = htmlArray.join('')
+  } else { 
+    showPopup({point:[x,y]},null)
+    //tooltip.style.display = 'none'; 
+    //tooltip.innerHTML = '';
+  }
+} 
+
+
+// Create the brushing effect on the layer in deck.gl
+// See https://github.com/uber/deck.gl/blob/master/docs/get-started/interactivity.md
+class ArcBrushingLayer extends ArcLayer {
+    getShaders() {
+        // use customized shaders
+        return Object.assign({}, super.getShaders(), {
+            inject: {
+                'vs:#decl': `
+  uniform vec2 mousePosition;
+  uniform float brushRadius;
+              `,
+                'vs:#main-end': `
+  float brushRadiusPixels = project_scale(brushRadius);
+
+  vec2 sourcePosition = project_position(instancePositions.xy);
+  bool isSourceInBrush = distance(sourcePosition, mousePosition) <= brushRadiusPixels;
+
+  vec2 targetPosition = project_position(instancePositions.zw);
+  bool isTargetInBrush = distance(targetPosition, mousePosition) <= brushRadiusPixels;
+
+  if (!isSourceInBrush && !isTargetInBrush) {
+    vColor.a = 0.0;
+  }
+              `,
+                'fs:#main-start': `
+  if (vColor.a == 0.0) discard;
+              `
+            }
+        });
+    }
+
+    draw(opts) {
+        var { brushRadius = 1e6, mousePosition } = this.props;
+        // add uniforms
+        var uniforms = Object.assign({}, opts.uniforms, {
+            brushRadius: brushRadius,
+            mousePosition: mousePosition ?
+                this.projectPosition(this.unproject(mousePosition)).slice(0, 2) : [0, 0]
+        });
+        super.draw(Object.assign({}, opts, { uniforms }));
+    }
+}
+
+let originalArcs=null
+  var mapdefs = {
+    "attendanceToCatchment": {
+      "variable":"ShareAttendanceToCatchment",
+      "scaleFac":10,
+      "title": "Share attenance to catchment population",
+      "breaks": [0.6,0.7,0.8,0.9,1,1.1,1.2,1.3],
+      "labels": ["Less than 60%", "60% to 70%", "70% to 80%", "80% to 90%", "90% to 100%", "100% to 110%", "110% to 120%", "120% to 130%", "Over 130%"],
+      "colors": [[0,0,4] ,[29,17,71], [81,18,124], [130,38,129], [182,54,121], [230,81,100], [251,136,97], [254,194,135], [252,253,191]]
+    },
+    "inCatchment": {
+      "variable":"Attend In-Catchment(%)",
+       "scaleFac":5,
+      "title": "Share staying in Catchment",
+      "breaks": [0.2,0.3,0.4,0.5,0.6,0.7,0.8],
+      "labels": ["Less than 20%", "20% to 30%", "30% to 40%", "40% to 50%", "50% to 60%", "60% to 70%", "70% to 80%", "Over 80%"],
+      "colors": [[68,1,84],[70,51,126],[54,92,141],[39,127,142],[31,161,135],[74,193,109],[159,218,58],[253,231,37]]
+    },
+    "fromCatchment": {
+      "variable":"fromCatchment",
+      "scaleFac":7.5,
+      "title": "Share coming from Catchment",
+      "breaks": [0.3,0.4,0.5,0.6,0.7,0.8,0.9],
+      "labels": ["Less than 30%", "30% to 40%", "40% to 50%", "50% to 60%", "60% to 70%", "70% to 80%", "80% to 90%", "Over 90%"],
+      "colors": [[68,1,84],[70,51,126],[54,92,141],[39,127,142],[31,161,135],[74,193,109],[159,218,58],[253,231,37]]
+    },
+    "SpecialNeeds": {
+      "variable":"SpecialNeeds",
+      "scaleFac":7.5,
+      "title": "Special Needs Share",
+      "breaks": [0.05,0.1,0.2,0.3],
+      "labels": ["Less than 5%", "5% to 10%", "10% to 20%", "20% to 30%"],
+      "colors": [[239,243,255],[189,215,231],[107,174,214],[33,113,181]]
+    },
+    "FirstNations": {
+      "variable":"FirstNations",
+      "scaleFac":7.5,
+      "title": "First Nations Share",
+      "breaks": [0.025,0.05,0.1,0.2,0.3,0.4,0.5,0.6],
+      "labels": ["Less than 2.5%", "2.5% to 5%", "5% to 10%", "10% to 20%", "20% to 30%", "30% to 40%", "40% to 50%", "50% to 60%", "Over 60%"],
+      "colors": [[247,252,245],[229,245,224],[199,233,192],[161,217,155],[116,196,118],[65,171,93],[35,139,69],[0,109,44],[0,68,27]]
+    },
+    "French": {
+      "variable":"French",
+      "scaleFac":7.5,
+      "title": "French Immersion Share",
+      "breaks": [0.001,0.2,0.3,0.4,0.5,0.6],
+      "labels": ["0%", "0% to 20%", "20% to 30%", "30% to 40%", "40% to 50%", "50% to 60%", "Over 60%"],
+      "colors": [[255,255,204],[199,233,180],[127,205,187],[65,182,196],[29,145,192],[34,94,168],[12,44,132]]
+    },
+    "ELL": {
+      "variable":"ELL",
+      "scaleFac":7.5,
+      "title": "English Language Learners Share",
+      "breaks": [0.05,0.1,0.2,0.3,0.4,0.5],
+      "labels": ["Less than 5%", "5% to 10%", "10% to 20%", "20% to 30%", "30% to 40%", "40% to 50%", "Over 50%"],
+      "colors": [[241,238,246],[212,185,218],[201,148,199],[223,101,176],[231,41,138],[206,18,86],[145,0,63]]
+    },   
+    "International": {
+      "variable":"International",
+      "scaleFac":7.5,
+      "title": "Inernational Share",
+      "breaks": [0.01,0.05,0.1,0.15],
+      "labels": ["Less than 1%", "1% to 5%", "5% to 10%", "10% to 15%"],
+      "colors": [[254,229,217],[252,174,145],[251,106,74],[203,24,29]]
+    }
+  }
+
+let mapdef=mapdefs.attendanceToCatchment
+
+function checkHaveData(){
+  if (catchment && schools && originalArcs) {
+    arcs=originalArcs.filter(function(a){return a[programType]})
+    if (map.getLayer('catchment')) map.removeLayer('catchment')
+    if (map.getLayer('schools')) map.removeLayer('schools')
+    if (map.getLayer('schoolLabels')) map.removeLayer('schoolLabels')
+    if (map.getLayer('arcs')) map.removeLayer('arcs')
+    renderLayers({catchment,schools,schools,arcs})
+    updateLegend(mapdef);
+  }
+}
+
+function loadCatchments(data){
+  catchment=data;
+  checkHaveData()
+}
+function loadArcs(data){
+  originalArcs=data;
+  checkHaveData()
+}
+function loadSchools(data){
+  schools=data;
+  school_labels=schools.features.map(function(s){
+    return {name:s.properties.name,coordinates:s.geometry.coordinates}
+  })
+  checkHaveData()
+}
+
+map.once('style.load', function(e) {
+  d3.json('https://s3.ca-central-1.amazonaws.com/mountainmath/vsb/vsb_elementary_schools.geojson.gz').then(loadCatchments);
+  d3.json('https://s3.ca-central-1.amazonaws.com/mountainmath/vsb/vsb_elementary_school_locations.geojson.gz').then(loadSchools);
+  d3.json("https://s3.ca-central-1.amazonaws.com/mountainmath/vsb/vsb_elementary_movements.json.gz").then(loadArcs);
+
+  init();
+  map.addControl(new mapboxgl.NavigationControl());
+  map.on('click', function(e) {
+      //var features = map.queryRenderedFeatures(e.point, {
+      //    layers: ['catchment']
+      //});
+      showPopup(e,null);
+  });
+
+  //Hide loading bar once tiles from geojson are loaded
+  map.on('data', function(e) {
+      if (e.dataType === 'source' && e.sourceId === 'densities') {
+          document.getElementById("loader").style.visibility = "hidden";
+      }
+  })
+
+  var prop = document.getElementById('prop');
+  updateLegend=function(mapdef){
+    legend.innerHTML='<h3 >'+ mapdef.title + '</h3>';
+    for (i = 0; i < mapdef.labels.length; i++) {
+      var layer = mapdef.labels[i];
+      var color = "rgb("+mapdef.colors[i].join(",")+")";
+      var item = document.createElement('div');
+      var key = document.createElement('span');
+      key.className = 'legend-key';
+      key.style.backgroundColor = color;
+    
+      var colorValue = document.createElement('span');
+      colorValue.innerHTML = layer;
+      item.appendChild(key);
+      item.appendChild(colorValue);
+      legend.appendChild(item);
+    }
+  }
+  const updateMap = function(mapdef){
+  }
+
+  prop.addEventListener('change', function() {
+    mapdef=mapdefs[prop.value]
+    geoJsonProp=mapdef.variable;
+    checkHaveData()
+  });
+  var radios = document.getElementsByName("dim");
+  radios.forEach(function(e){e.addEventListener('change',function(){
+    for(var i = 0; i < radios.length; i++){
+        if(radios[i].checked){
+          if (programType != radios[i].value) {
+            programType = radios[i].value;
+            console.log(programType);
+            checkHaveData()
+          }
+        }
+    }
+  })});
+  //updateMap(mapdefs.attendanceToCatchment);
+});
+
+</script>
+
+</html>
