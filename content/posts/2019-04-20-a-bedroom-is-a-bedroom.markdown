@@ -33,7 +33,7 @@ The key takeaway is that average household size largely depends on the number of
 
 
 
-<img src="/posts/2019-04-20-a-bedroom-is-a-bedroom_files/figure-html/bedrooms-1.svg" width="768" />
+<img src="/posts/2019-04-20-a-bedroom-is-a-bedroom_files/figure-html/bedrooms-1.png" width="768" />
 
 So a 3 bedroom single detached home houses on average the same number of people as a 3 bedroom condo in a high rise building, a little fewer in owner-occupied units and a little more in renter-occupied ones.
 

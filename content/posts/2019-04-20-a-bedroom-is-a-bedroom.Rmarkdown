@@ -20,7 +20,6 @@ type: "post"
 knitr::opts_chunk$set(
 	echo = FALSE,
 	fig.width = 8,
-	dev="svg",
 	cache=TRUE,
 	message = FALSE,
 	warning = FALSE
