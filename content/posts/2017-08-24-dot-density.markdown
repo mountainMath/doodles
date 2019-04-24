@@ -174,8 +174,8 @@ Occupied dwelling units by type
 [<img  src="/images/dwellings-dot-density.png">](https://censusmapper.ca/maps/727#12/49.2719/-123.0967)
 
 ### R
-Language Spoken at Home
-![Languages](https://github.com/mountainMath/dotdensity/raw/master/images/vancouver-languages.png)
+Recent immigrants
+![immigrants](https://github.com/mountainMath/dotdensity/raw/master/images/recent_immigrants_DB.png)
 
-Household Size
-![Household Size](https://github.com/mountainMath/dotdensity/raw/master/images/toronto-hh-size.png)
+Cross-border race
+![race](https://github.com/mountainMath/dotdensity/raw/master/images/race.png)

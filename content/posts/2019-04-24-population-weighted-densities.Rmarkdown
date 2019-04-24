@@ -1,0 +1,273 @@
+---
+title: Population weighted densities
+author: Jens von Bergmann
+date: '2019-04-24'
+slug: population-weighted-densities
+categories:
+  - density
+tags: []
+description: 'Simplifying density into a single number. And animating it.'
+images: ["https://doodles.mountainmath.ca/posts/2019-04-24-population-weighted-densities_files/figure-html/city_densities-1.png"]
+featured: ''
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 9,
+	cache = TRUE
+)
+library(tidyverse)
+library(cityDensities)
+library(gganimate)
+caption <- paste0("Visuals and analysis: MountainMath\n",ghs_attribution)
+```
+
+We are big fans of measuring different densities, and conceptualizing density in different ways. From [tax density](https://doodles.mountainmath.ca/blog/2015/05/31/density-in-vancouver/), [tax density in 3D](https://doodles.mountainmath.ca/blog/2016/03/02/property-taxes-and-land-use/), plus an [animated version](https://doodles.mountainmath.ca/blog/2016/12/13/updated-property-tax-data/), [lot level density of single detached homes over time](https://doodles.mountainmath.ca/blog/2016/03/05/physical-sfh-form-over-time/), [estimating FSR from LIDAR data](https://doodles.mountainmath.ca/blog/2016/05/20/density/),  [density treemaps](https://doodles.mountainmath.ca/blog/2017/08/23/density/), [dot-density maps](https://doodles.mountainmath.ca/blog/2017/08/24/dot-density/), [comparing Vancouver and Vieanna densities](https://doodles.mountainmath.ca/blog/2017/09/08/the-vienna-model/), [building height profiles](https://doodles.mountainmath.ca/blog/2018/05/11/building-height-profiles/), [renter density and net dwelling density](https://doodles.mountainmath.ca/blog/2019/02/21/planned-displacement/), [city density patterns](https://doodles.mountainmath.ca/blog/2019/03/17/city-density-patterns/) and [city density timelines](https://doodles.mountainmath.ca/blog/2019/03/27/density-timelines/).
+
+
+When I saw the following tweet and linked blog post, I of course could not resist to reproduce some of the graphs and explore population-weighted densities.
+
+{{<tweet 1120496501824815105>}}
+
+It [links to a great post](https://chartingtransport.com/2015/11/26/comparing-the-densities-of-australian-and-european-cities/) which you should definitely read. In this post we will take up the idea of population weighted densities and again employ the global GHS population grid to to compute these densities.
+
+## Population weighted densities
+Having population density maps is great if one wants a lot of detail about a specific location. But it does not really speak to how people experience density. For that the [treemaps we used before](https://doodles.mountainmath.ca/blog/2017/08/23/density/) can be helpful in that we can use them to visualize what portion of the population lives in what kind of density. But that still makes it hard to compare density patterns across cities. If we want to condense this down into a single number, population-weighted density can be useful. Regular population density computes the average number of people per unit area. Population weighted density shows the density the average (in some sense) person lives in.
+
+To keep things simple, we will ignore administrative boundaries and take 30km radii around regional centres to compute this. One advantage of population weighted densities is that sparsely population regions that get caught in the 30km radius barely factor into the total, since only few people live there.
+
+We will again use the GHS data, and because we have been using it so much lately we refactored it into a (fairly messy) [R package](https://github.com/mountainMath/cityDensities).
+
+```{r city_densities, fig.height=10}
+cities <-c("Barcelona","Madrid","Valencia","Athens","Paris","Sevilla","Vienna","Sofia","Naples","Turin","Lyon","Brussels","Rome",
+  "Warsaw","Amsterdam","Berlin","London","Lisbon","Prague","Budapest","Munich","Rotterdam","Copenhagen","Milan",
+  "Katowice","Stockholm","Hamburg","Cologne","Dusseldorf","Toronto","Montreal","Frankfurt","Wellington","Dublin","Vancouver",
+  "Liverpool","Birmingham","Porto","Manchester","Stuttgart","Helsinki","Glasgow","Sydney","Ottawa","Calgary","Auckland","Edmonton",
+  "Melbourne","Christchurch","Adelaide","Brisbane","Perth")
+
+locations <- get_city_locations() %>%
+  filter(name %in% cities,country.etc!="Venezuela") %>% 
+  group_by(name) %>% 
+  top_n(1,pop) %>%
+  ungroup %>%
+  left_join(tibble(name=cities,n=seq(1,length(cities)))) %>%
+  arrange(n)
+
+get_population_weighted_data <- function(cities,years="2015",max_radius_km=30,type="250"){
+  years %>% lapply(function(year){
+  cities$name %>% lapply(function(c){
+    location <- locations %>% filter(name==c)
+    density <- pop_weighted_density_for(location,max_radius_km = max_radius_km,year=year,type=type)
+    location %>% mutate(density=density)
+  }) %>% 
+    bind_rows %>% 
+    mutate(Year=year) %>%
+    sf::st_sf(crs=4326) 
+}) %>% 
+  bind_rows %>% 
+  sf::st_sf(crs=4326)
+}
+
+featured_countries <- c(
+  "Spain",
+  "France",
+  "Italy",
+  "Germany",
+  "UK",
+  "Australia",
+  "Canada",
+  "New Zealand")
+
+plot_data <- get_population_weighted_data(locations) %>% 
+  mutate(label=ifelse(country.etc %in% featured_countries,as.character(country.etc),"Other")) %>%
+  mutate(label=factor(label,levels=c(featured_countries,"Other")))
+
+ggplot(plot_data,aes(x=reorder(name,density),y=density,fill=label)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  theme_light() +
+  geom_text(aes(label=round(density),y=density/2,hjust=0)) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title="2015 population weighted densities, 30km radius, 250m grid",x="",y="People/ha",
+       fill="",caption=caption) 
+```
+
+
+The numbers differ from the ones computed by Charting Transport, partially because we have chosen a different way to delineate cities, using 30km radii instead of administrative boundaries, and because data sources differ somewhat. Also, we used a 250m grid instead of the 1km grid used for some of the cities in the blog post. Population weighted densities do depend on the grid size, especially in cities with stark variations in population density as is the case for example in cities near the ocean where population density drops off from often high number along the shore to zero in the ocean.
+
+The GHS data is available for 1975, 1990, 2000 and 2015. The dates are just approximate, with exact dates varying a bit between cities depending on the data sources used to construct the population grid. It should be interesting to see how densities evolved over time, and in particular how this change compares across cities.
+
+No better way to do this than with one of these animated bar charts that made the rounds recently.
+
+
+```{r}
+asian_cities <-c("Tokyo","Osaka","Nagoya","Taipei","Kaohsiung","Jakarta","Surabaya","Manila","Hanoi",
+                 "Ho Chi Minh City","Beijing","Shanghai","Chongqing","Hong Kong","Singapore",
+                 "Delhi","Bangalore","Dhaka","Mumbai","Calcutta","Karachi","Lahore","Seoul","Pusan","Pyongyang","Bangkok")
+
+locations <- get_city_locations() %>% filter(name %in% asian_cities,country.etc!="Venezuela") %>% group_by(name) %>% top_n(1,pop)
+
+data <- get_population_weighted_data(locations,years=c("1975","1990","2000","2015"))
+
+featured_countries <- c(
+  "Vietnam",
+  "China",
+  "Taiwan",
+  "Japan",
+  "India",
+  "Pakistan",
+  "Korea South")
+
+plot_data <- data %>%
+  mutate(label=ifelse(country.etc %in% featured_countries,as.character(country.etc),"Other")) %>%
+  mutate(label=factor(label,levels=c(featured_countries,"Other"))) %>%
+  mutate(Year=as.integer(as.character(Year))) %>%
+  group_by(Year) %>%
+  mutate(rank = min_rank(density)*1) %>%
+  ungroup() %>%
+  mutate(colour=set_names(RColorBrewer::brewer.pal(length(featured_countries)+1,"Set1"),c(featured_countries,"Other"))[as.character(label)])
+
+colours <- plot_data %>% 
+  select(name,country.etc,label,colour) %>% 
+  unique %>%
+  mutate(name=as.character(name),country.etc=as.character(country.etc),labels=as.character(label))
+
+p<-ggplot(plot_data,aes(x=rank,y=density,fill=name,label=name)) +
+  geom_bar(stat="identity") +
+  coord_flip(clip = "off", expand = FALSE) +
+  geom_text(aes(y = 0), hjust = 1,nudge_y = -50) +
+  scale_fill_manual(values=set_names(colours$colour,colours$name),guide=FALSE)+
+  theme_light() +
+  geom_point(shape=NA,aes(color=label)) +
+  scale_colour_manual(values=set_names(colours$colour,colours$label))+
+  guides(color=guide_legend("", override.aes=list(shape=15, size = 10))) +
+  theme(axis.ticks.y = element_blank(),
+        axis.text.y  = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.border = element_blank(),
+        plot.margin=unit(c(5.5, 5.5, 5.5, 85.5), "points")) + 
+  labs(title="{frame_time} population weighted densities, 30km radius, 250m grid",x="",y="People/ha",
+       fill="",caption=caption,subtitle="(Interpolated based on 1975, 1990, 2000 and 2015 estimates)") +
+  transition_time(Year) + 
+  ease_aes('linear')
+
+pp<-animate(p, end_pause = 20,start_pause=20,height=800,width=700) 
+anim_save(here::here("static/images/population_weighted_densities.gif"),pp)
+```
+
+![population_weighted_densities](/images/population_weighted_densities.gif)
+
+Hanoi really stands out in the graph with a huge population drop in the first period right at the end and after the war. Let's take a look in more detail to understand what is going on, using the [(unweighted) density timelines we built before](https://doodles.mountainmath.ca/blog/2019/03/27/density-timelines/).
+
+```{r fig.height=8.5, fig.width=12}
+get_city_locations() %>% 
+  filter(name=="Hanoi") %>% 
+  top_n(1,pop) %>%
+  plot_density_facet(.,radius_km=30)
+```
+
+This shows that changes in density can have many reasons, and high-line numbers don't capture all of them well. But even if we keep the built up area fixed, densities tend to decline. As people get richer, they tend to consume more housing. Both because household sizes fall and because the sizes of dwellings grow. People don't bunk up as much and family sizes drop. In low density areas people add extensions or build larger houses, in high density ares people combine neighbouring apartments and new apartment buildings tend to have larger units. This can be counter-acted by increasing gross floor area, so the building intensity.
+
+## Grid size sensitivity
+Another note is that population weighted densities can be quite sensitive to the grid size used. We have been using a 250m grid. That means if there is spiky high-density housing nestled in between water, mountains, and commercial areas, it will pick up those very high population densities. If we instead smooth things out a bit, for example by using a 1km grid, that density will wash out. This is particularly visible in the case of Hong Kong, for comparison here is the corresponding graph using a 1km grid.
+
+
+```{r}
+data <- get_population_weighted_data(locations,years=c("1975","1990","2000","2015"),type="1k")
+
+plot_data <- data %>%
+  mutate(label=ifelse(country.etc %in% featured_countries,as.character(country.etc),"Other")) %>%
+  mutate(label=factor(label,levels=c(featured_countries,"Other"))) %>%
+  mutate(Year=as.integer(as.character(Year))) %>%
+  group_by(Year) %>%
+  mutate(rank = min_rank(density)*1) %>%
+  ungroup() %>%
+  mutate(colour=set_names(RColorBrewer::brewer.pal(length(featured_countries)+1,"Set1"),c(featured_countries,"Other"))[as.character(label)])
+
+colours <- plot_data %>% 
+  select(name,country.etc,label,colour) %>% 
+  unique %>%
+  mutate(name=as.character(name),country.etc=as.character(country.etc),labels=as.character(label))
+
+p<-ggplot(plot_data,aes(x=rank,y=density,fill=name,label=name)) +
+  geom_bar(stat="identity") +
+  coord_flip(clip = "off", expand = FALSE) +
+  geom_text(aes(y = 0), hjust = 1,nudge_y = -50) +
+  scale_fill_manual(values=set_names(colours$colour,colours$name),guide=FALSE)+
+  theme_light() +
+  geom_point(shape=NA,aes(color=label)) +
+  scale_colour_manual(values=set_names(colours$colour,colours$label))+
+  guides(color=guide_legend("", override.aes=list(shape=15, size = 10))) +
+  theme(axis.ticks.y = element_blank(),
+        axis.text.y  = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.border = element_blank(),
+        plot.margin=unit(c(5.5, 5.5, 5.5, 85.5), "points")) + 
+  labs(title="{frame_time} population weighted densities, 30km radius, 1km grid",x="",y="People/ha",
+       fill="",caption=caption,subtitle="(Interpolated based on 1975, 1990, 2000 and 2015 estimates)") +
+  transition_time(Year) + 
+  ease_aes('linear')
+
+pp<-animate(p, end_pause = 20,start_pause=20,height=800,width=700) 
+anim_save(here::here("static/images/population_weighted_densities_1k.gif"),pp)
+```
+
+![population_weighted_densities_1k](/images/population_weighted_densities_1k.gif)
+
+
+## US Cities
+Let's focus in one one country, the US for example, and see how population weighted density evolved over time. We simply take the 40 most populous cities and turn the crank.
+
+```{r}
+locations <- get_city_locations() %>% 
+  filter(country.etc=="USA") %>% top_n(40,pop) %>% arrange(pop)
+
+data <- get_population_weighted_data(locations,years=c("1975","1990","2000","2015"))
+
+label_colours <- set_names(RColorBrewer::brewer.pal(2,"Set2"),c("New York","Las Vegas","New Orleans"))
+plot_data <- data %>%
+  mutate(Year=as.integer(as.character(Year))) %>%
+  group_by(Year) %>%
+  mutate(rank = min_rank(density)*1) %>%
+  ungroup() %>% 
+  mutate(colour=ifelse(name %in% names(label_colours),label_colours[as.character(name)],"#808080"))
+
+colours <- plot_data %>% select(name,colour) %>% unique
+
+p<-ggplot(plot_data,aes(x=rank,y=density,fill=name,label=name)) +
+  geom_bar(stat="identity") +
+  coord_flip(clip = "off", expand = FALSE) +
+  geom_text(aes(y = 0), hjust = 1,nudge_y = -50) +
+  theme_light() +
+  scale_fill_manual(values=set_names(colours$colour,colours$name),guide=FALSE) +
+  theme(axis.ticks.y = element_blank(),
+        axis.text.y  = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.border = element_blank(),
+        plot.margin=unit(c(5.5, 5.5, 5.5, 85.5), "points")) + 
+  labs(title="{frame_time} population weighted densities, 30km radius, 250m grid",x="",y="People/ha",
+       fill="",caption=caption,subtitle="(Interpolated based on 1975, 1990, 2000 and 2015 estimates)") +
+  transition_time(Year) + 
+  ease_aes('linear')
+
+pp <- animate(p, end_pause = 20, start_pause=20,height=800,width=700)
+anim_save(here::here("static/images/population_weighted_densities_us.gif"),pp)
+```
+
+![population_weighted_densities](/images/population_weighted_densities_us.gif)
+
+Three things immediately stand out. The absolute dominance of New York in terms of density, no other US city comes even close. Looking at the other cities, we see little overall movement, but some changing of ranks. New Orleans changes from number 2 right after New York down to almost the bottom quarter. And Las Vegas rises from second to the bottom almost into the top quarter.
+
+## Next steps
+That's it for now, as usual the [code is available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-04-24-population-weighted-densities.Rmarkdown) in case anyone is interested in seeing the nuts and bolts or wants to adapt this for their own purposes. Fair warning, the first time the code runs it will download a couple of gigabytes of GHS data.
+
