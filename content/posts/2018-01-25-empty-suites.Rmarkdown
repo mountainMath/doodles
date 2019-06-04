@@ -332,7 +332,7 @@ ggplot(sd_data) +
 
 What we see is that the share of unoccupied duplex units consistently and significantly higher across all regions. In absence of a compelling argument that main units in suited single family homes should be unoccupied at a higher rate than unsuited single family homes, this points to a significant portion of suited single family homes having empty suites.
 
-If we assume that the main unit in unsuited and suited homes have equal probability of being unoccupied, and that a partially vacant duplex overwhelmingly has the main unit occupied and the suite unoccupied, we can estimate the ratio and total number of main units and suites that are unoccupied.
+If we assume that the main unit in unsuited and suited homes have equal probability of being unoccupied, and that a partially vacant duplex overwhelmingly has the main unit occupied and the suite unoccupied, we can estimate the ratio and total number of main units and suites that are unoccupied, out of all duplex units.
 
 ```{r, fig.width=9}
 share_data <- sd_data %>% 
@@ -374,7 +374,7 @@ plot2 <- ggplot(suites_data) +
 gridExtra::grid.arrange(plot1, plot2, ncol=2,top="Unoccupied Duplex Units by Type")
 ```
 
-Reading the graph we should be aware that some of the empty suites are in duplexes with empty main units. If we believe it likely that in almost no cases the suite will be occupied when the main unit is unoccupied we can slice the data differently into duplex structures with both units unoccupied and partially occupied duplex units with main unit occupied but empty suite.
+Reading the graph we should be aware that some of the empty suites are in duplexes with empty main units. If we believe it likely that in almost no cases the suite will be occupied when the main unit is unoccupied we can slice the data differently into duplex structures with both units unoccupied and partially occupied duplex units with main unit occupied but empty suite. As opposed to the previous treatment, we now base our graph on the toal number of structures (half the number of duplex units), not on the total number of duplex units.
 
 ```{r, fig.width=9}
 suites_data <- inner_join(share_data,count_data, by="name") %>%
@@ -382,7 +382,7 @@ suites_data <- inner_join(share_data,count_data, by="name") %>%
   mutate(`Only Suite Empty`=round((`Unit in duplex`-`Single-detached`)*Total)) %>%
   select(name,`Both Units Empty`,`Only Suite Empty`,Total) %>%
   gather(key="type",value="Count",c("Only Suite Empty","Both Units Empty")) %>%
-  mutate(Share=Count/Total) %>%
+  mutate(Share=Count/(Total/2)) %>%
   mutate(name=factor(name,levels=rev(name_levels)))
 
 plot1 <- ggplot(suites_data) +
@@ -459,7 +459,7 @@ The custom tab I have does not split out duplex units for 2016 and combines low 
 ```{r}
 xtab_2016 <- function() {
 n <- readxl::read_xlsx(paste0(getOption("custom_data_path"),"Foreign_Unoccupied_2016_from_Andy.xlsx"), skip=1, range="A2:A21") %>% 
-  rename(name=X__1)
+  rename(name=`...1`)
 xtab1 <- readxl::read_xlsx(paste0(getOption("custom_data_path"),"Foreign_Unoccupied_2016_from_Andy.xlsx"), skip=1, range="B2:E21")
 xtab2 <- readxl::read_xlsx(paste0(getOption("custom_data_path"),"Foreign_Unoccupied_2016_from_Andy.xlsx"), skip=1, range="F2:I21")
 xtab3 <- readxl::read_xlsx(paste0(getOption("custom_data_path"),"Foreign_Unoccupied_2016_from_Andy.xlsx"), skip=1, range="J2:M21")
@@ -499,7 +499,6 @@ type_translations <- set_names(uo_short_types,uo_types)
    mutate(name=factor(name,levels=name_levels))
  
 }
-
 ```
 
 ```{r}

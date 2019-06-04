@@ -111,11 +111,11 @@ We will explore three ways to answer this question.
 
 What we see is that the share of unoccupied duplex units consistently and significantly higher across all regions. In absence of a compelling argument that main units in suited single family homes should be unoccupied at a higher rate than unsuited single family homes, this points to a significant portion of suited single family homes having empty suites.
 
-If we assume that the main unit in unsuited and suited homes have equal probability of being unoccupied, and that a partially vacant duplex overwhelmingly has the main unit occupied and the suite unoccupied, we can estimate the ratio and total number of main units and suites that are unoccupied.
+If we assume that the main unit in unsuited and suited homes have equal probability of being unoccupied, and that a partially vacant duplex overwhelmingly has the main unit occupied and the suite unoccupied, we can estimate the ratio and total number of main units and suites that are unoccupied, out of all duplex units.
 
 <img src="/posts/2018-01-25-empty-suites_files/figure-html/unnamed-chunk-7-1.png" width="864" />
 
-Reading the graph we should be aware that some of the empty suites are in duplexes with empty main units. If we believe it likely that in almost no cases the suite will be occupied when the main unit is unoccupied we can slice the data differently into duplex structures with both units unoccupied and partially occupied duplex units with main unit occupied but empty suite.
+Reading the graph we should be aware that some of the empty suites are in duplexes with empty main units. If we believe it likely that in almost no cases the suite will be occupied when the main unit is unoccupied we can slice the data differently into duplex structures with both units unoccupied and partially occupied duplex units with main unit occupied but empty suite. As opposed to the previous treatment, we now base our graph on the toal number of structures (half the number of duplex units), not on the total number of duplex units.
 
 <img src="/posts/2018-01-25-empty-suites_files/figure-html/unnamed-chunk-8-1.png" width="864" />
 
