@@ -10,7 +10,7 @@ categories:
   - Vancouver
 tags: []
 description: 'A quick overview over the 2001 Census data newly imported into CensusMapper, as well as how to compare census data across censuses.'
-featured: 'unoccupied-1.png'
+featured: ''
 images: ["https://doodles.mountainmath.ca/posts/2019-06-03-2001-census-data-and-tongfen_files/figure-html/unoccupied-1.png"]
 featuredalt: "Change in unoccupied units"
 featuredpath: ""
