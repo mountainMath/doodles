@@ -19,7 +19,7 @@ type: "post"
 
 
 
-Two dats ago I gave an example using the new (to CensusMapper) 2001 census data to mix with 2006 data on a common geography based on dissemination areas. A [question came up](https://twitter.com/Lfang17/status/1135931232049438720) if this works for several censuses, not just for two. Yes, the [TongFen package](https://github.com/mountainMath/tongfen) was built with exactly that in mind. Time for a quick demo.
+Two days ago I gave an example using the new (to CensusMapper) 2001 census data to mix with 2006 data on a common geography based on dissemination areas. A [question came up](https://twitter.com/Lfang17/status/1135931232049438720) if this works for several censuses, not just for two. Yes, the [TongFen package](https://github.com/mountainMath/tongfen) was built with exactly that in mind. Time for a quick demo.
 
 For this we will look at the households spending between 30% and 100% of income on housing in the City of Toronto. To grab the relevant variables we query all available CensusMapper datasets and query each for all census variables with the term "30%" in the description and grab all "parent" and "child" variables (wrt the CensusMapper variable hierarchies) for good measure. 
 
