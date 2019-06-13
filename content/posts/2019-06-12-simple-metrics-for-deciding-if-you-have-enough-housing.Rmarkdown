@@ -9,7 +9,7 @@ categories: []
 tags: []
 description: "How do we know if we have too much, the right amount, or too little housing?"
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2019-06-09-vancouver-population-density-over-time_files/figure-html/dwelling_density_van-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2019-06-12-simple-metrics-for-deciding-if-you-have-enough-housing_files/figure-html/dwelling_density_vancouver-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -191,7 +191,7 @@ Overall it's worth noting that this class of metrics is also a bit of a dodge, s
 
 In terms of impact, housing density (or dwellings per acre) has been linked to urban vitality. Jane Jacobs [famously](https://pricetags.ca/2012/06/01/jane-jacobs-style-density-it-may-not-be-what-you-think/) set a few thresholds for what she considered suburban (six or fewer dwellings per acre) and truly urban (one hundred or more dwellings per acre). She considered "in-between densities" as less conducive to the "lively diversity and public life" of the city. Needless to say, the vast majority of the landscape of North American cities fall in Jacobs' "in-between" ranges, "fit, generally, for nothing but trouble." Outside of Downtown and a few other scattered census tracts, the same is also true of Metro Vancouver. Where the best threshold for urban vitality might be located remains a matter for debate.
 
-```{r dwelling_density_van, fig.height=6.5} 
+```{r dwelling_density_vancouver, fig.height=6.5} 
 dw_breaks=c(-Inf,0.1,6,10,20,50,100,200,Inf)  
 dw_labels <- c("0","0 to 6", "6 to 10","10 to 20","20 to 50","50 to 100","100 to 200","Over 200")
 dw_colours <- set_names(c("grey",(viridis::inferno(length(dw_labels)-1))),dw_labels)

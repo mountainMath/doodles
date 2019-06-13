@@ -9,7 +9,7 @@ categories: []
 tags: []
 description: "How do we know if we have too much, the right amount, or too little housing?"
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2019-06-09-vancouver-population-density-over-time_files/figure-html/dwelling_density_van-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2019-06-12-simple-metrics-for-deciding-if-you-have-enough-housing_files/figure-html/dwelling_density_vancouver-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -116,7 +116,7 @@ Overall it's worth noting that this class of metrics is also a bit of a dodge, s
 
 In terms of impact, housing density (or dwellings per acre) has been linked to urban vitality. Jane Jacobs [famously](https://pricetags.ca/2012/06/01/jane-jacobs-style-density-it-may-not-be-what-you-think/) set a few thresholds for what she considered suburban (six or fewer dwellings per acre) and truly urban (one hundred or more dwellings per acre). She considered "in-between densities" as less conducive to the "lively diversity and public life" of the city. Needless to say, the vast majority of the landscape of North American cities fall in Jacobs' "in-between" ranges, "fit, generally, for nothing but trouble." Outside of Downtown and a few other scattered census tracts, the same is also true of Metro Vancouver. Where the best threshold for urban vitality might be located remains a matter for debate.
 
-<img src="/posts/2019-06-12-simple-metrics-for-deciding-if-you-have-enough-housing_files/figure-html/dwelling_density_van-1.png" width="768" />
+<img src="/posts/2019-06-12-simple-metrics-for-deciding-if-you-have-enough-housing_files/figure-html/dwelling_density_vancouver-1.png" width="768" />
 
 Similar thresholds have been suggested for what kind of densities can support urban transit. Commonly [cited thresholds](https://www.accessmagazine.org/wp-content/uploads/sites/7/2016/01/access40_transitanddensity-1.pdf) suggest about 12 dwellings per acre around a large central business district is enough to support a decent urban transit system. [Guerra & Cervero](https://www.accessmagazine.org/wp-content/uploads/sites/7/2016/01/access40_transitanddensity-1.pdf) provide more careful updates on this estimate, exploring capital costs in conjunction with what can be supported by population and jobs located near stations. Using their estimates, a project like Vancouver's forthcoming [skytrain extension](https://dailyhive.com/vancouver/translink-mayors-council-broadway-subway-surrey-lrt-march-2018) along Broadway, at a capital cost of nearly $500/km2 CAD (nearly $600/sq mile USD), would require over 120 people per acre gross population density to support, or more than 50 dwellings per acre near skytrain stations.
 
