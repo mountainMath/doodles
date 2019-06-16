@@ -1,0 +1,165 @@
+---
+title: Census custom timelines
+author: Jens von Bergmann
+date: '2019-06-15'
+slug: census-custom-timelines
+categories:
+  - CensusMapper
+  - density
+  - land use
+  - Vancouver
+tags: []
+description: "Playing with fine geography custom tabulation back to 1971."
+featured: ''
+images: ["https://doodles.mountainmath.ca/images/van_pop_change_3d.png"]
+featuredalt: "Change in population density"
+featuredpath: ""
+linktitle: ''
+type: "post"
+blackfriday:
+  fractions: false
+  hrefTargetBlank: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 8,
+	cache=TRUE
+)
+library(tidyverse)
+library(cancensus)
+library(mountainmathHelpers)
+caption="MountainMath, StatCan Census custom tabulation DOI: 10.5683/SP/YAA5B4"
+```
+
+
+After our recent [posts on multi-census comparisons](https://doodles.mountainmath.ca/blog/2019/06/03/2001-census-data-and-tongfen/) I was [pointed to](https://twitter.com/purposeanalytix/status/1136675415286865923) a [semi-custom tabulation for census timelines back to 1971 for Vancouver and Toronto](https://twitter.com/purposeanalytix/status/1136675415286865923). That's data for the 1971, 1981, 1986, 1991, 1996, 2001, 2006 and 2011 censuses on a common 2016 DA geography for the two CMAs. This is really cool, not just that it eliminates the need to [tongfen](https://github.com/mountainMath/tongfen) the geographies, but in particular because Statistics Canada does not even haven publicly available geographic boundary files for censuses before 2001. 
+
+It also ties in nicely with [recent work we did with Stuart Smith](https://doodles.mountainmath.ca/blog/2019/06/09/vancouver-population-density-over-time/) that took hand-transcribed census data all the way back to 1941 and looked at population change on a common geography. This data does not go back quite as far, but it comes on a much finer geography.
+
+## The data
+The data comes in the much hated (by us at least) Beyond 20/20 format, which requires manual work to get it into a form where we can run our scripts. It comes in separate files for Toronto and Vancouver, and separate files for each year, and some years are yet again broken down into separate files (in two different ways). Which makes it quite annoying to assemble the data.
+
+If that was not enough trouble, the spelling of the variable names is not consistent across the different extracts, so it requires manual adjustments. Moreover, there are some multi-row variable names that need special attention during the import. And while this is thoroughly annoying, this is unfortunately expected and quite the norm for custom tabulations from Statistics Canada.
+
+The data only comes at DA and CMA level, so we had to aggregate up the data for the intermediate census geographies of CTs and CSDs to fit into the CensusMapper geographic hierarchy and allow for rapid analysis at different geographic levels. There are several problems with this though. Some variables, like medians, can't be aggregated up. And other variables, like averages or percentages, need metadata in order to aggregate them up properly. CensusMapper added this metadata for the 2001 through 2016 censuses, but we have not added it for this custom tabulation. It's a lot of manual work and we could not justify dedicating the required resources to this. Lastly, some data is suppressed at the DA level, and it will be missing from higher level aggregate counts too.
+
+Unfortunately the data is constrained to Vancouver and Toronto CMA, it would be amazing to have this data available nation wide. I see an opportunity for Statistics Canada to provide a consistent semi-custom tabulations for all of Canada, including for higher aggregation levels.
+
+To make it easier for us to work with the data we have imported it into CensusMapper. As we haven't yet added the metadata that would enable us to make it available for the general public to map, but that's something that we are hoping to find the resources to do in the future.
+
+One usual caveat with the data is that geocoding is hard, and we should expect some issues where StatCan incorrectly, and inconsistently, geocoded dwelling across the censuses. Geocoding errors will show up as one region suddenly losing population, while an adjacent region is gaining. This won't happen often, but there are a lot of DAs in Metro Vancouver and it is bound to happen at times.
+
+## Population change
+For today we will just look at the most basic variable: Population. And map how it changed over time. People can view this data [on CensusMapper](https://censusmapper.ca/maps/1657). But flat 2D maps have difficulty to show the extent to which the population change across regions differs.
+
+Relative population change, that is percent increase in population, is also a challenging concept when dealing with regions that did not have any population in 1971. A better way to slice the data is to look at change in population density. Which introduces a problem when comparing one geography to another. Some regions contain large parks, others just housing (and some road space). The park space will weight down increases in population density compared to the area without parks.
+
+It still gives a decent overview over how a region changed. Here is a map of population change around the City of Toronto 1971 to 2016.
+
+```{r toronto_pop_change}
+breaks <- c(-Inf,-100,-50,-25,-10,-5,5,10,25,50,100,Inf)
+labels <- c("Loss of over 100", "Loss of 50 to 100",
+            "Loss of 25 to 50", "Loss of 10 to 25", "Loss of 5 to 10", "About the same",
+            "Gain of 5  to 10", "Gain of 10 to 25", "Gain of 25 to 50", "Gain of 50 to 100",
+            "Gain over 100")
+colors <- RColorBrewer::brewer.pal(length(labels),"PiYG")
+toronto_city <- get_census("CA16",regions=list(CSD="3520005"),geo_format = 'sf')
+toronto_data <- get_census("CA16CT",regions=list(CMA="35535"),
+                   vectors=c("1971"="v_CA1971x16_1","2016"="v_CA16_1"),
+                   level="DA",geo_format='sf') %>%
+  mutate(area=`Shape Area`*100) %>%
+  mutate(change=`2016`-coalesce(`1971`,0)) %>%
+  mutate(change_h=change/area) %>%
+  mutate(change_d=cut(change_h,breaks=breaks,labels=labels))
+
+bbox=sf::st_bbox(toronto_city)
+vector_tiles <- simpleCache(get_vector_tiles(bbox),"toronto_csd_vector_tiles")
+roads <- rmapzen::as_sf(vector_tiles$roads) %>% filter(kind != "ferry")
+water <- rmapzen::as_sf(vector_tiles$water)
+
+ggplot() +
+  geom_sf(data=toronto_data,size=0.01,aes(fill=change_d)) +
+  geom_sf(data=water,fill="lightblue",size=0,color=NA) +
+  geom_sf(data=roads %>% filter(kind %in% c("highway","major_road")),color="black",size=0.1) +
+  scale_fill_manual(values=colors,na.value="grey") +
+  labs(title="Toronto change in population density 1971-2016",
+       caption=caption,
+       fill="Change in ppl/ha") +
+   coord_sf(datum=NA, xlim=c(bbox$xmin,bbox$xmax), ylim=c(bbox$ymin,bbox$ymax))
+```
+
+It's quite striking how unequal the growth has been distributed throughout the region. We aggregate the areas in each of our growth bins for just the City of Toronto to quantify this.
+
+```{r}
+plot_data <- toronto_data %>% 
+  sf::st_set_geometry(NULL) %>%
+  filter(CSD_UID=="3520005") %>%
+  group_by(change_d) %>%
+  summarise(area=sum(area))
+
+ggplot(plot_data,aes(x=change_d,y=area,fill=change_d)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=colors,na.value="grey",guide=FALSE) +
+  theme_dark() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="City of Toronto change in population density 1971 to 2016",x="Change in people per hectare",y="Area (ha)")
+```
+
+
+### Land use
+The solution to the problem of some areas containing large non-residential land uses is of course to cut the regions down to residential lots, so switch from gross density to net density like we have done [in our project with Denis Agar looking at population, dwelling and renter density in the frequent transit network](https://doodles.mountainmath.ca/blog/2019/02/21/planned-displacement/). For Vancouver we can use the [Metro Vancouver Land Use Data](http://www.metrovancouver.org/data). For this map, we are keeping the industrial and commercial land use areas, as well as the areas marked as undeveloped or unclassified, as the land use data is a bit dated now and does not account for some of the recent residential growth in some of these areas.
+
+
+```{r eval=FALSE, include=FALSE}
+
+join_select_das <- function(data){
+  # something wrong with StatCan geocoding on these
+  data %>% mutate(GeoUID=recode(GeoUID,"59150062"="59153402"))
+}
+
+years=c(1971,seq(1981,2011,5))
+old_vectors <- years %>% map(function(y)paste0("v_CA",y,"x16_1")) %>% unlist %>% set_names(years)
+pop_data <- get_census("CA16LU",regions=list(CMA="59933"),
+                   vectors=c(old_vectors,c("2016"="v_CA16_1")),level="DA",labels = 'short') %>%
+  select_at(c("GeoUID",years %>% as.character,"2016")) %>%
+  join_select_das %>%
+  group_by(GeoUID) %>%
+  summarise_all(sum,na.rm=TRUE)
+
+geo_data <- get_metro_van_cut_geo_data_da() %>%
+  sf::st_collection_extract("POLYGON") %>%
+  mutate(area=Shape.Area*100) %>%
+  select_at(vars(c("area","GeoUID"))) %>%
+  join_select_das %>%
+  group_by(GeoUID) %>%
+  summarise(area=sum(area)) %>%
+  mutate(area=round(area,2)) %>%
+  rmapshaper::ms_simplify(keep = 0.75,keep_shapes = TRUE) %>%
+  left_join(pop_data)
+
+
+sf_to_s3_gzip(geo_data %>% select(-GeoUID),
+              s3_bucket = "mountainmath",
+              s3_path = "yvr_timeline/yvr_pop_timeline.geojson.gz")
+
+```
+
+
+This data is best explored in an interactive map, which we won't embed here because it loads a large dataset and should probably not be explored on mobile. It's totally worth it to take the time and play with this on a desktop though.
+
+<a href="/html/yvr_pop_timeline.html" target="_blank"><img src="/images/van_pop_timeline.gif"></a>
+
+<a class="btn btn-primary" href="/html/yvr_pop_timeline.html" target="_blank">Explore interactive population change map</a>
+
+Here we allow to view the population density for each year, and we have the option to view the change in population density for any two years.
+
+<a href="/html/yvr_pop_timeline.html" target="_blank"><img src="/images/van_pop_change_3d.png"></a>
+
+## Upshot
+Population change is the obvious point to start the explorations of this rich custom tabulations. I am glad to have found it and am looking forward to exploring it more. And hoping that others will jump onto the bandwagon and use this to understand how Vancouver and Toronto have changed since 1971. As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-06-15-census-custom-timelines.Rmarkdown) for those that are looking for some pointers how to use this data.
+
