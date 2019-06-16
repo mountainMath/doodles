@@ -12,6 +12,21 @@
   <script src='https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/13.1.5/nouislider.min.js'></script>
   <link href='https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/13.1.5/nouislider.min.css' rel='stylesheet' />
   <link href='https://www.mapbox.com/base/latest/base.css' rel='stylesheet' />
+
+  <meta name="author" content="Jens von Bergmann">
+  <meta name="description" content="Visaulizing Vancouver population density, and change in population density, between 1971 and 2016.">
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image:src" content="https://doodles.mountainmath.ca/images/van_pop_change_3d.png" />
+  <meta name="twitter:title" content="Vancouver population 1971 to 2016" />
+  <meta name="twitter:description" content="Visaulizing Vancouver population density, and change in population density, between 1971 and 2016." />
+  <meta name="twitter:site" content="@vb_jens" />
+
+  <meta property="og:title" content="Vancouver population 1971 to 2016" />
+  <meta property="og:description" content="Visaulizing Vancouver population density, and change in population density, between 1971 and 2016." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="/html/yvr_pop_timeline.html" />
+  <meta property="og:image" content="https://doodles.mountainmath.ca/images/van_pop_change_3d.png" />
+
   <style>
     body {
       margin: 0;
@@ -263,7 +278,7 @@
         var legend = document.createElement('div');
         legend.id = "legend";
         var attribution = document.createElement('div');
-        attribution.innerHTML = '<b>Info/Details: <a href="https://doodles.mountainmath.ca" target="_blank">MountainDoodles</a></b>'
+        attribution.innerHTML = '<b>Info/Details: <a href="https://doodles.mountainmath.ca/blog/2019/06/15/census-custom-timelines/" target="_blank">MountainDoodles</a></b>'
         this._container.appendChild(menu);
         this._container.appendChild(document.createElement('hr'));
         this._container.appendChild(legend);
@@ -591,7 +606,7 @@
         const m = this.margin;
         // calculate max and min for data
         var xExtent = d3.extent(this.data, d => d[0]);
-        var d=xExtent[1]
+        var d = xExtent[1]
         var year = d.getFullYear();
         var month = d.getMonth();
         var day = d.getDate();
@@ -615,7 +630,7 @@
           .scale(this.xScale)
           .tickValues(this.data.map(d => d[0]))
           .tickFormat(d3.timeFormat("%Y"));
-       const yAxis = d3.axisLeft()
+        const yAxis = d3.axisLeft()
           .scale(this.yScale)
           .tickFormat(d3.format(",d"));
         this.plot.append("g")
