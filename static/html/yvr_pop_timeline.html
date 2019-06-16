@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset='utf-8' />
+  <title>Vancouver population 1971 to 2016</title>
+  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+  <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.52.0/mapbox-gl.js'></script>
+  <!--script src='https://cdnjs.cloudflare.com/ajax/libs/d3-format/1.3.0/d3-format.min.js'></script-->
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/5.9.2/d3.js'></script>
+  <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.52.0/mapbox-gl.css' rel='stylesheet' />
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/13.1.5/nouislider.min.js'></script>
+  <link href='https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/13.1.5/nouislider.min.css' rel='stylesheet' />
+  <link href='https://www.mapbox.com/base/latest/base.css' rel='stylesheet' />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+
+    .map-overlay {
+      position: absolute;
+      width: 180px;
+      top: 0;
+      left: 10px;
+      padding: 10px;
+      margin-left: 5px;
+      margin-top: 2px;
+      margin-bottom: 2px;
+      margin-right: 5px;
+      z-index: 1;
+    }
+
+    #change_slider .noUi-connect {
+      background: #b83fb2
+    }
+
+
+    #pop_chart svg path {
+      fill: none;
+    }
+
+    #legend {
+      padding: 10px;
+      //box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      line-height: 18px;
+      //top: auto;
+      //left: auto;
+      margin-bottom: 10px;
+      margin-right: 10px;
+      width: auto;
+      //right: 0px;
+      //bottom: 0px;
+      //border: 2px black solid;
+      border-radius: 5px;
+      max-width: 200px;
+    }
+
+    .my-overlay {
+      background: #000000A0;
+      color: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
+      border-radius: 3px;
+      padding: 10px;
+      z-index: 1;
+    }
+
+    .legend-key {
+      display: inline-block;
+      border-radius: 20%;
+      width: 10px;
+      height: 10px;
+      margin-right: 5px;
+    }
+
+    .my-overlay hr {
+      margin: 5px;
+      background: #808080;
+    }
+
+    .map-overlay-inner fieldset {
+      border: none;
+      padding: 0;
+      margin: 0 0 10px;
+      z-index: 1;
+    }
+
+    /* Dark attribution */
+
+    .mapboxgl-ctrl.mapboxgl-ctrl-attrib {
+      background: rgba(0, 0, 0, .8);
+    }
+
+    .mapboxgl-ctrl.mapboxgl-ctrl-attrib a {
+      color: #fff;
+    }
+
+    /* Dark popup */
+
+    .mapboxgl-popup-content {
+      background-color: #202020;
+      color: #fff;
+      margin-left: 5px;
+      margin-top: 2px;
+      margin-bottom: 2px;
+      margin-right: 5px;
+      z-index: 1000;
+    }
+
+    .mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+      border-top-color: #202020;
+    }
+
+    .mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip,
+    .mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+      border-bottom-color: #202020;
+    }
+
+    .mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+      border-left-color: #202020;
+    }
+
+    .mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+      border-right-color: #202020;
+    }
+
+    #popup-menu ul,
+    #menu li {
+      margin: 0;
+      padding: 0;
+      z-index: 100;
+    }
+
+    .mapboxgl-ctrl-group {
+      -webkit-filter: invert(100%);
+    }
+
+    .loader {
+      height: auto;
+      width: 20%;
+      min-width: 250px;
+      position: fixed;
+      text-align: center;
+      padding: 2em;
+      border-radius: 0.5em;
+      text-align: center;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      position: absolute;
+      z-index: 9999;
+      background: whitesmoke;
+    }
+
+    select#prop {
+      -webkit-appearance: button;
+      -webkit-border-radius: 2px;
+      -webkit-box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
+      -webkit-padding-end: 20px;
+      -webkit-padding-start: 2px;
+      -webkit-user-select: none;
+      background-image: url(http://i62.tinypic.com/15xvbd5.png), -webkit-linear-gradient(#FAFAFA, #F4F4F4 40%, #E5E5E5);
+      background-position: 97% center;
+      background-repeat: no-repeat;
+      border: 1px solid #AAA;
+      font-weight: bold;
+      color: #555;
+      font-size: inherit;
+      margin: 5px;
+      overflow: hidden;
+      padding: 5px 10px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 16.5em;
+    }
+
+    /*
+  Set the color of the icon
+*/
+
+    svg path,
+    svg rect {
+      fill: #FF6700;
+    }
+  </style>
+</head>
+
+<body>
+  <div id='map'></div>
+  <div class="loader loader--style1" title="0" id="loader">
+    <svg version="1.1" id="loader-1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+      x="0px" y="0px" width="40px" height="40px" viewBox="0 0 40 40" enable-background="new 0 0 40 40"
+      xml:space="preserve">
+      <path opacity="0.2" fill="#000"
+        d="M20.201,5.169c-8.254,0-14.946,6.692-14.946,14.946c0,8.255,6.692,14.946,14.946,14.946
+    s14.946-6.691,14.946-14.946C35.146,11.861,28.455,5.169,20.201,5.169z M20.201,31.749c-6.425,0-11.634-5.208-11.634-11.634
+    c0-6.425,5.209-11.634,11.634-11.634c6.425,0,11.633,5.209,11.633,11.634C31.834,26.541,26.626,31.749,20.201,31.749z" />
+      <path fill="#000" d="M26.013,10.047l1.654-2.866c-2.198-1.272-4.743-2.012-7.466-2.012h0v3.312h0
+    C22.32,8.481,24.301,9.057,26.013,10.047z">
+        <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 20 20" to="360 20 20"
+          dur="0.5s" repeatCount="indefinite" />
+      </path>
+    </svg>
+    <p>Data is loading. This may take a minute depending on connection speed.</p>
+  </div>
+  <script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiamVucy1tb3VudGFpbm1hdGgiLCJhIjoiTmJ2Z3FHNCJ9.ifMzNW0vPH1Yc6As93HP9A';
+    var bounds = [
+      [-124, 48.8],
+      [-122, 49.49]
+    ];
+
+    const years = [1971, 1981, 1986, 1991, 1996, 2001, 2006, 2011, 2016]
+    let year = years[years.length - 1]
+    let year1 = years[0]
+    let year2 = years[years.length - 1]
+
+    var map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/dark-v9',
+      center: [-123, 49.3],
+      zoom: 9,
+      minZoom: 8,
+      maxZoom: 18,
+      pitch: 40,
+      attributionControl: false,
+      maxBounds: bounds
+    });
+
+    //const metersToPixelsAtMaxZoom = (latitude) => 0.075 / Math.cos(latitude * Math.PI / 180)
+    const vancouver_factor = 0.114896789
+    //var legend;
+    class MyControl {
+      onAdd(map) {
+        this._map = map;
+        this._container = document.createElement('div');
+        this._container.className = 'mapboxgl-ctrl my-overlay';
+        var menu = document.createElement('div');
+        menu.innerHTML = '<div id="menu">' +
+          '<fieldset><label><h4>Select metric</h4></label>' +
+          '<select id="prop" name="prop">' +
+          '<option value="density" selected="selected">Population Density</option>' +
+          '<option value="change">Population Change</option>' +
+          '</select></fieldset>' +
+          '<div id="density_mode">' +
+          '<label><h4>Selected year: <b id="density_string">2016</b></h4></label>' +
+          '<fieldset><div id ="density_slider"></div></fieldset>' +
+          '</div><div id="change_mode">' +
+          '<label><h4>Selected years: <b id="change_string">2016</b></h4></label>' +
+          '<fieldset><div id ="change_slider"></div></fieldset>' +
+          '</div>' +
+          '</div>'
+        var legend = document.createElement('div');
+        legend.id = "legend";
+        var attribution = document.createElement('div');
+        attribution.innerHTML = '<b>Info/Details: <a href="https://doodles.mountainmath.ca" target="_blank">MountainDoodles</a></b>'
+        this._container.appendChild(menu);
+        this._container.appendChild(document.createElement('hr'));
+        this._container.appendChild(legend);
+        this._container.appendChild(document.createElement('hr'));
+        this._container.appendChild(attribution);
+
+        //legend=this.container.
+        return this._container;
+      }
+
+      onRemove() {
+        this._container.parentNode.removeChild(this._container);
+        this._map = undefined;
+      }
+    }
+
+    function init() {
+      map.addControl(new mapboxgl.FullscreenControl());
+      map.addControl(new MyControl(), 'top-left');
+      map.addControl(new mapboxgl.AttributionControl({
+        "customAttribution": [
+          '<a href="">StatCan Census 1971-2016</a>']
+      }),
+        'bottom-right')
+
+      /*
+              map.addSource('transit', {
+                  type: 'geojson',
+                  data: 'https://s3.ca-central-1.amazonaws.com/mountainmath/planned_displacement/transit_network.geojson.gz',
+                  buffer: 0,
+                  //maxzoom: 12
+              });
+      */
+      //        map.addSource('stops', {
+      //            type: 'geojson',
+      //            data: '/frequent_stops.geojson',
+      //            buffer: 0,
+      //            maxzoom: 12
+      //        });
+      map.addSource('pop_timeline', {
+        type: 'geojson',
+        data: { "type": "FeatureCollection", "features": [] },
+        buffer: 0,
+        //maxzoom: 12
+      });
+
+
+
+      if (window.location.search.indexOf('embed') !== -1) map.scrollZoom.disable();
+
+      //[1,2,5,10,50,100]
+      //["#000004FF" "#2D1160FF" "#721F81FF" "#B63679FF" "#F1605DFF" "#FEAF77FF" "#FCFDBFFF" ]
+
+
+      map.addLayer({
+        'id': 'pop_density3D',
+        'type': 'fill-extrusion',
+        'source': 'pop_timeline',
+        'layout': {},
+        'paint': {
+          'fill-extrusion-color': {
+            'property': 'density_2016',
+            stops: [
+              [0, '#000004'],
+              [1, '#330A5F'],
+              [10, '#781C6D'],
+              [50, '#BB3754'],
+              [100, '#ED6925'],
+              [250, '#FCB519'],
+              [500, '#FCFFA4']
+            ]
+          },
+          'fill-extrusion-height': ['*', 10, ['get', 'density_2016']],
+          'fill-extrusion-base': 0,
+          'fill-extrusion-opacity': .8
+
+
+        }
+      }, 'waterway-label');
+
+    };
+
+
+    const df = function (d) {
+      return d3.format(",.0f")(d)
+    }
+
+
+    d3.json('https://s3.ca-central-1.amazonaws.com/mountainmath/yvr_timeline/yvr_pop_timeline.geojson.gz').then(data => {
+      console.log('got data')
+      data.features.forEach(f => {
+        p = f.properties
+        years.forEach((year, i) => {
+          p['density_' + year] = p[year] / p.area
+          years.slice(0, i).forEach(year2 => {
+            p['change_' + year2 + '_' + year] = p['density_' + year] - p['density_' + year2]
+          })
+        })
+      })
+      map.getSource('pop_timeline').setData(data)
+      document.getElementById("loader").style.visibility = "hidden";
+    })
+
+    var popup = null;
+    var chart = null;
+    map.once('style.load', function (e) {
+      init();
+      var dimensionSelection = "3D";
+      const showPopup = function (e, features) {
+        if (!features.length) {
+          if (popup != null) {
+            popup.remove();
+            popup = null;
+          }
+          return;
+        }
+        var feature = features[0];
+        let addPopup = false
+        if (popup == null) {
+          popup = new mapboxgl.Popup()
+          addPopup = true
+        }
+        //debugger
+        popup.setLngLat(map.unproject(e.point))
+          .setHTML('<h3>' + 'Population 1971 to 2016' + '</h3>' +
+            '<div id="pop_chart"></div>')
+        const chartData = years.map(y => { return [new Date(y, 4, 10), feature.properties[y]] })
+        if (addPopup) {
+          popup.addTo(map);
+        }
+        chart = new Chart({
+          element: document.getElementById('pop_chart'),
+          data: chartData
+        });
+
+      }
+      map.addControl(new mapboxgl.NavigationControl());
+      map.on('click', function (e) {
+        var features = map.queryRenderedFeatures(e.point, {
+          layers: ['pop_density3D']
+        });
+        showPopup(e, features);
+      });
+
+
+      // Use the same approach as above to indicate that the symbols are clickable
+      // by changing the cursor style to 'pointer'.
+      map.on('mousemove', function (e) {
+        var features = map.queryRenderedFeatures(e.point, {
+          layers: ['pop_density3D']
+        });
+        if (map.getZoom() >= 13) {
+          showPopup(e, features);
+        } else {
+          if (popup != null) {
+            popup.remove();
+            popup = null;
+          }
+        }
+      });
+      var prop = document.getElementById('prop');
+      var mapdefs = {
+        "change": {
+          "variable": "change",
+          "scaleFac": 10,
+          "title": "Change in people per hectare",
+          "breaks": [-100, -50, -25, -10, -5, 5, 10, 25, 50, 100],
+          "labels": ["Loss of over 100", "Loss of 50 to 100",
+            "Loss of 25 to 5  0", "Loss of 10 to 25", "Loss of 5 to 10", "About the same",
+            "Gain of 5  to 10", "Gain of 10 to 25", "Gain of 25 to 50", "Gain of 50 to 100",
+            "Gain over 100"],
+          "colors": ["#8E0152", "#C51B7D", "#DE77AE", "#F1B6DA", "#FDE0EF", "#F7F7F7", "#E6F5D0", "#B8E186", "#7FBC41",
+            "#4D9221", "#276419"]
+        },
+        "density": {
+          "variable": "density",
+          "scaleFac": 5,
+          "title": "People per hectare",
+          "breaks": [1, 10, 25, 50, 100, 250, 500, 1000],
+          "labels": ["Fewer than 1", "1 to 10", "10 to 25",
+            "25 to 50", "50 to 100", "100 to 250", "250 to 500", "500 to 1000", "Over 1000"],
+          "colors": ["#000004", "#210C4A", "#56106E", "#89226A", "#BB3754", "#E35932", "#F98C0A", "#F9C932", "#FCFFA4"]
+          //"colors": ["#440154", "#472D7B", "#3B528B", "#2C728E", "#21908C", "#27AD81", "#5DC863", "#AADC32", "#FDE725"]
+        }
+      }
+      updateLegend = function (mapdef) {
+        legend.innerHTML = '<h4 >' + mapdef.title + '</h4>';
+        for (i = 0; i < mapdef.labels.length; i++) {
+          var layer = mapdef.labels[i];
+          var color = mapdef.colors[i];
+          var item = document.createElement('div');
+          var key = document.createElement('span');
+          key.className = 'legend-key';
+          key.style.backgroundColor = color;
+
+          var colorValue = document.createElement('span');
+          colorValue.innerHTML = layer;
+          item.appendChild(key);
+          item.appendChild(colorValue);
+          legend.appendChild(item);
+        }
+      }
+      let currentMapdef = null
+      const updateMap = function (mapdef) {
+        if (!mapdef) mapdef = currentMapdef
+        if (!mapdef) return
+        else currentMapdef = mapdef
+        if (mapdef.variable == "density") {
+          density_mode.style.display = 'block'
+          change_mode.style.display = 'none'
+        } else {
+          density_mode.style.display = 'none'
+          change_mode.style.display = 'block'
+        }
+        let variable = mapdef.variable
+        if (variable == 'density') variable += "_" + year
+        else variable += "_" + year1 + "_" + year2
+        var colorValue = ["step", ["get", variable]]
+        for (var i = 0; i < mapdef.breaks.length; i++) {
+          colorValue.push(mapdef.colors[i])
+          colorValue.push(mapdef.breaks[i])
+        }
+        colorValue.push(mapdef.colors[i]);
+        let heightValue = '';
+        if (mapdef.variable == "change") heightValue = ['*', mapdef.scaleFac, ['abs', ["get", variable]]]
+        else heightValue = ['*', mapdef.scaleFac, ["get", variable]]
+        map.setPaintProperty('pop_density3D', 'fill-extrusion-color', colorValue);
+        map.setPaintProperty('pop_density3D', 'fill-extrusion-height', heightValue);
+        updateLegend(mapdef);
+      }
+      //updateLegend(mapdefs.renters);
+      if (prop) prop.addEventListener('change', function () {
+        updateMap(mapdefs[prop.value]);
+      });
+      var radios = document.getElementsByName("dim");
+      if (radios) radios.forEach(function (e) {
+        e.addEventListener('change', function () {
+          for (var i = 0; i < radios.length; i++) {
+            if (radios[i].checked) {
+              if (dimensionSelection != radios[i].value) {
+                dimensionSelection = radios[i].value;
+                console.log(dimensionSelection);
+                map.setLayoutProperty('pop_density2D', 'visibility', dimensionSelection == "2D" ? 'visible' : 'none');
+                map.setLayoutProperty('pop_density3D', 'visibility', dimensionSelection == "2D" ? 'none' : 'visible');
+              }
+            }
+          }
+        })
+      });
+      updateMap(mapdefs.density);
+
+      noUiSlider.create(density_slider, {
+        start: [years.indexOf(year)],
+        margin: 1,
+        step: 1,
+        connect: false,
+        range: {
+          'min': 0,
+          'max': 8
+        }
+      });
+      noUiSlider.create(change_slider, {
+        //start: [years.indexOf(year1),years.indexOf(year2)],
+        start: [0, 8],
+        margin: 1,
+        connect: true,
+        step: 1,
+        range: {
+          'min': 0,
+          'max': 8
+        }
+      });
+      change_slider.noUiSlider.on('update', function (values, handle) {
+        year1 = years[parseInt(values[0])]
+        year2 = years[parseInt(values[1])]
+        change_string.innerHTML = year1 + "-" + year2
+        updateMap()
+      });
+      density_slider.noUiSlider.on('update', function (values, handle) {
+        year = years[parseInt(values[handle])]
+        density_string.innerHTML = year
+        updateMap()
+      });
+
+
+    });
+
+
+
+    class Chart {
+      constructor(opts) {
+        // load in arguments from config object
+        this.data = opts.data;
+        this.element = opts.element;
+        this.width = opts.width || 300;
+        this.height = opts.height || this.width * 2 / 3
+        // create the chart
+        this.draw();
+      }
+      draw() {
+        // define width, height and margin
+        //this.width = this.element.offsetWidth;
+        //this.height = this.element.offsetHeight;
+        this.margin = {
+          top: 5,
+          right: 25,
+          bottom: 25,
+          left: 40
+        };
+        // set up parent element and SVG
+        this.element.innerHTML = '';
+        const svg = d3.select(this.element).append('svg');
+        svg.attr('width', this.width);
+        svg.attr('height', this.height);
+        // we'll actually be appending to a <g> element
+        this.plot = svg.append('g')
+          .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
+        // create the other stuff
+        this.createScales();
+        this.addAxes();
+        this.addLine();
+      }
+      createScales() {
+        // shorthand to save typing later
+        const m = this.margin;
+        // calculate max and min for data
+        var xExtent = d3.extent(this.data, d => d[0]);
+        var d=xExtent[1]
+        var year = d.getFullYear();
+        var month = d.getMonth();
+        var day = d.getDate();
+        xExtent[1] = new Date(year + 5, month, day)
+
+        const yExtent = d3.extent(this.data, d => d[1]);
+        // force zero baseline if all data points are positive
+        if (yExtent[0] > 0) { yExtent[0] = 0; };
+        this.xScale = d3.scaleTime()
+          .range([0, this.width - m.right])
+          .domain(xExtent);
+        this.yScale = d3.scaleLinear()
+          .range([this.height - (m.top + m.bottom), 0])
+          .domain(yExtent);
+      }
+      addAxes() {
+        const m = this.margin;
+        // create and append axis elements
+        // this is all pretty straightforward D3 stuff
+        const xAxis = d3.axisBottom()
+          .scale(this.xScale)
+          .tickValues(this.data.map(d => d[0]))
+          .tickFormat(d3.timeFormat("%Y"));
+       const yAxis = d3.axisLeft()
+          .scale(this.yScale)
+          .tickFormat(d3.format(",d"));
+        this.plot.append("g")
+          .attr("class", "x axis")
+          .attr("transform", `translate(0, ${this.height - (m.top + m.bottom)})`)
+          .call(xAxis);
+        this.plot.append("g")
+          .attr("class", "y axis")
+          .call(yAxis)
+      }
+      addLine() {
+        const line = d3.line()
+          .x(d => this.xScale(d[0]))
+          .y(d => this.yScale(d[1]));
+        this.plot.append('path')
+          // use data stored in `this`
+          .datum(this.data)
+          .classed('line', true)
+          .attr('d', line)
+          // set stroke to specified color, or default
+          .style('stroke', this.lineColor || 'whitesmoke')
+      }
+      // the following are "public methods"
+      // which can be used by code outside of this file
+      setColor(newColor) {
+        this.plot.select('.line')
+          .style('stroke', newColor);
+        // store for use when redrawing
+        this.lineColor = newColor;
+      }
+      setData(newData) {
+        this.data = newData;
+        // full redraw needed
+        this.draw();
+      }
+    }
+  </script>
+</body>
+
+</html>
