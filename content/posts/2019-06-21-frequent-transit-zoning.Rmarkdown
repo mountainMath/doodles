@@ -1,0 +1,126 @@
+---
+title: Frequent transit zoning
+author: Jens von Bergmann
+date: '2019-06-21'
+slug: frequent-transit-zoning
+categories:
+  - OSM
+  - Transportation
+  - Vancouver
+  - zoning
+tags: []
+description: "Quantifying zoning in Vancouver's frequent transit network."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2019-06-21-frequent-transit-zoning_files/figure-html/frequent_transit_zoning_map-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+blackfriday:
+  fractions: false
+  hrefTargetBlank: true
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 8,
+	cache=TRUE
+)
+library(tidyverse)
+library(mountainmathHelpers)
+library(sf)
+```
+
+
+Today I saw a [particlarly uniformed tweet](https://twitter.com/paulgfinch/status/1142053136644751362?s=21) claiming that "the most important areas to densify are near transit and are mostly upzoned already". I tend to agree with the first part, but the notion that our frequent transit network is "mostly upzoned already" is plain wrong. I suspect that a lot of other casual observers share the misconception. So I decided to take this as an opportunity for a quick post to quantify zoning in our frequent transit network.
+
+For this I am taking a similar approach to [the work with Denis Agar](https://doodles.mountainmath.ca/blog/2019/02/21/planned-displacement/) where we built the frequent transit network from actual transit schedules and cut it down to residential land use. In short, we defined the frequent transit network as areas around stops that are served by transit every 16 to 20 minutes during 6am-9pm Weekdays, 7am-9pm Saturdays, 8am-9pm Sundays & Holidays, refer to the [previous post for details](https://doodles.mountainmath.ca/blog/2019/02/21/planned-displacement/). This definition comes up with a similar coverage area as TransLink does for their definition of frequent transit network. For the purposes of this post we are throwing out areas covered by parks, roads and other transportation uses, cemeteries, ports and airports and only focus on residential, commercial, industrial and undeveloped/unclassified lots.
+
+```{r}
+get_freauent_transit_zoning_data <- function() {
+  frequent_transit_areas <- get_yvr_frequent_transit_network()
+  
+  zoning_data <- get_shapefile("ftp://webftp.vancouver.ca/OpenData/shape/zoning_districts_shp.zip","zoning")
+  
+  land_use <- get_metro_vancouver_land_use_data() %>%
+    filter(!(LU_CodeDes %in% c("Agriculture", "Harvesting and Research", "Industrial – Extractive",
+                               "Recreation, Open Space and Protected Natural Areas", "Cemetery",
+                               "Lakes, Large Rivers and Other Water", "Airport/Airstrip", "Port Metro Vancouver",
+                               "Protected Watershed","Road Right-of-Way",
+                               "Rail, Rapid Transit, Other Transportation, Utility and Communication" )))
+  
+  zoning_data %>%
+    st_intersection(frequent_transit_areas %>% st_transform(st_crs(zoning_data)) %>% st_union()) %>%
+    st_intersection(land_use  %>% st_transform(st_crs(zoning_data))%>% st_union())
+}
+
+data <- simpleCache(get_freauent_transit_zoning_data(),"frequent_transit_zoning_data") %>%
+  st_sf()
+
+```
+
+We then categorize the resulting area by it's zoning, grouping them into low density (RS, RT, FSHCA, ..), multi-family (RM, CD, ...), commercial, and industrial zoning. Some of our categories are a little rough and could probably use refining, especially when categorizing lots zoned *Comprehensive Develpopment* into commerical or multi-family, but this seems to do a pretty good job for the purposes of this post.
+
+```{r}
+
+
+plot_data<-data %>% mutate(category=case_when(
+  grepl("^RS|^RT|FSHCA|RA",ZONE_NAME)~"Low density",
+  grepl("^RM|CD|HA|FM",ZONE_NAME)~"Multi-family",
+  grepl("^C|^DD|^FC|DEOD|BCPED",ZONE_NAME)~"Commercial",
+  grepl("Industrial$",CATEGORY)~"Industrial",
+  TRUE~"Other"
+)) %>%
+  mutate(area=unclass(st_area(.))/1000000)
+```
+
+
+
+
+```{r frequent_transit_zoning_map}
+bbox=st_bbox(data %>% st_transform(4326))
+bbox2=st_bbox(data)
+vector_tiles <- simpleCache(get_vector_tiles(bbox),"vancouver_city_vector_tiles")
+# vector tiles return all layers (roads, water, buildings, etc) in a list
+roads <- rmapzen::as_sf(vector_tiles$roads) %>% filter(kind != "ferry")
+water <- rmapzen::as_sf(vector_tiles$water)
+
+ggplot(plot_data) +
+  geom_sf(aes(fill=category),size=0.01) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  geom_sf(data=roads %>% filter(kind %in% c("highway", "major_road")),size=0.1) +
+  theme_void() +
+  scale_fill_brewer(palette = "Set1")+
+  coord_sf(datum=NA,xlim = c(bbox2$xmin,bbox2$xmax), ylim=c(bbox2$ymin,bbox2$ymax)) +
+  labs(title="City of Vancouver frequent transit network",
+       caption="MountainMath, CoV Open Data, Metro Van Open Data, Transitland, OSM",
+       fill="Zoning")
+
+```
+
+This illustrates well how good the coverage of our current frequent transit network within the City of Vancouver already is. And as transit keeps improving, hopefully we will be able to fill in the remaining gaps.
+
+To wrap this up we quantify the area taken up by each of our zoning categories within the frequent transit network.
+
+```{r}
+plot_data %>%
+  st_set_geometry(NULL) %>%
+  group_by(category) %>%
+  summarise(area=sum(area)) %>%
+  ggplot(aes(x=category,y=area,fill=category)) +
+  geom_bar(stat="identity") +
+  scale_fill_brewer(palette = "Set1")+
+  theme_light() +
+  labs(title="Zoning by area within City of Vancouver frequent transit network",
+       x="",y="Area (sq km)",fill="Zoning",
+       caption="MountainMath, CoV Open Data, Metro Van Open Data, Transitland")
+```
+
+## Next steps
+If you are interested in refining this by e.g. fine-tuning the land use or zoning categories used, or maybe classify by land use instead of zoning, feel free to [grab the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-06-21-frequent-transit-zoning.Rmarkdown) and make the appropriate changes.
+
