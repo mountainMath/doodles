@@ -32,7 +32,7 @@ For this I am taking a similar approach to [the work with Denis Agar](https://do
 
 
 
-We then categorize the resulting area by it's zoning, grouping them into low density (RS, RT, FSHCA, ..), multi-family (RM, CD, ...), commercial, and industrial zoning. Some of our categories are a little rough and could probably use refining, especially when categorizing lots zoned *Comprehensive Develpopment* into commerical or multi-family, but this seems to do a pretty good job for the purposes of this post.
+We then categorize the resulting area by it's zoning, grouping them into low density (RS, RT, FSHCA, ..), multi-family (RM, CD, ...), commercial, and industrial zoning. Some of our categories are a little rough and could probably use refining, especially when categorizing lots zoned *Comprehensive Development* into commercial or multi-family, but this seems to do a pretty good job for the purposes of this post.
 
 
 
@@ -46,6 +46,8 @@ This illustrates well how good the coverage of our current frequent transit netw
 To wrap this up we quantify the area taken up by each of our zoning categories within the frequent transit network.
 
 <img src="/posts/2019-06-21-frequent-transit-zoning_files/figure-html/unnamed-chunk-3-1.png" width="768" />
+
+This shows very clearly how far off the claim that areas in our frequent transit network are "mostly upzoned already" really is. Which is another manifestation of the loss of social welfare due to overly restrictive land use planning, which forces people to live further away from jobs and amenities. On the upside, the vastness of the low-density zoning in our frequent transit network provides a great opportunity, also known as the [*Great House Reserve*](https://shop.bookstore.ubc.ca/p-88146-death-and-life-of-the-single-family-house-lessons-from-vancouver-on-building-a-livable-city.aspx), to move our region forward.
 
 ## Next steps
 If you are interested in refining this by e.g. fine-tuning the land use or zoning categories used, or maybe classify by land use instead of zoning, feel free to [grab the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-06-21-frequent-transit-zoning.Rmarkdown) and make the appropriate changes.
