@@ -17,6 +17,7 @@ featuredpath: ""
 linktitle: ''
 type: "post"
 math: true
+draft: true
 blackfriday:
   fractions: false
   hrefTargetBlank: true
