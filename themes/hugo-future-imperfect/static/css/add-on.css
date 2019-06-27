@@ -129,6 +129,11 @@ article.post footer .stats {
     border-radius: 50%;
 }
 
+.post h1 {
+    font-weight: 900;
+    font-size: 1.3em;
+}
+
 .post > header .title h1 {
     font-weight: 900;
     font-size: 1.5em;

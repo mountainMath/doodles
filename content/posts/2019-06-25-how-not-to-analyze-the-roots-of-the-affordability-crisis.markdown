@@ -16,8 +16,7 @@ featuredalt: ""
 featuredpath: ""
 linktitle: ''
 type: "post"
-math: true
-draft: true
+draft: false
 blackfriday:
   fractions: false
   hrefTargetBlank: true
@@ -25,7 +24,7 @@ blackfriday:
 
 
 
-Another ["working paper" on Vancouver's real estate woes](https://www.sfu.ca/content/dam/sfu/mpp/WorkingPaperSeries/Solving%20Wozny%27s%20puzzle%20on%20decoupling%20and%20housing%202019%20Gordon%20(1).pdf) came out, this one by Josh Gordon, and it got posted to the SFU website. We have been contemplating for a week now if it is worth responding to, but after seeing one too many obviously false statements about what the working paper supposedly shows making the rounds, we felt the benefits of addressing this might outweigh the costs of further entrenching the camps in Vancouver's real estate debates with this post.
+Another ["working paper" on Vancouver's real estate woes](https://www.sfu.ca/content/dam/sfu/mpp/WorkingPaperSeries/Solving%20Wozny%27s%20puzzle%20on%20decoupling%20and%20housing%202019%20Gordon%20(1).pdf) came out, this one by Josh Gordon. We have been contemplating for a week now if it is worth responding to, but after seeing one too many obviously false statements about what the working paper supposedly shows making the rounds, we felt the benefits of addressing this might outweigh the costs of further entrenching the camps in Vancouver's real estate debates with this post.
 
 For those that don't have the patience to read the whole post, feel free to jump around between the following fairly self-contained sections.
 
@@ -35,6 +34,7 @@ For those that don't have the patience to read the whole post, feel free to jump
 * [The real world (real world data gives different results)](#real-world)
 * [The ecological fallacy (technical, but important problem for causal inferences)](#ecological-fallacy)
 * [How to fix this (some overview and link pointing to how to do this better)](#how-to-fix)
+* [Addendum (addressing some of Josh Gordon's comments on a pre-version encompassing the post up to this section)](#addendum)
 
 
 
@@ -55,7 +55,7 @@ In case this needs saying explicitly, **any analysis that's based on comparing m
 There probably are *some* income numbers of some type that match those used in the analysis, and the income numbers are defined and labelled incorrectly throughout the text. Who knows, either way the metric is constructed extremely carelessly. But the main issues is actually not that the input metrics of the analysis are grotesquely off, that part is reasonably easy to fix by just substituting in better estimates. **The main issue is that the methods of the type of analysis performed with the metric is flawed,** as we will explain in the following sections.
 
 ## Mismatch of metrics{#mismatch}
-The main metric employed in the working paper suffers from a severe mismatch of populations the aggregate is taken over, as we already noted above. The income metric is taken over all households, whereas the price metric is taken over a *detached* dwellings (as defined by the real estate boards). These two metrics match up in the case of an owner-occupied detached dwelling, while mismatches occurs for non-owner occupied detached dwellings on the dwelling side, and renter households as well as owner households in *attached* dwellings. This makes the *price to income ratio* as defined in the working paper very hard to interpret, we have [written about this problem before](https://doodles.mountainmath.ca/blog/2016/09/14/measuring-housing-affordability/).
+The main metric employed in the working paper suffers from a severe mismatch of populations the aggregate is taken over, as we already noted above. The income metric is taken over all households, whereas the price metric is taken over all *detached* dwellings (as defined by the real estate boards). These two metrics match up in the case of an owner-occupied detached dwelling, while mismatches occurs for non-owner occupied detached dwellings on the dwelling side, and renter households as well as owner households in *attached* dwellings. This makes the *price to income ratio* as defined in the working paper very hard to interpret, we have [written about this problem before](https://doodles.mountainmath.ca/blog/2016/09/14/measuring-housing-affordability/).
 
 To appreciate the effect of this mismatch, we can look at the average income of owner households in single detached housing (where some smaller municipalities are aggregated into groups) using a custom tabulation [we have worked with before](https://doodles.mountainmath.ca/blog/2019/01/09/high-value-homes/).
 
@@ -88,7 +88,7 @@ And indeed, we see a strong *positive* correlation between average households in
 
 <img src="/posts/2019-06-25-how-not-to-analyze-the-roots-of-the-affordability-crisis_files/figure-html/unnamed-chunk-5-1.png" width="768" />
 
-The numbers come out fairly close to the values used in the working paper, accounting for the grouping of municipalities in our dataset.
+The dwelling values come out close to the values used in the working paper, accounting for the grouping of municipalities in our dataset.
 
 We can also check the price-to-income ratios.
 
@@ -106,7 +106,7 @@ To round this off we quickly check how the ecological correlations with non-resi
 
 <img src="/posts/2019-06-25-how-not-to-analyze-the-roots-of-the-affordability-crisis_files/figure-html/unnamed-chunk-7-1.png" width="768" />
 
-This gives still a reasonably strong correlation, although with a much lower *R*<sup>2</sup> that depends to a significant degree on the choice of non-resident owner metric chosen. In particular this shows that the lazy argument in the working paper asserting that the choice does not making a difference is not correct. And this is not a product of our grouping, correlating the grouped majority vs any non-resident participation gives an *R*<sup>2</sup> of 0.947, not much different from the 0.959 in the ungrouped data. 
+This gives still a reasonably strong correlation, although with a much lower *R*<sup>2</sup> that depends to a significant degree on the choice of non-resident owner metric chosen. In particular this shows that the lazy argument in the working paper asserting that the choice does not make a difference is not correct. And this is not a product of our grouping, correlating the grouped majority vs any non-resident participation gives an *R*<sup>2</sup> of 0.947, not much different from the 0.959 in the ungrouped data. 
 
 While we have reduced some of the unaccounted confounders by moving the price-to-income ratios from the fantasy world to the real world, it would be foolish to assume that this was the only confounder at play, let alone not having dealt with the ecological inference problem. The regions with large residuals give an indication of missing confounders, with the commute distance to the central business district being a strong contender in fitting the general model of how people make trade-offs between housing and transportation costs.
 
@@ -122,4 +122,37 @@ One disadvantage of this approach is that it does not give information on buyers
 ## The upshot
 Taking a step back, the working paper tried to offer insight into what drove the housing market in Vancouver (and Toronto). I am looking forward to reading work that will add insight to this question, using rigorous methodology. I am afraid Josh Gordon's working paper does not do this.
 
+It should also be pointed out that this post should not be read as an analysis in it's own right. In particular, the scatter plots presented still contain numerous unaccounted confounding factors. This post is not aimed at offering an alternative analysis, but it simply serves to illustrate the methodological failings in Josh Gordon's working paper. For insight into mismatches between housing and income metrics we refer the reader to the posts linked in the [previous section](#how-to-fix) that build on individual level price-to-income and shelter-cost-to-income metrics.
+
 As usual, the code for the analysis is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-06-25-how-not-to-analyze-the-roots-of-the-affordability-crisis.Rmarkdown) in case someone wants to check the details, or adapt the analysis for their own purposes.
+
+# Addendum{#addendum}
+I sent this post to Josh Gordon before distributing it, and he had a couple of comments he asked I address in my post. 
+
+Firstly, he asserts that he has been using median household income numbers throughout, despite claiming he used average household income in his paper. We already establish above that the paper did not use average household income numbers, and the numbers don't match median household income either, adjusted for 2016 or otherwise, as a [quick comparison](https://censusmapper.ca/maps/838#9/49.2284/-123.0194) shows. We still don't know what income statistic was actually used in the paper.
+
+
+Secondly, Josh reiterates that one should use income numbers for the whole population as opposed to matching home prices to the incomes of the population that lives in those homes as I suggested above, because "non-owners are in many cases *potential* owners and so their incomes matter in terms of what your housing market should look like if it's connected to local incomes". Josh further submits that
+
+> There's also a utility to simply understanding whether a typical resident can afford a typical detached home, and so eliminating much of the bottom half of the distribution is going to give you a flawed understanding of that. Certainly for most renters in Vancouver, the fact that detached houses, which most would ideally like to reside in, are sometimes between 20 and 30 times their income is relevant and part of the affordability issues Vancouver faces.
+
+While I appreciate the plight of renters looking to buy a home (some of which may be looking to buy a detached house) and agree that there is utility in understanding how these people fare, this simply isn't what Josh is constructing his metric for. And I am baffled by the consistency with which Josh ignores the simple geometric fact that the City of Vancouver's ~75k detached homes aren't able to house Vancouver's over 280k households, and that given that "most would ideally like to reside in" one of these one should expect the median price of these homes to be governed roughly by people in the 90th percentile of the City of Vancouver income distribution, assuming that home prices are aligned with incomes. So if one wants to test this alignment (or lack thereof), one needs to consider the household at the 90th income percentile. Using the 50th percentile, as Josh keeps insisting, is simply not informative but serves to collect confounders, as the share of detached homes and the shape of the income distribution varies across municipalities. But we already explained this at length above.
+
+Josh states that I should not include Anmore and Belcarra in my analysis because there too few detached houses there, but apparently he fails to notice that I grouped them together with nearby municipalities. To do this properly would require setting up a methodological framework that properly deals, among other things, with different municipalities having different numbers of dwellings and households. This could be as simple as using weighted regressions, but given how few data points are being used the analysis would likely benefit from a more sophisticated statistical model, which would also guard against the post-hoc nature with which the report attempts to discard "outliers".
+
+Next Josh makes the point that my use of average price to income ratio might get skewed by outliers. My choice was of course triggered by what he claimed he used, but this is still a valid concern and again points to individual (as opposed to aggregate) level price-to-income being the more useful metric. And he asks that I redo my analysis based on his "standard methodological decisions", and says he will "simply screenshot this email exchange and it will be posted under [my] blog post on twitter" if I fail to do so. Which, quite frankly, is not just incredibly rude, but also impossible because Josh has not actually made his methodology clear. One would first need answers to the following questions:
+
+* What income metric is being used and why? 
+
+* What price metrics are being used and why? (Josh asserts he is using REBGV benchmark prices, which is clearly false as REBGV does not cover some of the Metro Vancouver municipalities reported on in the working paper.)
+
+* Why can we assume confounding factors, including the ones I outlined above, are not skewing the results?
+
+* Why can we assume the ecological fallacy won't affect the results?
+
+* Why was the particular non-resident owner metric chosen, as opposed to e.g. using majority of owners living abroad, or all owners living abroad. (The argument Josh makes that it does not matter because they all correlate is incredibly naive and incorrect, as shown in the main part of this post.) And what exactly is the non-resident owner metric is being used as a proxy for? (Josh asserts it's "ownership primarily based on foreign income or wealth", which is an frustratingly ill-defined concept.)
+
+* Is the working paper actually claiming to show causation, and if yes, how?
+
+These are, quite frankly, pretty standard methodological checkboxes for scholarly research, which the working paper is being presented as. And I am happy to revisit this and take a fresh look at the "methodological decisions" once the paper actually lays them out properly. As it is, Josh's paper is a mess. And I don't feel it's my job to clean it up.
+
