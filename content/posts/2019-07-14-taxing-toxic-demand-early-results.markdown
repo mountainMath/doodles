@@ -1,8 +1,8 @@
 ---
 title: 'Taxing Toxic Demand: Early Results'
 authors: 
-  - Jens von Bergmann
   - Nathan Lauster
+  - Jens von Bergmann
 date: '2019-07-14'
 slug: taxing-toxic-demand-early-results
 categories:
@@ -23,6 +23,9 @@ blackfriday:
   fractions: false
   hrefTargetBlank: true
 ---
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2019/07/15/taxing-toxic-demand-early-results/" target="_blank">HomeFreeSociology</a>)</i></p>
+
 
 
 
