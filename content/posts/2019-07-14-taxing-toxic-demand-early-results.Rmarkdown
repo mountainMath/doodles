@@ -1,0 +1,231 @@
+---
+title: 'Taxing Toxic Demand: Early Results'
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
+date: '2019-07-14'
+slug: taxing-toxic-demand-early-results
+categories:
+  - CANSIM
+  - Empty Homes
+  - taxes
+  - Vancouver
+tags: []
+description: "Checking in on the Speculation and Vacancy Tax preliminary data."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2019-07-14-taxing-toxic-demand-early-results_files/figure-html/SVT-normalized-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+draft: false
+blackfriday:
+  fractions: false
+  hrefTargetBlank: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = TRUE,
+	fig.width=8,
+	cache=TRUE
+)
+library(tidyverse)
+library(cancensus)
+library(cansim)
+library(statcanXtabs)
+```
+
+```{r}
+rs <- list_census_regions("CA16")
+tax_regions <- 
+  bind_rows(
+  filter(rs,CMA_UID=="59933",!grepl(" A$|^Bowen|^Lions Bay",name),level=="CSD",municipal_status !="IRI"),
+  filter(rs,CMA_UID=="59935",!grepl("^Juan de Fuca",name),level=="CSD",municipal_status !="IRI"),
+  filter(rs,name %in% c("Nanaimo","Lantzville"),level=="CSD"),
+  filter(rs,name %in% c("Kelowna","West Kelowna"),level=="CSD"),
+  filter(rs,name %in% c("Abbotsford","Mission","Chilliwack"),level=="CSD"),
+  tibble(name="UBC",region=c("9330069.02","9330069.01"),level="CT")
+  )
+
+
+regions <- get_census("CA16",regions=as_census_region_list(tax_regions),geo_format = "sf") %>%
+  sf::st_transform(3005) %>%
+  mutate(uubur=Dwellings-Households) %>%
+  mutate(uuburr=uubur/Dwellings)
+
+
+```
+
+
+
+```{r}
+cansim_regions <- regions%>%
+  mutate(GeoUID=ifelse(Type=="CT","5915020",GeoUID)) %>%
+  pull(GeoUID)
+
+res_data1 <- get_cansim("46-10-0029") %>%
+  normalize_cansim_values(factors = TRUE) %>%
+  filter(GeoUID %in% cansim_regions) %>%
+  filter(`Property use` %in% c("Not owner-occupied", "Owner-occupied"),
+         Estimates=="Number of properties",
+         `Property type` == "Total, all property types",
+         `Residency ownership`!="Total, all residency ownership types") %>%
+  select(GEO,GeoUID,`Residency ownership`,`Property use`,VALUE) %>%
+  mutate(Type=paste0(`Residency ownership`,", ",`Property use`))
+
+total_chsp <- res_data1 %>%
+  group_by(Type) %>%
+  summarize(Count=sum(VALUE,na.rm=TRUE))
+
+spec_tax_prelim_data <- tibble(Type=c("Foreign owners","Satellite families", "Canadians living outside of B.C.","B.C. residents","other","Not filed"),Count=c(4585,3241,1555,2410,238,23000))
+
+
+plot_data <- bind_rows(total_chsp,spec_tax_prelim_data) %>%
+  mutate(Bucket=case_when(grepl("Owner-occupied",Type)~"CHSP Owner-occupied properties",
+                          grepl("Not owner-occupied",Type)~"CHSP Investor properties",
+                          Type %in% c("Foreign owners","Canadians living outside of B.C.","B.C. residents","other") ~ "SVT vacant declarations",
+                          Type %in% c("Not filed") ~ "SVT not filed",
+                          Type %in% c("Satellite families") ~ "SVT Owner-occupied declarations",
+                          TRUE~Type)) %>%
+  mutate(Bucket=factor(Bucket,levels=c("CHSP Owner-occupied properties","SVT Owner-occupied declarations","CHSP Investor properties","SVT vacant declarations","SVT not filed")))
+
+colors <- c("Non-resident owned, Not owner-occupied"="lightblue",
+"Non-resident owned, Owner-occupied"="lightgreen",
+"Resident owned, Not owner-occupied"="darkblue",
+"Resident owned, Owner-occupied"="darkgreen",
+"Foreign owners"="brown",
+"Satellite families"="orange",
+"Canadians living outside of B.C."="darkred",
+"B.C. residents"="red",
+"other"="pink",
+"Not filed"="grey40")
+
+properties <- get_cansim("46-10-0022") %>%
+  normalize_cansim_values() %>%
+  filter(`Property type`=="Total, all property types",
+         `Period of construction`=="Total, all periods of construction",
+         Estimates=="Number") %>%
+  group_by(GEO,`Residency participation`) %>%
+  select(GEO,`Residency participation`,`Number of owners`,VALUE) %>%
+  spread(key=`Number of owners`,value=VALUE) %>%
+  mutate(Declarations=coalesce(`One owner`,0)+2*`Two owners`+3*`Three or more owners`) %>%
+  gather(key=`Number of owners`,value=Value,c("One owner", "Two owners", "Three or more owners"),factor_key = TRUE) %>%
+  mutate(Share=Value/`Total, all numbers of owners`,
+         fudge=Declarations/`Total, all numbers of owners`) 
+  
+
+yyz_properties <- properties %>% 
+  filter(GEO=="Vancouver, census metropolitan area")
+
+metros <- c("Vancouver, census metropolitan area",
+            "Victoria, census metropolitan area",
+            "Kelowna, census metropolitan area")
+            
+cma_properties <- properties %>% filter(`Number of owners`=="One owner",
+                             `Residency participation`=="Total, all residency participation types",
+                             GEO %in% metros)
+
+fudge_factor <- cma_properties %>%
+  ungroup %>%
+  summarize(fudge=weighted.mean(fudge,`Total, all numbers of owners`)) %>%
+  pull(fudge)
+
+total_properties <- total_chsp$Count %>% sum
+
+total_declarations=total_properties*fudge_factor
+
+share_vacant <-  sum(filter(plot_data,Bucket=="SVT vacant")$Count)/as.numeric(sum(total_chsp$Count))
+
+```
+
+The province has [released (via press release) the first data on its Speculation and Vacancy Tax](https://news.gov.bc.ca/releases/2019FIN0068-001435) (SVT)! Huzzah! 
+
+Previously, we've [speculated on what this data would show](https://doodles.mountainmath.ca/blog/2019/02/27/tax-speculations/). In particular, we estimated that around 8,800 dwellings would show up as empty in a way likely to be taxed by the speculation tax. How close were we? Well, the speculation tax has so far identified 8,738 owners of empty properties. Hot damn! We're [on a roll](https://homefreesociology.com/2019/06/19/checking-in-with-chsp/)!
+
+But wait! No celebrating yet. It's early days, and two issues remain to be resolved: 
+
+1) The province seems to identify owners owing taxes in its press release rather than properties owing taxes. There can be more than one owner per property! (And more than one property per owner...). On average, CHSP data suggests that there appear to be [about `r round(fudge_factor,2)` owners per property in major metro areas covered by the tax](#appendix) (e.g. family members co-owning properties, investors, etc.). That may mean that the 8,800 dwellings we thought would appear empty should correspond to 13,904 owners - and so far we've only found 8,738, so we're still short!
+
+2) There are around 23,000 undeclared taxfilers out there, so figures for owners of empty properties may rise. We really don't know anything about these undeclared filers. The province, so far, has not identified them as likely speculators. Instead the press release goes out of its way to reassure those who haven't filed that they'll be contacted by the Province about applying for an exemption. It's possible that late declarations are late for reasons unrelated to the tax (e.g. forgetfulness, hospitalization, death), in which case undeclared filings will probably come in similar to declared filings, with maybe another 180 taxed owners added. Similarly, it's possible that late declarations reflect overlapping ownership claims and property owners' assumptions that someone else had already declared on their behalf. Or it could be that late filings disproportionately reflect owners with limited ties to the province, boosting the number of vacancies likely to be discovered. It would appear that over [one-fifth](https://vancouver.ca/files/cov/empty-homes-tax-annual-report.pdf) of [late filers](https://globalnews.ca/news/4068194/vancouver-empty-homes-tax/) of the City of Vancouver's [Empty Homes Tax](https://council.vancouver.ca/20190227/documents/pspc2.pdf), for instance, ultimately ended up paying the tax (a much higher proportion than for those who filed on time). This kind of ratio, of course, could add another 4,500+ owners of empty properties if applied to the late filers. In other words, we'd end up pretty close to the 13,904 owners we initially projected (based on 8,800 dwellings showing up empty). 
+
+So we've learned that our estimates are at least going to end up in the ballpark in terms of vacant properties declared to the province. In addition, we've got data on where owners of vacant properties appear to reside as citizens (within BC, elsewhere in Canada, or outside of Canada) and we get our first look at declared satellite families. To date, we've had very few ways of estimating the size of the latter population. The tax defines satellite families as those earning more than half of their combined spousal incomes outside of Canada (hence undeclared on Canadian income taxes). Rather than attempting to estimate this directly, we mostly played around with the kinds of situations (mismatches between incomes and property values) likely to trigger audits in case people didn't file as satellite families. As we discuss in [our earlier post](https://homefreesociology.com/2019/02/28/tax-speculations/), there are many reasons why people may end up in satellite family arrangements. It is probably more productive to think of the component targeting satellite families as complementing federal tax law that is quite ineffective in taxing worldwide income of residents, although the SVT can only capture homeowners and determining residency for transnational families is inherently complicated.
+
+The data that we've got so far may change, of course, both as remaining undeclared owners file and as audit systems begin to look through cases. But to put the data in context, let's plot our preliminary declarations data against what we know about properties overall in the areas covered by the tax. Here we compare [CHSP data](https://www150.statcan.gc.ca/n1/daily-quotidien/190611/dq190611a-cansim-eng.htm) on property ownership, residency of owner, and owner-occupation with the declarations from the [Speculation Tax](https://news.gov.bc.ca/releases/2019FIN0068-001435) so far. Note that CHSP data and SVT data have different bases, the former is based on properties, while the latter is based on declarations, so property cross owners. This means we can look at all of the properties that are owner-occupied in the taxable region and compare them to the number of owner-occupiers declaring themselves part of satellite families, as in the first two columns below. You have to squint to see that second column, because compared to all owner-occupied properties in the region (800,000+), the number of declared satellite family owner-occupiers is very small (3,241). 
+
+
+
+```{r CHSP-SVT, fig.height=8, fig.width=11}
+ggplot(plot_data,aes(x=Bucket,y=Count,fill=Type)) +
+  geom_bar(stat="identity") + 
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=colors) +
+  theme_light() +
+  theme(legend.position = "bottom") +
+  guides(fill=guide_legend(nrow=3,byrow=TRUE)) +
+  labs(title="CHSP properties vs preliminary Speculation and Vacancy Tax declarations, STV regions only",
+       x="",y="Number of properties/declarations",fill="",
+       caption="B.C. government, StatCan Table 46-10-0029")
+```
+
+We can make the same basic comparison for the number of properties that are investor owned (which we use as a catch-all for any non-owner-occupied property). Through the CHSP data, the non-resident ("overseas") investor-owners can be distinguished from those residing in Canada. They're much smaller in number, but they're definitely part of the mix. We can compare the number of investor-owned properties to the number of owners declaring a vacant property subject to the Speculation and Vacancy Tax. Comparing, it would appear that the vast majority of investor-owned properties are not left vacant for the length of time needed to trigger the tax. Instead almost all appear to be rented out, making up a sizeable proportion of rental stock. 
+
+As we also discussed in our Speculation post, we didn't know the overlap between properties left "empty" and those deemed "foreign-owned." Now we do! It's hard to see it in the figure above because the declaration numbers are so tiny, but owners declaring vacancies that show up in the Speculation Tax data look like they're just over half foreign (see also figure below). Some owners may be holding for purely speculative reasons, some may be running short-term rentals, some affluent investors may have second (or third) vacation homes in the area. Other owners may be stuck in transitions of various kinds not covered under the Speculation Tax exemptions. What's clear from the figures is that owners of vacant properties are few in number compared to investor-owned properties overall. Of course, some properties may have been rented out as a means of avoiding the tax, and as with the City of Vancouver's [Empty Homes Tax](https://vancouver.ca/home-property-development/empty-homes-tax.aspx), we'd suggest that this aspect of the tax is worth supporting, even if the overall numbers of people paying remain small. As a bonus, the proceeds from the tax are earmarked for affordable housing!
+
+Let's return to our fudge factor to put properties and owners are the same footing. If we assume, based on estimates from CHSP data ([detailed below](#appendix)) that there are `r round(fudge_factor,2)` owners per property, then we get a total of `r scales::comma(total_declarations)` owners overall required to make declarations, using `r scales::comma(total_properties)` residential properties from the CHSP data as a base. That probably over-estimates to total number of declarations required, as not all residential properties are required to declare their SVT status. Still, this matches reasonably well with the ["1.6 million"](https://www.timescolonist.com/real-estate/backlash-builds-over-homeowner-speculation-tax-form-1.23602814) letters on how to apply for exemptions it appears the government expected to send out back in January. Using this figure as our base, we can estimate the percentage of all owners who've so far declared themselves as members of satellite families or owners of a vacant property. What's that look like? 
+
+
+
+```{r SVT-normalized, fig.width=9}
+plot_data2 <- plot_data %>%
+  mutate(Share=Count/total_declarations) %>%
+  filter(!grepl("CHSP",Bucket))
+ggplot(plot_data2,aes(x=Bucket,y=Share,fill=Type)) +
+  geom_bar(stat="identity") + 
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_manual(values=colors) +
+  theme_light() +
+  #theme(legend.position = "bottom") +
+  #guides(fill=guide_legend(nrow=3,byrow=TRUE)) +
+  labs(title="Preliminary Speculation and Vacancy Tax declarations",
+       x="",y="Share of declarations",fill="",
+       caption="B.C. government, StatCan Table 46-10-0029")
+```
+
+Declared satellite family members make up less than a quarter percentage point of owners overall. Owners of vacant properties make up just over half a percentage point. Together, taxed owners are less than one percent of owners overall. While these numbers might still change, depending on the late declarations (<1.5% of owners) and possible audits, as well as variations in number of owners per property in each sub-category, the findings so far demonstrate a much broader point: The situations subject to the Speculation and Vacancy Tax probably are rare, and probably aren't contributing a great deal to BC's housing crises. 
+
+It would appear that "toxic demand" in the form of Satellite-Family-Foreign-Owned-Empty-Dwellings just aren't all that big a thing, and we should probably stop blaming foreigners and transnational families for our housing woes. As always, there remain caveats to this assessment. There may be some geographic clustering, or clustering by property types, so the impact may be somewhat bigger in very specific sub-markets. Single family homes on the west side of Vancouver, or in West Vancouver, have been identified as especially subject to "toxic demand" before. Once we get better numbers we will have a clearer picture of this, but these sub-markets that soak up most of the attention aren't the main battle grounds of our affordability crisis, but rather speak to a crisis of certain professionals' sense of [entitlement](https://www.nsnews.com/opinion/letter-full-impact-of-money-laundering-hits-home-1.23825308). Let's keep our vacancy tax. But let's also keep our eyes on the prize of achieving broad regional affordability across a diverse housing stock, moving forward to provide serious answers to the questions of how we should make room, meet housing needs, and build enough housing to promote a more inclusive BC for everyone.
+
+
+# Appendix{#appendix}
+To get our [fudge factor](#fudge_factor) we look at the differences between CHSP data on owners and data on properties. On average across our CMAs there are about `r round(fudge_factor,2)` owners per residential property, which may be a slight under-estimate as the data does not provide details for properties with more than three owners on title. 
+
+```{r}
+ggplot(cma_properties, aes(x=GEO,y=fudge)) +
+  geom_bar(stat="identity",fill="brown") +
+  theme_light() +
+  labs(x="",y="",caption="StatCan Table 46-10-0022",
+       title="Estimated average number of owners per residential property")
+```
+
+A quick check across metro areas affected by the SVT confirms that there is little geographic bias. In summary, there are no significant differences in how many owners are on title across CMAs or residency participation. 
+
+```{r fig.width=10}
+ggplot(yyz_properties %>% filter(`Number of owners`=="One owner"),aes(x=`Residency participation`,y=fudge)) +
+  geom_bar(stat="identity",fill="brown") +
+  theme_light() +
+  labs(x="",y="",caption="StatCan Table 46-10-0022",
+       title="Estimated average number of owners per residential property")
+```
+
+There also seems to be little variation across residency types, except that properties owned purely by non-resident owners have fewer owners on title, while properties owned by mixed resident and non-resident owners have more. But that's expect. The share for non-resident participation properties confirms that the differences from the average are almost entirely due to conditional bias. Thus there should be little issue with applying the same fudge factor across the board.
+
+As usual, the code for the analysis is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-07-14-taxing-toxic-demand-early-results.Rmarkdown).
+
+
+
+
+
