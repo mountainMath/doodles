@@ -35,7 +35,6 @@ blackfriday:
 
 
 
-
 The province has [released (via press release) the first data on its Speculation and Vacancy Tax](https://news.gov.bc.ca/releases/2019FIN0068-001435) (SVT)! Huzzah! 
 
 Previously, we've [speculated on what this data would show](https://doodles.mountainmath.ca/blog/2019/02/27/tax-speculations/). In particular, we estimated that around 8,800 dwellings would show up as empty in a way likely to be taxed by the speculation tax. How close were we? Well, the speculation tax has so far identified 8,738 owners of empty properties. Hot damn! We're [on a roll](https://homefreesociology.com/2019/06/19/checking-in-with-chsp/)!
@@ -66,7 +65,7 @@ Let's return to our fudge factor to put properties and owners are the same footi
 
 Declared satellite family members make up less than a quarter percentage point of owners overall. Owners of vacant properties make up just over half a percentage point. Together, taxed owners are less than one percent of owners overall. While these numbers might still change, depending on the late declarations (<1.5% of owners) and possible audits, as well as variations in number of owners per property in each sub-category, the findings so far demonstrate a much broader point: The situations subject to the Speculation and Vacancy Tax probably are rare, and probably aren't contributing a great deal to BC's housing crises. 
 
-It would appear that "toxic demand" in the form of Satellite-Family-Foreign-Owned-Empty-Dwellings just aren't all that big a thing, and we should probably stop blaming foreigners and transnational families for our housing woes. As always, there remain caveats to this assessment. There may be some geographic clustering, or clustering by property types, so the impact may be somewhat bigger in very specific sub-markets. Single family homes on the west side of Vancouver, or in West Vancouver, have been identified as especially subject to "toxic demand" before. Once we get better numbers we will have a clearer picture of this, but these sub-markets that soak up most of the attention aren't the main battle grounds of our affordability crisis, but rather speak to a crisis of certain professionals' sense of [entitlement](https://www.nsnews.com/opinion/letter-full-impact-of-money-laundering-hits-home-1.23825308). Let's keep our vacancy tax. But let's also keep our eyes on the prize of achieving broad regional affordability across a diverse housing stock, moving forward to provide serious answers to the questions of how we should make room, meet housing needs, and build enough housing to promote a more inclusive BC for everyone.
+It would appear that "toxic demand" in the form of Satellite-Family-Foreign-Owned-Empty-Dwellings just aren't all that big a thing, and we should probably stop blaming foreigners and transnational families for our housing woes (especially given the toxicity such blame spreads to discussions of [race and immigration](https://thetyee.ca/Opinion/2019/07/04/Vancouver-Race-Estate-Hurt/) in Vancouver). As always, there remain caveats to this assessment. There may be some geographic clustering, or clustering by property types, so the impact may be somewhat bigger in very specific sub-markets. Single family homes on the west side of Vancouver, or in West Vancouver, have been identified as especially subject to "toxic demand" before. Once we get better numbers we will have a clearer picture of this, but these sub-markets that soak up most of the attention aren't the main battle grounds of our affordability crisis, but rather speak to a crisis of certain professionals' sense of [entitlement](https://www.nsnews.com/opinion/letter-full-impact-of-money-laundering-hits-home-1.23825308). Let's keep our vacancy tax. But let's also keep our eyes on the prize of achieving broad regional affordability across a diverse housing stock, moving forward to provide serious answers to the questions of how we should make room, meet housing needs, and build enough housing to promote a more inclusive BC for everyone.
 
 
 # Appendix{#appendix}
@@ -79,6 +78,7 @@ A quick check across metro areas affected by the SVT confirms that there is litt
 <img src="/posts/2019-07-14-taxing-toxic-demand-early-results_files/figure-html/unnamed-chunk-4-1.png" width="960" />
 
 There also seems to be little variation across residency types, except that properties owned purely by non-resident owners have fewer owners on title, while properties owned by mixed resident and non-resident owners have more. But that's expect. The share for non-resident participation properties confirms that the differences from the average are almost entirely due to conditional bias. Thus there should be little issue with applying the same fudge factor across the board.
+
 
 As usual, the code for the analysis is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-07-14-taxing-toxic-demand-early-results.Rmarkdown).
 

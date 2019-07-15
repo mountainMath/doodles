@@ -27,7 +27,6 @@ blackfriday:
 <p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2019/07/15/taxing-toxic-demand-early-results/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
 	echo = FALSE,
@@ -200,7 +199,7 @@ ggplot(plot_data2,aes(x=Bucket,y=Share,fill=Type)) +
 
 Declared satellite family members make up less than a quarter percentage point of owners overall. Owners of vacant properties make up just over half a percentage point. Together, taxed owners are less than one percent of owners overall. While these numbers might still change, depending on the late declarations (<1.5% of owners) and possible audits, as well as variations in number of owners per property in each sub-category, the findings so far demonstrate a much broader point: The situations subject to the Speculation and Vacancy Tax probably are rare, and probably aren't contributing a great deal to BC's housing crises. 
 
-It would appear that "toxic demand" in the form of Satellite-Family-Foreign-Owned-Empty-Dwellings just aren't all that big a thing, and we should probably stop blaming foreigners and transnational families for our housing woes. As always, there remain caveats to this assessment. There may be some geographic clustering, or clustering by property types, so the impact may be somewhat bigger in very specific sub-markets. Single family homes on the west side of Vancouver, or in West Vancouver, have been identified as especially subject to "toxic demand" before. Once we get better numbers we will have a clearer picture of this, but these sub-markets that soak up most of the attention aren't the main battle grounds of our affordability crisis, but rather speak to a crisis of certain professionals' sense of [entitlement](https://www.nsnews.com/opinion/letter-full-impact-of-money-laundering-hits-home-1.23825308). Let's keep our vacancy tax. But let's also keep our eyes on the prize of achieving broad regional affordability across a diverse housing stock, moving forward to provide serious answers to the questions of how we should make room, meet housing needs, and build enough housing to promote a more inclusive BC for everyone.
+It would appear that "toxic demand" in the form of Satellite-Family-Foreign-Owned-Empty-Dwellings just aren't all that big a thing, and we should probably stop blaming foreigners and transnational families for our housing woes (especially given the toxicity such blame spreads to discussions of [race and immigration](https://thetyee.ca/Opinion/2019/07/04/Vancouver-Race-Estate-Hurt/) in Vancouver). As always, there remain caveats to this assessment. There may be some geographic clustering, or clustering by property types, so the impact may be somewhat bigger in very specific sub-markets. Single family homes on the west side of Vancouver, or in West Vancouver, have been identified as especially subject to "toxic demand" before. Once we get better numbers we will have a clearer picture of this, but these sub-markets that soak up most of the attention aren't the main battle grounds of our affordability crisis, but rather speak to a crisis of certain professionals' sense of [entitlement](https://www.nsnews.com/opinion/letter-full-impact-of-money-laundering-hits-home-1.23825308). Let's keep our vacancy tax. But let's also keep our eyes on the prize of achieving broad regional affordability across a diverse housing stock, moving forward to provide serious answers to the questions of how we should make room, meet housing needs, and build enough housing to promote a more inclusive BC for everyone.
 
 
 # Appendix{#appendix}
@@ -225,6 +224,7 @@ ggplot(yyz_properties %>% filter(`Number of owners`=="One owner"),aes(x=`Residen
 ```
 
 There also seems to be little variation across residency types, except that properties owned purely by non-resident owners have fewer owners on title, while properties owned by mixed resident and non-resident owners have more. But that's expect. The share for non-resident participation properties confirms that the differences from the average are almost entirely due to conditional bias. Thus there should be little issue with applying the same fudge factor across the board.
+
 
 As usual, the code for the analysis is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-07-14-taxing-toxic-demand-early-results.Rmarkdown).
 
