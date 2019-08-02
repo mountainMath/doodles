@@ -137,7 +137,7 @@ We can also look at how our population, dwelling and employment estimates line u
 
 <img src="/posts/2019-08-01-on-vancouver-population-projections_files/figure-html/unnamed-chunk-10-1.png" width="768" />
 
-This shows that the Metro Vancouver Regional Growth Strategy did a decent job at projecting jobs and population, but failed came in systematically short of their dwelling targets. The smaller differences aren't concerning and expected when using different metrics, but it would be prudent to better understand the apparent dwelling shortfall in the RGS. It would be good to better understand exactly how Metro Vancouver derives their estimates and projections.
+This shows that the Metro Vancouver Regional Growth Strategy did a decent job at projecting jobs and population, but came in systematically short of their dwelling targets. The smaller differences aren't concerning and expected when using different metrics, but it would be prudent to better understand the apparent dwelling shortfall in the RGS. It would be good to better understand exactly how Metro Vancouver derives their estimates and projections.
 
 ## Checking in with 2016 data
 The 2016 census gives us another opportunity to check the projections against the data. We can use the projections from the original and the updated Growth Strategy and compare them to our estimates based on Census data and annual tables.
@@ -213,7 +213,7 @@ Both of these outcomes have strong negative consequences for individuals, as wel
 
 More transparent models would also be helpful, especially given how high the stakes are when the dwelling targets are set too low. It would be helpful if planners, maybe in conjunction with economists, could explain better what consequences different planning scenarios may likely have for the region, so the politicians and the general public can make better decisions on how the region should grow.
 
-In our highly regularized environment it is prudent to develop better metrics that can be updated regularly and that help inform of region-wide housing shortages, as well as more localized housing shortages within the region. Recently [Nathan Lauster](https://twitter.com/LausterNa) and I set out to [draw up an outline of how such metrics could be constructed](https://doodles.mountainmath.ca/blog/2019/06/12/simple-metrics-for-deciding-if-you-have-enough-housing/), a task we are planning on following up on with more concrete metrics and code that implement them.
+In our highly regulated environment it is prudent to develop better metrics that can be updated regularly and that help inform of region-wide housing shortages, as well as more localized housing shortages within the region. Recently [Nathan Lauster](https://twitter.com/LausterNa) and I set out to [draw up an outline of how such metrics could be constructed](https://doodles.mountainmath.ca/blog/2019/06/12/simple-metrics-for-deciding-if-you-have-enough-housing/), a task we are planning on following up on with more concrete metrics and code that implement them.
 
 As usual, the code for the analysis is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-08-01-on-vancouver-population-projections.Rmarkdown).
 
