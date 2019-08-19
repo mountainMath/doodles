@@ -1,0 +1,282 @@
+---
+title: Running on Empties
+authors: 
+  - "Jens von Bergmann"
+  - "Nathan Lauster"
+date: '2019-08-19'
+slug: running-on-empties
+categories:
+  - cancensus
+  - Vancouver
+  - newsfail
+  - Empty Homes
+tags: []
+description: ""
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2019-08-19-running-on-empties_files/figure-html/canada-us-comparison-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+math: true
+blackfriday:
+  fractions: false
+  hrefTargetBlank: true
+---
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2019/08/19/running-on-empties/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width=8,
+	cache = TRUE
+)
+library(tidyverse)
+library(cancensus)
+library(statcanXtabs)
+library(tidycensus)
+```
+
+A spectre haunts housing policy. The spectre of empty homes. So how many empty homes are out there?
+
+Unfortunately, inept analyses of census data often leaves us with incomplete, or even worse, completely wrong answers to this question. When we get data on empty homes for a given city, they're seldom put into comparative perspective. What's worse, sometimes when they're put into comparative perspective, they're compared with the [wrong data](https://www.point2homes.com/news/canada-real-estate/ghost-homes-across-canada-decade-change-150-cities.html) and picked up by [credulous media](https://www.huffingtonpost.ca/entry/empty-homes-canada_ca_5d559bace4b056fafd08bdfb?ncid=other_twitter_cooo9wqtham&utm_campaign=share_twitter), spreading misinformation. So let's try to do it right!
+
+Here we want to compare some big metro areas and cities in Canada with similar metro areas and cities in the US. As a bonus, this comparison sheds some light on our incomplete data in Canada, and why empty homes have managed to become so central to Canadian housing discussions.
+
+## Empty homes
+In Canada we only have one national measure of empty homes, the Census. It estimates the number of dwelling units that are not occupied on census day. It does not offer any insight to why those homes are not occupied. Nor is it part of the standard release data, for most censuses it is only available as a custom tabulation. However, the related number of homes *not occupied by usual residents* is part of the general census release data and available down to the census block level. It is given by the number of dwellings minus the number of households (aka "occupied dwelling units"), so it includes dwellings that are occupied by people who usually reside in a different "household." To understand what that means we need to remind ourselves that the census counts people, and tries to count them only once. And each person belongs to exactly one household. This gets tricky for people that call several places their "home", for example a student that rents an apartment near university but also lives with their parents during summer, or someone working in Fort McMurray for months at a time but lives with their family elsewhere during work breaks. These people may think of their family's home as "home", and the other place as "temporary". In the census, the "temporary" home will be counted as "occupied by temporary residents" and not count as a "household," as their main household is elsewhere.
+
+## Canadian numbers
+```{r}
+csds <- list_census_regions("CA16") %>% filter(level=="CSD") %>% 
+  filter(grepl("Waterloo|^Vancouver$|Toronto|Montrèal|Calgary|Ottawa|Halifax|St John's|Edmonton|Regina$|Victoria|^Kelowna|^Wood Buffalo$",name)) %>% arrange(-pop)
+csd_ids <- csds$region
+cmas <- list_census_regions("CA16") %>% filter(level=="CMA") %>% mutate(GeoUID=ifelse(nchar(region)==3,region,substr(region,3,5)))
+cma_ids <- cmas$GeoUID
+old_toronto_cts <- cancensusHelpers:::get_old_toronto_data("CA16")$GeoUID
+provinces <- list_census_regions("CA16") %>% filter(level=="PR") 
+province_lookup <- set_names(cansim:::short_prov.en[provinces$name],provinces$region)
+
+process_unoccupied_data <- function(data){
+  data %>%
+    collect() %>%
+    mutate(Value=`Total - Structural type of dwelling`) %>%
+    select(GeoUID,Geography,GEO_NAME,`Document Type`,Value) %>%
+    spread(key="Document Type",value="Value") 
+}
+
+unoccupied_xtab <- get_sqlite_xtab("unoccupied2016")
+unoccupied_data_csd <- unoccupied_xtab %>%
+  filter(GeoUID %in% csd_ids) %>%
+  process_unoccupied_data
+
+unoccupied_data_cma <- unoccupied_xtab %>%
+  filter(GeoUID %in% cma_ids) %>%
+  process_unoccupied_data 
+unoccupied_data_ot <- unoccupied_xtab %>%
+  filter(GeoUID %in% old_toronto_cts) %>%
+  process_unoccupied_data %>%
+  summarize_at(vars(-one_of("GeoUID", "Geography", "GEO_NAME")),sum) %>%
+  mutate(GeoUID="XXX",GEO_NAME="Old Toronto",Name="Old Toronto")
+close_sqlite_xtab(unoccupied_xtab)
+
+compute_shares <- function(data){
+  data %>% 
+    mutate(Unoccupied=Unoccupied/`Total - Private dwellings by document type`) %>%
+    mutate(`Occupied by temporarily present persons`=`Occupied by foreign/temporary-present persons`/`Total - Private dwellings by document type`) %>% 
+    #top_n(30,Unoccupied) %>%
+    gather(key="Type",value="Share",c("Unoccupied","Occupied by temporarily present persons"),factor_key = TRUE) %>%
+    group_by(Name) %>%
+    mutate(Total=sum(Share)) %>%
+    rename(Dwellings=`Total - Private dwellings by document type`) %>%
+    select(Name,Type,Share,Total,Dwellings) %>%
+    ungroup 
+}
+
+plot_data_ot <- unoccupied_data_ot  %>% 
+  compute_shares()
+
+plot_data_csd <- unoccupied_data_csd %>%
+  left_join(csds %>% 
+              rename(GeoUID=region) %>% 
+              mutate(Name=paste0(name," ",municipal_status,", ",province_lookup[PR_UID])) %>%
+              select(GeoUID,Name),
+            by="GeoUID") %>%
+  compute_shares() %>%
+  bind_rows(plot_data_ot)
+ 
+plot_data_cma <- unoccupied_data_cma %>%
+  left_join(cmas %>% 
+              mutate(Name=name) %>%
+              select(GeoUID,Name),
+            by="GeoUID") %>%
+  compute_shares()
+
+
+canada_colours <- c("Unoccupied"="brown","Occupied by temporarily present persons"="steelblue")
+canada_caption <- "Canada 2016 census custom tabulation"
+
+empty_homes_theme <- list(
+  geom_hline(yintercept = c(0.04,0.08,0.12),linetype="dashed",alpha=0.1),
+  geom_bar(stat="identity"),
+  coord_flip(),
+  theme_light(),
+  theme(legend.position = "bottom"),
+  guides(fill=guide_legend(ncol=2)),
+  scale_y_continuous(labels=scales::percent,breaks=c(0,0.04,0.08,0.12))
+)
+```
+
+Canadian data is pretty simple. To start off we look at Canada's major census metropolitan areas by their share of unoccupied dwellings. For context we also show the temporarily occupied units. We get a range of unoccupied households somewhere between roughly 2% and 10%, with most bigger metros hanging toward the middle, between 4% and 8% (or what the [Lincoln Land Institute](https://www.lincolninst.edu/publications/policy-focus-reports/empty-house-next-door) considers the [desirable range of "reasonable vacancy"](https://www.lincolninst.edu/sites/default/files/pubfiles/empty-house-next-door-full.pdf#page=14)).
+
+```{r fig.height=7.5}
+ggplot(plot_data_cma,aes(x=reorder(Name,Total),y=Share,fill=fct_rev(Type))) +
+  empty_homes_theme +
+  scale_fill_manual(values=canada_colours) +
+  labs(x="Census metropolitan areas",y="Share",fill="",
+       title="Dwellings not occupied by usual residents",
+       caption=canada_caption)
+
+```
+
+We can also look at municipalities, keeping in mind that the comparison across municipalities is inherently difficult as different municipalities play different roles within (or outside of) metropolitan areas. Here's a selection of municipalities, including the boundaries for the old (pre-amalgamation) City of Toronto, just for kicks. Note that municipalities still tend to hang between the 4% to 8% reasonable vacancy range, but the high share of temporarily occupied homes in Waterloo stands out, likely a function of students making up a large share of the town's population. 
+
+
+
+```{r}
+ggplot(plot_data_csd,aes(x=reorder(Name,Total),y=Share,fill=fct_rev(Type))) +
+  empty_homes_theme +
+  scale_fill_manual(values=canada_colours) +
+  labs(x="Municipalities",y="Share",fill="",
+       title="Dwellings not occupied by usual residents",
+       caption=canada_caption)
+```
+
+
+
+## US Data
+US data on unoccupied homes is available from multiple places. Here we use the [American Community Survey](https://www.census.gov/programs-surveys/acs) as similar to the Canadian Census. (But see also the [American Housing Survey](https://www.census.gov/programs-surveys/ahs.html) for fun cross-referencing). 
+
+```{r}
+survey="acs1"
+year=2017
+us_caption=paste0("US ",year," ",survey %>% toupper)
+vars <- load_variables(year,survey)
+
+vacancy_vars <- vars %>% filter(grepl("vacan",concept,ignore.case = TRUE))
+housing_vars <- vars %>% filter(concept=="HOUSING UNITS")
+occupancy_vars <- vars %>% filter(concept=="OCCUPANCY STATUS")
+
+vv <- vacancy_vars %>% 
+  filter(concept=="VACANCY STATUS") %>%
+  mutate(short_label=gsub(".+!!","",label)) %>%
+  filter(short_label!="Total") %>%
+  filter(grepl("^B25004",name))
+
+vars <- rlang::set_names(c(housing_vars$name,vv$name),c("Dwellings",vv$short_label))
+
+compute_vacant_share <- function(data){
+  data %>%
+
+    left_join((.) %>% 
+                filter(variable=="Dwellings") %>%
+                select(GEOID,estimate) %>%
+                rename(Dwellings=estimate),
+              by="GEOID") %>%
+    mutate(Share=estimate/Dwellings) %>%
+    filter(variable!="Dwellings") %>%
+    mutate(NAME=gsub(" Metro Area$","",NAME)) %>%
+    group_by(GEOID) %>%
+    mutate(TotalShare=sum(Share)) %>%
+    ungroup
+}
+
+metro_data <- get_acs("metropolitan statistical area/micropolitan statistical area",
+                      variables=vars,year=year,survey=survey) %>%
+  filter(grepl("Metro Area",NAME)) %>%
+  compute_vacant_share
+
+us_categories <- metro_data$variable %>% unique
+us_colours <- set_names(RColorBrewer::brewer.pal(length(us_categories),"Dark2"),us_categories)
+```
+
+```{r fig.height=8, fig.width=9}
+ggplot(metro_data %>% filter(Dwellings>=1000000),aes(x=reorder(NAME,Share),y=Share,fill=variable)) +
+  empty_homes_theme +
+  scale_fill_manual(values=us_colours) +
+  #guides(fill=guide_legend(ncol=3)) +
+  labs(title="Share of vacant dwelling units",caption=us_caption,
+       x="Metro areas with at least 1M dwelling units",y="Share",fill="")
+```
+
+
+US data is great in that it [adds important context to unoccupied units](https://www.socialexplorer.com/data/ACS2016/metadata/?ds=ACS16&table=B25004), specifying the reason the unit is unoccupied. This context is often completely absent from Canadian housing discussions. It clearly splits out the **transactional vacancies**, (units for rent or for sale), from **moving vacancies** (units sold or rented, but not yet occupied), from **recreational vacancies** (units for recreational, seasonal or occasional use), from **other vacancies** (not otherwise accounted for).
+
+The range for US Metropoles is also much higher than for Canada, running 12% and higher in the seasonal vacation-oriented metros of Florida, Arizona, and Southern California. Just below these metros sit some of the rust belt metros (Pittsburgh, Detroit, St. Louis) that have lost population, resulting in higher "other vacancies" from homes left behind. Houston seems driven by a high proportion of dwellings available for rent. Overall the data show that many empty homes may be accounted for by these kind of **transactional vacancies** and **moving vacancies**, together comprising vacancies we might also think of as [good vacancies](https://doodles.mountainmath.ca/blog/2019/06/12/simple-metrics-for-deciding-if-you-have-enough-housing/) insofar as they enable people to move between homes to find the best fit. Down toward at the bottom we see just under 5% in the Twin Cities of Minnesota. 
+
+Overall, vacancies tend to be higher in the US than in Canada. As unoccupied dwellings rise much above 5%, they seem to be increasingly explained by **recreational vacancies** and **other vacancies**. A baseline of **other vacancies** remains largely unavoidable (e.g. homes under major renovations, tied up in court cases, etc.), and also appears to include people showing up as temporary residents in Canada. We can use ACS data on Usual Residence Elsewhere to provide figures similar to what we get in Canada, comparing all North American metros on roughly the same basis. Here we'll just show the 14 biggest US metros along with the 6 biggest in Canada.
+
+```{r canada-us-comparison, fig.height=7, fig.width=8}
+cre_vars_data <- load_variables(year,survey) %>%
+  filter(grepl("B25005",name)) %>%
+  mutate(short_label=gsub(".+!!","",label)) %>%
+  filter(short_label!="Total")
+cre_vars <- rlang::set_names(c("B25001_001",cre_vars_data$name),c("Dwellings",cre_vars_data$short_label))
+
+#cre_vars <- c(Dwellings="B25001_001",Unoccupied="B25005_003","Occupied by temporarily present persons"="B25005_002")
+
+us_data <- get_acs("metropolitan statistical area/micropolitan statistical area",
+                      variables=cre_vars,year=year,survey=survey) %>%
+  filter(grepl("Metro Area",NAME)) %>%
+  left_join((.) %>% filter(variable=="Dwellings") %>% select(GEOID,estimate) %>% rename(Dwellings=estimate)) %>%
+  filter(variable!="Dwellings") %>%
+  mutate(Share=estimate/Dwellings)
+
+combined_colours <- c("Occupied by temporarily present persons"="#1f78b4","Vacant - current residence elsewhere"="#a6cee3","Unoccupied"="#e31a1c","All other vacant units"="#fb9a99")
+
+plot_data <- us_data %>% 
+  filter(NAME %in% ((.) %>% filter(!duplicated(NAME)) %>% top_n(14,Dwellings) %>% pull(NAME))) %>%
+  rename(Name=NAME,Type=variable) %>%
+  select(Name,Type,Share) %>%
+  bind_rows(plot_data_cma %>% 
+              filter(Name %in% ((.) %>% filter(!duplicated(Name)) %>% top_n(6,Dwellings) %>% pull(Name))) %>% 
+              select(Name,Type,Share)) %>%
+  group_by(Name) %>%
+  mutate(TotalShare=sum(Share)) %>%
+  mutate(Type=factor(Type,levels=names(combined_colours)))
+
+
+ggplot(plot_data,aes(x=reorder(Name,TotalShare),y=Share,fill=Type)) +
+  empty_homes_theme +
+  scale_fill_manual(values=combined_colours) +
+  #guides(fill=guide_legend(ncol=3)) +
+  labs(title="Dwellings not occupied by usual residents",
+       caption=paste0(canada_caption,", ",us_caption),
+       x="Census metropolitan ares",y="Share",fill="")
+```
+
+Overall Canadian metros tend to have lower vacancy rates (combining unoccupied with temporarily occupied) than US metros. Seasonal destinations (Miami and Phoenix) - that also provide second homes for many Canadians - top the vacancy rates for large metro areas, followed by a diverse mix of large metros. Edmonton and Vancouver, though high for Canada, fit very comfortably in the low end for the US (running from Seattle to Boston), while Toronto, Calgary and Montreal occupy the bottom.
+
+What of the bad kind of vacancies, often associated with second or higher order homes for the wealthy or holding properties off the market for speculative purposes? [Empty Homes Taxes](https://vancouver.ca/home-property-development/empty-homes-tax.aspx) and [Vacancy Taxes](https://homefreesociology.com/2019/07/15/taxing-toxic-demand-early-results/) in Vancouver and BC attempt to target just these kinds of dwellings, and so far they indicate that [just over 1 in 9](https://homefreesociology.com/2019/02/28/tax-speculations/) unoccupied units end up getting taxed as second homes or otherwise vacant without defensible cause. Vacancy data from the US suggests that were such taxes imposed in places like Miami, that figure would likely be a lot higher. But Miami markets itself as a seasonal or vacation destination. 
+
+Vancouver's Empty Homes Tax covers the City. BC's speculation tax covers a region larger than cities or even any given metropolitan area. Just for kicks, let's peek in on counties, a unit of governance in the US with no firm equivalent in Canada. Weirdly, counties can contain portions of cities, like New York County, which contains only the island of Manhattan within NYC.  Sometimes counties are the same as cities, as seems to be the case for San Francisco county. Other times counties are a little larger, as with King County (containing Seattle). Sometimes they're much larger, as with LA County. How heavily would vacancy taxes likely fall in these various counties? In the counties acting like metropolitan areas, including King County and LA County, overall unoccupancy rates are similar to Metro Vancouver. Vacation homes would likely be hit unless deemed ineligible for year round use. Some, but not all, other vacancies would likely be taxed. The vast majority of empty units probably wouldn't remain empty long enough to trigger taxation. Counties containing Manhattan and San Francisco, with much higher seasonal use, would probably be hit much harder.
+
+```{r}
+county_data <- get_acs("county",variables=vars,
+                       year=year,survey = survey) %>%
+  compute_vacant_share %>%
+  filter(grepl("new york county|king county, washington|san francisco|los angeles|portland",NAME,ignore.case = TRUE))
+
+ggplot(county_data,aes(x=reorder(NAME,Share),y=Share,fill=variable)) +
+  empty_homes_theme +
+  scale_fill_manual(values=us_colours) +
+  labs(title="Share of vacant dwelling units",caption=us_caption,
+       x="Select counties",y="Share",fill="")
+```
+
+Altogether, unoccupied dwellings are broadly similar between the US and Canada, with slightly more dwellings showing up as unoccupied in most metro areas to the south. Lots of municipalities, regions, and counties might profitably consider Empty Homes or Vacancy Taxes. But most unoccupied dwellings in most metros wouldn't be much affected by them.
+
+As usual, the code for the analysis is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-08-19-running-on-empties.Rmarkdown).
