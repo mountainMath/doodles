@@ -11,7 +11,7 @@ categories:
   - newsfail
   - Empty Homes
 tags: []
-description: ""
+description: "Putting Canadian empty homes data into context."
 featured: ''
 images: ["https://doodles.mountainmath.ca/posts/2019-08-19-running-on-empties_files/figure-html/canada-us-comparison-1.png"]
 featuredalt: ""
