@@ -1,0 +1,1101 @@
+---
+title: Low income vs new dwellings
+author: Jens von Bergmann
+date: '2019-09-02'
+slug: low-income-vs-new-dwellings
+categories:
+  - cancensus
+  - geeky
+  - Vancouver
+  - Toronto
+  - density
+tags: []
+description: "Does adding homes decrease the low income population? A look at the Canadian data."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2019-09-02-low-income-vs-new-dwellings_files/figure-html/total_model_z-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+draft: false
+blackfriday:
+  fractions: false
+  hrefTargetBlank: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width=8,
+	cache = TRUE
+)
+library(tidyverse)
+library(cancensus)
+library(tongfen)
+#devtools::install_github("clauswilke/ggtext")
+library(ggtext)
+library(mountainmathHelpers)
+library(sf)
+library(spatialreg)
+```
+
+```{r}
+caption="MountainMath, StatCan Census 2006, 2016"
+my_theme <-list(
+  theme_light(),
+  labs(caption=caption)
+)
+
+regions <- list_census_regions("CA16") %>% filter(level=="CMA") %>% top_n(4,pop) 
+ct_list <- get_census("CA06",regions=as_census_region_list(regions),level="CT") %>%
+  select(CT_UID=GeoUID,muni=`Region Name`,CMA_UID,CSD_UID) %>%
+  left_join(regions %>% select(CMA_UID=region,name),by="CMA_UID")
+
+data <- get_tongfen_census_ct_from_da(regions=as_census_region_list(regions),#list(CMA="59933"),
+                              vectors=c(#licoat_2001_base="v_CA01_1617",licoat_2001="v_CA01_1618",
+                                licoat_2006_base="v_CA06_1979",licoat_2006_pct="v_CA06_1981",
+                                hh_size_06="v_CA06_135", seniors_06="v_CA06_92", ppl_priv_hh_06="v_CA06_85",
+                                seniors_16="v_CA16_2522",
+                                tenure_base_06="v_CA06_101",rented_06="v_CA06_103",
+                                tenure_base_16="v_CA16_4836",rented_16="v_CA16_4838",
+                                immigrants_2006_2010="v_CA16_3429",immigrants_2011_2016="v_CA16_3432",
+                                #limat_2011_base="v_CA11N_2576",limat_2011="v_CA11N_2591",
+                                        licoat_2016_base="v_CA16_2510",licoat_2016="v_CA16_2555",
+                                        single_2016="v_CA16_409",duplex_2016="v_CA16_414",
+                                        row_2016="v_CA16_413",low_2016="v_CA16_415",semi_2016="v_CA16_412",high_2016="v_CA16_410",
+                                        single_2006="v_CA06_120",duplex_2006="v_CA06_123",
+                                        row_2006="v_CA06_122",low_2006="v_CA06_125",semi_2006="v_CA06_121",high_2006="v_CA06_124"),
+                              geo_format = 'sf') %>%
+  mutate(licoat_2006=licoat_2006_base*licoat_2006_pct/100) %>%
+  mutate(d_Dwellings=Dwellings_CA16-Dwellings_CA06,
+         d_licoat=licoat_2016-licoat_2006,
+         d_rental=rented_16-rented_06,
+         d_owner=tenure_base_16-tenure_base_06-d_rental,
+         d_empty=d_Dwellings-tenure_base_16+tenure_base_06,
+         d_seniors=seniors_16-seniors_06) %>%
+  mutate(d_single=single_2016-single_2006,d_duplex=duplex_2016-duplex_2006,d_semi=semi_2016-semi_2006,
+         d_row=row_2016-row_2006,
+         d_low=low_2016-low_2006,
+         senior_share_06=seniors_06/ppl_priv_hh_06,
+         d_high=high_2016-high_2006) %>%
+  mutate(d_share_apartment=(d_high+d_low)/Dwellings_CA06) %>%
+  left_join(ct_list,by=c("TongfenID"="CT_UID"))
+
+vector_tiles <- metro_van_vector_tiles()
+roads <- rmapzen::as_sf(vector_tiles$roads) %>% filter(kind != "ferry")
+water <- rmapzen::as_sf(vector_tiles$water)
+
+cut_vancouver_water <- function(data){
+  metro_van_water_layer <- function(){
+    data %>% 
+      filter(name=="Vancouver") %>%
+      select(GeoUID,geometry) %>%
+      st_difference(water %>% select(geometry) %>% st_union()) 
+  }
+  
+  all_geo <- simpleCache(metro_van_water_layer(),"metro_van_water_layer") %>%
+    rbind(data %>% filter(name!="Vancouver") %>% select(GeoUID,geometry)) 
+  
+  all_geo %>% left_join(data %>% st_set_geometry(NULL),by="GeoUID")
+}
+
+#data <- data %>% cut_vancouver_water()
+
+bbox <- metro_van_bbox()
+
+map_theme <- c(my_theme,
+               list(
+  geom_sf(data=roads,size=0.1,color="darkgrey",fill=NA),
+  geom_sf(data = water, fill = "lightblue", colour = NA)
+))
+
+clean_data <- function(data) {
+  data %>% 
+  filter(!is.na(x),!is.na(y),!is.infinite(y),!is.infinite(x)) 
+}
+
+
+get_change_data <- function(d){
+  d %>% 
+    mutate(prediction_2016=licoat_2016-residuals) %>%
+    mutate(prediction_2006=licoat_2006) %>%
+    gather(key="helper",value="Value",c("Dwellings_CA06","Dwellings_CA16","licoat_2006","licoat_2016",
+                                        "prediction_2006","prediction_2016"))  %>%
+    mutate(Year=ifelse(grepl("06$",helper),"2006","2016"),
+           Metric=case_when(grepl("^Dwellings",helper)~"Dwellings",
+                            grepl("licoat",helper)~"Lico-AT",
+                            TRUE~"Prediction")) %>%
+    select(-helper)
+}
+
+summary_data <- data %>% 
+  st_set_geometry(NULL) %>%
+  group_by(name) %>%
+  mutate(y=0,residuals=0) %>%
+  summarize_at(c("d_Dwellings","d_licoat","Dwellings_CA06","Dwellings_CA16","licoat_2006","licoat_2016","y","residuals"),sum,na.rm=TRUE) %>%
+  get_change_data() %>%
+  filter(Metric!="Prediction")
+
+licoat_breaks <- seq(0,1,0.1)
+licoat_labels <- seq(1,10) %>% map(function(i)paste0(scales::percent(licoat_breaks[i],1),
+                                                     " to ",scales::percent(licoat_breaks[i+1],1)))
+licoat_breaks[1]=-Inf
+licoat_breaks[11]=Inf
+licoat_colours <- set_names(viridis::viridis(length(licoat_labels)),licoat_labels)
+
+add_na_areas <- function(d) {
+  d %>% bind_rows(data %>% filter(!(TongfenID %in% d$TongfenID)) %>% select(TongfenID,TongfenUID,name,geometry)) %>% 
+    st_sf(crs=st_crs(d))
+}
+
+```
+
+Canada's metropolitan areas are growing, which means we need to add housing. But adding housing often faces stiff oppositions. There are many reasons people don't like to add housing, this post is trying to look at one particular one. That adding housing causes displacement of the low-income population.
+
+Adding new housing to a neighbourhood has two opposing effects.
+
+The **gentrification effect** starts from the observation that new housing is more expensive than old housing (all else being equal). This means that people moving into new housing are generally more affluent. This influx will, through various means, increase the amenity value of the neighbourhood and draw in more higher-income people. This process makes it harder for low-income people to live in the neighbourhood, increasing pressure on low-income people to move away and adding barriers for low-income people to move in. The net effect is a decrease in the low income population in the neighbourhood. (The term [*gentrification* gets used in a variety of different ways in the literature](https://twitter.com/DanImmergluck/status/1159118121229258752?s=20). Here we use it strictly to refer to net displacement of low-income population.)
+
+The **supply effect** starts from the observation that as the region is growing more people compete for housing. If we don't add housing, more affluent people will out-bid lower income people, displace them, and renovate up their housing. Adding new housing takes pressure off of the existing stock.
+
+The question is centred on the relative strength of these two effects.
+
+On a regional level it is fairly uncontroversial that the net effect of adding housing is to put downward pressure on prices and ease displacement pressures. But is the same true on a neighbourhood level? 
+
+## TL;DR
+The claim that in general "increasing density causes displacement of low-income population" is simply not supported by the data. In fact, in general the opposite is true, increasing density serves to increase the low income population. However, there may be cases where increasing density does correlate with a drop in the low-income population, but this is the exception and not the rule and driven by specific factors not present (or dominating) in general.
+
+Overall there is a strong positive relationship between the change in the size of the Lico-AT population and the change in dwellings in a neighbourhood. 
+
+![Model](https://doodles.mountainmath.ca/posts/2019-09-02-low-income-vs-new-dwellings_files/figure-html/total_model_z-1.png)
+
+## Southern California
+This insight is nothing new, there are numerous studies that look at various aspects of this question from a variety of angles. One example is the 
+[a study by Legislative Analyst's Office (LAO) in California on low-income housing affordability](https://lao.ca.gov/Reports/2016/3345/Low-Income-Housing-020816.pdf). In the part that is most relevant to our question they categorized low-income census tracts in the Bay Area by whether they experienced *high* or *low* market-rate housing construction, and checked how many of these experienced displacement of low-income households.
+
+![](/images/lao_bay_area.png)
+
+## Canadian data
+We can look at Canadian data and use similar methods to understand the dynamics between adding housing and displacement of people in low-income. For this, we set up the problem very simply and look at the relationship between the change in the number of dwelling units and the change in the number of people in the Lico-AT low-income measure between 2006 and 2016 censuses for the four largest metropolitan areas (in 2006 boundaries).
+
+```{r}
+ggplot(summary_data,aes(x=Year,y=Value,color=name,linetype=Metric,group=interaction(name,Metric))) +
+  geom_point() +
+  geom_line() +
+  scale_color_brewer(palette = "Dark2") +
+  my_theme +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Change in Dwellings and Lico-AT",
+       color="Metro (2006 boundaries)", y="")
+```
+
+All metro areas have added housing in this timeframe, while the number of low income people has increased in some and decreased in others. To bring this out better we can focus just on the change in Dwellings and population in Lico-AT.
+
+```{r}
+summary_data2 <- data %>% 
+  st_set_geometry(NULL) %>%
+  group_by(name) %>%
+  summarize_at(c("d_Dwellings","d_licoat"),sum,na.rm=TRUE) %>%
+  rename(`Change in Dwellings`=d_Dwellings,`Change in Lico-AT`=d_licoat) %>%
+  gather(key="Metric",value="Value",c("Change in Dwellings","Change in Lico-AT"))
+
+ggplot(summary_data2,aes(x=name,y=Value,fill=Metric)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_fill_brewer(palette = "Dark2") +
+  my_theme +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Change in Dwellings and Lico-AT 2006-2016",
+       color="Metro (2006 boundaries)", y="",x="Metro (2006 boundaries)")
+```
+
+At the metro level we don't see any relationship between those two variables. But that's not surprising, at the metro level there are many factors impacting the people in Lico-AT, from increased economic opportunity to displacement outside of the metro area. The question that we are interested in here is how adding housing in a given neighbourhood within a metro area effects the low income population in that neighbourhood. But it is good to keep these overall trends in mind when interpreting the results below.
+
+Following the LAO study mentioned above, we base our *neighbourhoods* on take census tracts.
+
+## Analytical setup
+There are a number of analytical choices we are making. We [TongFen](https://github.com/mountainMath/tongfen) the data to common geography for the 2006 and 2016 censuses. This process builds the common geography up from Dissemination Areas, which leads to a courser geography than simply adjusting to 2006 census tract boundaries but ensure maximal geographic integrity across the two censuses.
+
+Two challenges we have to deal with that prevent us from running a naive linear model of low income vs change in dwelling units are heteroscedacity and non-normality of residuals, as well as significant spatial autocorrelation of the residuals. To deal with the latter we re-specified this as a spatial autoregressive error model. This also softens the other issues, but some degree of non-normality still persists. We won't resolve this completely in this post, for the Vancouver region we show that some of this can be traced down to re-classification between collective and private dwellings, with the low income data from the census only counting the population in private dwellings. 
+
+There are other ways to deal with these analytical challenges, but we felt that this was the best way to approach our question. We refer people that want more information on the exact model specifications [to the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-09-02-low-income-vs-new-dwellings.Rmarkdown).
+
+```{r}
+
+#municipalities <- list_census_regions("CA16") %>% filter(level=="CSD",CMA_UID %in% unique(data$CMA_UID))
+
+
+base_data <- data  %>% 
+  filter(Dwellings_CA06>=250,Dwellings_CA16>=250) %>%
+  mutate(x=d_Dwellings,
+         y=d_licoat,
+         z=licoat_2006,
+         d_collective=Population_CA16-Population_CA06+licoat_2006_base-licoat_2016_base,
+         w=1) %>%
+  clean_data() 
+
+
+rates_06 <- base_data %>% 
+  st_set_geometry(NULL) %>%
+  group_by(name) %>%
+  summarize_at(c("Dwellings_CA06","licoat_2006","licoat_2006_base"),sum) %>%
+  mutate(rate=licoat_2006/Dwellings_CA06,
+         licoat_rate=licoat_2006/licoat_2006_base)
+
+base_data <- left_join(base_data,rates_06 %>% select(name,rate,licoat_rate),by="name") 
+
+region_names <- base_data$name %>% unique
+
+apply_to_regions <- function(regions,f){
+  regions %>% lapply(f) %>% set_names(regions)
+}
+
+lws_for_regions <- function(data,regions){
+  apply_to_regions(regions,function(n) {
+    pd <- data %>%
+           filter(name==n)
+    nb <- spdep::poly2nb(pd %>% sf::as_Spatial(), queen=TRUE)
+    spdep::nb2listw(nb, style="W", zero.policy=TRUE)
+    })
+}
+
+
+get_models <- function(formula,data,lweights=lws){
+  names(lweights) %>% apply_to_regions(function(n) {
+    data %>% 
+      filter(name==n) %>% 
+      #lm(data=.,formula=formula.dl,weights=w)
+      #lagsarlm(data=., formula=formula, listw = lweights[[n]], zero.policy=TRUE,tol.solve=1e-12)
+      #errorsarlm(data=., formula=formula, listw = lweights[[n]], zero.policy=TRUE,tol.solve=1e-12,weights=w)
+      errorsarlm(data=., formula=formula, listw = lweights[[n]], zero.policy=TRUE,
+                             tol.solve=1e-12,weights=w)#,etype = "emixed")
+      #sacsarlm(data=., formula=formula, listw = lweights[[n]], zero.policy=TRUE)
+    })
+}
+
+get_model_lines <- function(models,var="x",data=NULL){
+  names(models) %>% apply_to_regions(function(n) {
+    m=models[[n]]
+    s=summary(m)
+    if (is.null(data)) xrange=range(as_tibble(s$X)[[var]]) else xrange=range(filter(data,name==n)[[var]])
+    intercept=coefficients(m)[["(Intercept)"]]
+    slope=coefficients(m)[var] %>% as.numeric
+    tibble(name=n,x=xrange,y=map(xrange,function(d)intercept+d*slope) %>% unlist)
+  })
+}
+
+add_residuals <- function(data,models,breaks,labels,target="residuals",fitted="fitted") {
+  left_join( ## does not play well with geometries, so treat separately
+    data %>% select(TongfenID,geometry),
+    data %>%
+      st_set_geometry(NULL) %>%
+      group_by(name) %>%
+      group_modify(~ mutate(.x,!!target:=residuals(models[[.y$name]]),
+                            !!fitted:=fitted(models[[.y$name]]))),
+    by="TongfenID") %>%
+    mutate(!!paste0(target,"_d"):=cut(!!as.name(target),breaks=breaks,labels = labels))
+}
+
+eq_data <- function(models,data=NULL,var="x"){
+  names(models) %>% apply_to_regions(function(n) {
+    m=models[[n]]
+    s=summary(m,Nagelkerke=TRUE)
+    if (is.null(data)) xrange=range(as_tibble(s$X)[[var]]) else xrange=range(filter(data,name==n)[[var]]) 
+    if (is.null(data)) yrange=range(s$y) else yrange=range(filter(data,name==n)$y)
+    c=coef(m)
+    a=as.numeric(c["(Intercept)"])
+    variables=setdiff(names(c),"(Intercept)")
+    r=s$adj.r.squared
+    if (is.null(r)) r=s$NK
+    v2=setdiff(variables,"lambda")
+ 
+    d <- s$Coef %>% 
+      cbind(tibble(variable=rownames(.))) %>% 
+      as_tibble %>% 
+      select(variable,Estimate,`Std. Error`,`p-value`=`Pr(>|z|)`)
+    dd <- d %>% select(variable,Estimate) %>% spread(variable,Estimate)
+    dd2 <- d %>% select(variable,`p-value`) %>% spread(variable,`p-value`) %>%
+      set_names(paste0(names(.)," p-value"))
+    dd3 <- d %>% select(variable,`Std. Error`) %>% spread(variable,`Std. Error`) %>%
+      set_names(paste0(names(.)," Std. Error"))
+   
+    pval <- function(v){
+      p=dd2[[paste0(v, " p-value")]] %>% as.numeric
+      pv=""
+      if (p<0.001) pv="\U2021"
+      else if (p<0.005) pv="\U2020"
+      else if (p<0.05) pv="*"
+      if (nchar(pv)>0) pv=paste0("<sup>",pv,"</sup>")
+    }
+    
+    se <- function(v){
+      if (v=="lambda") q=s$lambda.se
+      else q=dd3[[paste0(v," Std. Error")]]
+      paste0("\U00B1",format(abs(q),digits=2)) # λ = \U03BB
+    }
+    
+    eqn=paste0("*y*=",format(a,digits=2),#pval("(Intercept)"),
+               se("(Intercept)"),paste0(map(v2,function(v){
+      paste0(ifelse(sign(as.numeric(c[v]))>0,"+","-"),"(",format(abs(as.numeric(c[v])),digits=2),
+             #pval(v),
+             se(v),")","*",ifelse(v=="zz","&zeta;",v),"*")
+    }),collapse=""))
+    tex_eqn <- paste0("$y=",format(a,digits=2),paste0(map(v2,function(v){
+      paste0(ifelse(sign(as.numeric(c[v]))>0,"+",""),format(as.numeric(c[v]),digits=2),v,"")
+    }),collapse=""),"")
+    if ("lambda" %in% variables) {
+      ss=ifelse(sign(c[["lambda"]])>0,"+","")
+      eqn <- paste0(eqn,"<br>*\U03BB*=",format(c[["lambda"]],digits=2),se("lambda"),",&nbsp;&nbsp;*R*<sup>2</sup>=",format(r,digits=2)) %>%
+        as.expression() %>%
+        as.character()
+      ss=ifelse(sign(c[["lambda"]])>0,"+","")
+      tex_eqn <- paste0(tex_eqn,ss,format(c[["lambda"]],digits=2),"W","$~~($R^2=",format(r,digits=2),"$)") %>%
+        as.expression() %>%
+        as.character()
+    } else {
+      eqn <- paste0(eqn,"<br>*R*<sup>2</sup>=",format(r,digits=2)) %>%
+        as.expression() %>%
+        as.character()
+      tex_eqn <- paste0(tex_eqn,"$~~($R^2=",format(r,digits=2),"$)") %>%
+        as.expression() %>%
+        as.character()
+    }
+    tibble(name=n,
+           xmin=xrange[1],
+           xmax=xrange[2],
+           xpos=xrange[2],
+           ymax=yrange[2],
+           ymin=yrange[1],
+           eqn=eqn,
+           tex_eqn=tex_eqn,
+           Intercept=a,
+           `R squared`=r) %>%
+      bind_cols(dd,dd2,dd3) %>%
+      mutate(xpos=xpos*0.7,ypos=ymin*0.9+ymax*0.1) 
+  })
+}
+
+mc.nsim=10000
+
+
+get_mcs <- function(models,lws){
+  mcs <-   names(models) %>% 
+    apply_to_regions(function(n) {
+      spdep::moran.mc(residuals(models[[n]]),lws[[n]],zero.policy = TRUE,nsim=mc.nsim)
+    }) 
+  
+  mcs.stat <- mcs %>% lapply(function(m)m$statistic) %>% bind_rows %>% as_tibble %>% gather(key="name",value="Statistic")
+  #mcs.stat <- mcs %>% lapply(function(m)m$estimate[1]) %>% bind_rows %>% as_tibble %>% gather(key="Metro",value="Statistic")
+  mcs.p <- mcs %>% lapply(function(m)m$p.value) %>% bind_rows %>% as_tibble %>% gather(key="name",value="p-value")
+  
+  inner_join(mcs.stat,mcs.p,by="name")
+}
+
+
+total_breaks=c(-Inf,-1000,-500,-200,-50,50,200,500,1000,Inf)
+total_labels=c("<-1000","-1000 to -500","-500 to -200","-200 to -50","-50 to 50","50 to 200","200 to 500","500 to 1000",">1000")
+relative_breaks=c(-Inf,-1,-0.5,-0.25,-0.1,0.1,0.25,0.5,1,Inf)
+relative_labels=c("<-100%","-100% to -50%","-50% to -15%","-25% to -10%","-10% to 10%","10% to 25%","25% to 50%","50% to 100%",">100%")
+share_breaks=c(-Inf,-0.1,-0.075,-0.05,-0.025,0.025,0.05,0.075,0.1,Inf)
+share_labels=c("<-10%","-10% to -7.5%","-7.5% to -5%","-5% to -2.5%","-2.5% to 2.5%","2.5% to 5%","5% to 7.5%","7.5% to 10%",">10%")
+total_colors=set_names(RColorBrewer::brewer.pal(length(total_labels) %>% rev,"PiYG"),total_labels)
+relative_colors=set_names(RColorBrewer::brewer.pal(length(relative_labels) %>% rev,"PiYG"),relative_labels)
+share_colors=set_names(RColorBrewer::brewer.pal(length(share_labels) %>% rev,"PiYG"),share_labels)
+```
+
+## Absolute change in low income population
+The simplest way to pose our question is to look at the relationship between the change in the number of people (in private dwellings) in Lico-AT and the change in the number of private dwellings in each census tract.
+
+```{r}
+plot_data <- base_data %>%
+  group_by(name) %>%
+  mutate(licoat_ratio=sum(licoat_2006)/sum(licoat_2006_base)) %>%
+  ungroup %>%
+  mutate(x=d_Dwellings,
+         y=d_licoat,
+         z=licoat_2006,
+         w=1)
+
+naive_models <-  region_names %>% map(function(n)lm(data=filter(plot_data,name==n),formula=y~x)) %>% set_names(region_names)
+
+lws <-  lws_for_regions(plot_data,region_names)
+
+```
+
+A naive linear model correlating change in the population in Lico-AT *y* to the change in dwelling counts *x* yields the following highly significant results.
+```{r}
+names(naive_models) %>% apply_to_regions(function(n) {
+  m=naive_models[[n]] 
+  c=summary(m)$coefficients 
+  tibble(Metro=n,Coefficient=rownames(c)) %>% cbind(c)
+  }) %>% bind_rows() %>%
+  knitr::kable(digits=c(0,0,2,3,2,4),align="r")
+```
+
+However, the residuals are highly auto-correlated as a quick Moran I test reveals.
+```{r}
+mcs=get_mcs(naive_models,lws) %>%
+  rename(`Moran I`=name)
+mcs %>%
+  #kableExtrakable_styling(full_width = FALSE,position = "left") %>%
+  #rename(`Moran I Statistic`=Statistic,`Moran I p-value`=`p-value`) %>%
+  knitr::kable(digits=c(2,2,7))
+```
+
+The (pseudo) p-values are cut off by our choice of 10,000 Monte Carlo simulations, true p-values are likely even lower. To address this issue we are turning toward an autoregressive error model.
+
+
+```{r}
+bptest <- function(X,resi) {
+  Z=X
+  k <- ncol(Z)
+  n <- nrow(Z)
+  sigma2 <- sum(resi^2)/n
+  w <- resi^2 - sigma2
+  aux <- lm.fit(Z, w)
+  bp <- n * sum(aux$fitted.values^2)/sum(w^2)
+  method <- "studentized Breusch-Pagan test"
+  names(bp) <- "BP"
+  df <- c(df = aux$rank - 1)
+  RVAL <- list(statistic = bp, parameter = df, method = method, 
+               p.value = pchisq(bp, df, lower.tail = FALSE), data.name = "formula")
+  class(RVAL) <- "htest"
+  return(RVAL)
+ }
+#lmtest::bptest(naive_models[["Vancouver"]])
+
+# plot_data <- plot_data %>%
+#   group_by(name) %>%
+#   group_modify( ~ mutate(.x,yy=predict(caret::BoxCoxTrans(.x$y),.x$y))) %>%
+#   st_sf(crs=st_crs(base_data)) %>%
+#   ungroup()
+
+naive_models2 <-  region_names %>% map(function(n)lm(data=filter(plot_data,name==n,licoat_2006/licoat_2006_base<0.1),formula=y~x)) %>% set_names(region_names)
+
+#lmtest::bptest(naive_models2[["Vancouver"]])
+#naive_models2 %>% map(lmtest::bptest)
+
+bp<-bptest(filter(plot_data,name=="Vancouver") %>% st_set_geometry(NULL) %>% 
+         mutate(`(Intercept)`=1) %>% select(`(Intercept)`,x) %>% as.matrix, naive_models[["Vancouver"]]$residuals)
+
+jb<-normtest::jb.norm.test(naive_models[["Vancouver"]]$residuals)
+```
+
+
+```{r}
+models <-  get_models(formula=y~x,lweights = lws,data=plot_data)
+plot_data <- plot_data %>% add_residuals(models,total_breaks,total_labels)
+
+eq <- eq_data(models,data=plot_data) %>%
+  bind_rows %>%
+  mutate(xpos=xmax)
+
+model_lines <- get_model_lines(models,data=plot_data) %>% 
+  bind_rows
+
+total_theme <- c(
+  my_theme,
+  list(scale_x_continuous(labels=scales::comma),
+  scale_y_continuous(labels=scales::comma),
+  theme(
+    plot.title = element_markdown(lineheight = 1.1),
+    legend.text = element_markdown(size = 11),
+    legend.position = "bottom"
+  ),
+  labs(title="Total change in dwellings vs low income 2006 - 2016",
+       size="2006 Lico-AT",
+       x="Total net new dwellings",y="Total change in low income (Lico-AT) population")))
+
+ggplot(plot_data,aes(x=x,y=y)) +
+  total_theme +
+  geom_point(colour="black",pch=21,fill="brown",alpha=0.3) + #,aes(size=w)) +
+  facet_wrap("name",scales="free") +
+  geom_line(data=model_lines) +
+  ggtext::geom_richtext(data=eq,aes(x=xpos,y=ypos,label=eqn), 
+                        inherit.aes=FALSE,fill = NA, label.color = NA,size=3,hjust = 1)
+```
+
+Here $\lambda$ is the coefficient of the autoregressive term in our autoregressive error model. As expected, there is no evidence of spatial autocorrelation in the residuals.
+
+
+```{r}
+mcs=get_mcs(models,lws) %>%
+  rename(`Moran I`=name)
+mcs %>%
+  #kableExtrakable_styling(full_width = FALSE,position = "left") %>%
+  #rename(`Moran I Statistic`=Statistic,`Moran I p-value`=`p-value`) %>%
+  knitr::kable(digits=2)
+```
+
+Visual inspection of the residuals confirms this.
+
+```{r}
+ggplot(plot_data %>% add_na_areas %>% filter(name=="Vancouver"),aes(fill=residuals_d)) +
+  geom_sf(size=0.1)  +
+  scale_fill_manual(values=total_colors,na.value="darkgrey") +
+  map_theme +
+  labs(title="Change in dwellings vs low income 2006 - 2016",fill="Residual") +
+  coord_sf(datum=NA,
+           xlim=c(bbox$xmin,bbox$xmax),
+           ylim=c(bbox$ymin,bbox$ymax))
+```
+
+The map indicates that at the residuals behave nicely in the middle ranges, but we see more extreme values than we would normally expect.
+
+```{r}
+ggpubr::ggqqplot(plot_data %>% group_by(name) %>% mutate(xx=scale(residuals)),x="residuals") +
+  facet_wrap("name",scales="free") +
+  my_theme +
+  labs(title="Residuals")
+
+```
+
+The Q-Q plots confirm this especially for Toronto and Montreal, but also in Vancouver. We should take a look at the largest outliers.
+
+
+```{r}
+select_cutoff=750
+select_data <- plot_data %>% 
+  filter(name=="Vancouver") %>%
+  filter(abs(residuals)>select_cutoff) %>%
+  st_set_geometry(NULL) %>% 
+  get_change_data %>%
+  ungroup %>%
+  mutate(name=recode(TongfenID,"9330069.00"="UBC",
+                     "9330059.06"="DTES",
+                     "9330287.07"="Westwood Plateau",
+                     "9330287.05"="North Coquitlam",
+                     "9330287.09"="North Coquitlam",
+                     "9330148.00"="Richmond (Minoru)",
+                     "9330243.02"="Burnaby Mountain",
+                     "9330191.04"="Whalley / Surrey Centre",
+                     "9330043.01"="UBC",
+                     "9330013.02"="SE 49th & Fraser",
+                     "9330016.03"="Joyce-Collingwood",
+                     "9330235.03"="South Burquitlam",
+                     "9330049.01"="Olympic Village"))
+
+ubc <- plot_data %>% filter(TongfenID=="9330069.00") 
+dtes <- plot_data %>% filter(TongfenID=="9330059.06")
+wp <- plot_data %>% filter(TongfenID=="9330287.07")
+cq= plot_data %>% filter(TongfenID=="9330287.05")
+ov <- plot_data %>% filter(TongfenID=="9330049.01")
+
+# data.da <- get_tongfen_census_da(regions=list(CT=c("9330287.05","9330287.07","9330287.14","9330287.13",
+#                                         "9330287.08","9330287.09","9330287.12","9330287.15","9330287.16")),
+#                       vectors = c(licoat_2006_base="v_CA06_1979",licoat_2006_pct="v_CA06_1981",
+#                                   licoat_2016_base="v_CA16_2510",licoat_2016="v_CA16_2555"),geo_format="sf")
+# ggplot(data.da,aes(fill=(TongfenID))) +geom_sf()
+
+dtes_delta_priv_lico <- dtes %>% 
+  st_set_geometry(NULL) %>%
+  mutate(p=Population_CA16-Population_CA06+licoat_2006_base-licoat_2016_base)
+```
+
+```{r}
+pd <- plot_data %>%
+  add_na_areas %>%
+  filter(name=="Vancouver") %>% 
+         mutate(residuals_d=ifelse(abs(residuals)>=select_cutoff,as.character(residuals_d),NA)) %>%
+  mutate(residuals=factor(residuals,levels=total_labels,ordered = TRUE))
+bbox2 <- st_bbox(pd %>% filter(!is.na(residuals_d)) %>% st_buffer(0.1))
+ggplot(pd,
+       aes(fill=residuals_d)) +
+  geom_sf(size=0.1)  +
+  scale_fill_manual(values=total_colors,na.value="darkgrey",
+                    labels=c("500 to 1000"="750 to 1000","-1000 to -500"="-1000 to -750")) +
+  map_theme +
+  labs(title="Change in dwellings vs low income 2006 - 2016",
+       subtitle=paste0("areas with high residuals (>=",select_cutoff,")"),
+       fill="Residual") +
+  coord_sf(datum=NA,
+           xlim=c(bbox2$xmin,bbox2$xmax),
+           ylim=c(bbox2$ymin,bbox2$ymax))
+```
+
+In Vancouver, the census tracts at UBC, the Downtown Eastside, part of North Central Coquitlam, and the area at the south corner of Burquitlam show deviations from the model greater than `r select_cutoff` people in Lico-AT in 2016. Individual regions can deviate for many reasons. For the Downtown Eastside we need to keep in mind that many SROs got re-classified from private housing to collective housing, which would lead to a drop in our metric as the census numbers only capture the low income population *in private dwellings*. During the given time period the population in collective dwellings grew by `r scales::comma(dtes_delta_priv_lico$p)` people, which may account for a good part of the drop of `r scales::comma(-dtes_delta_priv_lico$d_licoat)` people in Lico-AT in *private households*. UBC saw some reclassification of student housing to private housing, which would have the opposite effect, and student population captured in nearby private housing there could also impact the estimates.
+
+The regions have undergone different rates of dwelling growth, ranging from a slight loss of dwellings in the Downtown Eastside, to moderate growth in Southwest Burquitlam and strong growth at UBC and North Coquitlam.
+
+```{r}
+ggplot(select_data,aes(x=Year,y=Value,color=name,linetype=Metric,group=interaction(name,Metric))) +
+  geom_point() +
+  geom_line() +
+  scale_color_brewer(palette = "Dark2") +
+  my_theme +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Change in Dwellings and Lico-AT in select neighbourhoods",color="Neighbourhood",y="Number of people")
+```
+
+```{r eval=FALSE, include=FALSE}
+pd <- plot_data %>% 
+  mutate(l=cut(licoat_2006/licoat_2006_base,licoat_breaks,licoat_labels)) %>%
+  group_by(name,l) %>%
+  summarize(n=n(),r=mean(residuals))
+  
+ggplot(pd,aes(x=l,y=r,fill=l))  +
+  scale_fill_manual(values=licoat_colours,guide=FALSE) +
+  geom_bar(stat="identity") +
+  my_theme +
+  scale_y_continuous(labels=scales::comma) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  facet_wrap("name",scales="free_y") +
+  labs(title="Residuals by initial share of Lico-AT",x="Share Lico-AT",y="Mean residual")
+```
+
+```{r eval=FALSE, include=FALSE}
+pd <- plot_data %>%
+  add_na_areas %>%
+  filter(name=="Vancouver",) %>% 
+         mutate(residuals_d=ifelse(licoat_2006/licoat_2006_base>0.6,as.character(residuals_d),NA))
+bbox2 <- st_bbox(pd %>% filter(!is.na(residuals_d)) %>% st_buffer(0.05))
+ggplot(pd,
+       aes(fill=residuals_d)) +
+  geom_sf(size=0.1)  +
+  scale_fill_manual(values=total_colors,na.value="darkgrey") +
+  map_theme +
+  labs(title="Change in dwellings vs low income 2006 - 2016",
+       subtitle=paste0("areas with high residuals (>=",select_cutoff,")"),
+       fill="Residual") +
+  coord_sf(datum=NA,
+           xlim=c(bbox2$xmin,bbox2$xmax),
+           ylim=c(bbox2$ymin,bbox2$ymax))
+```
+
+Armed with a better understanding of two of these outliers we are (for now) content with the non-normality in our residuals in Vancouver.
+
+
+## Focus on "medium growth" areas
+To understand the effect of ares with high dwelling growth, as well as the stagnant areas, we can re-run the analysis only for areas where private dwellings increased or dropped by between 10% and 90%, removing very high growth areas as well as stagnant areas.
+
+```{r}
+plot_data <- base_data %>%
+  mutate(x=d_Dwellings,
+         y=d_licoat,
+         s_Dwellings=d_Dwellings/Dwellings_CA06) %>%
+  filter(abs(s_Dwellings)<=0.9,abs(s_Dwellings)>0.1)
+lws <-  lws_for_regions(plot_data,region_names)
+
+models <-  get_models(formula=y~x,lweights = lws,data=plot_data)
+plot_data <- plot_data %>% add_residuals(models,total_breaks,total_labels)
+
+eq <- eq_data(models,data=plot_data) %>%
+  bind_rows %>%
+  mutate(xpos=xmax)
+
+model_lines <- get_model_lines(models,data=plot_data) %>% 
+  bind_rows
+
+ggplot(plot_data,aes(x=x,y=y)) +
+  total_theme +
+  geom_point(colour="black",pch=21,fill="brown",alpha=0.3) + #,aes(size=w)) +
+  facet_wrap("name",scales="free") +
+  geom_line(data=model_lines) +
+  ggtext::geom_richtext(data=eq,aes(x=xpos,y=ypos,label=eqn), 
+                        inherit.aes=FALSE,fill = NA, label.color = NA,size=3,hjust = 1)
+```
+
+The results are quite similar, although with much lower explanatory power. 
+
+## Refining the estimates
+There are a number of ways to refine the estimates. One add in a variable **z** given by the initial (2006) population in Lico-AT to account for **home-by-home gentrification**, so the process of low-income people getting pushed out without adding any dwelling units simply by the process of getting out-bid by more affluent households that may also renovate up the dwellings.
+
+In summary, we are working with the following variables.
+
+* **y** -- the change in the number of people in Lico-AT
+* **x** -- the change in the number of dwelling units
+* **z** -- the initial (2006) number of people in Lico-AT.
+
+But this is also where things get tricky, the number of dwelling units that get added in a neighbourhood is not independent of the number of low-income people at the beginning of the period, a point that we will return to at then end of the post. But the colinearity is not too concerning. As we will see, the effect of adding in the *z* variable will only have a small effect on the change in dwelling coefficient, although it will absorb essentially all of the intercept.
+
+```{r eval=FALSE, include=FALSE}
+correlations <- plot_data %>% 
+  st_set_geometry(NULL) %>% 
+  mutate(x=d_Dwellings,
+         y=d_licoat,
+         z=licoat_2006,
+         s_Dwellings=d_Dwellings/Dwellings_CA06) %>%
+  group_by(name) %>% 
+  group_modify( ~ mutate(.x,c=cov(.x$x,.x$z)/cov(.x$x,.x$x))) %>%
+  ungroup() %>%
+  mutate(zz=z-c*x) %>%
+  group_by(name) %>%
+  summarize(`cor(y,x)`=cor(y,x),`cor(y,z)`=cor(y,z),`cor(x,z)`=cor(x,z))#,`cor(y,zz)`=cor(y,zz),`cor(x,zz)`=cor(x,zz))
+
+correlations %>% 
+  rename(Metro=name) %>%
+  knitr::kable(digits=2)
+```
+
+
+```{r total_model_z}
+plot_data <- base_data %>%
+  mutate(x=d_Dwellings,
+         y=d_licoat,
+         #z=pmax(0,licoat_2006-licoat_2006_base * licoat_rate),
+         #z=licoat_2006-licoat_2006_base * licoat_rate,
+         z=licoat_2006,
+         s_Dwellings=d_Dwellings/Dwellings_CA06) %>%
+  group_by(name) %>% 
+  group_modify( ~ mutate(.x,c=cov(.x$x,.x$y)/cov(.x$x,.x$x))) %>%
+  ungroup() %>%
+  st_sf(crs=st_crs(base_data)) %>%
+  mutate(zz=z-c*x)          
+
+
+lws <-  lws_for_regions(plot_data,region_names)
+
+models <-  get_models(formula=y~x+z,lweights = lws,data = plot_data)
+plot_data <- plot_data %>% add_residuals(models,total_breaks,total_labels)
+
+eq <- eq_data(models,data=plot_data) %>%
+  bind_rows %>%
+  mutate(xpos=xmax)
+
+model_lines <- get_model_lines(models,data=plot_data) %>% 
+  bind_rows
+
+ggplot(plot_data,aes(x=x,y=y)) +
+  total_theme +
+  geom_point(colour="black",pch=21,fill="brown",alpha=0.3) + #,aes(size=w)) +
+  facet_wrap("name",scales="free") +
+  geom_line(data=model_lines) +
+  ggtext::geom_richtext(data=eq,aes(x=xpos,y=ypos,label=eqn), 
+                        inherit.aes=FALSE,fill = NA, label.color = NA,size=3,hjust = 1)
+```
+
+The intercept is now not meaningfully different from zero with the effect being much better captured by our *home-by-home gentrification* term, and the coefficients for the dwelling growth have adjusted upward a bit, with Vancouver seeing the strongest upward adjustment from 0.28 to 0.32.
+
+We can also plot the dependence on our initial population in Lico-AT.
+
+```{r}
+model_lines <- get_model_lines(models,data=plot_data,var = "z") %>% 
+  bind_rows
+eq <- eq_data(models,data=plot_data,var="z") %>%
+  bind_rows %>%
+  mutate(xpos=xmax,ypos=0.9*ymax+0.1*ymin)
+
+ggplot(plot_data,aes(x=zz,y=y)) +
+  total_theme +
+  geom_point(colour="black",pch=21,fill="steelblue",alpha=0.3) + #,aes(size=w)) +
+  facet_wrap("name",scales="free") +
+  geom_line(data=model_lines,aes(x=x,y=y)) +
+  ggtext::geom_richtext(data=eq,aes(x=xpos,y=ypos,label=eqn), 
+                        inherit.aes=FALSE,fill = NA, label.color = NA,size=3,hjust = 1) +
+  labs(title="Lico-AT deviation from metro mean vs low income 2006 - 2016",
+       size="2006 Lico-AT",
+       x="Lico-AT difference from metro mean (z)",y="Total change in low income (Lico-AT) population")
+```
+
+These results are again fairly stable when restricting to the "medium growth" areas.
+
+## Change in share of people in Lico-AT
+A related interesting question is to look at the percentage point change in share of people in Lico-AT, so looking at more at neighbourhood change than at displacement. This sets a much higher bar on the effect of adding new dwellings, one might expect that while the total low income population does not decrease when new dwellings are added, the share of the low income population may well drop. As dependent variable we then choose the relative change in dwellings, as well as the initial (2006) share of low-income people, but weight the analysis based on the number of private dwellings in 2006 so the analysis does not get skewed too much by low denominators.
+
+```{r}
+share_data <- base_data %>%
+  mutate(x=d_Dwellings/Dwellings_CA06,
+         #y=d_licoat/licoat_2006,
+         y=licoat_2016/licoat_2016_base-licoat_2006/licoat_2006_base,
+         z=licoat_2006/licoat_2006_base,# -licoat_rate,
+         w=Dwellings_CA06) %>%
+  clean_data() 
+
+share_lws <-  lws_for_regions(share_data,region_names)
+
+models <-  get_models(formula=y~x+z,lweights = share_lws,data=share_data)
+share_data <- share_data %>% add_residuals(models,share_breaks,share_labels)
+
+eq <- eq_data(models,data=share_data) %>%
+  bind_rows %>%
+  mutate(xpos=xmax)
+
+model_lines <- get_model_lines(models,data=share_data) %>% 
+  bind_rows
+
+share_theme <- c(
+  my_theme,
+  list(scale_x_continuous(labels=scales::percent),
+  scale_y_continuous(labels=scales::percent),
+  scale_size_area(labels=scales::comma),
+  theme(
+    plot.title = element_markdown(lineheight = 1.1),
+    legend.text = element_markdown(size = 11),
+    legend.position = "bottom"
+  )))
+
+vancouer_rate <- plot_data %>% filter(name=="Vancouver") %>% pull(licoat_rate) %>% unique
+
+ggplot(share_data) +
+  share_theme +
+  geom_point(colour="black",pch=21,fill="brown",alpha=0.3,aes(x=x,y=y,size=w)) + #,aes(size=w)) +
+  facet_wrap("name",scales="free") +
+  geom_line(data=model_lines,aes(x=x,y=y)) +
+  ggtext::geom_richtext(data=eq,aes(x=xpos,y=ypos,label=eqn), 
+                        inherit.aes=FALSE,fill = NA, label.color = NA,size=3,hjust = 1) +
+  labs(title="Relative change in dwellings vs low income 2006 - 2016",
+       size="2006 Dwellings",
+       x="Relative change net new dwellings (x)",y="Percentage point change in low income (Lico-AT) population")
+```
+
+The intercept looks unreasonably high in these graphs, but this is offset from the effect of term for the initial Lico-AT population. In Montréal we do indeed now see a drop in the share of low-income people of the order of roughly 1.8 percentage points for each percent increase in dwelling stock. Calgary comes out essentially flat and Toronto and Vancouver show a significant increase in share of low income people with dwelling growth. 
+
+```{r}
+model_lines <- get_model_lines(models,data=share_data,var = "z") %>% 
+  bind_rows
+eq <- eq_data(models,data=share_data,var="z") %>%
+  bind_rows %>%
+  mutate(xpos=xmax,ypos=0.1*ymin+0.9*ymax)
+
+ggplot(share_data) +
+  share_theme +
+  geom_point(colour="black",pch=21,fill="steelblue",alpha=0.3,aes(x=z,y=y,size=w)) + #,aes(size=w)) +
+  facet_wrap("name",scales="free") +
+  geom_line(data=model_lines,aes(x=x,y=y)) +
+  ggtext::geom_richtext(data=eq,aes(x=xpos,y=ypos,label=eqn), 
+                        inherit.aes=FALSE,fill = NA, label.color = NA,size=3,hjust = 1) +
+  labs(title="Lico-AT deviation from metro mean vs low income 2006 - 2016",
+       size="2006 Dwellings",
+       x="Lico-AT share difference from metro mean (z)",y="Percentage point change in low income (Lico-AT) population")
+```
+
+
+This model further comes out with a significant baseline increase in share of low income people, offset by fairly high rates of attrition in existing share of low income people. For example in the case of zero change in dwellings in Vancouver, this model predicts a net drop of share of population in Lico-AT in areas with 7.7% or higher initial share of population in Lico-AT. For reference, the initial overall share of the population in Lico-AT in Metro Vancouver in 2006 was `r scales::percent(vancouer_rate)`.
+
+The distribution of the residuals is generally better than when we looked at the total change.
+
+```{r}
+ggpubr::ggqqplot(share_data %>% group_by(name) %>% mutate(xx=scale(residuals)),x="xx") +
+  facet_wrap("name",scales="free") +
+  my_theme +
+  labs(title="Residuals")
+
+```
+
+```{r}
+ggplot(share_data %>% filter(name=="Vancouver"),aes(fill=residuals_d)) +
+  geom_sf(size=0.1)  +
+  scale_fill_manual(values=share_colors,na.value="darkgrey") +
+  map_theme +
+  labs(title="Relative change in dwellings vs low income 2006 - 2016",fill="Residual") +
+  coord_sf(datum=NA,
+           xlim=c(bbox$xmin,bbox$xmax),
+           ylim=c(bbox$ymin,bbox$ymax))
+```
+
+This model again under-estimates the low income population in the Downtown-Eastside, and over-estimates the low-income population in North/Central Coquitlam and UBC, but also in Hastings-Sunrise, Burnaby Mountain/SFU, the west side of the Cambie Corridor and parts of Central Surrey.
+
+The model fit for Toronto and Vancouver is significantly improved when using the relative change of the Lico-AT population instead of the percentage point change. But this also increases the issues around heteroscedacity and non-normality of the residuals, but it might be worthwhile to investigate this further.
+
+
+## Vancouver's larger municipalities
+Particular development patterns, and decisions on what kind of development gets approved, are done at the municipal level. In particular inclusionary zoning requirements and share of purpose-built rental developments differ significantly across municipalities, and this may well lead to hidden variable bias. We can look at the four largest municipalities in Metro Vancouver to investigate this. Census tracts don't line up perfectly with municipal boundaries, but this should not be a major concern for us.
+
+```{r}
+munies <- list_census_regions("CA16") %>% filter(CMA_UID=="59933",level=="CSD") %>% top_n(4,pop)
+
+muni_data <- base_data %>% 
+  filter(CSD_UID %in% munies$region,!grepl("9330069.00",TongfenUID)) %>%
+  mutate(name=set_names(munies$name,munies$region)[CSD_UID] %>% as.character) %>%
+  mutate(x=d_Dwellings,
+         y=d_licoat,
+         z=licoat_2006-licoat_2006_base * licoat_rate,
+         s_Dwellings=d_Dwellings/Dwellings_CA06)
+
+muni_lws <- lws_for_regions(muni_data,munies$name)
+
+models <-  get_models(formula=y~x,lweights = muni_lws,data=muni_data)
+muni_data <- muni_data %>% add_residuals(models,total_breaks,total_labels)
+
+eq <- eq_data(models,data=muni_data) %>%
+  bind_rows %>%
+  mutate(xpos=xmax)
+
+model_lines <- get_model_lines(models,data=muni_data) %>% 
+  bind_rows
+
+ggplot(muni_data,aes(x=x,y=y)) +
+  total_theme +
+  geom_point(colour="black",pch=21,fill="brown",alpha=0.3) + #,aes(size=w)) +
+  facet_wrap("name",scales="free") +
+  geom_line(data=model_lines) +
+  ggtext::geom_richtext(data=eq,aes(x=xpos,y=ypos,label=eqn), 
+                        inherit.aes=FALSE,fill = NA, label.color = NA,size=3,hjust = 1)
+  
+```
+
+We see that the dependency on dwelling growth holds up well across these municipalities, with Burnaby and Richmond seeing a significantly higher dependence than the overall metro model. The much higher baseline attrition of Lico-AT population in Vancouver compared to Surrey, as indicated by intercept, jumps out.
+
+We can again improve the overall model fit by adding in the size of the initial (2006) population in Lico-AT.
+
+```{r}
+muni_data <- base_data %>% 
+  filter(CSD_UID %in% munies$region,!grepl("9330069.00",TongfenUID)) %>%
+  mutate(name=set_names(munies$name,munies$region)[CSD_UID] %>% as.character) %>%
+  group_by(name) %>%
+  mutate(licoat_rate=weighted.mean(licoat_2006/licoat_2006_base,w=licoat_2006_base)) %>%
+  ungroup() %>%
+  mutate(x=d_Dwellings,
+         y=d_licoat,
+         z=licoat_2006,#-licoat_rate*licoat_2006,
+         s_Dwellings=d_Dwellings/Dwellings_CA06)
+
+muni_lws <- lws_for_regions(muni_data,munies$name)
+
+models <-  get_models(formula=y~x+z,lweights = muni_lws,data=muni_data)
+muni_data <- muni_data %>% add_residuals(models,total_breaks,total_labels)
+
+eq <- eq_data(models,data=muni_data) %>%
+  bind_rows %>%
+  mutate(xpos=xmax)
+
+model_lines <- get_model_lines(models,data=muni_data) %>% 
+  bind_rows
+
+ggplot(muni_data,aes(x=x,y=y)) +
+  total_theme +
+  geom_point(colour="black",pch=21,fill="brown",alpha=0.3) + #,aes(size=w)) +
+  facet_wrap("name",scales="free") +
+  geom_line(data=model_lines) +
+  ggtext::geom_richtext(data=eq,aes(x=xpos,y=ypos,label=eqn), 
+                        inherit.aes=FALSE,fill = NA, label.color = NA,size=3,hjust = 1)
+
+```
+
+
+```{r}
+model_lines <- get_model_lines(models,data=muni_data,var = "z") %>% 
+  bind_rows
+eq <- eq_data(models,data=muni_data,var="z") %>%
+  bind_rows %>%
+  mutate(ypos=0.8*ymax+0.2*ymin,xpos=xmax)
+
+ggplot(muni_data) +
+  total_theme +
+  geom_point(colour="black",pch=21,fill="steelblue",alpha=0.3,aes(x=z,y=y)) + #,aes(size=w)) +
+  facet_wrap("name",scales="free") +
+  geom_line(data=model_lines,aes(x=x,y=y)) +
+  ggtext::geom_richtext(data=eq,aes(x=xpos,y=ypos,label=eqn), 
+                        inherit.aes=FALSE,fill = NA, label.color = NA,size=3,hjust = 1) +
+  labs(title="Lico-AT deviation from metro mean vs low income 2006 - 2016",
+       size="2006 Lico-AT",
+       x="Lico-AT difference from metro mean (z)",y="Total change in low income (Lico-AT) population")
+```
+
+We see that the change in dwelling is still associated with a strong increase in population in Lico-AT. Interestingly, Burnaby is showing the largest rate of increase. Going back up to the map of residuals for the metro-wide model we see that Metrotown does not come in far off from the model predictions, which we found somewhat surprising. Again, the intercept looses statistical significance under this model specification.
+
+
+## Upshot and next steps
+I had run the initial correlations of dwelling growth to population in Lico-AT quite some time ago, but never taken the time to properly deal with the significant spatial autocorrelation, refine the model, and investigate reasons for non-normality of the residuals. But the question on displacement of low-income people due to new construction keeps coming up, and I was curious to see if the relationships I initially observed still hold up when doing a more rigorous investigation. And they do.
+
+As usual, there are a couple of caveats. 
+
+* The entire analysis is done at the ecological level. In particular, it says nothing about displacement of individual low-income people, or the impact of adding dwellings on low income people at the individual level as the [recent Federal Reserve study](https://www.philadelphiafed.org/-/media/research-and-data/publications/working-papers/2019/wp19-30.pdf) did. This analysis looks at the net effect on the overall population in Lico-AT, so the of net in and outflows.
+* We have not done a proper causal analysis, that would require developing a strong theoretical framework of causal relationships that drive low-income population. However, this analysis clearly shows that the claim that "increasing density gentrifies the neighbourhood", where *gentrification* is understood as involving a net displacement of the low-income population, does not hold in general. In fact, this analysis adds to the evidence that in general the *supply effects* outweigh the *gentrification effects*, even in fairly small geographic neighbourhoods.
+* This analysis does not say that increasing density will always increase the population in Lico-AT, it’s a statistical analysis that simply says this is the norm, but displacement may well happen in particular areas. In particular, the analysis says little about neighbourhoods with high initial shares of people in Lico-AT as explained below.
+
+
+
+
+```{r}
+pd <- data %>%
+  filter(!is.na(licoat_2006)) %>%
+  mutate(l=cut(licoat_2006/licoat_2006_base,licoat_breaks,licoat_labels,ordered_result = TRUE)) %>%
+  group_by(l,name) %>%
+  summarize(d=sum(d_Dwellings),D=sum(Dwellings_CA06),Count=n()) %>%
+  mutate(dd=d/D)
+```
+
+Over half of the neighbourhoods in our data have initial shares of population in Lico-AT below 20%.
+
+```{r}
+ggplot(pd,aes(y=Count,x=l,fill=l)) +
+  scale_fill_manual(values=licoat_colours,guide=FALSE) +
+  geom_bar(stat="identity") +
+  my_theme +
+  scale_y_continuous(labels=scales::comma) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  facet_wrap("name",scales="free_y") +
+  labs(title="Number of neighbourhoods by initial share of Lico-AT",x="Share Lico-AT",y="Number of neighbourhoods")
+
+```
+
+With very few neighbourhoods with higher share of Lico-AT in our sample we should not assume our results holds there. The absolute change in dwelling units also biases strongly toward low initial population in Lico-AT.
+
+```{r}
+ggplot(pd,aes(y=d,x=l,fill=l)) +
+  scale_fill_manual(values=licoat_colours,guide=FALSE) +
+  geom_bar(stat="identity") +
+  my_theme +
+  scale_y_continuous(labels=scales::comma) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  facet_wrap("name",scales="free_y") +
+  labs(title="Dwelling units added by initial share of Lico-AT",x="Share Lico-AT",y="Dwelling units added")
+```
+
+However, when looking at the relative dwelling growth we get a different picture.
+
+```{r}
+ggplot(pd,aes(y=dd,x=l,fill=l)) +
+  scale_fill_manual(values=licoat_colours,guide=FALSE) +
+  geom_bar(stat="identity") +
+  my_theme +
+  scale_y_continuous(labels=scales::percent) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  facet_wrap("name",scales="free_y") +
+  labs(title="Dwelling unit growth by initial share of Lico-AT",x="Share Lico-AT",y="Change in dwelling units")
+```
+
+Calgary and Toronto see a spike in relative change in dwellings at the high end, something that we also see in Montréal and Vancouver, except that areas with very high rates of low income population we see a net loss in dwelling units. It would be worthwhile to investigate this pattern further, in our context this means that we should be careful when interpreting our results for areas with share of low-income population above 40%.
+
+The code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-09-02-low-income-vs-new-dwellings.Rmarkdown), anyone interested in more details on the analysis, or wanting to improve the models, is welcome to grab the code.
+
+
+
+```{r include=FALSE}
+pd <- muni_data %>% filter(name=="Vancouver")
+bbox2 <- st_bbox(pd)
+
+ggplot(pd,aes(fill=residuals_d)) +
+  geom_sf(size=0.1)  +
+  scale_fill_manual(values=total_colors,na.value="darkgrey") +
+  map_theme +
+  labs(title="Change in dwellings vs low income 2006 - 2016",fill="Residual") +
+  coord_sf(datum=NA,
+           xlim=c(bbox2$xmin,bbox2$xmax),
+           ylim=c(bbox2$ymin,bbox2$ymax))
+```
+
+
+
+
+```{r eval=FALSE, include=FALSE}
+ms <- function(x) (x*x) %>% mean()
+
+licovars <- region_names%>% 
+  lapply(function(n) {
+    pd <- plot_data %>%
+           clean_data %>% 
+           filter(name==n)
+    coords <- pd %>% st_centroid(of_largest_polygon = TRUE) %>% st_transform(26910) %>%sf::as_Spatial()
+    gstat::variogram(d_licoat~d_Dwellings, data=coords, cloud = FALSE) %>%
+      mutate(scaled=gamma/ms(residuals(models[[n]]))) %>%
+      mutate(Metro=n)
+    }) %>%
+  set_names(region_names)
+
+ggplot(licovars %>% bind_rows,aes(x=dist/1000,y=gamma,color=Metro)) +
+  geom_point(aes(size=np)) +
+  #scale_y_continuous(limits=c(0,1.5)) +
+  scale_x_continuous(labels = scales::comma) +
+  scale_size_area(max_size = 4,guide=FALSE) +
+  geom_line() +
+  theme_light() +
+  labs(x="Distance (km)",y=expression("Semivariance ("*gamma*")"),title="Change in Lico-AT vs net new dwellings")
+
+```
+
+
+
