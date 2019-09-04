@@ -784,9 +784,9 @@ ggplot(plot_data,aes(x=zz,y=y)) +
   geom_line(data=model_lines,aes(x=x,y=y)) +
   ggtext::geom_richtext(data=eq,aes(x=xpos,y=ypos,label=eqn), 
                         inherit.aes=FALSE,fill = NA, label.color = NA,size=3,hjust = 1) +
-  labs(title="Lico-AT deviation from metro mean vs low income 2006 - 2016",
+  labs(title="nitial Lico-AT population vs low income 2006 - 2016",
        size="2006 Lico-AT",
-       x="Lico-AT difference from metro mean (z)",y="Total change in low income (Lico-AT) population")
+       x="Initial Lico-AT population (z)",y="Total change in low income (Lico-AT) population")
 ```
 
 These results are again fairly stable when restricting to the "medium growth" areas.
@@ -835,7 +835,7 @@ ggplot(share_data) +
   geom_line(data=model_lines,aes(x=x,y=y)) +
   ggtext::geom_richtext(data=eq,aes(x=xpos,y=ypos,label=eqn), 
                         inherit.aes=FALSE,fill = NA, label.color = NA,size=3,hjust = 1) +
-  labs(title="Relative change in dwellings vs low income 2006 - 2016",
+  labs(title="Relative change in dwellings vs low income share change 2006 - 2016",
        size="2006 Dwellings",
        x="Relative change net new dwellings (x)",y="Percentage point change in low income (Lico-AT) population")
 ```
@@ -856,9 +856,9 @@ ggplot(share_data) +
   geom_line(data=model_lines,aes(x=x,y=y)) +
   ggtext::geom_richtext(data=eq,aes(x=xpos,y=ypos,label=eqn), 
                         inherit.aes=FALSE,fill = NA, label.color = NA,size=3,hjust = 1) +
-  labs(title="Lico-AT deviation from metro mean vs low income 2006 - 2016",
+  labs(title="Initial Lico-AT share vs low income share change 2006 - 2016",
        size="2006 Dwellings",
-       x="Lico-AT share difference from metro mean (z)",y="Percentage point change in low income (Lico-AT) population")
+       x="Initial Lico-AT share (z)",y="Percentage point change in low income (Lico-AT) population")
 ```
 
 
@@ -979,9 +979,9 @@ ggplot(muni_data) +
   geom_line(data=model_lines,aes(x=x,y=y)) +
   ggtext::geom_richtext(data=eq,aes(x=xpos,y=ypos,label=eqn), 
                         inherit.aes=FALSE,fill = NA, label.color = NA,size=3,hjust = 1) +
-  labs(title="Lico-AT deviation from metro mean vs low income 2006 - 2016",
+  labs(title="Initial Lico-AT population vs low income change 2006 - 2016",
        size="2006 Lico-AT",
-       x="Lico-AT difference from metro mean (z)",y="Total change in low income (Lico-AT) population")
+       x="Inital Lico-AT population (z)",y="Total change in low income (Lico-AT) population")
 ```
 
 We see that the change in dwelling is still associated with a strong increase in population in Lico-AT. Interestingly, Burnaby is showing the largest rate of increase. Going back up to the map of residuals for the metro-wide model we see that Metrotown does not come in far off from the model predictions, which we found somewhat surprising. Again, the intercept looses statistical significance under this model specification.
