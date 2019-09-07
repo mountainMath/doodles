@@ -9,7 +9,7 @@ categories:
 tags: []
 description: 'The missing part of the Labour Force Survey'
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2019-09-02-low-income-vs-new-dwellings_files/figure-html/total_model_z-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2019-09-06-job-vacancies_files/figure-html/job-vacancy-rate-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -63,13 +63,13 @@ The vacancies in British Columbia are driven by the Vancouver area, so economic 
 
 Looking at the top 4 economic regions and Canada overall drives home the point how extraordinary the job vacancy rate in the Vancouver area is.
 
-<img src="/posts/2019-09-06-job-vacancies_files/figure-html/unnamed-chunk-9-1.png" width="768" />
+<img src="/posts/2019-09-06-job-vacancies_files/figure-html/job-vacancy-rate-1.png" width="768" />
 
 This rise in job vacancy over a fairly short period of time is testament of the growth of the BC economy, and it complements a parallel trend in LFS data.
 
 
 
-<img src="/posts/2019-09-06-job-vacancies_files/figure-html/unnamed-chunk-11-1.png" width="768" />
+<img src="/posts/2019-09-06-job-vacancies_files/figure-html/unnamed-chunk-10-1.png" width="768" />
 
 We see that the Vancouver economic region of Lower Mainland-Southwest has the lowest unemployment rate. On the other hand, the economic downturn in Calgary and slow recovery is also clearly visible, where we focus on the same timeframe that JVWS data is available.
 
@@ -78,7 +78,7 @@ We see that the Vancouver economic region of Lower Mainland-Southwest has the lo
 
 
 
-<img src="/posts/2019-09-06-job-vacancies_files/figure-html/unnamed-chunk-13-1.png" width="768" />
+<img src="/posts/2019-09-06-job-vacancies_files/figure-html/unnamed-chunk-12-1.png" width="768" />
 
 Looking at participation rates, Calgary still stands out with participation rates significantly above the Canadian average. The other economic regions are tracking quite closely, with the Vancouver region gaining ground.
 
@@ -88,7 +88,7 @@ This begs the question on the impact on incomes of the employed population, as w
 
 To kick things off we consider the average hourly wage offered for vacant jobs.
 
-<img src="/posts/2019-09-06-job-vacancies_files/figure-html/unnamed-chunk-14-1.png" width="768" />
+<img src="/posts/2019-09-06-job-vacancies_files/figure-html/unnamed-chunk-13-1.png" width="768" />
 
 The (real) average wage has increased in all areas except Montréal, but the increase in Calgary has been much steeper than that in Vancouver, showing that the job vacancy rate is not the main driver of changes in average wages offered. The type of vacant jobs is an obvious candidate to have a large impact on the wages.
 
@@ -99,18 +99,18 @@ Time to fold in Survey of Employment, Payrolls and Hours (SEPH) data. Unfortunat
 
 
 
-<img src="/posts/2019-09-06-job-vacancies_files/figure-html/unnamed-chunk-16-1.png" width="768" />
+<img src="/posts/2019-09-06-job-vacancies_files/figure-html/unnamed-chunk-15-1.png" width="768" />
 
 We singled out the 8 most prominent industries to make the graphs more readable. This identifies *Health care and social assistance* as the main driver of job vacancies Canada wide, while Calgary shows a different pattern with *Accommodation and food services* winning out. This sector is also featuring prominently in British Columbia. Job vacancy rates by sector add another piece of information.
 
-<img src="/posts/2019-09-06-job-vacancies_files/figure-html/unnamed-chunk-17-1.png" width="768" />
+<img src="/posts/2019-09-06-job-vacancies_files/figure-html/unnamed-chunk-16-1.png" width="768" />
 
 The data quality suffers when splitting up job vacancies by sector, and it is not clear what impact job vacancies in unclassified businesses have. These patterns don't seem sufficient to explain the difference in average wages offered for vacant jobs.
 
 ## Income
 A last clue might come from income of the employed population, complementing the wages offered for the vacant jobs. Here we chose to use Canadian Income Survey data and look at median total income of economic families.
 
-<img src="/posts/2019-09-06-job-vacancies_files/figure-html/unnamed-chunk-18-1.png" width="768" />
+<img src="/posts/2019-09-06-job-vacancies_files/figure-html/unnamed-chunk-17-1.png" width="768" />
 
 Again, the recent recession in Calgary is clearly visible, but overall income levels remained well above the other metro areas. Vancouver has overtaken Toronto [as we have pointed out several times before](https://doodles.mountainmath.ca/blog/2017/11/01/medians/), with economic families in Toronto posting the lowest real income growth of our metro sample over that time period.
 
@@ -120,3 +120,5 @@ There is more to jobs data than just the LFS, and care should be taken not to co
 Metro regions don't function the same way they initially did. Metro areas can't be absorbed by other metro areas, so while e.g. Montreal has been growing geographically, Toronto is is quite constrained by water and neighbouring metro areas that show significant cross-boundary commute patterns. The same is true for Metro Vancouver which is bounded by water, mountains, and Abbotsford-Mission to the east.
 
 It's worthwhile to take a broader look every now and then and see how job vacancies and cross-boundary commutes (available through the census or at lower quality via triangulating various surveys) fit into the picture.
+
+The [code for the post is ovailable on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-09-06-job-vacancies.Rmarkdown) for anyone that wants to explore this further.

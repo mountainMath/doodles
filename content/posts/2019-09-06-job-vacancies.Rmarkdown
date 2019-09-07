@@ -9,7 +9,7 @@ categories:
 tags: []
 description: 'The missing part of the Labour Force Survey'
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2019-09-02-low-income-vs-new-dwellings_files/figure-html/total_model_z-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2019-09-06-job-vacancies_files/figure-html/job-vacancy-rate-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -164,7 +164,7 @@ ggplot(plot_data,aes(x=Date,y=VALUE,color=name,shape=STATUS,group=name)) +
 
 Looking at the top 4 economic regions and Canada overall drives home the point how extraordinary the job vacancy rate in the Vancouver area is.
 
-```{r}
+```{r job-vacancy-rate}
 jvr_plot_data <- jvr %>% 
   filter(name %in% top_er,!is.na(VALUE)) %>%
   mutate(name=factor(name,levels=top_er))
@@ -434,3 +434,5 @@ There is more to jobs data than just the LFS, and care should be taken not to co
 Metro regions don't function the same way they initially did. Metro areas can't be absorbed by other metro areas, so while e.g. Montreal has been growing geographically, Toronto is is quite constrained by water and neighbouring metro areas that show significant cross-boundary commute patterns. The same is true for Metro Vancouver which is bounded by water, mountains, and Abbotsford-Mission to the east.
 
 It's worthwhile to take a broader look every now and then and see how job vacancies and cross-boundary commutes (available through the census or at lower quality via triangulating various surveys) fit into the picture.
+
+The [code for the post is ovailable on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-09-06-job-vacancies.Rmarkdown) for anyone that wants to explore this further.
