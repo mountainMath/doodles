@@ -1,0 +1,344 @@
+---
+title: Spatial autocorrelation & co
+author: Jens von Bergmann
+date: '2019-10-07'
+slug: spatial-autocorrelation-co
+categories:
+  - geeky
+tags: []
+description: "Common (and commonly ignored) problems in spatial analysis."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2019-10-07-spatial-autocorrelation-co_files/figure-html/sampled_random_process-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+draft: false
+blackfriday:
+  fractions: false
+  hrefTargetBlank: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	fig.width = 8,
+	message = FALSE,
+	warning = FALSE
+)
+library(tidyverse)
+library(sf)
+library(gstat)
+```
+
+These days I run a fair bit of spatial analysis. And there are three problems that regularly come up:
+
+1. Getting data on compatible geographies
+2. Ecological fallacy
+3. Spatial autocorrelation
+
+None of these problems is insurmountable, but they are all annoying to various degrees. Often I might ignore them on my first analysis run, but these problems need to be dealt with sooner or later. Which can eat up significant amounts of time. Sometimes the analysis results don't change much after properly dealing with these issues. Sometimes they change significantly. Sometimes they change dramatically to the extent of reversing the overall interpretation.
+
+There are other issues that come up in analysis too, but these I find regularly in my particular workflows, and these are usually the most time consuming to deal with. 
+
+All these problems are fairly well understood, and a lot of ink has already been spilled on each of these. Not all of these problems come up in every setting, but at least one or two of them come up in pretty much any research dealing with spatial data. And despite these problems being well-known, I am surprised how many papers don't adequately deal with them, or even completely ignore them.
+
+For the first problem we have written the [`tongfen` package](https://github.com/mountainMath/tongfen), that focuses on Canadian census data and greatly simplifies the common task of making census data comparable through time, and also allows to estimate data on unrelated custom geographies.
+
+The ecological fallacy comes into play when trying to extract information on individual level behaviour from ecological level correlations. This comes up when individual level cross-tabs aren't available, for example when mixing data from different sources. There are a number of approaches to deal with this, in particular [Gary King's elegant methods](https://gking.harvard.edu/eicamera/kinroot.html). Dealing with this generally requires a lot of hand-holding, we have not found implementations that are easy to use and automate the error detection and iterations that we found are usually required. We will leave this for a separate future blog post.
+
+This leaves us with the last issue on our list, spatial autocorrelation, and I want to take this opportunity to walk through a detailed example myself, complete with code for reproducibility.
+
+## Spatial autocorrelation
+When fitting models, we need to check if the assumptions of the model are satisfied. When working with spatial data, we impose an additional assumption on most models. That the residuals aren't spatially autocorrelated.
+
+Spatial autocorrelation boils down to the fact that nearby things tend to be more related than far away things. When residuals of a fitted model exhibit spatial autocorrelation the model is facing two problems. The individual observations that fed the model can't be treated as statistically independent. This can inflate p-values in linear models, and bias model validation done via standard random train/test data split. Moreover, it can introduce sizable (and statistically highly significant) spurious correlations.
+
+And the most annoying part is that when building models from real life spatial processes, autocorrelation in residuals tends to be the norm rather than the exception.
+
+To better understand why I obsess so much about this these days, let's consider an example. This is reproducing part of an excellent [post by Morgan Kelly](https://voxeu.org/article/standard-errors-persistence) where he explores the likelihood that improperly handled spatial autocorrelation invalidates results of selected published economics research.
+
+Following Morgan Kelly, we take a 100 by 100 square, and assign values to each cell via two independent random spatial processes. The word *spatial* here means that the process behaves like spatial processes we see in nature. Say a temperature distribution. Or soil contamination. Or how demographic variables like median income, tenure or mode of transportation to work tend to distribute. That is, a random process with spatial autocorrelation.
+
+```{r include=FALSE}
+set.seed(345) 
+
+size=100
+xy <- expand.grid(1:size, 1:size) %>%
+  set_names("x","y")
+g.dummy <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=0, model=vgm(psill=0.1, range=25, model='Exp'), nmax=20)
+
+yy <- predict(g.dummy, newdata=xy, nsim=2)
+
+sp::gridded(yy) <- ~x+y
+```
+```{r}
+sp::spplot(obj=yy,main=list(label="Two independent random spatial processes"))
+```
+
+
+These pictures show the values of our two random spatial processes, which we called *sim1* and *sim2*. They are modelled as a constant model with spatial noise, we refer those interested in details [to the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-10-07-spatial-autocorrelation-co.Rmarkdown). We think of *sim1* and *sim2* taking values over the same square.
+
+Next we will sample the square at 80 randomly chosen points, with locations shown in white below, and correlate the values of *sim1* at these points to those of *sim2* at these points. 
+
+
+```{r sampled_random_process}
+set.seed(123)
+psize <- 80             #length of random number vectors
+x <- runif(psize,min=0,max=size) %>% floor +1        
+y <-runif(psize,min=0,max=size) %>% floor +1
+points <-data.frame(x,y)
+
+sp::spplot(obj=yy,main=list(label="Two independent random spatial processes and sample locations")) +
+  latticeExtra::layer(panel.points(x, y, col="white", pch=19), data=points)
+```
+
+
+```{r}
+y1=raster::raster(yy["sim1"])
+y2=raster::raster(yy["sim2"])
+
+plot_data <- tibble(sim1=raster::extract(y1,points),sim2=raster::extract(y2,points))
+
+m=lm(sim1~sim2,data=plot_data)
+s=summary(m)
+```
+
+One can think of this as correlating e.g. air contamination with density of factories. Or income with home values. Except using two independent random spatial processes instead of real data. Since the two processes *sim1* and *sim2* are independent random processes, we would expect their values at our sample points to be uncorrelated.
+
+```{r}
+ggplot(plot_data,aes(x=sim1,y=sim2)) +
+  geom_point() +
+  geom_smooth(method="lm",se=FALSE) +
+  theme_light() +
+  labs(title="Inspecting the relationship between sim1 to sim2")
+```
+
+
+Visual inspection shows this not to be true. More precisely we get a strong and highly significant correlation between these variables, with low but significant adjusted $R^2$ of `r format(s$adj.r.squared,digits=2)`.
+
+```{r}
+knitr::kable(s$coefficients,digits=c(2,2,2,4),align=c(rep('l',times=4)))
+```
+
+We can proceed with standard checks to see how the residuals are distributed.
+
+```{r}
+ggpubr::ggqqplot(tibble(residuals=s$residuals),x="residuals") +
+  theme_light() +
+  labs(title="Residuals")
+```
+
+Things looks reasonably normal on this front. To understand what goes wrong here we plot the associated variogram.
+
+```{r}
+plot_data_sf <- st_as_sf(plot_data %>% cbind(points), coords = c("x", "y"), crs = NA, agr = "constant")
+
+v<-variogram(sim1~sim2,plot_data_sf %>% sf::as_Spatial(), cloud = FALSE)
+
+ggplot(v,aes(x=dist,y=gamma)) +
+  geom_point(aes(size=np)) +
+  #scale_y_continuous(limits=c(0,1.5)) +
+  scale_x_continuous(labels = scales::comma) +
+  scale_size_area(max_size = 4,guide=FALSE) +
+  #geom_line() +
+  theme_light() +
+  labs(x="Distance",y=expression("Semivariance ("*gamma*")"),title="Variogram of sim1~sim2")
+```
+
+
+```{r}
+S.dist  <-  spdep::dnearneigh(plot_data_sf, 0, 25)  
+dlist <- spdep::nbdists(S.dist, st_coordinates(plot_data_sf))
+idlist <- lapply(dlist, function(x) exp(-x))
+lw <- spdep::nb2listw(S.dist, glist=idlist, style="W",zero.policy = TRUE)
+#lw <- spdep::nb2listw(S.dist, style="W")
+
+mc <- spdep::moran.mc(s$residuals,lw,zero.policy = TRUE,nsim=10000)
+```
+
+This shows high autocorrelation at least up to a distance of about 25. Guided by this we can produce neighbour weights up to a distance of 25 scaled by inverse distance and check Moran's I statistic, which clocks in with a statistic of `r format(mc$statistic,digits=2)` and a p-value at or below `r format(mc$p.value,format="e",digits=2)`, the resolution of our Monte Carlo simulation of 10,000 runs.
+
+As expected, the model residuals are highly autocorrelated. **Had we not checked this, we might have concluded that *sim1* and *sim2* are highly correlated, when in fact the correlation is entirely due to spatial autocorrelation.**
+
+Of course this is not news to researchers and has been well documented before, which is why I am so surprised to keep coming across research papers in economics, planning, or geography that does not even check from spatial autocorrelation. Morgan Kelly runs through a couple of such examples in [his post](https://voxeu.org/article/standard-errors-persistence).
+
+## How to deal with spatial autocorrelation
+Just because regression residuals exhibit significant autocorrelation does not mean that the analysis is doomed. There are ways to deal with this problem. Probably the best way is to identify a non-random spatial process that can explain the autocorrelation. For example, if you are fitting a model to housing prices and you see strong spatial autocorrelation in residuals, you may be missing some important neighbourhood-level features. Maybe school catchment areas, or patterns in street trees, areas with ground slope that favours views vs areas that don't have views, or proximity to amenities. Plotting the residuals can help reveal these patterns. If this approach is successful it's a double win. It reduces autocorrelation and strengthens the model by adding missing variables with explanatory power.
+
+But often this strategy does not work. And if it does it usually only reduces autocorrelation, but does not remove it to the extent that it can be ignored. 
+
+Aggregating data based on the range of the autocorrelation will reduce the autocorrelation, but it also reduces the data we want to use to build our model from. Generally a better strategy is to select a model that explicitly deals with autocorrelation. Typical choices are spatial lag or spatial error models. These are linear models that add a spatially lagged term to a linear regression model. The `spatialreg` package in R implements several choices, but they only work for regular linear models, possibly with weights. For more complex models, even just lasso or ridge regression, one needs to custom build this by hand. Having more flexible ready-made processes for building such models would be helpful and might help increase adoption.
+
+```{r}
+model_e <- spatialreg::errorsarlm(data=plot_data_sf, formula=sim1~sim2, listw = lw, zero.policy=TRUE,tol.solve=1e-12)
+#model_e <- lagsarlm(data=plot_data_sf, formula=sim1~sim2, listw = lw, zero.policy=TRUE,tol.solve=1e-12)
+
+s_e<-summary(model_e,Nagelkerke=TRUE)
+mc_e <-spdep::moran.mc(s_e$residuals,lw,zero.policy = TRUE,nsim=10000)
+```
+
+For our case at hand, we choose a spatial error model of the form,
+$$
+y = X \beta + u, \hspace{1cm} u = \lambda W u + \epsilon
+$$
+where $w$ is the spatial weights term. The model picks up $\lambda$ of `r format(s_e$lambda,digits=2)` and an overall superior (AIC) fit compared to our previous naive linear model with pseudo $R^2$ of `r format(s_e$NK,digits=2)`. The coefficients however aren't statistically different from zero.
+
+```{r}
+knitr::kable(s_e$Coef,digits=c(2,2,2,2),align=c(rep('l',times=4)))
+```
+
+In summary, the spatial error model successfully picks out the spatial autocorrelation and finds no evidence for correlation between our two random spatial processes *sim1* and *sim2*. Checking Moran's I we have a statistic of `r format(mc_e$statistic,digits=2)` and a p-value of `r format(mc_e$p.value,format="e",digits=2)`, providing no evidence of remaining spatial autocorrelation.
+
+Checking in on the residuals we notice a slight increase in performance too, with residuals better fitting the normality assumption.
+
+```{r}
+ggpubr::ggqqplot(tibble(residuals=s_e$residuals),x="residuals") +
+  theme_light() +
+  labs(title="Residuals")
+```
+
+Our spatial error model was fully successful in picking up the spatial autocorrelation and removing the spurious correlation. This is the best-case scenario, in real life things usually aren't that clean.
+
+## The nitty-gritty
+Things don't always go this smoothly as in this toy example. In practice, things tend to get more messy and it can be at times challenging to properly identify the correct patterns of spatial autocorrelation and properly deal with them.
+
+It should be said that spatial autocorrelation does not always negatively affect naive regression results. It's the nature of random processes that they can sometimes produce positive spurious correlation, sometimes negative spurious correlations, and sometimes no significant correlation.
+
+To exemplify this, we can re-run our initial random spatial processes for *sim1* and *sim2* a number of times and compare the results of running a naive regression.
+
+```{r include=FALSE}
+set.seed(345) 
+
+# size=100
+# xy <- expand.grid(1:size, 1:size) %>%
+#   set_names("x","y")
+
+
+results <- lapply(seq(1:20),function(i){
+  g.dummy <- gstat(formula=z~1, locations=~x+y, dummy=T, beta=0, model=vgm(psill=0.1, range=25, model='Exp'), nmax=20)
+  yy <- predict(g.dummy, newdata=xy, nsim=2)
+  sp::gridded(yy) <- ~x+y
+  y1=raster::raster(yy["sim1"])
+  y2=raster::raster(yy["sim2"])
+  plot_data <- tibble(sim1=raster::extract(y1,points),sim2=raster::extract(y2,points))
+  m=lm(sim1~sim2,data=plot_data)
+  s=summary(m)
+  s$coefficients %>% as_tibble %>% mutate(Run=i,Coefficient=rownames(s$coefficients),`r squared`=s$adj.r.squared)
+}) %>%
+  bind_rows
+
+sim2_results <- results %>% 
+  filter(Coefficient=="sim2") %>%
+  select(Run,Estimate,`Std. Error`,`t value`,`Pr(>|t|)`,`r squared`) 
+
+significant <- filter(sim2_results,`Pr(>|t|)`<=0.05) 
+```
+```{r}
+knitr::kable(sim2_results,digits=c(0,2,2,2,5,2),align=c(rep('l',times=6)))
+```
+
+
+We see that `r nrow(significant)` of our `r nrow(sim2_results)` runs give statistically significant correlations at at least the 0.05 level. In that sense, our initial example was somewhat engineered in that we chose processes that did yield significant autocorrelation of the residuals. But we did not have to try very hard to get one of these.
+
+The spatial process we used to generate the data used an exponential variogram model with range of 25, which our diagnostic variogram we plotted above correctly identified. Changing the range will change the frequency with which random processes will produce statistically significant spurious correlations. But even in cases where spatial autocorrelation does not negatively impact model coefficients, accounting for spatial autocorrelation will still increase overall model performance.
+
+## Validation splits
+A related issue with spatial data comes up when splitting data into test and training data. Typically one just splits the dataset randomly, but this is problematic when dealing with spatial data. The idea behind splitting data is that the two subsets are uncorrelated, so if one is used for model training the other can give an unbiased measure of model performance. **But in the presence of spatial autocorrelation, a random split into training and test data will not result in uncorrelated subsets.** In particular, if we select a random split in our above example, the test data will confirm the spurious correlation we find using the training data.
+
+To better show this we generate 500 random points to evaluate our original model at, and we take an 80:20 split into training and test data. We then evaluate a naive linear model trained on the training data on both the training and test data and compare the results.
+
+```{r}
+library(rsample)
+set.seed(123) 
+
+psize <- 500             #length of random number vectors
+x <- runif(psize,min=0,max=size) %>% floor +1        
+y <-runif(psize,min=0,max=size) %>% floor +1 
+points2 <-data.frame(x,y)
+
+
+y1=raster::raster(yy["sim1"])
+y2=raster::raster(yy["sim2"])
+
+
+all_data <- tibble(sim1=raster::extract(y1,points2),sim2=raster::extract(y2,points2))
+
+
+split_data <- all_data %>% initial_split(prop = 0.8)
+train_data <- training(split_data)
+test_data <- testing(split_data)
+
+
+fit_lm=lm(sim1~sim2,data=train_data)
+
+library(yardstick)
+train_results <- train_data %>% mutate(`Linear regression` = predict(fit_lm, .))
+test_results <- test_data %>% mutate(`Linear regression` = predict(fit_lm, .))
+
+result <- left_join(
+  metrics(train_results, truth = sim1, estimate = `Linear regression`) %>% rename(`.estimate Train`=.estimate),
+  metrics(test_results, truth = sim1, estimate = `Linear regression`) %>% rename(`.estimate Test`=.estimate)
+)
+
+result %>% rename(Metric=.metric,Train=`.estimate Train`,Test=`.estimate Test`) %>% select(Metric,Train,Test) %>%
+  knitr::kable(digits=c(0,2,2),align=c(rep('l',times=3)))
+```
+
+The testing data does not pick up on the spurious correlation. The problem is that our testing and training data are correlated via spatial autocorrelation. To pick up statistically independent test data we can't rely on simple random sampling but should pick up random blocks of data based on the range of the autocorrelation. There are several R packages available for data splitting adapted to spatial data, for example the `mlr` package. To understand the difference we visualize the splits of the data using spatial and non-spatial splitting methods.
+
+```{r}
+library(mlr)
+folds=4
+perf_level = makeResampleDesc(method = "SpRepCV", folds = folds, reps = 2)
+task = makeRegrTask(data = all_data, target = "sim1", coordinates = points2)
+lrn = makeLearner(cl = "regr.lm")
+set.seed(012348)
+sp_cv = resample(learner = lrn, task = task,
+                      resampling = perf_level, 
+                      show.info = FALSE,
+                      models = TRUE,
+                      measures = list(mlr::rmse,mlr::rsq,mlr::mae)
+                      )
+
+rdesc1 = makeResampleDesc("SpRepCV", folds = folds, reps = 2)
+r1 = resample(makeLearner("regr.lm"), task, rdesc1, show.info = FALSE)
+rdesc2 = makeResampleDesc("RepCV", folds = folds, reps = 2)
+r2 = resample(makeLearner("regr.lm"), task, rdesc2, show.info = FALSE)
+ 
+plots = createSpatialResamplingPlots(task,
+ list("Spatial CV" = r1,"Random CV"=r2), crs = 32717, repetitions = 1)
+cowplot::plot_grid(plotlist = plots[["Plots"]], ncol = folds, nrow = 2,
+  labels = plots[["Labels"]],label_size = 9)
+
+```
+
+Using `r folds`-fold spatial partitioning we can look at the performance of linear models trained on our training data by evaluating it on the test data on each fold.
+
+```{r}
+metrics <- sp_cv$measures.test %>% 
+  mutate(slope=sp_cv$models %>% map(function(m)summary(getLearnerModel(m))$coefficients[2,1]) %>% unlist) %>%
+  select(-iter) %>%
+  filter(!duplicated(round(rsq,3))) %>% # not random models, drop duplicate repetitions
+  t
+
+metrics %>%
+  as_tibble() %>%
+  set_names(paste0("Fold ",seq(1,folds))) %>%
+  mutate(Metric=rownames(metrics))  %>%
+  select(c("Metric",paste0("Fold ",seq(1,folds)))) %>%
+  knitr::kable(digits=c(2,2,2,2),align=c(rep('l',times=11)))
+```
+
+We notice significantly higher errors and lower (pseudo) $R^2$ in all but one of the runs. There is a sizable variation in the correlation slope across the runs. When using spatial partitioning of train and test data, the spatial autocorrelation manifests itself in form of increased discrepancy between train and test data, and gives a more accurate picture of overall model performance. In our case, the pseudo $R^2$ tells us that the models generated from the test data are non-informative at best.
+
+## Upshot
+It is difficult to evaluate the validity of analysis based on spatial data without checking for spatial autocorrelation, and properly dealing with it if necessary. Despite this, I keep coming across studies in economics, planning, geography and other social sciences that don't check for spatial autocorrelation despite relying heavily on spatial data. 
+
+These disciplines started out doing spatial analysis at times when awareness and understanding of spatial autocorrelation was low, so it is understandable when older research has ignored this issue. But I frequently come across this in recent research too. I suspect this is a case of collective complacency.
+
+The change to include spatial autocorrelation as a necessary check for any published work is bound to happen eventually. This is also sure to trigger a replication effort that checks how results in key papers hold up when spatial autocorrelation is accounted for.
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-10-07-spatial-autocorrelation-co.Rmarkdown) in case people want to further investigate spatial autocorrelation.
+
