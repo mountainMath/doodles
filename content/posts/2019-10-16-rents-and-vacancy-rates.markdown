@@ -97,7 +97,7 @@ This underscores the relative attractiveness of central (and West Side) as oppos
 
 
 ## Upshot
-Looking at the very extremes of the rent quintiles is likely not going to generate much insight, it will be clouded by data quality issues and not have much relevance for broader questions. As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-10-16-rents-and-vacancy-rates.Rmarkdown) for those interested playing further with the numbers. The CMHC Rms custom extract is [also available on GitHub](https://github.com/mountainMath/data/vacancy-rate-universe-by-quintile-apt-city-vancouver-csd-2014-2018.xlsx).
+Looking at the very extremes of the rent quintiles is likely not going to generate much insight, it will be clouded by data quality issues and not have much relevance for broader questions. As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-10-16-rents-and-vacancy-rates.Rmarkdown) for those interested playing further with the numbers. The CMHC Rms custom extract is [also available on GitHub](https://github.com/mountainMath/doodles/raw/master/data/vacancy-rate-universe-by-quintile-apt-city-vancouver-csd-2014-2018.xlsx).
 
 
 
