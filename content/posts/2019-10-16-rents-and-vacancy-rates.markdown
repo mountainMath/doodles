@@ -5,6 +5,7 @@ date: '2019-10-16'
 slug: rents-and-vacancy-rates
 categories:
   - cmhc
+  - rental
   - Vancouver
 tags: []
 description: "Adding some context to vacancy rates by rent segment."
