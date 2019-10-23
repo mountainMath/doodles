@@ -21,7 +21,7 @@ blackfriday:
 
 
 
-Canada is a large country, with some reasonably densely populated regions, and large areas that are sparsely populated. That makes it hard to map things. CensusMapper, [our project to flexibly map Canadian census data](https://censusmapper.ca) struggles with that, the choropleth maps can be quite misleading. The same problem comes up when mapping Canadian election data.
+Canada is a large country, with some reasonably densely populated regions, and large areas that are sparsely populated. That makes it hard to map things. CensusMapper, [our project to flexibly map Canadian census data](https://censusmapper.ca), struggles with that. The choropleth maps can be quite misleading. The same problem comes up when mapping Canadian election data.
 
 
 
@@ -37,7 +37,7 @@ For example, one could break out the areas with electoral districts too small to
 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Canadian_Federal_Election_Cartogram_2019.svg/1782px-Canadian_Federal_Election_Cartogram_2019.svg.png" style="width:45%;">
 </div>
 
-The first keeps the overall geographic context, although the metropolitan areas that are broken out are hard to interpret unless one if very familiar with each region.The cartogram distorts the areas to give each electoral district the same area, and thus gives a proportional view of the number of seats each party won. In this version, the labels and breaks help delineate familiar geographies, but it can be hard to properly place them on a map.
+The first keeps the overall geographic context, although the metropolitan areas that are broken out are hard to interpret unless one if very familiar with each region. The cartogram distorts the areas to give each electoral district the same amopunt of space, and thus gives a proportional view of the number of seats each party won. In this version, the labels and breaks help delineate familiar geographies, but it can be hard to properly place them on a map.
 
 
 To bridge the divide between overall geography and emphasis on treating each district separately, one can also animate the cartogram between the familiar map view and the cartogram view. In the following example that we built [as an observable notebook](https://observablehq.com/@mountainmath/canadian-election-bubble-animiation) we move between a map of Canada and a cartogram where each electoral district is a dot with size given by the total number of votes cast. 
