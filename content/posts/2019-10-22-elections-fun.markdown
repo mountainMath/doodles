@@ -90,7 +90,7 @@ We can run this by individual province to see how well each province is represen
 
 <img src="/posts/2019-10-22-elections-fun_files/figure-html/province_fptp_pr-1.png" width="768" />
 
-This reveals that Alberta and Manitoba voters are a lot more diverse than the FPTP vote system may suggest, and the while the Conservatives got shut out of a couple of provinces, they still have sizeable support there. This kind of outcome is fairly typical for first-past-the-post systems, where the representation in parliament does not match the overall population well, especially when looking by province.
+This reveals that Alberta and Saskatchewan voters are a lot more diverse than the FPTP vote system may suggest, and the while the Conservatives got shut out of a couple of provinces, they still have sizeable support there. This kind of outcome is fairly typical for first-past-the-post systems, where the representation in parliament does not match the overall population well, especially when looking by province.
 
 ## Upshot
 There is endless fun to be had with elections data. As usual, the code for this post, including the pre-processing for the animation, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-10-22-elections-fun.Rmarkdown) for anyone to adapt and dig deeper into elections data.
