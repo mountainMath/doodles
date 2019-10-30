@@ -14,7 +14,7 @@ categories:
 tags: []
 description: "As our population and jobs grow, so do commuters. Taking a look how commuters grow."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2019-10-28-commuter-growth_files/figure-html/driver_change_map-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2019-10-29-commuter-growth_files/figure-html/driver_vs_non_driver_change-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -698,7 +698,7 @@ As our region grows, we should pay more attention to the interplay between locat
 
 Adding housing in central parts of the region and along rapid transit networks can help reduce driving and overall congestion in our region. Yet people regularly oppose development projects in central locations because they are afraid of the (car) traffic they fear the new project will bring.
 
-As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-10-28-commuter-growth.Rmarkdown) for people wanting to play with the code. Unfortunately, the data going back to 1996 that we used is only available for Vancouver and Toronto CMA, people hoping to extend to the code to other regions of Canada will have to make due with the 2001 to 2016 timeframe or find other ways to add in the 1996 data.
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-10-29-commuter-growth.Rmarkdown) for people wanting to play with the code. Unfortunately, the data going back to 1996 that we used is only available for Vancouver and Toronto CMA, people hoping to extend to the code to other regions of Canada will have to make due with the 2001 to 2016 timeframe or find other ways to add in the 1996 data.
 
 
 
