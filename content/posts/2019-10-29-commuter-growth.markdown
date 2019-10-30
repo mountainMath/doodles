@@ -112,7 +112,7 @@ Turning to the the change in non-drivers, almost all areas posted gains.
 
 <img src="/posts/2019-10-29-commuter-growth_files/figure-html/unnamed-chunk-16-1.png" width="768" />
 
-Naturally areas that saw a lot of development in that time period stand out, especially those near skytrain. We can summarize these two maps by looking at the difference in the change in non-drivers vs the change in drivers.
+Naturally areas that saw a lot of development in that time period stand out, especially those near skytrain. We can summarize these two maps by looking at the difference in the change in non-drivers vs the change in drivers. This is a simple metric that looks at where we have added more drivers than non-drivers and vice versa.
 
 
 

@@ -486,7 +486,7 @@ ggplot(data_ct %>% filter(Mode=="Non-Driver")) +
   labs(title="Change in number of non-drivers 1996 - 2016",fill="",y="",x="",caption="MountainMath, StatCan Census 1996-2016")
 ```
 
-Naturally areas that saw a lot of development in that time period stand out, especially those near skytrain. We can summarize these two maps by looking at the difference in the change in non-drivers vs the change in drivers.
+Naturally areas that saw a lot of development in that time period stand out, especially those near skytrain. We can summarize these two maps by looking at the difference in the change in non-drivers vs the change in drivers. This is a simple metric that looks at where we have added more drivers than non-drivers and vice versa.
 
 
 
