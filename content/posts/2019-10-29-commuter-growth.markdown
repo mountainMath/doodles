@@ -1,7 +1,7 @@
 ---
 title: Commuter growth
 author: Jens von Bergmann
-date: '2019-10-28'
+date: '2019-10-29'
 slug: commuter-growth
 categories:
   - cancensus
