@@ -1,0 +1,704 @@
+---
+title: Commuter growth
+author: Jens von Bergmann
+date: '2019-10-28'
+slug: commuter-growth
+categories:
+  - cancensus
+  - CensusMapper
+  - land use
+  - Vancouver
+  - Surrey
+  - Transportation
+  - zoning
+tags: []
+description: "As our population and jobs grow, so do commuters. Taking a look how commuters grow."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2019-10-28-commuter-growth_files/figure-html/driver_change_map-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+draft: false
+blackfriday:
+  fractions: false
+  hrefTargetBlank: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width=8,
+	cache = FALSE
+)
+library(tidyverse)
+library(cancensus)
+library(statcanXtabs)
+library(mountainmathHelpers)
+
+fancy_number_formatter <- function(x){
+  paste0(scales::comma(x/1000),"k")
+}
+```
+
+```{r}
+get_mode_data_for_year <- function(year,regions=list(CMA="59933"),geo_level="CSD") {
+    dataset <- case_when(year==2016 ~ "CA16",
+                         year==2011 ~ "CA11",
+                         TRUE ~ paste0("CA",year,"x16"))
+    geo_dataset <- case_when(year==2016 ~ "CA16",
+                         year==2011 ~ "CA11",
+                         TRUE ~ paste0("CA16CT"))
+    vars <- list_census_vectors(dataset) %>%
+    filter(grepl("mode of",label),type=="Total") %>%
+    bind_rows(child_census_vectors(.,leaves_only = TRUE)) %>%
+    filter(!grepl("Males with|Females with",label)) %>%
+    mutate(short=case_when(
+      grepl("Total |Employed population",label) ~ "Total",
+      grepl(" driver",label) ~ "Driver",
+      grepl(" passenger",label) ~ "Passenger",
+      grepl(" transit",label) ~ "Transit",
+      grepl("Walked",label) ~ "Walked",
+      grepl("Bicycle",label) ~ "Bicycle",
+      grepl("Motorcycle",label) ~ "Motorcycle",
+      grepl("Taxicab",label) ~ "Taxicab",
+      grepl("Other",label) ~ "Other"
+    ))
+  #if (year==2006) vars=vars %>% top_n(-2,vector)
+  vectors <- set_names(vars$vector,vars$short)
+  get_census(geo_dataset, regions=regions, vectors=vectors, level=geo_level) %>%
+    pivot_longer(cols=setdiff(names(vectors),"Total"),names_to = "Mode",values_to="Count") %>%
+    select(GeoUID,Mode,Count,Total) %>%
+    group_by(GeoUID,Mode,Total) %>%
+    summarise(Count=sum(Count)) %>%
+    mutate(Year=year)
+}
+
+mode_levels <- c("Driver","Passenger","Transit","Bicycle","Walked","Motorcycle","Taxicab","Other")
+data <- seq(1996,2016,5) %>% lapply(get_mode_data_for_year) %>% 
+  bind_rows %>%
+  ungroup %>%
+  mutate(Mode=factor(Mode,levels=mode_levels)) %>%
+  mutate(Share=Count/Total) %>%
+  left_join(list_census_regions("CA16") %>% filter(CMA_UID=="59933") %>% select(GeoUID=region,Type=municipal_status,name=name),by="GeoUID") %>%
+  mutate(Name=paste0(name," (",Type,")"))
+
+metro_data <- seq(1996,2016,5) %>% lapply(get_mode_data_for_year,geo_level="CMA") %>% 
+  bind_rows %>%
+  ungroup %>%
+  mutate(Mode=factor(Mode,levels=mode_levels)) %>%
+  mutate(Share=Count/Total)
+
+main_modes <- c("Total","Driver","Passenger","Transit","Bicycle","Walked","Other")
+main_mode_colours <- set_names(RColorBrewer::brewer.pal(length(main_modes),"Dark2"),main_modes)
+main_mode_colours <- c(main_mode_colours,"Non-driver"="darkgreen")
+
+my_theme <- list(
+  theme_light(),
+  labs(caption="MountainMath, StatCan Census 1996-2016")
+)
+
+geos <- get_census("CA16", regions=list(CMA="59933"), level="CSD",geo_format="sf")
+breaks <- c(-Inf,seq(-0.4,0.4,0.1),Inf)
+labels <- c("Less than -40%","-40% to -30%","-30% to -20%","-20% to -10%","-10% to 0%",
+            "0% to 10%","10% to 20%","20% to 30%","30% to 40%","Over 40%")
+manual_colors <- set_names(RColorBrewer::brewer.pal(length(labels),"PiYG") %>% rev,labels)
+
+get_change_data <- function(data,lag_n=4) {
+  period_data <- data %>%
+    group_by(GeoUID,Mode) %>%
+    mutate(Lag=lag(Count,order_by = Year,n=lag_n)) %>%
+    mutate(Change=Count-Lag) %>%
+    mutate(Change_pct=Count/Lag-1) %>%
+    mutate(Period=paste0(lag(Year,order_by = Year,n=lag_n), " - ", Year)) %>%
+    mutate(Change_pct_d=cut(Change_pct,breaks=breaks,labels=labels)) %>%
+    ungroup %>%
+    filter(Period %in% (filter(.,!is.na(Lag)) %>% pull(Period) %>% unique))
+}
+
+get_change_data_for_modes <- function(data,modes,lag_n=4) {
+  period_data <- data %>%
+    filter(Mode %in% modes) %>%
+    group_by(GeoUID,Name,Year) %>%
+    summarise(Count=sum(Count),Total=first(Total)) %>%
+    mutate(Lag=lag(Count,order_by = Year,n=lag_n),LagTotal=lag(Total,order_by = Year, n=lag_n)) %>%
+    mutate(Change=Count-Lag) %>%
+    mutate(Change_pct=Count/Lag-1) %>%
+    mutate(Period=paste0(lag(Year,order_by = Year,n=lag_n), " - ", Year)) %>%
+    ungroup %>%
+    filter(Period %in% (filter(.,!is.na(Lag)) %>% pull(Period) %>% unique))
+}
+```
+
+
+Metro Vancouver is growing, both in terms of population and jobs. That means the number of people commuting to work is growing and putting a strain on our transportation system. The nature of that strain depends to a large extent on how people are getting to and from work. The Canadian census started collecting data on how people get to work in 1996, which allows us to see how commuters and commute choice have changed over time.
+
+```{r}
+plot_data <- data %>%
+  mutate(Mode=as.character(Mode)) %>%
+  mutate(Mode=case_when(Mode %in% main_modes ~ Mode,
+                        TRUE ~ "Other")) %>%
+  group_by(Year,Mode) %>%
+  summarize_at(c("Count","Total"),sum,na.rm=TRUE) %>%
+  mutate(Share=Count/Total) %>%
+  ungroup %>%
+  mutate(Mode=factor(Mode,levels=main_modes),
+         Year=factor(Year))
+```
+
+## TL;DR
+There are large regional differences in how net new commuters get to work, with net new commuters in central regions driving much less than those in outlying regions. Yet our regional growth plan calls for outlying regions to grow significantly faster than the centre.
+
+## Metro Vancouver commuters
+The evolution of the overall mode share in Metro Vancouver shows a gradually changing transportation landscape that this growth brings with it.
+
+```{r}
+ggplot(plot_data,aes(x=Year,y=Share,fill=Mode)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_fill_manual(values=main_mode_colours) +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  labs(title="Metro Vancouver commuters by mode of transportation",y="Share of commuters",x="")
+```
+
+While driving dominates, the share of people driving to work is on a decline. Road space is mostly inelastic, forcing trips into more space-efficient modes, in particular transit. At first sight the data for 2001 does not seem to fit the pattern, but we should remember that [Vancouver's 2001 Transit strike](https://www.cbc.ca/news/canada/british-columbia/metro-vancouvers-last-transit-strike-2001-1.5318483) overlapped the census period. (Something I did not know about and had to look up when I was wondering what caused the 2001 numbers.)
+
+To understand the impacts on congestion we should look at total numbers of cars on the road instead of the mode share.
+
+```{r}
+ggplot(plot_data,aes(x=Year,y=Count,fill=Mode)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_fill_manual(values=main_mode_colours) +
+  scale_y_continuous(labels=fancy_number_formatter) +
+  my_theme +
+  labs(title="Metro Vancouver commuters by mode of transportation",y="Number of commuters")
+```
+
+The total number of drivers has been growing steadily, causing increased congestion as people navigate the choices they have on where to live and how to get to work.
+
+```{r}
+pd <- metro_data %>% get_change_data()
+
+ggplot(pd,aes(x=Mode,y=Change,fill=Mode)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=main_mode_colours,guide=FALSE) +
+  scale_y_continuous(labels=fancy_number_formatter) +
+  my_theme +
+  labs(title="Change in number of Metro Vancouver commuters 1996 - 2016",y="Change in number of commuters")
+
+```
+
+Over our 20 year timeframe transit and driving account for the bulk of the net new commuters. But this pattern has not been uniform across the region. Commuters living in more central areas or near rapid transit have more options in how to get to work than people living in further out parts of the region, and this is reflected in the municipal breakdown. 
+
+## City level breakdown
+
+```{r}
+top_regions <- data %>% filter(Year==2016) %>% select(Name,Total) %>% unique %>% top_n(15,Total) %>% arrange(-Total) %>% pull(Name)
+
+plot_data <- data %>%
+  get_change_data() %>%
+  mutate(Region=case_when(Name %in% top_regions ~ Name,
+                                     TRUE ~ "Rest of Metro Vancouver")) %>%
+  mutate(Mode=as.character(Mode)) %>%
+  mutate(Mode=case_when(Mode %in% main_modes ~ Mode,
+                        TRUE ~ "Other")) %>%
+  group_by(Region,Mode,Period) %>%
+  summarize_at(c("Count","Total","Change"),sum,na.rm=TRUE) %>%
+  mutate(Share=Count/Total) %>%
+  bind_rows(group_by(.,Region,Period) %>% summarize(Count=sum(Count),Change=sum(Change)) %>% mutate(Mode="Total")) %>%
+  ungroup %>%
+  mutate(Region=factor(Region,levels=c(top_regions,"Rest of Metro Vancouver")),
+         Mode=factor(Mode,levels=main_modes))
+           
+ggplot(plot_data,aes(x=Mode,y=Change,fill=Mode)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_fill_manual(values=main_mode_colours) +
+  scale_y_continuous(labels=fancy_number_formatter) +
+  my_theme +
+  theme(legend.position = "bottom",
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) +
+  facet_wrap("Region",scales="free_y") +
+  labs(title = "Change in number of commuters 1996 - 2016",x="",y="Change in number of commuters")
+```
+
+The differences across municipalities is quite remarkable. All municipalities except West Vancouver gained commuters over this time period. Driving saw the largest gains among the modes in Surrey, the Langleys, Maple Ridge and Port Moody, with transit winning out in the other larger cities. The District of North Vancouver, West Vancouver, and Delta saw a drop in drivers.
+
+
+```{r}
+vector_tiles <- metro_van_vector_tiles()
+roads <- rmapzen::as_sf(vector_tiles$roads) %>% filter(kind != "ferry")
+water <- rmapzen::as_sf(vector_tiles$water)
+bbox <- metro_van_bbox()
+```
+
+
+
+The change in drivers is the most important component in understanding increase in congestion, we can highlight at the individual contributions of all the municipalities in terms of drivers and non-drivers.
+
+```{r}
+driver_breaks <- c(-5000,-2500,-1000,-100,100,1000,2500,5000,10000,25000,50000,75000,100000)
+driver_labels <- c("-5,000 to -2,500","-2,500 to -1,000","-1,000 to -100", "-100 100", "100 to 1,000", "1,000 to 2,500","2,500 to 5,000", "5,000 to 10,000", "10,000 to 25,000","25,000 to 50,000","50,000 to 75,000","Over 75,000")
+driver_colours <- set_names(c(RColorBrewer::brewer.pal(3,"Greens") %>% rev,"white",RColorBrewer::brewer.pal(8,"Reds")),driver_labels)
+non_driver_breaks <- c(-100,100,1000,2500,5000,10000,25000,50000,75000)
+non_driver_labels <- c( "-100 100", "100 to 1,000", "1,000 to 2,500","2,500 to 5,000", "5,000 to 10,000", "10,000 to 25,000","25,000 to 50,000","50,000 to 75,000")
+non_driver_colours <- set_names(RColorBrewer::brewer.pal(length(non_driver_labels),"Greens"),non_driver_labels)
+
+
+period_data <-  bind_rows(
+  data %>% 
+    get_change_data_for_modes("Driver") %>%
+    mutate(Mode="Driver"),
+  data %>% 
+    get_change_data_for_modes(setdiff(levels((.)$Mode),"Driver")) %>%
+    mutate(Mode="Non-driver")
+  ) %>%
+  #mutate(Change_d=cut(Change,breaks=driver_breaks,labels=driver_labels)) %>%
+  mutate(Mode=factor(Mode,levels=c("Driver","Non-driver"))) 
+
+plot_data <- geos %>% 
+  left_join(period_data,by="GeoUID")
+
+wv_driver_change <- plot_data %>% filter(Name=="West Vancouver (DM)",Mode=="Driver") %>% pull(Change)
+surrey_driver_change <- plot_data %>% filter(Name=="Surrey (CY)",Mode=="Driver") %>% pull(Change)
+cov_non_driver_change <- plot_data %>% filter(Name=="Vancouver (CY)",Mode=="Non-driver") %>% pull(Change)
+wv_non_driver_change <- plot_data %>% filter(Name=="West Vancouver (DM)",Mode=="Non-driver") %>% pull(Change)
+
+top_commuter_growth <- plot_data %>% 
+  group_by(Name) %>%
+  summarize(Total=sum(Change,na.rm = TRUE)) %>%
+  arrange(-Total) %>%
+  pull(Name)
+
+main_geo_uids <- data %>% 
+  filter(Year==2016,Mode=="Driver") %>% select(GeoUID,Total,Name) %>% top_n(23,Total) %>% arrange(-Total) %>% pull(GeoUID)
+main_cities <- plot_data %>% filter(Mode=="Driver",GeoUID %in%  main_geo_uids) %>% arrange(Change) %>% pull(Name)
+```
+
+
+```{r}
+ggplot(plot_data %>% 
+         filter(GeoUID %in% main_geo_uids) %>%
+         mutate(Name=factor(Name,levels=main_cities)) %>%
+         filter(!is.na(Change)),aes(x=Name,y=Change,fill=fct_rev(Mode))) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=main_mode_colours) +
+  scale_y_continuous(labels=fancy_number_formatter) +
+  my_theme +
+  theme(legend.position = "bottom") +
+  coord_flip() +
+  labs(title = "Change in number of commuters 1996 - 2016",x="",y="Change in number of commuters",fill="")
+```
+
+The range is enormous, with Surrey seeing an increase in `r scales::comma(surrey_driver_change)` drivers and West Vancouver a drop of `r scales::comma(-wv_driver_change)` drivers. Change in non-drivers ranges from a gain of `r scales::comma(cov_non_driver_change)` in the City of Vancouver to a loss of `r scales::comma(-wv_non_driver_change)` non-drivers in West Vancouver. Looking at cities that added at least 2,000 commuters in this timeframe, we can look at the share of non-drivers among net new commuters as an indicator of how sustainably (in terms of congestion) each city grew their commuters.
+
+```{r}
+plot_data %>% 
+  filter(Name %in% main_cities) %>%
+  #filter(Name %in% top_commuter_growth[1:15]) %>%
+  mutate(Name=factor(Name,levels=main_cities)) %>%
+  group_by(Name) %>%
+  mutate(Share=Change/sum(Change),Total=sum(Change))  %>%
+  filter(!is.na(Share),Total>2000) %>%
+  filter(Mode=="Non-driver") %>%
+  ggplot(aes(x=reorder(Name,Share),y=Share,fill=fct_rev(Mode))) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=main_mode_colours,guide=FALSE) +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  theme(legend.position = "bottom") +
+  coord_flip() +
+  labs(title = "Share of net new commuters 1996 - 2016 that are non-drivers",x="",y="Non-driver share among net new commuters",fill="")
+```
+
+```{r drive_to_work_change, eval=FALSE, include=FALSE}
+ggplot(plot_data %>% 
+         filter(Mode=="Driver") %>%
+         mutate(Change_d=cut(Change,breaks=driver_breaks,labels=driver_labels))) +
+  geom_sf(aes(fill=Change_d),size=0.1) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  geom_sf(data=roads,size=0.1,color="darkgrey",fill=NA) +
+  theme_light() +
+  scale_fill_manual(values=driver_colours,na.value="darkgrey") +
+  coord_sf(datum=NA,
+         xlim=c(bbox$xmin,bbox$xmax),
+         ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Change in number of people driving to work 1996 - 2016",fill="",y="",x="",caption="MountainMath, StatCan Census 1996-2016")
+```
+
+
+```{r eval=FALSE, include=FALSE}
+ggplot(plot_data %>% 
+         filter(Mode=="Non-driver") %>%
+         mutate(Change_d=cut(Change,breaks=non_driver_breaks,labels=non_driver_labels))) +
+  geom_sf(aes(fill=Change_d),size=0.1) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  geom_sf(data=roads,size=0.1,color="darkgrey",fill=NA) +
+  theme_light() +
+  scale_fill_manual(values=non_driver_colours,na.value="darkgrey") +
+  coord_sf(datum=NA,
+         xlim=c(bbox$xmin,bbox$xmax),
+         ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Change in number of non-drivers 1996 - 2016",fill="",y="",x="",caption="MountainMath, StatCan Census 1996-2016")
+```
+
+This share in net new commuters affects how driver mode share in each of the municipalities has evolved since 1996.
+
+```{r fig.height=8}
+share_change_breaks <- c(-Inf,-0.2,-0.15,-0.1,-0.05,-0.01,0.01,0.05,0.1,0.15,0.2,Inf)
+share_change_lables <- c("Below -20%","-20% to -15%","-15% to -10%","-10% to -5%","-5% to -1%",
+                         "-1% to 1%",
+                         "-1% to 5%","5% to 10%","10% to 15%","15% to 20%","Above 20%")
+share_change_colours <- set_names(RColorBrewer::brewer.pal(length(share_change_lables),"PiYG") %>% rev,share_change_lables)
+
+pd <- data %>% 
+  filter(Mode=="Driver") %>%
+  left_join(filter(.,Year %in% c(1996,2016)) %>% select(GeoUID,Year,Share) %>% spread(key=Year,value=Share),by="GeoUID") %>%
+  rename(share_1=`2016`,share_0=`1996`) %>%
+  mutate(Year=as.character(Year)) %>%
+  mutate(share_change=share_1-share_0) %>%
+  mutate(share_change=ifelse(Total>200,share_change,NA)) %>%
+  mutate(share_d=cut(share_change,breaks=share_change_breaks,labels = share_change_lables))
+
+ggplot(pd %>% filter(GeoUID %in% main_geo_uids),aes(x=reorder(Name,-share_1),color=Year)) +
+  geom_segment( aes(xend=Name, y=share_0, yend=share_1), color="grey") +
+  geom_point(aes(y=Share,alpha=Year),size=3) +
+  scale_y_continuous(labels=scales::percent) +
+  scale_alpha_manual(values=c("2016"=1,"1996"=1,"2001"=0.5,"2006"=0.5,"2011"=0.5)) +
+  my_theme +
+  scale_color_brewer(palette="Set1") +
+  #scale_color_manual(values=c("2016"="darkgreen","1996"="brown","2001"="#66c2a5","2006"="#fc8d62","2011"="#e78ac3")) +
+  coord_flip() +
+  labs(title = "Driver mode share 1996 - 2016",x="",y="Driver mode share")
+```
+
+This shows that all regions decreased their drive to work mode share. We also plot the intermediate years, and 2011 stands out as giving lower values than 2016 for some of the smaller areas, which might be due to NHS non-return bias. 
+
+```{r}
+ggplot(geos %>% left_join(pd %>% filter(Year=="2016"),by="GeoUID") ) +
+  geom_sf(aes(fill=share_change),size=0.1) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  geom_sf(data=roads,size=0.1,color="darkgrey",fill=NA) +
+  theme_light() +
+  #scale_fill_manual(values=share_change_colours,na.value="darkgrey") +
+  scale_fill_viridis_c(direction = -1,breaks=seq(-0.2,0,0.025),labels=scales::percent) +
+  coord_sf(datum=NA,
+         xlim=c(bbox$xmin,bbox$xmax),
+         ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Change in driver mode share 1996 - 2016",fill="Percentage point change",y="",x="",caption="MountainMath, StatCan Census 1996-2016")
+```
+
+All municipalities have reduced their mode share, with central municipalities making larger gains. We greyed out areas with fewer than 200 commuters in 2016.
+
+
+```{r}
+metro_vancouver_regions <- list(CMA="59933")
+
+get_xtab_mode_data_for_year <- function(year,grep_string,label,regions=selected_regions,geo_level="CT") {
+  dataset <- ifelse(year==2016,"CA16",paste0("CA",year,"x16"))
+  vars <- list_census_vectors(dataset) %>%
+    filter(grepl(paste0("mode of|",grep_string),label,ignore.case = TRUE),type=="Total")
+  if (year==2006) vars=vars %>% top_n(-2,vector)
+  data <- get_census("CA16CT", regions=regions, vectors=vars$vector, level=geo_level, labels="short") %>%
+    mutate(!!label:=select(.,vars$vector[-1]) %>% rowSums()) %>%
+    mutate(Total:=!!as.name(vars$vector[1])) %>%
+    select(c("GeoUID",label,"Total")) %>%
+    mutate(Year=year)
+}
+
+driver_breaks_ct <- c(-5000,-2500,-1000,-500,-100,-50,50,100,500,1000,2500,5000)
+driver_labels_ct <- c("-5,000 to -2,500", "-2,500 to -1,000", "-1,000 to -500",  "-500 to -100", "-100 to -50", 
+                      "-50 to 50", "50 to 100", "100 to 500", "500 to 1,000",  "1,000 to 2,500",   "2,500 to 5,000")
+total_breaks_ct <- c(-7500,-5000,-2500,-1000,-500,-100,-50,50,100,500,1000,2500,5000,7500)
+total_labels_ct <- c("-7,500 to -5,000","-5,000 to -2,500", "-2,500 to -1,000", "-1,000 to -500",  "-500 to -100", "-100 to -50", 
+                      "-50 to 50", "50 to 100", "100 to 500", "500 to 1,000",  "1,000 to 2,500",   "2,500 to 5,000","5,000 to 75,000")
+driver_colours_ct <- set_names(RColorBrewer::brewer.pal(length(driver_labels_ct),"PuOr"),driver_labels_ct)
+non_driver_colours_ct <- set_names(RColorBrewer::brewer.pal(length(driver_labels_ct),"RdYlGn"),driver_labels_ct)
+total_colours_ct <- set_names(c(RColorBrewer::brewer.pal(6,"Reds") %>% rev,"white",RColorBrewer::brewer.pal(6,"Blues")),total_labels_ct)
+# total_labels_ct <- c( "-1,000 to -500",  "-500 to -100", "-100 to -50", 
+#                       "-50 to 50", "50 to 100", "100 to 500", "500 to 1,000",  "1,000 to 2,500",   "2,500 to 5,000","5,000 to 75,000")
+#total_colours_ct <- set_names(wesanderson::wes_palette("Zissou1", 10, type = "continuous") %>% rev,total_labels_ct)
+
+d_ct<- c(1996,2016) %>% lapply(function(y)get_mode_data_for_year(y,geo_level = "CT")) %>%
+  bind_rows %>%
+  bind_rows(filter(.,Mode != "Driver") %>% group_by(GeoUID,Year) %>% mutate(Total=first(Total),Count=sum(Count)) %>% mutate(Mode="Non-Driver")) %>%
+  group_by(GeoUID,Mode) %>%
+  mutate(`Change Total`=Total-lag(Total,order_by=Year),
+         Change=Count-lag(Count, order_by = Year),
+         Period=paste0(lag(Year,order_by = Year)," - ",Year)) %>%
+  mutate(Change_d=cut(Change,breaks=driver_breaks_ct,labels=driver_labels_ct)) %>%
+  mutate(`Change Total d`=cut(`Change Total`,breaks=total_breaks_ct,labels=total_labels_ct))
+
+data_ct <- get_census("CA16",regions=metro_vancouver_regions,level="CT",geo_format='sf') %>%
+  left_join(d_ct %>% filter(Period=="1996 - 2016"),by="GeoUID")
+```
+
+## Neighbourhood level breakdown
+To better understand the drivers behind this, we can plot this on finer geographies. To start off we look at the total change in the number of commuters between 1996 and 2016 on the 2016 census tract geography on the [custom tabulation](https://dataverse.scholarsportal.info/dataset.xhtml?persistentId=doi:10.5683/SP2/QNO5JG) that [we have used before](https://doodles.mountainmath.ca/blog/2019/06/15/census-custom-timelines/).
+
+
+```{r}
+ggplot(data_ct %>% filter(Mode=="Driver")) +
+  geom_sf(aes(fill=`Change Total d`),size=0.1) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  geom_sf(data=roads,size=0.1,color="darkgrey",fill=NA) +
+  theme_light() +
+  scale_fill_manual(values=total_colours_ct,na.value="darkgrey") +
+  coord_sf(datum=NA,
+         xlim=c(bbox$xmin,bbox$xmax),
+         ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Change in number of commuters 1996 - 2016",fill="",y="",x="",caption="MountainMath, StatCan Census 1996-2016")
+```
+
+It's remarkable how all CTs in West Vancouver and large portion of the District of North Vancouver, as well as the West Side of the City of Vancouver have lost commuters. We see similar patterns in the low-density areas of Richmond and Delta, White Rock and the south-western edge of Surrey, as well as other pockets throughout the region. This can only partially explained by population loss that we have also seen in some of these regions, but is mainly a function of changing demographics.
+
+Looking at the change in drivers, all areas that lost commuters also lost drivers or only had minimal gains.
+
+```{r driver_change_map}
+ggplot(data_ct %>% filter(Mode=="Driver")) +
+  geom_sf(aes(fill=Change_d),size=0.1) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  geom_sf(data=roads,size=0.1,color="darkgrey",fill=NA) +
+  theme_light() +
+  scale_fill_manual(values=driver_colours_ct,na.value="darkgrey") +
+  coord_sf(datum=NA,
+         xlim=c(bbox$xmin,bbox$xmax),
+         ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Change in number of drivers 1996 - 2016",fill="",y="",x="",caption="MountainMath, StatCan Census 1996-2016")
+```
+
+But there are many other areas that gained commuters and still lost drivers, for example large parts of Mount Pleasant area in the City of Vancouver and ares in the Cambie Corridor.
+
+Turning to the the change in non-drivers, almost all areas posted gains.
+
+```{r}
+ggplot(data_ct %>% filter(Mode=="Non-Driver")) +
+  geom_sf(aes(fill=Change_d),size=0.1) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  geom_sf(data=roads,size=0.1,color="darkgrey",fill=NA) +
+  theme_light() +
+  scale_fill_manual(values=non_driver_colours_ct,na.value="darkgrey") +
+  coord_sf(datum=NA,
+         xlim=c(bbox$xmin,bbox$xmax),
+         ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Change in number of non-drivers 1996 - 2016",fill="",y="",x="",caption="MountainMath, StatCan Census 1996-2016")
+```
+
+Naturally areas that saw a lot of development in that time period stand out, especially those near skytrain. We can summarize these two maps by looking at the difference in the change in non-drivers vs the change in drivers.
+
+
+
+```{r driver_vs_non_driver_change}
+transit <- rmapzen::as_sf(vector_tiles$transit) %>% filter(kind=="subway")
+pd <- data_ct %>% 
+  select(GeoUID) %>%
+  left_join(data_ct %>%
+              sf::st_set_geometry(NULL) %>%
+              pivot_wider(id_cols = GeoUID,names_from = Mode,values_from = Change),
+            by="GeoUID") %>%
+  mutate(Change=`Non-Driver`-Driver) %>%
+  mutate(Change_d=cut(Change,breaks=driver_breaks_ct,labels=driver_labels_ct))
+
+ggplot(pd) +
+  geom_sf(aes(fill=Change_d),size=0.1) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  geom_sf(data=roads,size=0.1,color="darkgrey",fill=NA) +
+  geom_sf(data=transit,size=0.25,color="blue",fill=NA) +
+  theme_light() +
+  scale_fill_manual(values=non_driver_colours_ct,na.value="darkgrey") +
+  coord_sf(datum=NA,
+         xlim=c(bbox$xmin,bbox$xmax),
+         ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Difference in change in number of non-drivers vs drivers 1996 - 2016",fill="Net change in\nnon-drivers vs drivers",y="",x="",
+       caption="MountainMath, StatCan Census 1996-2016")
+```
+
+We can also see where the driver to work mode share dropped and where it increased. 
+
+```{r driver_mode_share_change}
+transit <- rmapzen::as_sf(vector_tiles$transit) %>% filter(kind=="subway")
+pd <- data_ct %>% 
+  filter(Mode=="Driver") %>%
+  mutate(Share_change=Count/Total-(Count-Change)/(Total-`Change Total`)) %>%
+  mutate(Share_change=ifelse(is.infinite(Share_change),NA,Share_change)) %>%
+  mutate(Share_change_d=cut(Share_change,breaks=share_change_breaks,labels=share_change_lables))
+
+ggplot(pd) +
+  geom_sf(aes(fill=Share_change_d),size=0.1) +
+  geom_sf(data = water, fill = "lightblue", colour = NA) +
+  geom_sf(data=roads,size=0.1,color="darkgrey",fill=NA) +
+  geom_sf(data=transit,size=0.25,color="blue",fill=NA) +
+  theme_light() +
+  scale_fill_manual(values=share_change_colours,na.value="darkgrey") +
+  coord_sf(datum=NA,
+         xlim=c(bbox$xmin,bbox$xmax),
+         ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(title="Change in driver mode share 1996 - 2016",fill="Percentage point change",y="",x="",
+       caption="MountainMath, StatCan Census 1996-2016")
+```
+
+It's worthwhile to try and understand what made these regions special and dig a little further. Or even better, run a more detailed analysis on the factors that impact the changes in commuters, drivers and non-drivers. But that will have to wait for another post.
+
+
+## Commute times
+Another way to look at commutes, and the possible congestion they cause, is commute times. Congestion is not just a function of the number of cars that commute, but also the time they spend on the road.
+
+```{r}
+csd_uids <- data$GeoUID %>% unique
+commute_data <- get_sqlite_xtab("98-400-X2016328","https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=111334&OFT=CSV") %>%
+  rename(GeoUID=`GEO_CODE (POR)`) %>%
+  filter(GeoUID %in% csd_uids) %>%
+  collect() %>%
+  standardize_xtab() %>%
+  mutate(Name=paste0(GEO_NAME, " (",CSD_TYPE_NAME,")")) %>%
+  select(GeoUID,Name,`Commuting duration`,`Time leaving for work`,`Main mode of commuting` ,`Distance from home to work` ,Value)
+
+duration_levels <- c("Less than 15 minutes",
+                     "15 to 29 minutes",
+                     "30 to 44 minutes",
+                     "45 to 59 minutes",
+                     "60 minutes and over")
+
+```
+
+
+```{r}
+plot_data <- commute_data %>%
+  filter(`Distance from home to work`=="Total - Distance from home to work",
+         `Time leaving for work`=="Total - Time leaving for work",
+         `Commuting duration` != "Total - Commuting duration",
+         `Main mode of commuting` %in% c("Driver, alone","Driver, with 1 or more passengers")) %>%
+  mutate(`Commuting duration`=factor(`Commuting duration`,levels=duration_levels)) %>%
+  group_by(GeoUID,Name,`Commuting duration`) %>%
+  summarize(Value=sum(Value)) %>%
+  group_by(GeoUID) %>%
+  mutate(Total=sum(Value)) %>%
+  filter(GeoUID %in% main_geo_uids) %>%
+  left_join(filter(.,`Commuting duration` %in% c("45 to 59 minutes", "60 minutes and over")) %>% 
+              group_by(GeoUID) %>% summarize(long=sum(Value)),by="GeoUID")
+
+ggplot(plot_data,aes(x=reorder(Name,long/Total),y=Value,fill=fct_rev(`Commuting duration`))) +
+  geom_bar(stat="identity",position ="fill") +
+  coord_flip() +
+  scale_fill_viridis_d() +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  labs(title = "Drive to work 2016", fill="Commute duration", y="Share of drivers", y="",
+       caption = "MountainMath, StatCan 98-400-X2016328")
+```
+
+There is surprisingly little variation in drive times across the municipalities in the share of people driving less than 30 minutes one way, with about 25% of drivers commuting less than 15 minutes, and bout 60% commuting less than half an hour. There is more variation in long commute times of at least 45 minutes, with the central areas, led by the City of Vancouver, clocking in with the lowest portion of drivers commuting longer than 45 minutes. Bowen Island is a curious example with both, the highest share of commuters commuting less than 15 minutes and those commuting over an hour, cleanly separating commutes within the island from those that leave the island. 
+
+We can extend the same graph to all commuters not just drivers.
+```{r}
+plot_data <- commute_data %>%
+  filter(`Distance from home to work`=="Total - Distance from home to work",
+         `Time leaving for work`=="Total - Time leaving for work",
+         `Commuting duration` != "Total - Commuting duration",
+         `Main mode of commuting` == "Total - Main mode of commuting") %>%
+  mutate(`Commuting duration`=factor(`Commuting duration`,levels=duration_levels)) %>%
+  group_by(GeoUID) %>%
+  mutate(Total=sum(Value)) %>%
+  filter(GeoUID %in% main_geo_uids) %>%
+  left_join(filter(.,`Commuting duration` %in% c("45 to 59 minutes", "60 minutes and over")) %>% 
+              group_by(GeoUID) %>% summarize(long=sum(Value)),by="GeoUID")
+
+ggplot(plot_data,aes(x=reorder(Name,long/Total),y=Value,fill=fct_rev(`Commuting duration`))) +
+  geom_bar(stat="identity",position ="fill") +
+  coord_flip() +
+  scale_fill_viridis_d() +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  labs(title = "Commute to work 2016", fill="Commute duration", y="Share of commuters", x="",
+       caption = "MountainMath, StatCan 98-400-X2016328")
+```
+
+This paints a very similar picture. Commute times are also reflected in how early people are leaving their house for work.
+
+```{r}
+time_levels <- c("Between 5 a.m. and 5:59 a.m.",
+                 "Between 6 a.m. and 6:59 a.m.",
+                 "Between 7 a.m. and 7:59 a.m.",
+                 "Between 8 a.m. and 8:59 a.m.",
+                 "Between 9 a.m. and 11:59 a.m.",
+                 "Between 12 p.m. and 4:59 a.m.")
+plot_data <- commute_data %>%
+  filter(`Distance from home to work`=="Total - Distance from home to work",
+         `Time leaving for work`!="Total - Time leaving for work",
+         `Commuting duration` == "Total - Commuting duration",
+         `Main mode of commuting` == "Total - Main mode of commuting") %>%
+  #group_by(GeoUID,Name,`Time leaving for work`) %>%
+  #summarize(Value=sum(Value)) %>%
+  mutate(`Time leaving for work`=factor(`Time leaving for work`,levels=time_levels)) %>%
+  group_by(GeoUID) %>%
+  mutate(Total=sum(Value)) %>%
+  filter(GeoUID %in% main_geo_uids) %>%
+  left_join(filter(.,`Time leaving for work` %in% c("Between 5 a.m. and 5:59 a.m.",  "Between 6 a.m. and 6:59 a.m.",  "Between 7 a.m. and 7:59 a.m.")) %>% 
+              group_by(GeoUID) %>% summarize(before_8=sum(Value)),by="GeoUID")
+
+ggplot(plot_data,aes(x=reorder(Name,before_8/Total),y=Value,fill=fct_rev(`Time leaving for work`))) +
+  geom_bar(stat="identity",position ="fill") +
+  coord_flip() +
+  scale_fill_viridis_d(option = "inferno") +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  labs(title = "Commute to work 2016", fill="Time leaving for work", y="Share of commuters", x="",
+       caption = "MountainMath, StatCan 98-400-X2016328")
+```
+
+Here we are again looking at commute times of all commutes, not just drivers. Ordered by the share of people that leave the house before 8am we again see the similar pattern of commutes further out from the centre getting up earlier, and people in more central communities getting to sleep in and leave the house after 8am. 
+
+Another way to look at the data is by distance to work.
+
+```{r}
+distance_levels <- c(
+  #"Total - Distance from home to work", 
+  "Less than 1 km",
+  "1 to 2.9 km", "3 to 4.9 km",
+  "5 to 6.9 km",
+  "7 to 9.9 km",
+  "10 to 14.9 km",
+  "15 to 19.9 km" ,
+  "20 to 24.9 Km",
+  "25 to 29.9 km",
+  "30 to 34.9 km",
+  "35 km or more")
+
+plot_data <- commute_data %>%
+  filter(`Distance from home to work`!="Total - Distance from home to work",
+         `Time leaving for work`=="Total - Time leaving for work",
+         `Commuting duration` == "Total - Commuting duration",
+         `Main mode of commuting` == "Total - Main mode of commuting") %>%
+  #group_by(GeoUID,Name,`Time leaving for work`) %>%
+  #summarize(Value=sum(Value)) %>%
+  mutate(`Distance from home to work`=factor(`Distance from home to work`,levels=distance_levels)) %>%
+  group_by(GeoUID) %>%
+  mutate(Total=sum(Value)) %>%
+  filter(GeoUID %in% main_geo_uids) %>%
+  left_join(filter(.,`Distance from home to work` %in% distance_levels[1:4]) %>% 
+              group_by(GeoUID) %>% summarize(below_10=sum(Value)),by="GeoUID")
+
+ggplot(plot_data,aes(x=reorder(Name,below_10/Total),y=Value,fill=fct_rev(`Distance from home to work`))) +
+  geom_bar(stat="identity",position ="fill") +
+  coord_flip() +
+  scale_fill_viridis_d(direction = -1, option = "magma") +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  labs(title = "Commute to work 2016", fill="Distance from home to work", y="Share of commuters", x="",
+       caption = "MountainMath, StatCan 98-400-X2016328")
+
+```
+
+Again a similar pattern emerges, where we ordered the municipalities by the share of commuters that travel less than 10km to work. Taken together, commute times, time leaving for work, and commute distance hint at the life quality impacts of commuting that are independent of the well documented health impacts of commuting by private motor vehicle.
+
+## Upshot
+As our region grows, we should pay more attention to the interplay between location and transportation. Our current regional planning dictates that [twice as many people should move to Surrey than to the City of Vancouver](https://doodles.mountainmath.ca/blog/2019/08/01/on-vancouver-population-projections/), which is very likely to significantly boost the population driving to work compared to e.g. a scenario where Vancouver and Surrey grow proportionally to their respective populations. Allowing growth to happen in a way that gives people convenient choices of how to travel to work and other places should receive more attention when we talk about how we grow our region.
+
+Adding housing in central parts of the region and along rapid transit networks can help reduce driving and overall congestion in our region. Yet people regularly oppose development projects in central locations because they are afraid of the (car) traffic they fear the new project will bring.
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-10-28-commuter-growth.Rmarkdown) for people wanting to play with the code. Unfortunately, the data going back to 1996 that we used is only available for Vancouver and Toronto CMA, people hoping to extend to the code to other regions of Canada will have to make due with the 2001 to 2016 timeframe or find other ways to add in the 1996 data.
+
+
+
