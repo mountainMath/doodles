@@ -149,7 +149,7 @@ ggplot(plot_data,aes(x=Year,y=Value/100)) +
   geom_bar(stat="identity",fill="brown") +
   my_theme +
   scale_y_continuous(labels=scales::percent) +
-  labs(title="Share of households in core housing need",x="",y="",
+  labs(title="City of Vancouver households in core housing need",x="",y="",
        caption="MountainMath, StatCan 2016, 2011, 2006 custom tabulation")
 ```
 
@@ -177,7 +177,7 @@ ggplot(plot_data,aes(x=Need,y=Value,fill=Category)) +
   scale_fill_brewer(palette="Set1",direction = -1) +
   scale_y_continuous(labels=scales::comma) +
   my_theme +
-  labs("City of Vancouver shelter-cost-burdened",fill="Core housing need",y="",x="")
+  labs(title="City of Vancouver core housing need vs housing standards",fill="Core housing need",y="",x="")
 ```
 
 The bottom bar in each of these stacks count the number of households in core housing need not meeting the specified metric. The top bar counts the number of households with (income greater than zero and) shelter cost higher than income that were excluded from the core housing universe, and that don't meet the specified standards. The middle bar counts households not meeting the standard that could afford a suitable and adequate accommodation in the community, as well as the non-family full-time student households that don't meet the specified standard but have higher household income than shelter cost.
