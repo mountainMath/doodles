@@ -88,6 +88,15 @@ The graph gets messy and people can report multiple reasons, but there are a few
 * The most frequent reason for moving across all of our regions is for a larger or nicer dwelling, followed by moving to a better location.
 * In Alberta people are becoming new homeowners at higher rates than in the other regions considered.
 
+
+## Forced moves
+Forced moves are especially concerning, so it's worthwhile to look at these more closely. The exact nature is not further broken, these pertain to households "forced to move by a landlord, a bank or other financial institution or the government". 
+
+
+<img src="/posts/2019-11-23-canadian-housing-survey-a-first-look_files/figure-html/forced_moves-1.png" width="768" />
+
+British Columbia takes the top spot with 4% of households moving during the last 5 years and doing so involuntarily on the last move, which is likely a function of the tight housing market with heavy reliance on insecure secondary market rentals, with condos and secondary suites easily being reclaimed by the owners. We also see evictions from purpose-built market housing, as well as people being forced to move from or within subsidized housing when their eligibility status changes. Micro data might help in understanding this further.
+
 ## Upshot
 It's great to see this data finally making it out there, and hopefully micro data will become available too. It will take some time to weed through this in more detail, this can serve as a starting point. As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-11-23-canadian-housing-survey-a-first-look.Rmarkdown) for anyone to grab to reproduce or to jump-start their analysis.
 

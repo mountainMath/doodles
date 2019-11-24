@@ -232,7 +232,7 @@ ggplot(plot_data,aes(x=Name,y=VALUE,fill=Waitlist)) +
   my_theme("46-10-0042") +
   scale_fill_brewer(palette = "Set2") +
   scale_y_continuous(labels = scales::percent) +
-  labs(fill="",title="Households on a waiting list",y="Share of households",x="Select CMA") +
+  labs(fill="",title="Households on a waiting list",y="Share of households",x="Select Province") +
   coord_flip() +
   facet_wrap("Tenure",scales="free_x")
 ```
@@ -317,7 +317,7 @@ ggplot(plot_data,aes(x=Name,y=VALUE,fill=Reason)) +
   geom_bar(stat="identity",position = "stack") +
   my_theme("46-10-0044") +
   scale_y_continuous(labels = scales::percent) +
-  labs(fill="",title="Households by reason of most recent move in past 5 years",y="Share of households",x="Select CMA") +
+  labs(fill="",title="Households by reason of most recent move in past 5 years",y="Share of households",x="Select Province") +
   coord_flip()
 ```
 
@@ -339,6 +339,51 @@ The graph gets messy and people can report multiple reasons, but there are a few
 * British Columbia has the highest shares of households forced to move by a landlord, a bank or other financial institution or the government.
 * The most frequent reason for moving across all of our regions is for a larger or nicer dwelling, followed by moving to a better location.
 * In Alberta people are becoming new homeowners at higher rates than in the other regions considered.
+
+
+## Forced moves
+Forced moves are especially concerning, so it's worthwhile to look at these more closely. The exact nature is not further broken, these pertain to households "forced to move by a landlord, a bank or other financial institution or the government". 
+
+
+```{r forced_moves}
+reasons_short_names <-c(
+  "Moved in the past 5 years because the household was forced to move by a landlord, a bank or other financial institution or the government"="Forced",
+"Moved in the past 5 years due to a natural disaster or fire"="Natural disaster or fire",
+"Moved in the past 5 years for a new job or job transfer"="Job",
+"Moved in the past 5 years for a new school"="School",
+"Moved in the past 5 years to form own household"="Form new household",
+"Moved in the past 5 years to be closer to family"="Closer to family",
+"Moved in the past 5 years because of a change in household or family size"="Change in household/family size",
+"Moved in the past 5 years to reduce commuting time"="Reduce commute",
+"Moved in the past 5 years to upgrade to a larger dwelling or better quality dwelling"="Larger or nicer dwelling",
+"Moved in the past 5 years to reduce housing costs"="Reduce cost",
+"Moved in the past 5 years to be in a more desirable neighbourhood"="Better neighbourhood",
+"Moved in the past 5 years for personal health reasons"="Personal health",
+"Moved in the past 5 years to become a homeowner"="Became homeowner",
+"Moved in the past 5 years for other reasons"="Other reasons",
+"Moved in the past 5 years from the same city, town, village, township, municipality or Indian reserve"="Same CSD",
+"Moved in the past 5 years from a different city, town, village, township, municipality or Indian reserve in Canada"="Different CSD",
+"Moved in the past 5 years from outside of Canada"="Outside Canada")
+
+plot_data <- data4 %>%
+  #filter(grepl("Canada|Briti|Ont|Que|Alb",GEO)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(Statistics=="Percentage of households") %>%
+  filter(grepl("^1\\.",`Hierarchy for Indicators related to moving`)) %>%
+  mutate(Reason=recode(`Indicators related to moving`,!!!reasons_short_names)) %>%
+  mutate(Reason=factor(Reason,levels=as.character(reasons_short_names))) %>%
+  select(Name,Reason,VALUE) %>%
+  filter(Reason=="Forced")
+  
+ggplot(plot_data,aes(x=reorder(Name,VALUE),y=VALUE)) +
+  geom_bar(stat="identity",position = "stack",fill="steelblue") +
+  my_theme("46-10-0044") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(fill="",title="Households forced to move in past 5 years",y="Share forced to move by a landlord, a bank or other financial institution or the government",x="") +
+  coord_flip()
+```
+
+British Columbia takes the top spot with `r scales::percent(filter(plot_data,Name=="British Columbia")$VALUE)` of households moving during the last 5 years and doing so involuntarily on the last move, which is likely a function of the tight housing market with heavy reliance on insecure secondary market rentals, with condos and secondary suites easily being reclaimed by the owners. We also see evictions from purpose-built market housing, as well as people being forced to move from or within subsidized housing when their eligibility status changes. Micro data might help in understanding this further.
 
 ## Upshot
 It's great to see this data finally making it out there, and hopefully micro data will become available too. It will take some time to weed through this in more detail, this can serve as a starting point. As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-11-23-canadian-housing-survey-a-first-look.Rmarkdown) for anyone to grab to reproduce or to jump-start their analysis.
