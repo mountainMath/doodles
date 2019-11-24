@@ -1,0 +1,346 @@
+---
+title: Canadian Housing Survey
+author: Jens von Bergmann
+date: '2019-11-23'
+slug: canadian-housing-survey-a-first-look
+categories:
+  - CANSIM
+  - rental
+  - Vancouver
+  - Toronto
+tags: []
+description: "Taking a first look at the new Canadian Housing Survey data"
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2019-11-23-canadian-housing-survey-a-first-look_files/figure-html/reasons_for_move-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+math: true
+blackfriday:
+  fractions: false
+  hrefTargetBlank: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width=8,
+	cache = TRUE
+)
+library(tidyverse)
+library(cansim)
+```
+
+The long awaited first batch of data from the Canadian Housing Survey came out yesterday. The Canadian Housing Survey (CHS) is a new survey that aims give a better idea of well housing needs of Canadians are met.
+
+```{r}
+data1 <- get_cansim("46-10-0024") %>% normalize_cansim_values()
+data2 <- get_cansim("46-10-0042") %>% normalize_cansim_values()
+data3 <- get_cansim("46-10-0043") %>% normalize_cansim_values()
+data4 <- get_cansim("46-10-0044") %>% normalize_cansim_values()
+```
+
+Right now there are four tables publicly available, and we will give a quick tour of what's out there, with a focus on Metro Vancouver, Toronto, Montréal and Calgary. 
+
+This post is meant as a quick overview of what's available right now, the code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-11-23-canadian-housing-survey-a-first-look.Rmarkdown) for anyone that wants to explore this further.
+
+```{r}
+regions_grepl_string <- "Vancouver|Toronto|Montréal|Calgary"
+my_theme <- function(tables)list(
+  theme_light(),
+  labs(caption=paste0("MountainMath, CHS, StatCan table ",tables))
+)
+structural_short_names <- c(
+  "Total, structural type of dwelling"="Total",
+  "Single-detached house"="Single-detached",
+  "Semi-detached house"="Semi-detached",
+  "Row house"="Row/Townhouse",
+  "Apartment or flat in a duplex"="Duplex",
+  "Apartment in a building that has five or more storeys"="Mid/High-rise",
+  "Apartment in a building that has fewer than five storeys"="Low-rise",
+  "Other single-attached house"="Other",
+  "Moveable dwelling"="Movable"
+)
+tenure_short_names <- c(
+  "Total, tenure"="Total",
+  "Owner"="Owner",
+  "Renter"="Renter",
+  "Renter not in social and affordable housing"="Market rental",
+  "Renter in social and affordable housing"="Subsidized rental"
+)
+```
+
+## Dwelling and neighbourhood satisfaction
+The first table looks at satisfaction with of households with the dwelling units and neighbourhood they live in.
+
+```{r}
+hierarchy_grepl_string <- "1\\."
+categories <- data1 %>% 
+  select(`Satisfaction with dwelling and neighbourhood`,`Hierarchy for Satisfaction with dwelling and neighbourhood`) %>%
+  unique %>%
+  filter(grepl(hierarchy_grepl_string,`Hierarchy for Satisfaction with dwelling and neighbourhood`)) %>%
+  pull(`Satisfaction with dwelling and neighbourhood`)
+
+plot_data <- data1 %>%
+  filter(grepl(regions_grepl_string,GEO)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(Statistics=="Number of households") %>%
+  filter(`Tenure including social and affordable housing`=="Total, tenure") %>%
+  mutate(Dwelling=recode(`Structural type of dwelling`,!!!structural_short_names)) %>%
+  mutate(Dwelling=factor(Dwelling,levels=as.character(structural_short_names))) %>%
+  filter(`Satisfaction with dwelling and neighbourhood` %in% categories) %>%
+  mutate(`Satisfaction with dwelling and neighbourhood`=factor(`Satisfaction with dwelling and neighbourhood`,levels = categories)) %>%
+  filter(!(Dwelling %in% c("Other","Movable")))
+
+
+ggplot(plot_data,aes(x=Name,y=VALUE,fill=`Satisfaction with dwelling and neighbourhood`)) +
+  geom_bar(stat="identity",position = "fill") +
+  my_theme("46-10-0024") +
+  scale_fill_brewer(palette = "Dark2") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title="Satisfaction with dwelling by structural type",fill="",y="Share of households",x="Select CMA") +
+  coord_flip() +
+  facet_wrap("Dwelling")
+```
+
+In this comparison, overall satisfaction with the dwelling is highest in Montreal and lowest in Vancouver. Satisfaction is generally higher in single-detached homes. 
+
+```{r}
+hierarchy_grepl_string <- "1\\."
+categories <- data1 %>% 
+  select(`Satisfaction with dwelling and neighbourhood`,`Hierarchy for Satisfaction with dwelling and neighbourhood`) %>%
+  unique %>%
+  filter(grepl(hierarchy_grepl_string,`Hierarchy for Satisfaction with dwelling and neighbourhood`)) %>%
+  pull(`Satisfaction with dwelling and neighbourhood`)
+
+plot_data <- data1 %>%
+  filter(grepl(regions_grepl_string,GEO)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(Statistics=="Number of households") %>%
+  filter(`Structural type of dwelling`=="Total, structural type of dwelling") %>%
+  mutate(Tenure=recode(`Tenure including social and affordable housing`,!!!tenure_short_names)) %>%
+  mutate(Tenure=factor(Tenure,levels=as.character(tenure_short_names))) %>%
+  filter(`Satisfaction with dwelling and neighbourhood` %in% categories) %>%
+  mutate(`Satisfaction with dwelling and neighbourhood`=factor(`Satisfaction with dwelling and neighbourhood`,levels = categories))
+
+
+ggplot(plot_data,aes(x=Name,y=VALUE,fill=`Satisfaction with dwelling and neighbourhood`)) +
+  geom_bar(stat="identity",position = "fill") +
+  my_theme("46-10-0024") +
+  scale_fill_brewer(palette = "Dark2") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title="Satisfaction with dwelling by tenure",fill="",y="Share of households",x="Select CMA") +
+  coord_flip() +
+  facet_wrap("Tenure")
+```
+
+As one would expect, satisfaction is higher for owner households, and renters in subsidized housing have generally higher satisfaction with their dwelling units than renters in market housing.
+
+
+It also gives a view at satisfaction with of households with the neighbourhood they live in.
+
+
+```{r}
+hierarchy_grepl_string <- "7\\."
+categories <- data1 %>% 
+  select(`Satisfaction with dwelling and neighbourhood`,`Hierarchy for Satisfaction with dwelling and neighbourhood`) %>%
+  unique %>%
+  filter(grepl(hierarchy_grepl_string,`Hierarchy for Satisfaction with dwelling and neighbourhood`)) %>%
+  pull(`Satisfaction with dwelling and neighbourhood`)
+
+plot_data <- data1 %>%
+  filter(grepl(regions_grepl_string,GEO)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(Statistics=="Number of households") %>%
+  mutate(Dwelling=recode(`Structural type of dwelling`,!!!structural_short_names)) %>%
+  mutate(Dwelling=factor(Dwelling,levels=as.character(structural_short_names))) %>%
+  filter(`Satisfaction with dwelling and neighbourhood` %in% categories) %>%
+  mutate(`Satisfaction with dwelling and neighbourhood`=factor(`Satisfaction with dwelling and neighbourhood`,levels = categories)) %>%
+  filter(!(Dwelling %in% c("Other","Movable")))
+
+
+ggplot(plot_data,aes(x=Name,y=VALUE,fill=`Satisfaction with dwelling and neighbourhood`)) +
+  geom_bar(stat="identity",position = "fill") +
+  my_theme("46-10-0024") +
+  scale_fill_brewer(palette = "Dark2") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(fill="",title="Satisfaction with neighbourhood",y="Share of households",x="Select CMA") +
+  coord_flip() +
+  facet_wrap("Dwelling")
+```
+
+Households in Montréal are on average most satisfied with the neighbourhood they live in while those in Toronto are least satisfied with their neighbourhood.
+
+```{r}
+hierarchy_grepl_string <- "7\\."
+categories <- data1 %>% 
+  select(`Satisfaction with dwelling and neighbourhood`,`Hierarchy for Satisfaction with dwelling and neighbourhood`) %>%
+  unique %>%
+  filter(grepl(hierarchy_grepl_string,`Hierarchy for Satisfaction with dwelling and neighbourhood`)) %>%
+  pull(`Satisfaction with dwelling and neighbourhood`)
+
+plot_data <- data1 %>%
+  filter(grepl(regions_grepl_string,GEO)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(Statistics=="Number of households") %>%
+  filter(`Structural type of dwelling`=="Total, structural type of dwelling") %>%
+  mutate(Tenure=recode(`Tenure including social and affordable housing`,!!!tenure_short_names)) %>%
+  mutate(Tenure=factor(Tenure,levels=as.character(tenure_short_names))) %>%
+  filter(`Satisfaction with dwelling and neighbourhood` %in% categories) %>%
+  mutate(`Satisfaction with dwelling and neighbourhood`=factor(`Satisfaction with dwelling and neighbourhood`,levels = categories))
+
+ggplot(plot_data,aes(x=Name,y=VALUE,fill=`Satisfaction with dwelling and neighbourhood`)) +
+  geom_bar(stat="identity",position = "fill") +
+  my_theme("46-10-0024") +
+  scale_fill_brewer(palette = "Dark2") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(fill="",title="Satisfaction with neighbourhood",y="Share of households",x="Select CMA") +
+  coord_flip() +
+  facet_wrap("Tenure")
+```
+
+Again, owners show higher satisfaction with their neighbourhood compared to renters, but the situation for renters is reversed from dwelling satisfaction, with renters in market housing being in general more satisfied with their neighbourhood than those in non-market housing. 
+
+## Waitlist status
+```{r}
+waitlist_short_names <- c(
+  "Household on a waiting list for less than two years"="Less than two years",
+  "Household on a waiting list for two years or longer"="Two years or longer"
+)
+
+plot_data <- data2 %>%
+  filter(grepl("Canada|Briti|Ont|Que|Alb",GEO)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(Statistics=="Percentage of households") %>%
+  mutate(Tenure=recode(`Tenure including social and affordable housing`,!!!tenure_short_names)) %>%
+  mutate(Tenure=factor(Tenure,levels=as.character(tenure_short_names))) %>%
+  left_join(filter(.,`Waitlist status including length of time`=="Yes, household is on a waiting list") %>% select(Name,Tenure,Total=VALUE),by=c("Name","Tenure")) %>%
+  filter(`Waitlist status including length of time` %in% c("Household on a waiting list for less than two years","Household on a waiting list for two years or longer","Yes, household is on a waiting list")) %>%
+  mutate(Waitlist=recode(`Waitlist status including length of time`, !!!waitlist_short_names)) %>%
+  group_by(Name,Tenure) %>%
+  filter(Waitlist %in% as.character(waitlist_short_names)) %>%
+  mutate(Unknown=Total-sum(VALUE,na.rm=TRUE)) %>%
+  ungroup %>%
+  bind_rows(select(.,Name,Tenure,VALUE=Unknown) %>% unique %>% mutate(Waitlist="Unknown"))
+  
+ggplot(plot_data,aes(x=Name,y=VALUE,fill=Waitlist)) +
+  geom_bar(stat="identity",position = "stack") +
+  my_theme("46-10-0042") +
+  scale_fill_brewer(palette = "Set2") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(fill="",title="Households on a waiting list",y="Share of households",x="Select CMA") +
+  coord_flip() +
+  facet_wrap("Tenure",scales="free_x")
+```
+
+Predictably, only a very low share of owner-occupiers are on a wait list for social or affordable housing, and households already in subsidized housing have the highest share.
+
+## Housing suitability and adequacy
+```{r}
+plot_data <- data3 %>%
+  filter(grepl(regions_grepl_string,GEO)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(Statistics=="Percentage of households") %>%
+  mutate(Tenure=recode(`Tenure including social and affordable housing`,!!!tenure_short_names)) %>%
+  mutate(Tenure=factor(Tenure,levels=as.character(tenure_short_names))) %>%
+  filter(`Housing suitability and dwelling condition`=="Not suitable") 
+  
+ggplot(plot_data,aes(x=Name,y=VALUE)) +
+  geom_bar(stat="identity",position = "stack",fill="brown") +
+  my_theme("46-10-0043") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(fill="",title="Households in unsuitable housing",y="Share of households",x="Select CMA") +
+  coord_flip() +
+  facet_wrap("Tenure",scales="free_x")
+```
+
+
+```{r}
+plot_data <- data3 %>%
+  filter(grepl(regions_grepl_string,GEO)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(Statistics=="Percentage of households") %>%
+  mutate(Tenure=recode(`Tenure including social and affordable housing`,!!!tenure_short_names)) %>%
+  mutate(Tenure=factor(Tenure,levels=as.character(tenure_short_names))) %>%
+  filter(`Housing suitability and dwelling condition` %in% c("Minor repairs needed", "Major repairs needed")) 
+  
+ggplot(plot_data,aes(x=Name,y=VALUE,fill=`Housing suitability and dwelling condition`)) +
+  geom_bar(stat="identity",position = "stack") +
+  my_theme("46-10-0043") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(fill="",title="Households in unsuitable housing",y="Share of households",x="Select CMA") +
+  coord_flip() +
+  facet_wrap("Tenure",scales="free_x")
+```
+
+
+
+
+## Reasons for moving
+The most exciting table is the reasons for the most recent move in the past 5 years, if the household moved. We have had that data form the US for a long time, but it was sorely missing in Canada.
+
+```{r}
+reasons_short_names <-c(
+  "Moved in the past 5 years because the household was forced to move by a landlord, a bank or other financial institution or the government"="Forced",
+"Moved in the past 5 years due to a natural disaster or fire"="Natural disaster or fire",
+"Moved in the past 5 years for a new job or job transfer"="Job",
+"Moved in the past 5 years for a new school"="School",
+"Moved in the past 5 years to form own household"="Form new household",
+"Moved in the past 5 years to be closer to family"="Closer to family",
+"Moved in the past 5 years because of a change in household or family size"="Change in household/family size",
+"Moved in the past 5 years to reduce commuting time"="Reduce commute",
+"Moved in the past 5 years to upgrade to a larger dwelling or better quality dwelling"="Larger or nicer dwelling",
+"Moved in the past 5 years to reduce housing costs"="Reduce cost",
+"Moved in the past 5 years to be in a more desirable neighbourhood"="Better neighbourhood",
+"Moved in the past 5 years for personal health reasons"="Personal health",
+"Moved in the past 5 years to become a homeowner"="Became homeowner",
+"Moved in the past 5 years for other reasons"="Other reasons",
+"Moved in the past 5 years from the same city, town, village, township, municipality or Indian reserve"="Same CSD",
+"Moved in the past 5 years from a different city, town, village, township, municipality or Indian reserve in Canada"="Different CSD",
+"Moved in the past 5 years from outside of Canada"="Outside Canada")
+
+plot_data <- data4 %>%
+  filter(grepl("Canada|Briti|Ont|Que|Alb",GEO)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(Statistics=="Percentage of households") %>%
+  filter(grepl("^1\\.",`Hierarchy for Indicators related to moving`)) %>%
+  mutate(Reason=recode(`Indicators related to moving`,!!!reasons_short_names)) %>%
+  mutate(Reason=factor(Reason,levels=as.character(reasons_short_names))) %>%
+  select(Name,Reason,VALUE) %>%
+  filter(!(Reason %in% c("Same CSD","Different CSD","Outside Canada")))
+  
+ggplot(plot_data,aes(x=Name,y=VALUE,fill=Reason)) +
+  geom_bar(stat="identity",position = "stack") +
+  my_theme("46-10-0044") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(fill="",title="Households by reason of most recent move in past 5 years",y="Share of households",x="Select CMA") +
+  coord_flip()
+```
+
+Alberta has the overall highest mobility rates. To better understand the individual reasons for moving we can split out each category separately.
+
+```{r reasons_for_move}
+ggplot(plot_data,aes(x=Reason,y=VALUE,fill=Name)) +
+  geom_bar(stat="identity",position = "dodge") +
+  my_theme("46-10-0044") +
+  scale_fill_brewer(palette = "Set1") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(fill="",title="Households by reason of most recent move in past 5 years",y="Share of households",x="Select CMA") +
+  coord_flip()
+```
+
+
+The graph gets messy, but there are a few high-level takeaways.
+
+* British Columbia has the highest shares of households forced to move by a landlord, a bank or other financial institution or the government.
+* The most frequent reason for moving across all of our regions is for a larger or nicer dwelling, followed by moving to a better location.
+* In Alberta people are becoming new homeowners at higher rates than in the other regions considered.
+
+## Upshot
+It's great to see this data finally making it out there, and hopefully micro data will become available too. It will take some time to weed through this in more detail, this can serve as a starting point. As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-11-23-canadian-housing-survey-a-first-look.Rmarkdown) for anyone to grab to reproduce or to jump-start their analysis.
+
+
