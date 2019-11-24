@@ -283,7 +283,7 @@ ggplot(plot_data,aes(x=Name,y=VALUE,fill=`Housing suitability and dwelling condi
 ## Reasons for moving
 The most exciting table is the reasons for the most recent move in the past 5 years, if the household moved. We have had that data form the US for a long time, but it was sorely missing in Canada.
 
-```{r}
+```{r include=FALSE}
 reasons_short_names <-c(
   "Moved in the past 5 years because the household was forced to move by a landlord, a bank or other financial institution or the government"="Forced",
 "Moved in the past 5 years due to a natural disaster or fire"="Natural disaster or fire",
@@ -321,7 +321,7 @@ ggplot(plot_data,aes(x=Name,y=VALUE,fill=Reason)) +
   coord_flip()
 ```
 
-Alberta has the overall highest mobility rates. To better understand the individual reasons for moving we can split out each category separately.
+<!--Alberta has the overall highest mobility rates. To better understand the individual reasons for moving we can split out each category separately.-->
 
 ```{r reasons_for_move}
 ggplot(plot_data,aes(x=Reason,y=VALUE,fill=Name)) +
@@ -334,7 +334,7 @@ ggplot(plot_data,aes(x=Reason,y=VALUE,fill=Name)) +
 ```
 
 
-The graph gets messy, but there are a few high-level takeaways.
+The graph gets messy and people can report multiple reasons, but there are a few high-level takeaways.
 
 * British Columbia has the highest shares of households forced to move by a landlord, a bank or other financial institution or the government.
 * The most frequent reason for moving across all of our regions is for a larger or nicer dwelling, followed by moving to a better location.

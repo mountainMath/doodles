@@ -75,14 +75,14 @@ Predictably, only a very low share of owner-occupiers are on a wait list for soc
 ## Reasons for moving
 The most exciting table is the reasons for the most recent move in the past 5 years, if the household moved. We have had that data form the US for a long time, but it was sorely missing in Canada.
 
-<img src="/posts/2019-11-23-canadian-housing-survey-a-first-look_files/figure-html/unnamed-chunk-10-1.png" width="768" />
 
-Alberta has the overall highest mobility rates. To better understand the individual reasons for moving we can split out each category separately.
+
+<!--Alberta has the overall highest mobility rates. To better understand the individual reasons for moving we can split out each category separately.-->
 
 <img src="/posts/2019-11-23-canadian-housing-survey-a-first-look_files/figure-html/reasons_for_move-1.png" width="768" />
 
 
-The graph gets messy, but there are a few high-level takeaways.
+The graph gets messy and people can report multiple reasons, but there are a few high-level takeaways.
 
 * British Columbia has the highest shares of households forced to move by a landlord, a bank or other financial institution or the government.
 * The most frequent reason for moving across all of our regions is for a larger or nicer dwelling, followed by moving to a better location.
