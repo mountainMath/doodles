@@ -96,10 +96,9 @@ Forced moves are especially concerning, so it's worthwhile to look at these more
 <img src="/posts/2019-11-23-canadian-housing-survey-a-first-look_files/figure-html/forced_moves-1.png" width="768" />
 
 
-
 British Columbia takes the top spot with 4% of households moving during the last 5 years and doing so involuntarily on the last move, which is likely a function of the tight housing market with heavy reliance on insecure secondary market rentals, with condos and secondary suites easily being reclaimed by the owners. We also see evictions from purpose-built market housing, as well as people being forced to move from or within subsidized housing when their eligibility status changes. 
 
-We can also view this as a share of all moves, instead of as a share of all households. 
+We can also view this as a share of all moves, instead of as a share of all households.
 
 
 <img src="/posts/2019-11-23-canadian-housing-survey-a-first-look_files/figure-html/unnamed-chunk-11-1.png" width="768" />

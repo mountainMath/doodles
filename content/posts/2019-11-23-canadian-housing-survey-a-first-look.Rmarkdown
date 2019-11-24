@@ -384,10 +384,9 @@ ggplot(plot_data,aes(x=reorder(Name,VALUE),y=VALUE)) +
 ```
 
 
-
 British Columbia takes the top spot with `r scales::percent(filter(plot_data,Name=="British Columbia")$VALUE)` of households moving during the last 5 years and doing so involuntarily on the last move, which is likely a function of the tight housing market with heavy reliance on insecure secondary market rentals, with condos and secondary suites easily being reclaimed by the owners. We also see evictions from purpose-built market housing, as well as people being forced to move from or within subsidized housing when their eligibility status changes. 
 
-We can also view this as a share of all moves, instead of as a share of all households. 
+We can also view this as a share of all moves, instead of as a share of all households.
 
 
 ```{r}
