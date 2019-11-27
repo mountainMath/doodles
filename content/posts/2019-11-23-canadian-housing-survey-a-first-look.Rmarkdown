@@ -414,4 +414,6 @@ Viewed as a share of movers, British Columbia households being forced to move on
 ## Upshot
 It's great to see this data finally making it out there, and hopefully micro data will become available too. It will take some time to weed through this in more detail, this can serve as a starting point. As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-11-23-canadian-housing-survey-a-first-look.Rmarkdown) for anyone to grab to reproduce or to jump-start their analysis.
 
+## Update
+Don't miss [Nathan's post that puts the Canadian CHS into context of the US CPS-ASEC data](https://homefreesociology.com/2019/11/24/why-do-people-move-new-data-mysteries-and-fundamental-rights/). 
 
