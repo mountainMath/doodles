@@ -281,7 +281,7 @@ geo_lookup <- geocode_unique_ticket_locations(unique_ticket_locations) %>%
   mutate(successful_geocode=!st_is_empty(.))
 ```
 
-```{r fire_fydrant_ticket_map, fig.height=7}
+```{r fire_hydrant_ticket_map, fig.height=7}
 fire_hydrant_summary <- fire_hydrant_tickets %>%
   normalize_addresses() %>%
   mutate(block=as.integer(block)) %>%

@@ -330,7 +330,7 @@ Lastly, let's get a high-level view on all the parking tickets issued throughout
 
 
 
-<img src="/posts/2019-12-09-fun-with-parking-tickets_files/figure-html/fire_fydrant_ticket_map-1.png" width="768" />
+<img src="/posts/2019-12-09-fun-with-parking-tickets_files/figure-html/fire_hydrant_ticket_map-1.png" width="768" />
 
 Especially the fire hydrants that are attracting lots of tickets should probably receive a review by the engineering department. While people should pay more attention to where they park, there are some straight-forward ways to make things easier. Simply paining the curb red will probably fix this for most hydrants and make sure they are free of obstructions and easy to access in case of a fire.
 
