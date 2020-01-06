@@ -10,7 +10,7 @@ categories:
 tags: []
 description: "Fun with flow maps."
 featured: ''
-images: ["/images/commute_flow_map.png.png"]
+images: ["/images/commute_flow_map.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
