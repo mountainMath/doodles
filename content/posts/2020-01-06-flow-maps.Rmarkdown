@@ -112,3 +112,5 @@ That's it. We can read off the sheet id and embed our flow map.
 
 <iframe width="800" height="600" src="https://flowmap.blue/13Q-xsfL59XXPw7-3ue_9G9xab9FtYiL3S9vOZp-yJyY/embed" frameborder="0" allowfullscreen></iframe>
 
+It clusters locations by default, so at low zoom levels it only shows high-level flows. Zoom in to see finer commute flows for your region of interest.
+
