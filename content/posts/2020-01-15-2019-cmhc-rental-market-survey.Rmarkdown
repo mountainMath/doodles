@@ -1,0 +1,306 @@
+---
+title: 2019 CMHC Rental Market Survey
+author: Jens von Bergmann
+date: '2020-01-15'
+slug: 2019-cmhc-rental-market-survey
+categories:
+  - cancensus
+  - CANSIM
+  - cmhc
+  - rental
+  - Vancouver
+tags: []
+description: "Checking in with the new Rms data."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2020-01-15-2019-cmhc-rental-market-survey_files/figure-html/moving-penalty-2019-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+math: true
+blackfriday:
+  fractions: false
+  hrefTargetBlank: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	fig.width = 9,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE
+)
+library(tidyverse)
+library(cancensus)
+library(cmhc)
+library(cansim)
+```
+
+```{r}
+rental_stock_for <- function(GeoUID){
+  params=cmhc_timeseries_params(table_id = cmhc_table_list["Rms Rental Universe Time Series"],
+                                region=cmhc_region_params_from_census(as.character(GeoUID)))
+  get_cmhc(params)  %>% 
+    rename(Date=X1) %>% 
+    select(-X2)
+}
+geo_list <- cmhc::cmhc_cma_translation_data %>%
+  filter(nchar(CMA_UID)==5)
+
+vectors <- search_census_vectors("renter","CA16")$vector
+
+regions <- list_census_regions("CA16") %>% 
+  filter(level=="CMA",region %in% geo_list$CMA_UID) %>%
+  rename(GeoUID=region,Name=name,Population=pop) %>%
+  select(GeoUID,Name) %>%
+  inner_join(geo_list,by=c("GeoUID"="CMA_UID")) %>%
+  left_join(
+    get_census("CA16",regions=list(CMA=(.)$GeoUID),vectors=c("Renters"=vectors)) %>% select(GeoUID,Population,Households,Dwellings,Renters)
+  )
+
+stock_data <- seq_len(nrow(regions)) %>% lapply(function(i){
+  r=regions[i,]
+  #print(paste0("Processing ",r$GEO_UID," for ",r$NAME_EN))
+  rental_stock_for(r$GeoUID) %>%
+    #filter(Date==latest_date) %>%
+    mutate(name=r$NAME_EN,
+           GeoUID=r$GeoUID,
+           METCODE=r$METCODE,
+           Population=r$Population,
+           Renters=r$Renters,
+           Households=r$Households)
+}) %>% 
+  bind_rows %>%
+  mutate(per_pop=Total/Population,
+         per_renter=Total/Renters,
+         per_household=Total/Households)
+
+bedroom_vars <- c("Bachelor", "1 Bedroom", "2 Bedroom", "3 Bedroom +", "Total")
+bedroom_colors <- set_names(RColorBrewer::brewer.pal(length(bedroom_vars),"Dark2"),bedroom_vars)
+
+vacancy_rent_table_for <- function(GeoUID){
+  region_params=cmhc_region_params_from_census(as.character(GeoUID))
+  params=cmhc_timeseries_params(table_id = cmhc_table_list["Rms Vacancy Rate Time Series"],region=region_params)
+  dat_vacancy <- get_cmhc(params) %>% 
+    rename(Year=X1) %>%
+    mutate(Series="Vacancy rate")
+  
+  params=cmhc_timeseries_params(table_id = cmhc_table_list["Rms Rent Change Time Series"],region=region_params)
+  dat_rent_change <- get_cmhc(params) %>%
+    rename(Year=X1) %>%
+    mutate(Series="Rent change")
+ 
+  if (!(GeoUID %in% c("24433")) & nchar(GeoUID)!=7){
+    average_condo_rents <- get_cmhc(cmhc_timeseries_params(table_id = "4.4.2", region=region_params)) %>%
+      rename(Year=X1) %>%
+      mutate(Series="Condo rents") %>%
+      select(-X7)
+    average_other_secondary_rents <-   get_cmhc(cmhc_timeseries_params(table_id = "4.6.2", region=region_params)) %>%
+      rename(Year=X1) %>%
+      select(Year,Total,X5) %>%
+      mutate(Series="Other secondary rents")
+    params=cmhc_timeseries_params(table_id = cmhc_table_list["Srms Vacancy Rate Time Series"],region=region_params)
+    condo_vacancy <- get_cmhc(params) %>% 
+      rename(Year=X1) %>%
+      select(Year,Total,X5) %>%
+      mutate(Series="Condo vacancy rate")
+  
+    average_rents <- bind_rows(average_condo_rents,average_other_secondary_rents) %>%
+      group_by(Series) %>%
+      mutate(Total=(Total/lag(Total,order_by = Year)-1)*100)
+  } else {
+    average_rents=NULL
+    condo_vacancy=NULL
+  }
+  dat=bind_rows(dat_vacancy,condo_vacancy,dat_rent_change,average_rents)
+  return(dat)
+}
+
+regions <- stock_data %>% filter(Date==max(Date)) %>%
+  top_n(12,Total) 
+
+
+inflation <- get_cansim_vector("v108785713","1990-01-01") %>%
+  normalize_cansim_values() %>%
+  rename(CPI=VALUE) %>%
+  select(Date,CPI) %>%
+  mutate(CPI=CPI/100)
+
+process_vacancy_rent_data <- function(data) {
+  data %>% 
+    mutate(Date=as.Date(paste0(gsub(" October","",Year),"-10-01"))) %>%
+    gather(key="Bedrooms",value="Value",bedroom_vars) %>%
+    mutate(Value=Value/100) %>%
+    left_join(inflation,by="Date") 
+}
+
+vacancy_rent_data <- seq_len(nrow(regions)) %>% lapply(function(i){
+  r=regions[i,]
+    vacancy_rent_table_for(r$GeoUID) %>%
+     mutate(name=r$name)
+}) %>% bind_rows %>%
+  process_vacancy_rent_data()
+
+yvr_vacancy_rate <- vacancy_rent_data %>% 
+  filter(Bedrooms=="Total", Series=="Vacancy rate",name=="Vancouver") %>%
+  mutate(Year=strftime(Date,"%Y")) %>%
+  select(Year,Value)
+yvr_rent_change <- vacancy_rent_data %>% 
+  filter(Bedrooms=="Total", Series=="Rent change",name=="Vancouver") %>%
+  mutate(Year=strftime(Date,"%Y")) %>%
+  select(Year,Value)
+
+
+cov_rent_vacancy_data <- vacancy_rent_table_for("5915022") %>% 
+  process_vacancy_rent_data
+cov_vacancy_rate <- cov_rent_vacancy_data %>%
+  filter(Bedrooms=="Total", Series=="Vacancy rate") %>%
+  mutate(Year=strftime(Date,"%Y")) %>%
+  select(Year,Value)
+cov_rent_change <- cov_rent_vacancy_data %>% 
+  filter(Bedrooms=="Total", Series=="Rent change") %>%
+  mutate(Year=strftime(Date,"%Y")) %>%
+  select(Year,Value)
+
+pct_f <- function(x)scales::percent(x,accuracy = 0.1)
+```
+
+Finally the new 2019 CMHC Rms data is out. As expected, the high-level numbers are pretty bleak. For Metro Vancouver the vacancy rate inched up a tiny bit from `r pct_f(filter(yvr_vacancy_rate,Year=="2018")$Value)` in October 2018 to `r pct_f(filter(yvr_vacancy_rate,Year=="2019")$Value)` in October 2019. In the City of Vancouver the vacancy rate similarly crept from `r pct_f(filter(cov_vacancy_rate,Year=="2018")$Value)` in October 2018 to `r pct_f(filter(cov_vacancy_rate,Year=="2019")$Value)` in October 2019.
+
+With the slight uptick in vacancy rate, both areas saw somewhat lower rents increases, with the (nominal) fixed-sample rent increase in the year before October 2019 clocking in at  `r pct_f(filter(yvr_rent_change,Year=="2019")$Value)` and `r pct_f(filter(cov_rent_change,Year=="2019")$Value)` for the Metro Vancouver and the City of Vancouver, respectively. That compares to `r pct_f(filter(yvr_rent_change,Year=="2018")$Value)` and `r pct_f(filter(cov_rent_change,Year=="2018")$Value)` in the year before that. But the vacancy rate is still very low and the rent increase is high.
+
+
+## Rent change and vacancy rates
+Time to update our [rent change vs vacancy rate](https://doodles.mountainmath.ca/blog/2018/11/28/vacancy-rate-and-rent-change/) graph that explores how those to variables relate throughout Canada. All we need to do is copy-paste the code from last year and re-run it to pull in the new data point.
+
+```{r vacancy-rent-change-2019, fig.height=6}
+paired_colors <- RColorBrewer::brewer.pal(6,"Paired")[c(1,2,5,6)]
+series_names <- vacancy_rent_data$Series %>% unique
+series_colors <- c("Vacancy rate"=paired_colors[1], "Rent change" = paired_colors[3])
+series_labels <- c("Vacancy rate"="Primary vacancy rate", "Rent Change" = "Fixed sample rent change\n(inflation adjusted)" )
+color_labels <- c()
+color_labels[paired_colors[1]]="Primary vacancy rate"
+color_labels[paired_colors[3]] = "Fixed sample rent change (inflation adjusted)"
+
+vacancy_cutoff=0.03
+
+plot_data <- vacancy_rent_data %>% 
+  mutate(Year=gsub(" October","",Year)) %>%
+  filter(Bedrooms=="Total") %>%
+  mutate(name=factor(name,levels=arrange(regions,-per_renter)$name)) %>%
+  filter(Series %in% c("Rent change","Vacancy rate")) %>%
+  na.omit() %>%
+  mutate(Value=ifelse(Series=="Rent change",Value-CPI,Value)) %>%
+  group_by(Series,name,Bedrooms) %>%
+  mutate(Next=lead(Value,order_by = Date)) %>%
+  ungroup %>%
+  mutate(color=ifelse(Series=="Vacancy rate",
+                      ifelse(Value>=vacancy_cutoff,paired_colors[2],paired_colors[1]),
+                      ifelse(Value<=0,paired_colors[4],paired_colors[3]))) %>%
+  mutate(line_color=ifelse(Series=="Vacancy rate",
+                      ifelse(Value>=vacancy_cutoff & (is.na(Next) | Next>=vacancy_cutoff),paired_colors[2],paired_colors[1]),
+                      ifelse(Value<=0 & (is.na(Next) | Next <=0),paired_colors[4],paired_colors[3])))
+ggplot(plot_data ,aes(x=Date,y=Value,color=Series,group=Series))+
+  geom_hline(yintercept = 0,size=0.5,color="#aa6666") +
+  geom_hline(yintercept = vacancy_cutoff,color="#6666aa",size=0.5) +
+  geom_line(aes(color=line_color),size=1) +
+  theme_bw() +
+  scale_y_continuous(labels = scales::percent) +
+  scale_x_date(breaks=c(as.Date("1995-10-01"),as.Date("2005-10-01"),as.Date("2015-10-01")),labels = function(d)strftime(d,"%Y")) +
+  scale_color_identity(labels=color_labels,breaks=as.character(series_colors),guide = "legend") +
+  facet_wrap("name") +
+  theme(legend.position = "bottom") +
+  geom_point(size=1.2,aes(color=color)) +
+  labs(title="Vacancy rate and rent change by CMA",
+       caption="MountainMath, CMHC Rms, StatCan vector v108785713",
+       x=NULL,y=NULL)
+
+```
+
+That's just one more data point [compared to last year](https://doodles.mountainmath.ca/blog/2018/11/28/vacancy-rate-and-rent-change/), but we tight, and generally tightening, vacancy rates across the country, with only Calgary and Edmonton exhibiting vacancy rates conducive to stable or slightly dropping inflation-adjusted rents. While Vancouver's fixed-sample rent increase is not any more as extreme as in the previous three periods, Toronto's climbing fixed-sample rent increase is troubling. 
+
+## Moving penalty
+The [moving penalty](https://doodles.mountainmath.ca/blog/2018/11/28/moving-penalty/) is the difference the average renter can expect to pay if they were looking to, or were [forced to move](https://doodles.mountainmath.ca/blog/2019/11/23/canadian-housing-survey-a-first-look/). This year we are opting for a different way to visualize the data that keeps the total rents in perspective, and also takes note of the quality of the CMHC rent estimates.
+
+```{r moving-penalty-2019, fig.height=7}
+path=file.path(here::here(),"static/data","occupied vs rented rents 2019.csv")
+
+# Don't ask .....
+# codepages <- setNames(iconvlist(), iconvlist())
+# x <- lapply(codepages, function(enc) tryCatch({read_csv(path,
+#                    locale=locale(encoding=enc),n_max = 1,skip=210,
+#                    col_types = cols(.default="c"),col_names=FALSE) %>% select(X1) %>% as.character},
+#                    error=function(cond) {"Error"})) %>%
+#   tibble(names=names(.),values=as.character(.)) %>% 
+#   select(-.)
+
+read_rent_data <- function(path){
+  lc <- locale(encoding = "MAC")
+  headers <- read_csv(path,skip=8,n_max=2,col_types = cols(.default="c"),col_names=FALSE,locale=lc) %>%
+    t() %>%
+    as_tibble() %>%
+    fill(V1,.direction="down") %>%
+    mutate(V3=ifelse(is.na(V2),"Quality",NA)) %>%
+    mutate(V3=coalesce(V3,ifelse(grepl("Units",V2),"Average rent",NA))) %>%
+    mutate(V3=coalesce(V3,ifelse(grepl("Y/N",V2),"Test",NA))) %>%
+    fill(V2,.direction="down") %>%
+    mutate(Name=paste0(V1," - ",V2," - ",V3) %>% gsub(" - NA$| - NA ","",.) %>% gsub("NA - ","",.))
+  
+  data <- read_csv(path,skip=10,col_types = cols(.default="c"),col_names=FALSE,locale=lc) %>%
+    set_names(headers$Name) %>%
+    mutate(CMA=ifelse(grepl("CMA",Zone) & !grepl("Remainder of CMA",Zone),Zone,NA)) %>%
+    fill(CMA,.direction = "up")
+  
+  first_na_index <- which(is.na(data$Zone))[1]
+  data %>% slice(1:(first_na_index-1)) %>%
+    pivot_longer(cols=-one_of("CMA","Zone","Year"), names_pattern = "^(.+) - (.+) - (.+)$",names_to = c("Bedrooms","Type","Metric")) %>%
+    pivot_wider(names_from = Metric,values_from=value) %>%
+    mutate(`Average rent`=as.integer(gsub(",","",`Average rent`))) %>%
+    mutate(Bedrooms=factor(Bedrooms,levels=bedroom_vars))
+}
+
+quality_labels <- c(a="Excellent",b="Very good",c="Good",d="Fair (Use with Caution)")
+
+moving_penalty_data <- read_rent_data(path) %>%
+  filter(Zone==CMA,Type!="Y/N") %>%
+  mutate(Zone=gsub(" CMA","",Zone)) %>%
+  select(Zone,Type,Bedrooms,`Average rent`,Quality) %>%
+  filter(!is.na(`Average rent`)) %>%
+  mutate(Zone=factor(Zone,levels=filter(.,Bedrooms=="Total") %>% 
+                       group_by(Zone) %>% 
+                       summarise(value=max(`Average rent`,na.rm=TRUE)) %>% 
+                       arrange(value) %>% 
+                       pull(Zone)))
+
+ggplot(moving_penalty_data,aes(x=Zone,color=Type)) +
+  geom_segment(data=~select(.,-Quality) %>% 
+                 pivot_wider(names_from = Type,values_from = `Average rent`) %>%
+                 mutate(Type=ifelse(`Vacant Units`-`Occupied Units`>0,"Vacant Units","Occupied Units")) %>%
+                 filter(!is.na(Type)),
+               aes(x=Zone,xend= Zone,y=`Occupied Units`,yend=`Vacant Units`)) +
+  geom_point(aes(y=`Average rent`,shape=Quality)) +
+  scale_color_manual(values=c("Occupied Units"="steelblue","Vacant Units"="brown")) +
+  coord_flip() +
+  facet_wrap("Bedrooms",scales="free_x",nrow=1) +
+  scale_y_continuous(labels=scales::dollar) +
+  scale_shape(labels=quality_labels) +
+  theme_light() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1),
+        legend.direction = "horizontal", legend.position = "bottom", legend.box = "vertical") +
+  labs(title="Occupied vs vacant rents by Metro area",x=NULL,y="Average rent",color=NULL,
+       caption="MountainMath, CMHC Rms")
+  
+```
+
+We notice big jumps in the "hot" rental market of the greater Toronto area and the BC metros. This should not be unexpected as a tight rental market, together with rent control with vacancy decontrol, is a recipe for a heightened moving penalty. 
+
+Having a higher moving penalty is problematic for many reasons, it reduces renter mobility, so renters may be less inclined to downsize or move for a new job. And it incentivises landlords to evict tenants to bring rents in rent controlled units up to market rents. The combination of lower overall mobility, together with landlord incentives to evict, may explain part of the [high number of "forced moves" in BC that we have discussed before](https://doodles.mountainmath.ca/blog/2019/11/23/canadian-housing-survey-a-first-look/).
+
+In general, the sample of the units with "vacant rents" is comparatively small, especially in markets with high vacancy rates. This may affect the overall quality of the estimates, and especially numbers with lower CMHC quality indicators should be viewed with extra caution.
+
+As discussed before, [the mix of vacant units may not be representative of the mix of occupied units](https://doodles.mountainmath.ca/blog/2019/10/16/rents-and-vacancy-rates/) so this is not a clean apples-with-apples comparison. But it still gives us a decent overall overview of the moving penalty.
+
+## Upshot
+There is still lots of things to look at in this Rms release, this is just scratching the surface. But it will have to do for a quick morning post. As usual, the code is [available on Github](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-01-15-2019-cmhc-rental-market-survey.Rmarkdown) for those wanting to reproduce the analysis or build on it. The data with rents for vacant units is a custom extract kindly provided by Keith Stewart  at CMHC, and [I posted it on online](/data/occupied vs rented rents 2019.csv) if others also want to play with it.

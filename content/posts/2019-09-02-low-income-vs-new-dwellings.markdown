@@ -116,7 +116,7 @@ Here `\(\lambda\)` is the coefficient of the autoregressive term in our autoregr
 
 |Moran I   | Statistic| p-value|
 |:---------|---------:|-------:|
-|Montréal  |      0.00|    0.44|
+|Montréal  |      0.00|    0.45|
 |Toronto   |     -0.01|    0.72|
 |Calgary   |     -0.01|    0.54|
 |Vancouver |     -0.02|    0.65|
@@ -190,7 +190,7 @@ The intercept looks unreasonably high in these graphs, but this is offset from t
 <img src="/posts/2019-09-02-low-income-vs-new-dwellings_files/figure-html/unnamed-chunk-22-1.png" width="768" />
 
 
-This model further comes out with a significant baseline increase in share of low income people, offset by fairly high rates of attrition in existing share of low income people. For example in the case of zero change in dwellings in Vancouver, this model predicts a net drop of share of population in Lico-AT in areas with 7.7% or higher initial share of population in Lico-AT. For reference, the initial overall share of the population in Lico-AT in Metro Vancouver in 2006 was 16.5%.
+This model further comes out with a significant baseline increase in share of low income people, offset by fairly high rates of attrition in existing share of low income people. For example in the case of zero change in dwellings in Vancouver, this model predicts a net drop of share of population in Lico-AT in areas with 7.7% or higher initial share of population in Lico-AT. For reference, the initial overall share of the population in Lico-AT in Metro Vancouver in 2006 was 17%.
 
 The distribution of the residuals is generally better than when we looked at the total change.
 

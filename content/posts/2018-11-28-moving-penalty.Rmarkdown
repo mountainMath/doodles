@@ -51,7 +51,7 @@ cut_at_na <- function(data,column_name){
 }
 h1 <- readxl::read_xlsx(here("static/data/cmhc_average_vacant_rents/average-rents-vacant-occupied-units-2018.xlsx"),skip=8) %>% 
   names %>% 
-  gsub("X__\\d+","XXX",.) %>% 
+  gsub("X__\\d+|\\.\\.\\.\\d+","XXX",.) %>% 
   na_if("XXX")
 h2 <- readxl::read_xlsx(here("static/data/cmhc_average_vacant_rents/average-rents-vacant-occupied-units-2018.xlsx"),skip=8) %>% 
   first_row 
@@ -183,7 +183,7 @@ ggplot(plot_data,aes(x=Value,y=relative_moving_penalty,color=Bedrooms)) +
   geom_smooth(method="lm",formula=y~x,se=FALSE) +
   theme_light() +
   labs(x="Fixed-sample rent change",y="Relative moving penalty",
-       title="Canadian CMA moving penalty vs vacancy rate",
+       title="Canadian CMA moving penalty vs fixed-sample rent change",
        caption="MountainMath, CMHC Rms 2018")
 ```
 
