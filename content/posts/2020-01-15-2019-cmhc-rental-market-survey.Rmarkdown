@@ -322,9 +322,10 @@ ggplot(plot_data,aes(x=reorder(CMA,relative_moving_penalty),y=relative_moving_pe
             y=0,size=3) +
   scale_fill_viridis_c(option = "magma",guide=FALSE) +
   theme_light() +
-  labs(title="Relative moving penalty",subtitle="(relative difference of rents for vacant to occupied units)",
+  labs(title="Relative moving penalty by Metro area",
+       subtitle="(relative difference of rents for vacant to occupied units)",
        x=NULL,
-       y="Relative moving penalty by Metro area",
+       y="Relative moving penalty",
        caption="MountainMath, CMHC Rms 2018")
 ```
 
