@@ -53,5 +53,10 @@ In general, the sample of the units with "vacant rents" is comparatively small, 
 
 As discussed before, [the mix of vacant units may not be representative of the mix of occupied units](https://doodles.mountainmath.ca/blog/2019/10/16/rents-and-vacancy-rates/) so this is not a clean apples-with-apples comparison. But it still gives us a decent overall overview of the moving penalty.
 
+## Update (2020-01-17)
+Due to popular demand, here is a quick update of the original *moving penalty* graph [from last year](https://doodles.mountainmath.ca/blog/2018/11/28/moving-penalty/).
+<img src="/posts/2020-01-15-2019-cmhc-rental-market-survey_files/figure-html/unnamed-chunk-2-1.png" width="864" />
+
+
 ## Upshot
 There is still lots of things to look at in this Rms release, this is just scratching the surface. But it will have to do for a quick morning post. As usual, the code is [available on Github](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-01-15-2019-cmhc-rental-market-survey.Rmarkdown) for those wanting to reproduce the analysis or build on it. The data with rents for vacant units is a custom extract kindly provided by Keith Stewart  at CMHC, and [I posted it on online](/data/occupied vs rented rents 2019.csv) if others also want to play with it.
