@@ -326,7 +326,7 @@ ggplot(plot_data,aes(x=reorder(CMA,relative_moving_penalty),y=relative_moving_pe
        subtitle="(relative difference of rents for vacant to occupied units)",
        x=NULL,
        y="Relative moving penalty",
-       caption="MountainMath, CMHC Rms 2018")
+       caption="MountainMath, CMHC Rms 2019")
 ```
 
 
