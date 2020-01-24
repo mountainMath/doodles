@@ -405,7 +405,7 @@ ggplot(moving_data,aes(x=reorder(Name,Share),y=Share)) +
   geom_bar(stat="identity",position = "stack",fill="brown") +
   my_theme("46-10-0044") +
   scale_y_continuous(labels = scales::percent) +
-  labs(fill="",title="Movers forced to move on most recent move",y="Movers forced to move by a landlord, a bank or other financial institution or the government",x="") +
+  labs(fill="",title="Movers in past 5 years forced to move on most recent move",y="Movers forced to move by a landlord, a bank or other financial institution or the government",x="") +
   coord_flip()
 ```
 
