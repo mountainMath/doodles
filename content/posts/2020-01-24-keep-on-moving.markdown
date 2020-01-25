@@ -12,7 +12,7 @@ categories:
 tags: []
 description: "More on reasons to move."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2020-01-24-keep-on-moving_files/figure-html/forced-moves-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2020-01-24-keep-on-moving_files/figure-html/forced_moves-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -43,7 +43,7 @@ Finally, there's are two reasons for moving that seem unambiguously negative for
 
 This brings us to the second big takeaway. In terms of forced moves, Vancouver sticks out like a sore thumb.
 
-<img src="/posts/2020-01-24-keep-on-moving_files/figure-html/forced-moves-1.png" width="768" />
+<img src="/posts/2020-01-24-keep-on-moving_files/figure-html/forced_moves-1.png" width="768" />
 
 While Vancouver stands out, the other CMAs and rural areas in BC follow closely behind. Exposure to socially forced moves (e.g. evictions) seems to reflect something province-wide. Like our provincial protections for renters ([Residential Tenancies Act](http://www.bclaws.ca/civix/document/id/complete/statreg/02078_01)) and how they're enforced (or not) by the RTB. Or like our profound lack of rental options overall (low [vacancy rates](https://eppdscrmssa01.blob.core.windows.net/cmhcprodcontainer/sites/cmhc/data-research/publications-reports/rental-market-reports/2019/rental-market-reports-vancouver-64467-2020-a01-en.pdf?sv=2018-03-28&ss=b&srt=sco&sp=r&se=2021-05-07T03:55:04Z&st=2019-05-06T19:55:04Z&spr=https,http&sig=bFocHM6noLjK8rlhy11dy%2BkQJUBX%2BCDKzkjLHfhUIU0%3D) coupled with sometimes predatory landlords). Or like our heavy reliance upon the least secure kinds of rental stock ([basement suites and condominium rentals](https://homefreesociology.com/2017/12/14/a-little-army-of-artisanal-landlords/)) within secondary rental markets and subject to landlords reclaiming for their own use. 
 

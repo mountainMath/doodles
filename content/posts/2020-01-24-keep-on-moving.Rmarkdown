@@ -12,7 +12,7 @@ categories:
 tags: []
 description: "More on reasons to move."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2020-01-24-keep-on-moving_files/figure-html/forced-moves-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2020-01-24-keep-on-moving_files/figure-html/forced_moves-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -78,7 +78,7 @@ Finally, there's are two reasons for moving that seem unambiguously negative for
 
 This brings us to the second big takeaway. In terms of forced moves, Vancouver sticks out like a sore thumb.
 
-```{r forced-moves, fig.height=7}
+```{r forced_moves, fig.height=7}
 chs_data %>% 
   filter(nchar(GeoUID)==3 | (grepl("metro",GEO))) %>%
   filter(`Dwelling tenure` =="Total, tenure",
