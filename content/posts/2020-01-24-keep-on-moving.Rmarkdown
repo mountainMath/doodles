@@ -12,7 +12,7 @@ categories:
 tags: []
 description: "More on reasons to move."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2020-01-24-keep-on-moving_files/figure-html/forced_moves-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2020-01-24-keep-on-moving_files/figure-html/forced-moves-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
