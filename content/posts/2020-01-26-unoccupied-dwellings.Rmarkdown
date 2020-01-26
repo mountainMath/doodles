@@ -59,13 +59,13 @@ The dataset is a Canada-wide cross tabulation of *Structural type of dwelling* b
 This data is available for census tracts, census subdivisions, census metropolitan areas, census divisions, provinces and territories and the whole country. For the census years 2001, 2006, 2011, and 2016. Others have similar cross tabulations, and we have worked with similar data before. But we have not seen an open data version that can be freely shared, nor a version that covers all of Canada for all these census years.
 
 ### How to access it [on CensusMapper](https://censusmapper.ca/)?
-Just start a new map, the cross-tab will appear below the regular census variables.
+Just [start a new map](https://censusmapper.ca/maps/new), the cross-tab will appear below the regular census variables.
 
 ### How to access it [in the CensusMapper API](https://censusmapper.ca/api)?
-Same way as for CensusMapper maps, the xtab variables can be selected from the variable list.
+Same way as for CensusMapper maps, the xtab variables can be selected from the variable list in the [CensusMapper API GUI helper](https://censusmapper.ca/api).
 
 ### How to access it using [cancensus](https://mountainmath.github.io/cancensus/index.html)?
-The new xtabs have been added to the publicly available datasets. We will keep the code visible for this post instead of just [linking to it on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-01-26-unoccupied-dwellings.Rmarkdown).
+The new xtabs have been added to the publicly available datasets via the [cancensus](https://mountainmath.github.io/cancensus/index.html) package. We will keep the code visible for this post instead of just [linking to it on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-01-26-unoccupied-dwellings.Rmarkdown).
 
 ```{r}
 library(tidyverse)
