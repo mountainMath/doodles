@@ -1,5 +1,5 @@
 ---
-title: Unoccupied dwellings
+title: Unoccupied dwellings data
 author: Jens von Bergmann
 date: '2020-01-26'
 slug: unoccupied-dwellings
