@@ -2,7 +2,7 @@
 title: Unoccupied dwellings data
 author: Jens von Bergmann
 date: '2020-01-26'
-slug: unoccupied-dwellings
+slug: unoccupied-dwellings-data
 categories:
   - CensusMapper
   - Vancouver
@@ -12,7 +12,7 @@ categories:
 tags: []
 description: "A publicly available xtab for Structural type by Document type."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2020-01-26-unoccupied-dwellings_files/figure-html/cov-unoccupied-dwellings-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2020-01-26-unoccupied-dwellings-data_files/figure-html/cov-unoccupied-dwellings-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -43,7 +43,7 @@ Just [start a new map](https://censusmapper.ca/maps/new), the cross-tab will app
 Same way as for CensusMapper maps, the xtab variables can be selected from the variable list in the [CensusMapper API GUI helper](https://censusmapper.ca/api).
 
 ### How to access it using [cancensus](https://mountainmath.github.io/cancensus/index.html)?
-The new xtabs have been added to the publicly available datasets via the [cancensus](https://mountainmath.github.io/cancensus/index.html) package. We will keep the code visible for this post instead of just [linking to it on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-01-26-unoccupied-dwellings.Rmarkdown).
+The new xtabs have been added to the publicly available datasets via the [cancensus](https://mountainmath.github.io/cancensus/index.html) package. We will keep the code visible for this post instead of just [linking to it on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-01-26-unoccupied-dwellings-data.Rmarkdown).
 
 
 ```r
@@ -121,7 +121,7 @@ inner_join(dwelling_data %>% select(name,Total=value),
   labs(title="Unoccupied dwellings in the City of Vancouver")
 ```
 
-<img src="/posts/2020-01-26-unoccupied-dwellings_files/figure-html/cov-unoccupied-dwellings-1.png" width="768" />
+<img src="/posts/2020-01-26-unoccupied-dwellings-data_files/figure-html/cov-unoccupied-dwellings-1.png" width="768" />
 
 Apartments in a duplex, in the City of Vancouver the vast majority of which are units in suited single family homes, stand out as the most empty form of housing in the City of Vancouver [as we have pointed out before using 2011 data](https://doodles.mountainmath.ca/blog/2018/01/25/empty-suites/). The prevalence of suited single family homes in the City of Vancouver skews the number of unoccupied units, with 31% of unoccupied units in the City of Vancouver counted in the 2016 census being in suited single family homes.
 
@@ -148,7 +148,7 @@ ggplot(map_data) +
   labs(title="City of Vancouver share of unoccupied dwellings",fill=NULL)
 ```
 
-<img src="/posts/2020-01-26-unoccupied-dwellings_files/figure-html/unnamed-chunk-4-1.png" width="768" />
+<img src="/posts/2020-01-26-unoccupied-dwellings-data_files/figure-html/unnamed-chunk-4-1.png" width="768" />
 
 This is probably a good time to remind everyone that [Joyce-Collingwood and Marine Gateway had large buildings complete just before census day, resulting in a large number of unoccupied units](https://doodles.mountainmath.ca/blog/2017/04/03/joyce-collingwood/), which has thrown the press for a loop when the Census data first came out.
 

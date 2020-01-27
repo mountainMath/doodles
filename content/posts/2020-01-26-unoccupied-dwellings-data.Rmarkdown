@@ -2,7 +2,7 @@
 title: Unoccupied dwellings data
 author: Jens von Bergmann
 date: '2020-01-26'
-slug: unoccupied-dwellings
+slug: unoccupied-dwellings-data
 categories:
   - CensusMapper
   - Vancouver
@@ -12,7 +12,7 @@ categories:
 tags: []
 description: "A publicly available xtab for Structural type by Document type."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2020-01-26-unoccupied-dwellings_files/figure-html/cov-unoccupied-dwellings-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2020-01-26-unoccupied-dwellings-data_files/figure-html/cov-unoccupied-dwellings-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -65,7 +65,7 @@ Just [start a new map](https://censusmapper.ca/maps/new), the cross-tab will app
 Same way as for CensusMapper maps, the xtab variables can be selected from the variable list in the [CensusMapper API GUI helper](https://censusmapper.ca/api).
 
 ### How to access it using [cancensus](https://mountainmath.github.io/cancensus/index.html)?
-The new xtabs have been added to the publicly available datasets via the [cancensus](https://mountainmath.github.io/cancensus/index.html) package. We will keep the code visible for this post instead of just [linking to it on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-01-26-unoccupied-dwellings.Rmarkdown).
+The new xtabs have been added to the publicly available datasets via the [cancensus](https://mountainmath.github.io/cancensus/index.html) package. We will keep the code visible for this post instead of just [linking to it on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-01-26-unoccupied-dwellings-data.Rmarkdown).
 
 ```{r}
 library(tidyverse)
