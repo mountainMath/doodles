@@ -1,0 +1,1401 @@
+---
+title: Mythical oversupply
+author: Jens von Bergmann
+date: '2020-01-27'
+slug: mythical-oversupply
+categories:
+  - cancensus
+  - CensusMapper
+  - Empty Homes
+  - newsfail
+  - Vancouver
+tags: []
+description: "Going back to the 'supply myth' well."
+featured: 'regular-vs-recalibrated-surplus-1.png'
+images: ["https://doodles.mountainmath.ca/posts/2020-01-27-mythical-oversupply_files/figure-html/regular-vs-recalibrated-surplus-1.png"]
+featuredalt: "regular vs recalibrated surplus"
+featuredpath: "/posts/2020-01-27-mythical-oversupply_files/figure-html"
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width=8,
+	cache=TRUE
+)
+library(tidyverse)
+library(cancensus)
+library(cmhc)
+library(cansim)
+library(tidycensus)
+library(ggtext)
+library(statcanXtabs)
+```
+
+
+It's been over two years now since the news media [reported on John Rose claiming that Vancouver has a surplus of housing](https://www.theglobeandmail.com/real-estate/vancouver/academic-takes-on-vancouvers-housing-supply-myth/article37015584/) and [Rose shared his Working Paper, Version 1](https://www.kpu.ca/sites/default/files/The%20Housing%20Supply%20Myth%20Report%20John%20Rose.pdf) detailing his claims of some mythical oversupply of housing in Vancouver.
+
+We have [written about this](https://doodles.mountainmath.ca/blog/2017/12/11/some-thoughts-on-the-supply-myth/) on [several occasions](https://doodles.mountainmath.ca/blog/2018/01/25/empty-suites/), but we were missing a piece of data that can greatly simplify our arguments: Cross-tabulations of structural type by document type (whether a dwelling was *occupied by usual residents*, or *occupied by temporarily present persons*, or *unoccupied*) for the censuses 2001-2016. Recently we needed this for a different project, and were [able to make it openly available thanks to CMHC](https://doodles.mountainmath.ca/blog/2020/01/26/unoccupied-dwellings-data/), so here is a supposed0-to-be-quick-but-turned-out-lengthy post to on what that means for the "supply myth". 
+
+The main claim of Rose's working paper is that Vancouver has a 'surplus' of dwelling units, and that this 'surplus' must be attributable to "domestic or foreign speculators, visiting students, temporary workers, or those owning a second home in Canadian cities". In Table 3 of his report we see that this surplus was almost entirely created between 2001 and 2006 when the share of 'surplus' units jumped from 3.5% to 6.2%, while increasing a bit more to 6.5% in 2016. 
+
+Rose defines 'surplus' dwelling units as units that are either unoccupied, or units that are occupied by temporarily present persons that think of their primary residence being elsewhere. We struggle with the 'surplus' terminology and will keep it in quotation marks throughout this post.
+
+Unfortunately, contrary to Rose's claim that his "relative supply of housing units" is "based on data collected and represented consistently by Statistics Canada across its censuses", it is largely due to a change in StatCan methodology between the 2001 and 2006 censuses, with ripple effects for the subsequent censuses. The [census dictionary explains](https://www12.statcan.gc.ca/census-recensement/2006/ref/rp-guides/housing-logement-eng.cfm):
+    
+>    The Structural type of dwelling variable is collected by trained enumerators. Improvements to the enumeration process have resulted in a better identification of hard-to-find dwellings such as basement apartments. As a result, structures that may have been classified in previous censuses as single‑detached houses because there was no outside sign of an apartment are more likely be classified as apartments – either in a duplex or a building that has fewer than five storeys, as appropriate.
+
+This had consequences on how buildings got classified:
+
+>    Comparisons of structural type of dwelling data for Canada between the 2001 and 2006 censuses show a decrease in share for 'single-detached house' (-2.1%), an increase in share for 'apartment or flat in a duplex' (+1.8%) and an increase in share for 'apartment in a building that has fewer than five storeys' (+0.4%).
+    
+In the Vancouver setting, this means that SFH that have been identified as "single-detached" in 2001 may have been classified as "duplex" in 2006 if the enumerator detected the presence of a secondary suite, or as "apartment, fewer than 5 storeys" if the enumerator detected more than one secondary suite. The City of Vancouver [formally legalizing basement suites city wide in 2004](https://vancouver.ca/docs/policy/housing-secondary-suites.pdf) likely aided the 2006 census' effort to discover suites.
+
+At first glance it may seem that this only effects the classification of dwelling units, but it also results in an increase in the overall count of dwelling units when a single "single-detached" unit gets reclassified as two "duplex" units or more than two "apartment, fewer than five storeys" units. And this change in dwelling units was only due to re-classification, not to any change in the physical stock.
+
+At the same time this will increase the number of households, a.k.a "occupied dwelling units" if the census finds households living in these units. But [as we have pointed out previously](https://doodles.mountainmath.ca/blog/2018/01/25/empty-suites/), secondary suites are the most "empty" type of dwelling unit in Vancouver. And it will increase the number of "temporarily occupied" dwelling units, that is occupied units where the occupants think of their primary residence being elsewhere. For example, students in basement suites that are often counted at their parent's residence in the census fall under this category. But for this post we will follow Rose and somewhat cynically treat these "temporarily occupied" units as 'surplus'.
+
+While all of this has been explained in detail before, the arguments were not always as direct as they could have been since nobody, including Rose, bothered to pull a census cross tabulation to look at unoccupied dwellings by structural type for the 2001 and 2006 censuses. But now we got one.
+
+Can basements suites really throw off the numbers to invalidate Rose's results? Lots of people live in basements, and lots of basements don't have people living in them or do have people living in them that we, apparently, don't want to count.
+
+<video width="100%" autoplay="autoplay" loop="loop">
+<source src="https://mountainmath.s3.ca-central-1.amazonaws.com/data/basements.mp4" type="video/mp4">
+</video>
+
+## The numbers
+```{r}
+regions <- list_census_regions("CA16") %>% filter(level=="CMA") %>% top_n(20,pop)
+
+structural_names <- c("Total",
+                      "Single-detached",
+                     "Semi-detached",
+                     "Row/Townhouse",
+                     "Duplex",
+                     "Lowrise",
+                     "Highrise",
+                     "Other single",
+                     "Movable")
+
+vancouver_dwellings_1996 <- 697429
+vancouver_households_1996 <- 692960
+
+get_detail_data <- function(regions,year,level="Regions"){
+  short_year=substr(as.character(year),3,4)
+  ds = paste0("CA",short_year,"xSD")
+  total_vars <- setNames(paste0("v_",ds,"_",seq(1,9)),structural_names)
+  unoccupied_vars <- setNames(paste0("v_",ds,"_",seq(1,9)+27),structural_names)
+  temporary_vars <- setNames(paste0("v_",ds,"_",seq(1,9)+18),structural_names)
+  bind_rows(
+    get_census(paste0("CA",short_year),regions=regions,vectors=total_vars,level=level) %>% mutate(Metric="Total"),
+    get_census(paste0("CA",short_year),regions=regions,vectors=unoccupied_vars,level=level) %>% mutate(Metric="Unoccupied"),
+    get_census(paste0("CA",short_year),regions=regions,vectors=temporary_vars,level=level) %>% mutate(Metric="Temporary"),
+    ) %>%
+    mutate(Year=year) %>%
+    pivot_longer(cols=structural_names,names_to = "Structural type",values_to = "Value")
+}
+
+pure_structural_types <- setdiff(structural_names,"Total")
+structure_colours <- setNames(RColorBrewer::brewer.pal(length(pure_structural_types),"Dark2"),pure_structural_types)
+
+
+data <- seq(2001,2016,5) %>% 
+  lapply(function(year) {
+  get_detail_data(list(CMA=regions$region),year) %>%
+    mutate(Year=year)
+}) %>%
+  bind_rows  %>%
+  left_join(regions %>% select(GeoUID=region,Name=name),by="GeoUID") %>%
+  left_join((.) %>% filter(Metric=="Total") %>% select(GeoUID,Year,`Structural type`,Total=Value),
+            by=c("GeoUID","Year","Structural type")) %>%
+  mutate(Share=Value/Total) %>%
+  group_by(GeoUID,Metric,`Structural type`) %>%
+  arrange(Year) %>%
+  mutate(Last=lag(Value,order_by = Year)) %>%
+  mutate(Change=Value-Last) %>%
+  mutate(Period=paste0(lag(Year,order_by = Year),"-",Year))
+
+my_theme <- list(
+  theme_light(),
+  labs(caption="MountainMath, CMHC, StatCan Census 2001-2016")
+)
+
+pp_scale <-function(x) {
+  paste0(prettyNum(x*100,digits=2),"pp")
+}
+
+
+completions <- regions %>% 
+  top_n(6,pop) %>% 
+  select(GeoUID=region,Name=name) %>%
+  filter(GeoUID!="505") %>%
+  bind_rows(tibble(GeoUID=c("24505","35505"),Name="Ottawa - Gatineau")) %>%
+  apply(1,function(r){
+  get_cmhc(cmhc_timeseries_params(table_id = cmhc_table_list$`Scss Completions Time Series`,region =cmhc_region_params_from_census(r[[1]]))) %>%
+    mutate(GeoUID=r[[1]],Name=r[[2]])
+}) %>%
+  bind_rows %>%
+  mutate(GeoUID=ifelse(substr(GeoUID,3,5)=="505","505",GeoUID)) %>%
+  mutate(Date=as.Date(paste0("01 ",X1),format="%d %b %Y")) %>%
+  select(-starts_with("X")) %>%
+  group_by(GeoUID,Name,Date) %>%
+  summarise_all(sum) %>%
+  mutate(Year=as.integer(strftime(Date,"%Y")),Month=as.integer(strftime(Date,"%m")))
+
+
+pre_census <- completions %>% 
+  filter(Year %in% seq(2001,2016,5), Month %in% seq(1,5)) %>% 
+  select(-Month,-Date) %>%
+  mutate(Year=round(Year/5)*5+1) %>%
+  group_by(GeoUID,Name,Year) %>%
+  summarise_all(sum)
+
+census_completions <- completions %>% 
+  mutate(CensusYear=ceiling(Year/5)*5+1) %>%
+  mutate(CensusYear=ifelse(CensusYear-Year==5 & Month %in% seq(1,5),Year,CensusYear)) %>%
+  group_by(GeoUID,Name,Year=CensusYear) %>%
+  summarise_at(c("Single", "Semi-Detached",   "Row", "Apartment",   "All"),sum) %>%
+  group_by(GeoUID) %>%
+  mutate(Period=paste0(lag(Year,order_by = Year),"-",Year)) %>%
+  filter(Year %in% seq(2006,2016,5))
+  
+
+```
+
+To start off we reproduce Rose's 'surplus' dwelling units, also know as "dwellings not occupied by usual residents". As mentioned above, this includes dwelling units occupied by students and other people that are counted in the census as having their primary residence elsewhere. 
+
+
+```{r}
+all_surplus_data <- data %>% 
+  filter(Metric %in% c("Unoccupied","Temporary"),`Structural type`=="Total") 
+surplus_data <- all_surplus_data %>% 
+  filter(GeoUID=="59933")
+
+ggplot(surplus_data,aes(x=as.factor(Year),y=Share,fill=Metric)) +
+  geom_bar(stat="identity") +
+  my_theme +
+  scale_fill_manual(values=c("Unoccupied"="brown","Temporary"="steelblue"),
+                    labels=c("Unoccupied"="Unoccupied","Temporary"="Occupied by temporarily present persons")) +
+  scale_y_continuous(labels=scales::percent) +
+  theme(legend.position="bottom") +
+  #theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+  labs(title="'Surplus' dwelling units in Metro Vancouver",
+       x="",y="",fill="")
+
+
+```
+
+This illustrate the change in 'surplus' units being concentrated on the 2001-2006 timeframe, as well as highlighting the difference between unoccupied and dwelling units occupied by temporarily present persons. The drop in units occupied by temporarily present persons 2006-2011 is interesting, it may reflect yet another change in classification or it may be due to real phenomena like for example students increasingly living with parents or thinking of their current dwelling increasingly as a longer term residence.
+
+
+Another quick reality check is to compare completions data to census net new dwelling counts between census periods.
+
+```{r}
+#demo_data=tibble(Period=c("2001-2006","2006-2011","2011-2016"),Change=c(2400,2500,3100),CMA="Vancouver")
+net_new_dwellings <- data %>% 
+  filter(Metric =="Total",`Structural type`=="Total") %>%
+  filter(Year!=2001, GeoUID=="59933") %>%
+  select(Period,Change) %>%
+  mutate(Type="Census") %>%
+  bind_rows(census_completions %>% filter(GeoUID=="59933") %>% select(Period,Change=All) %>% mutate(Type="Completions")) #%>%
+  #bind_rows(demo_data %>% mutate(Change=-Change,Type="Estimated demolitions"))
+
+ggplot(net_new_dwellings,aes(x=Period,y=Change,fill=Type)) +
+  geom_bar(stat="identity",position="dodge") +
+  theme_light() +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=c("Census"="gold","Completions"="maroon","Estimated demolitions"="brown")) +
+  labs(title="Metro Vancouver completions vs change in census dwelling counts",fill="",x="",y="",
+       caption="MountainMath, StatCan Census 2001-2016, CMHC Scss")
+
+```
+
+This makes it clear that a good portion of the change in dwelling units as counted by the census in the 2001-2006 period is not due to new construction, but mostly due to reclassification of existing dwellings. Moreover, the other two periods show that completions don't all translate into net new dwellings, the main difference being demolitions. This mismatch is especially acute in Vancouver, and is not quite captured by the difference in completions to net new census dwellings in the graph above as the later two inter-census periods also experienced some reclassifications. 
+
+We can independently estimate the ratio of demolitions to completions using permit data as [we did in more detail when looking at single family teardowns](https://doodles.mountainmath.ca/blog/2018/05/23/teardowns-and-emissions/).
+
+```{r}
+permit_data <- get_cansim("34-10-0066") %>% 
+  normalize_cansim_values() %>%
+  filter(grepl("Vancou|Toron|Calg|Montr|Victo",GEO)) %>%
+  filter(`Type of work`=="Types of work, total",
+         `Seasonal adjustment`=="Unadjusted",
+         Variables %in% c("Number of dwelling-units created","Number of dwelling-units demolished"),
+         `Type of structure` %in% c("Total residential","Total demolitions"),
+         Date>=as.Date("2018-01-01")) %>%
+  group_by(GEO,Variables,`Type of structure`) %>%
+  summarize(Count=sum(VALUE,na.rm=TRUE),last_date=max(Date)) %>%
+  ungroup() %>%
+  select(GEO,`Type of structure`,Count,last_date) %>%
+  pivot_wider(names_from = `Type of structure`,values_from = Count) %>%
+  mutate(ratio=`Total demolitions`/`Total residential`) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  mutate(Name=factor(Name,levels=c("Montréal","Victoria","Vancouver","Toronto","Calgary")))
+  
+
+ggplot(permit_data,aes(x=Name,y=ratio)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  theme_light() +
+  labs(title="Ratio of demolition to completion permits by metro area",
+       subtitle = paste0("January 2018 - ",strftime(permit_data$last_date[1],"%B %Y")),
+       x="",y="",fill="",
+       caption="MountainMath, StatCan Table 34-10-0066")
+
+```
+
+The demolitions to completions ratio in Vancouver stands out like a middle finger extended toward the effort to create more housing. And this is not a recent phenomenon, but has been fairly consistent at least since 2007 as [documented by CMHC](https://www.cmhc-schl.gc.ca/en/data-and-research/publications-and-reports/examining-escalating-house-prices-in-large-canadian-metropolitan-centres).
+
+To better understand the impact of the reclassification we take a look at the change in 'surplus' dwellings by structural type.
+
+## Structural type of dwelling
+To understand what happened 2001-2006 it is instructional to look at the change in the number of dwelling units by structural type between the censuses. This yields a mixture of changes due to new construction, demolitions and conversions, as well as changes due to the StatCan change in methods.
+
+It's important to understand [how these structural types are defined](https://www12.statcan.gc.ca/census-recensement/2016/ref/guides/001/98-500-x2016001-eng.cfm), so here is a quick overview.
+
+```{r}
+census_names <- list_census_vectors("CA16xSD") %>% slice(seq(2,9)) %>% pull(label)
+structural_notes <- c(
+  "SFH without a suite, single unit only. A laneway house counts as a separate single-detached structure.",
+  'A unit in a house with two side-by-side units, in Vancouver commonly referred to as "half-duplex".',
+  'A row or townhouse.',
+  "A unit in a house with two up-down units, in Vancouver usually a suited SFH (main unit + one suite).",
+  "A building with fewer than 5 storeys and 3 or more units. This includes an SFH with more than one suite.",
+  "A residential building with 5 or more storeys.",
+  "Things like homes built as an extension of an existing building. Vancouver has very few of these.",
+  "Mobile home."
+)
+tibble(Label=pure_structural_types,`Census name`=census_names,Notes=structural_notes) %>%
+  knitr::kable()
+```
+
+The change in methods had clearly observable consequences.
+
+```{r}
+plot_data <- data %>% 
+  filter(GeoUID=="59933") %>%
+  filter(Metric=="Total",`Structural type`!="Total") %>%
+  filter(!is.na(Change))
+
+duplex_total_change <- plot_data %>% filter(`Structural type`=="Duplex", Period=="2001-2006") %>% pull(Change)
+duplex_new_ratio <- duplex_total_change/ plot_data %>% 
+  filter(`Structural type`=="Duplex", Period=="2001-2006") %>% 
+  pull(Total) 
+
+
+ggplot(plot_data,aes(x=`Structural type`,y=Change,fill=`Structural type`)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=structure_colours,guide=FALSE) +
+  facet_wrap("Period") +
+  my_theme +
+  scale_y_continuous(labels=scales::comma) +
+  theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+  labs(title="Change in dwelling unit counts by structural type in Metro Vancouver",
+       x="",y="")
+```
+
+
+The 2001-2006 shows a sharp drop in dwelling units classified as single-detached, accompanied by a spike in duplex units, as well as an heightened increase in low-rise units. It is safe to say that the bulk of this is due to the change in methods. The 2011-2016 period again shows a drop in single detached units, together with an increase in duplex units, indicating possibly another change in the collection methods that lead to improvements in discovering secondary suites.
+
+To validate these assumptions, we can compare the data on the net new units to the dwelling stock by period of construction. That still misses demolitions, but should still allow us to ballpark if our assumptions are correct. Another wrinkle is that the census only has the period of construction of the occupied (by usual residents) dwelling stock, a.k.a. households. Moreover, the date range for new occupied structures in the census start at the beginning of 2001 instead of after the 2001 census, adding more slight data mismatch.
+
+
+```{r}
+
+structural_recodes <- c(
+  "Single-detached house"= "Single-detached",                              
+ "Apartment, building that has five or more storeys"="Highrise",
+ "Movable dwelling"="Movable",
+ "Semi-detached house"="Semi-detached",
+ "Row house"="Row/Townhouse",
+ "Apartment, duplex"="Duplex",
+ "Apartment, building that has fewer than five storeys"="Lowrise",
+ "Other single-attached house"="Other single",
+ "Apartment in a building that has fewer than five storeys"="Lowrise",
+ "Apartment or flat in a duplex"="Duplex",
+ "Apartment in a building that has five or more storeys" ="Highrise"
+)
+
+region_ids <- regions$region
+structure_construction_data <- get_sqlite_xtab("97-554-X2006022","https://www12.statcan.gc.ca/census-recensement/2006/dp-pd/tbt/OpenDataDownload.cfm?PID=89062",format = "xml") %>%
+  filter(GeoUID %in% region_ids,
+         `Housing tenure`=="Total - Housing tenure",
+         `Condition of dwelling`=="Total - Condition of dwelling",
+         `Period of construction`=="2001 to 2006") %>%
+  select(GeoUID,`Structural type of dwelling`,Value) %>%
+  collect() %>%
+  rename(`Structural type`=`Structural type of dwelling`) %>%
+  filter(`Structural type` %in% names(structural_recodes)) %>%
+  mutate(`Structural type`=recode(`Structural type`,!!!structural_recodes)) %>%
+  left_join(regions %>% select(GeoUID=region,Name=name),by="GeoUID") %>%
+  mutate(Period="2001-2006")
+
+structure_construction_data_2011 <- get_sqlite_xtab("99-014-X2011026","https://www12.statcan.gc.ca/nhs-enm/2011/dp-pd/dt-td/OpenDataDownload.cfm?PID=106699", format = "python_xml") %>%
+  filter(GeoUID %in% region_ids,
+         Tenur=="Total - Housing tenure",
+         BedRm=="Total - Number of bedrooms",
+         Rpair=="Total - Condition of dwelling",
+         NUnits=="Total - Household size",
+         Year=="2011",
+         RCond=="Total - Condominium status",
+         Built=="2006 to 2011"
+         ) %>%
+  select(GeoUID,DType,Value) %>%
+  collect() %>%
+  rename(`Structural type`=DType) %>%
+  filter(`Structural type` %in% names(structural_recodes)) %>%
+  mutate(`Structural type`=recode(`Structural type`,!!!structural_recodes)) %>%
+  left_join(regions %>% select(GeoUID=region,Name=name),by="GeoUID") %>%
+  mutate(Period="2006-2011") %>%
+  mutate(Value=as.numeric(Value))
+
+to_short_ids <- function(ss){
+  ss %>% map(function(s)substr(s,nchar(s)-2,nchar(s)))%>% unlist
+}
+
+short_region_ids <- region_ids %>% to_short_ids
+
+structure_construction_data_2016 <- get_sqlite_xtab("98-400-X2016221","https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=110565&OFT=CSV") %>%
+  rename(GeoUID=`GEO_CODE (POR)`) %>%
+  filter(GeoUID %in% short_region_ids,
+         `Condominium status`=="Total - Condominium status",
+         `Dwelling condition`=="Total - Dwelling condition",
+         `Period of construction`=="2011 to 2016") %>%
+  select(GeoUID2=GeoUID,`Structural type of dwelling`,Value=`Dim: Tenure (4): Member ID: [1]: Total - Tenure`) %>%
+  collect() %>%
+  rename(`Structural type`=`Structural type of dwelling`) %>%
+  filter(`Structural type` %in% names(structural_recodes)) %>%
+  mutate(`Structural type`=recode(`Structural type`,!!!structural_recodes)) %>%
+  left_join(regions %>% select(GeoUID=region,Name=name) %>% mutate(GeoUID2=to_short_ids(GeoUID)),by="GeoUID2") %>%
+  select(-GeoUID2) %>%
+  mutate(Period="2011-2016")
+
+compare_data <- data %>% 
+  #filter(GeoUID=="59933") %>%
+  filter(`Structural type`!="Total") %>%
+  #filter(Metric!="Total",`Structural type`!="Total") %>%
+  #group_by(GeoUID,Metric,`Structural type`,Period) %>%
+  #summarize(Change=sum(Change)) %>%
+  #filter(Period=="2001-2006") %>%
+  group_by(Name,`Structural type`,Period) %>%
+  select(GeoUID,Name,Period,`Structural type`,Metric,Change) %>%
+  pivot_wider(names_from = Metric,values_from = Change) %>%
+  mutate(Value=Total-Unoccupied-Temporary) %>%
+  select(GeoUID,Name,`Structural type`,Value) %>%
+  mutate(Type="Net new households") %>%
+  bind_rows(structure_construction_data %>% mutate(Type="Recently built occupied structures")) %>%
+  bind_rows(structure_construction_data_2011 %>% mutate(Type="Recently built occupied structures")) %>%
+  bind_rows(structure_construction_data_2016 %>% mutate(Type="Recently built occupied structures")) %>%
+  filter(Period %in% c("2001-2006","2006-2011","2011-2016"))
+
+ggplot(filter(compare_data,Name=="Vancouver"),
+              aes(x=`Structural type`,y=Value,fill=Type)) +
+  geom_bar(stat="identity",position="dodge") +
+  my_theme +
+  scale_fill_manual(values = c("#00AFBB", "#E7B800")) +
+  scale_y_continuous(labels=scales::comma,breaks=seq(-40000,40000,20000)) +
+  theme(axis.text.x = element_text(angle = 70, hjust = 1),
+        legend.position = "bottom") +
+  facet_wrap("Period") +
+  labs(title="Metro Vancouver net new households vs new occupied structures",
+       fill="",
+       x="",y="")
+```
+
+The mismatch is stark and confirms our assumptions. New occupied Highrise and Row/Townhomes roughly match net new households for each period in these structure types. Duplex sees a noticeably higher share of net new households than occupied structures added especially in the first and also the last timeframe, pointing to reclassification as an important driver of the growth in dwelling stock of these types. In the 2001-2006 timeframe we also see significantly more net new households in lowrise than there are new lowrise units. At the same time, we see a strong loss of net new households in single-detached dwellings, while registering a significant increase in occupied newly-built single detached homes. The [Metro Vancouver Housing Data Book](http://www.metrovancouver.org/services/regional-planning/PlanningPublications/MV_Housing_Data_Book.pdf) registered roughly 11k single-detached demolitions in each of these periods, suggesting that about half of the new (occupied) single-detached homes are replacing teardowns with the rest adding to the overall stock. Some of the teardowns may have been "duplex" units since the demolition data did not distinguish between single-detached and "duplex" (suited single-detached) units.
+
+```{r}
+all_ratio_data <- compare_data %>%
+  group_by(GeoUID,Name,Period) %>%
+  pivot_wider(names_from = Type,values_from = Value) %>%
+  mutate(ratio=1-`Recently built occupied structures`/`Net new households`) %>%
+  filter(`Structural type` %in% c("Duplex","Lowrise"))
+
+ratio_data <- all_ratio_data %>% filter(Name=="Vancouver",Period=="2001-2006")
+duplex_ratio <- ratio_data %>% filter(`Structural type`=="Duplex") %>% pull(ratio)
+lowrise_ratio <- ratio_data %>% filter(`Structural type`=="Lowrise") %>% pull(ratio)
+```
+
+Using this as a reference we estimate that roughly `r scales::percent(duplex_ratio)` of the net new duplex units and `r scales::percent(lowrise_ratio)` of the net new lowrise units are old units that got reclassified in the 2001-2016 timeframe.
+
+
+We can compare this to the change in 'surplus' dwelling units for each structural type.
+
+```{r}
+structural_change_data <- data %>% 
+  filter(Metric %in% c("Unoccupied","Temporary"),`Structural type`!="Total") %>%
+  group_by(GeoUID,`Structural type`,Metric) %>%
+  mutate(LastShare=lag(Share,order_by = Year),LastTotal=lag(Total,order_by = Year)) %>%
+  #filter(Metric!="Total",`Structural type`!="Total") %>%
+  group_by(GeoUID,Name,`Structural type`,Period) %>%
+  summarize(Change=sum(Change),Total=first(Total),Share=sum(Share),
+            Last=sum(Last),
+            LastTotal=first(LastTotal),
+            LastShare=sum(LastShare),Value=sum(Value)) %>%
+  filter(!is.na(Change)) %>%
+  mutate(EstimatedValue=LastShare*Total) %>%
+  mutate(EstimatedExcess=Value-EstimatedValue) %>%
+  mutate(EstimatedExcessChange=Change-EstimatedExcess)
+
+
+recode_adjusted_data <- structural_change_data %>% 
+  ungroup %>%
+  left_join(all_ratio_data, by=c("GeoUID","Name","Structural type","Period")) %>%
+  select(GeoUID,Name,Period,`Structural type`,Change,ratio,Total,LastTotal) %>%
+  mutate(ratio=coalesce(ratio,0)) %>%
+  mutate(reclassification_ratio=pmax(pmin(ratio,1),0)) %>%
+  mutate(reclassification_surplus=pmax(0,Change)*reclassification_ratio) %>%
+  mutate(TotalChange=Total-LastTotal) %>%
+  mutate(reclassification_total=pmax(0,TotalChange)*reclassification_ratio) %>%
+  select(GeoUID,Name,Period,`Structural type`,reclassification_surplus,reclassification_total,
+         Total,TotalChange,Change,reclassification_ratio) %>%
+  bind_rows((.) %>% group_by(GeoUID,Name,Period) %>%
+              summarize(reclassification_surplus=sum(reclassification_surplus),
+                        reclassification_total=sum(reclassification_total),
+                        reclassification_ratio=weighted.mean(reclassification_ratio,Change),
+                        Change=sum(Change),TotalChange=sum(TotalChange),Total=first(Total)) %>%
+              mutate(`Structural type`="Total") %>%
+              ungroup)
+
+plot_data <- structural_change_data %>%   filter(GeoUID=="59933")
+
+duplex_surplus_change <- plot_data %>% filter(`Structural type`=="Duplex", Period=="2001-2006") %>% pull(Change)
+lowrise_surplus_change <- plot_data %>% filter(`Structural type`=="Lowrise", Period=="2001-2006") %>% pull(Change)
+
+ggplot(plot_data,aes(x=`Structural type`,y=Change,fill=`Structural type`)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=structure_colours,guide=FALSE) +
+  scale_y_continuous(labels=scales::comma) +
+  facet_wrap("Period") +
+  my_theme +
+  theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+  labs(title="Change in 'surplus' dwelling units by structural type",y="Total change in 'surplus' units",x="")
+```
+
+As we add dwelling units we expect the number of 'surplus' units to increase too.
+The addition of `r scales::comma(duplex_total_change)` "duplex" dwelling units 2001-2006 has gone along with `r scales::comma(duplex_surplus_change)` 'surplus' dwelling units, which is an extraordinarily high ratio. As an aside, the noticeable increase in 'surplus' "single-detached" dwelling units despite substantial drop in overall single-detached dwelling units is interesting.
+
+
+```{r}
+reclassification_surplus <- round(duplex_surplus_change*duplex_ratio+lowrise_surplus_change*lowrise_ratio)
+total_surplus <- data %>% 
+  filter(GeoUID=="59933") %>%
+  filter(Metric %in% c("Unoccupied","Temporary"),`Structural type`=="Total") %>%
+  #filter(Metric!="Total",`Structural type`!="Total") %>%
+  group_by(GeoUID,`Structural type`,Period) %>%
+  summarize(Change=sum(Change)) %>%
+  filter(Period=="2001-2006") %>%
+  pull(Change)
+
+
+```
+
+So how many of the new 'surplus' units are attributable to re-classification, and how many are due to other factors? Applying our back-of-the-envelope estimates of how many net new duplex and lowrise units are due to reclassification, we estimate for the 2001-2006 timeframe that `r scales::comma(duplex_surplus_change*duplex_ratio)` surplus duplex units and  `r scales::comma(lowrise_surplus_change*lowrise_ratio)` surplus lowrise units are due to re-classification. In total, `r scales::comma(reclassification_surplus)` of the `r scales::comma(total_surplus)` (`r scales::percent(reclassification_surplus/total_surplus)`) are due to reclassification. 
+
+
+This is likely a conservative estimate since this does not account for "duplex" units that have been demolished 2001-2006, and it assumes that re-classified "duplex" units are empty at the same rate as "duplex" units that were already coded as such in the 2001 census, which is quite unlikely given the extreme jump in the share of 'surplus' "duplex" units 2001 to 2006.
+
+```{r}
+share_plot_data <- data %>% 
+  filter(GeoUID=="59933") %>%
+  filter(Metric %in% c("Unoccupied","Temporary"),`Structural type`!="Total") %>%
+  filter(!(`Structural type` %in% c("Movable","Other single"))) %>%
+  group_by(GeoUID,`Structural type`,Metric) %>%
+  mutate(ShareChange=Share-lag(Share,order_by = Year)) %>%
+  group_by(GeoUID,`Structural type`,Year,Period) %>%
+  summarize(Share=sum(Share),Total=first(Total),Value=sum(Value),Change=sum(Change),ShareChange=sum(ShareChange)) 
+
+duplex_lowrise_shares <- share_plot_data %>% 
+  filter(Year %in% c(2006),`Structural type`%in% c("Duplex","Lowrise","Highrise","Single-detached"))
+
+ggplot(share_plot_data,aes(x=`Structural type`,y=Share,fill=`Structural type`)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=structure_colours,guide=FALSE) +
+  scale_y_continuous(labels=scales::percent) +
+  my_theme +
+  facet_wrap("Year") +
+  theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+  labs(title="Share of 'Surplus' dwelling units by structural type",
+       x="",y="Share of 'surplus' dwelling units")
+```
+
+Graphing the percentage point change in share helps highlight these changes.
+
+```{r}
+ggplot(share_plot_data %>% filter(Year!=2001),aes(x=`Structural type`,y=ShareChange,fill=`Structural type`)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=structure_colours,guide=FALSE) +
+  scale_y_continuous(labels=pp_scale) +
+  theme_light() +
+  facet_wrap("Period") +
+  theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+  labs(title="Change in share of 'surplus' dwelling units by structural type",
+       caption="MountainMath, StatCan Census 2001-2016",
+       x="",y="Percentage point change in\nshare of 'surplus' dwelling units")
+```
+
+It also shows that in the 2001-2006 period it is not just the duplex and lowrise, but also the share of 'surplus' units of the other housing types grew. 
+
+We can use this estimate to re-calibrate our data by artificially re-classifying the existing duplex and lowrise units we estimate got re-classified in each period, adding these to the total housing stock and adding the estimated corresponding 'surplus' units to the starting year 'surplus' counts of each respective period. That allows us to get a "re-calibrated" change in share of 'surplus' units.
+
+
+```{r eval=FALSE, include=FALSE}
+recode_adjusted_data %>% 
+  filter(Name=="Vancouver",`Structural type`!="Total") %>%
+  mutate(Change2=Change-reclassification_surplus) %>%
+  ggplot(aes(x=`Structural type`,y=Change2,fill=`Structural type`)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=structure_colours,guide=FALSE) +
+  scale_y_continuous(labels=scales::comma) +
+  theme_light() +
+  facet_wrap("Period") +
+  theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+  labs(title="Metro Vancouver change in share of re-classified 'surplus' dwelling units by structural type",
+       caption="MountainMath, StatCan Census 2001-2016",
+       x="",y="Percentage point change in\nshare of 'surplus' dwelling units")
+```
+
+
+```{r}
+new_surplus_data_all <- data %>% 
+  #filter(GeoUID=="59933") %>%
+  filter(Metric!="Total")  %>% 
+  ungroup %>% 
+  #filter(Year!=2001) %>%
+  left_join(recode_adjusted_data %>% 
+              select(GeoUID,Name,Period,`Structural type`,reclassification_surplus,
+                     reclassification_ratio,reclassification_total) %>%
+              mutate(Metric="Unoccupied"),
+            by=c("GeoUID","Name","Period","Metric","Structural type")) %>%
+  mutate(reclassification_surplus=ifelse(Metric=="Temporary",
+                                         coalesce(reclassification_surplus,0),
+                                         reclassification_surplus),
+         reclassification_total=ifelse(Metric=="Temporary",
+                                       coalesce(reclassification_total,0),
+                                       reclassification_total)) %>%
+  ungroup() %>%
+  bind_rows((.) %>% 
+              group_by(GeoUID,Name,Year,Period,`Structural type`) %>%
+              summarise(Value=sum(Value),
+                        Change=sum(Change),
+                        Total=first(Total),
+                        `reclassification_surplus`=sum(reclassification_surplus),
+                        reclassification_total=sum(reclassification_total)) %>%
+              mutate(Metric="uour",Share=Value/Total)) %>%
+  mutate(`Recalibrated change`=Change-reclassification_surplus) %>%
+  group_by(GeoUID,`Structural type`,Metric) %>%
+  mutate(lead_surplus = lead(reclassification_surplus,order_by=Year)) %>%
+  mutate(lead_total = lead(reclassification_total,order_by=Year)) %>%
+  mutate(`Recalibrated value`=Value+lead_surplus) %>%
+  mutate(`Recalibrated total`=Total+lead_total) %>%
+  mutate(`Recalibrated share`=`Recalibrated value`/`Recalibrated total`) %>%
+  select(GeoUID,Name,Year,Period,Metric,`Structural type`,Value,Change,`Recalibrated value`,`Recalibrated change`,reclassification_surplus,lead_surplus,Total,Share,`Recalibrated share`) %>%
+  mutate(`Recalibrated share change`=Share-lag(`Recalibrated share`,order_by = Year),
+         `Share change`=Share-lag(Share,order_by = Year))
+  
+```
+
+```{r eval=FALSE, include=FALSE}
+new_surplus_data_all %>%
+  filter(Name=="Vancouver",!(`Structural type` %in% c("Total","Movable","Other single")),Year!=2001,Metric=="uour") %>%
+  ggplot(aes(x=`Structural type`,y=`Recalibrated share change`,fill=`Structural type`)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=structure_colours,guide=FALSE) +
+  scale_y_continuous(labels=pp_scale) +
+  theme_light() +
+  facet_wrap("Period") +
+  theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+  labs(title="Re-calibrated change in share of 'surplus' dwelling units by structural type",
+       caption="MountainMath, StatCan Census 2001-2016",
+       x="",y="Percentage point change in\nshare of 'surplus' dwelling units")
+
+```
+
+
+
+```{r regular-vs-recalibrated-surplus}
+new_surplus_data_all %>%
+  filter(Name=="Vancouver",Year!=2001,!(Metric %in% c("Total","uour")),`Structural type`=="Total") %>%
+  group_by(Period,Metric) %>%
+  pivot_longer(c("Share change","Recalibrated share change")) %>%
+  mutate(name=factor(name,levels=c("Share change","Recalibrated share change"))) %>%
+  ggplot(aes(x=Period,y=value,fill=Metric)) +
+  geom_bar(stat="identity") +
+  my_theme +
+  facet_wrap("name") +
+  scale_fill_manual(values=c("Unoccupied"="brown","Temporary"="steelblue"),
+                    labels=c("Unoccupied"="Unoccupied","Temporary"="Occupied by temporarily present persons")) +
+  scale_y_continuous(labels=scales::percent) +
+  theme(legend.position="bottom") +
+  #theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+  labs(title="Regular vs re-calibrated change in 'surplus' dwelling units in Metro Vancouver",
+       x="",y="",fill="")
+
+```
+
+The re-calibrated view has a smaller initial jump in share of 'surplus' units, followed by an essentially flat trend for the next two periods. In particular we note that the change in the 2011-2016 period is negligible, especially in light of other factors like number of units completed close to census day as we will see later on. Which by itself is interesting. 
+
+
+
+
+```{r eval=FALSE, include=FALSE}
+new_surplus_data_all %>%
+  filter(Name=="Vancouver",Metric!="uour",`Structural type`=="Total") %>%
+  mutate(`Recalibrated share`=coalesce(`Recalibrated share`,Share)) %>%
+  ggplot(aes(x=as.factor(Year),y=`Recalibrated share`,fill=Metric)) +
+  geom_bar(stat="identity") +
+  my_theme +
+  scale_fill_manual(values=c("Unoccupied"="brown","Temporary"="steelblue"),
+                    labels=c("Unoccupied"="Unoccupied","Temporary"="Occupied by temporarily present persons")) +
+  scale_y_continuous(labels=scales::percent) +
+  theme(legend.position="bottom") +
+  #theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+  labs(title="Re-calibrated 'surplus' dwelling units in Metro Vancouver",
+       subtitle="(adjusting 2001 numbers by estimated reclassification)",
+       x="",y="",fill="")
+
+```
+
+```{r}
+change_surplus_2001_2006 <- new_surplus_data_all %>% 
+  filter(Name=="Vancouver",Period=="2001-2006",Metric=="uour",`Structural type`=="Total") %>%
+  select(`Share change`,`Recalibrated share change`)
+
+change_unoccupied_2001_2006 <- new_surplus_data_all %>% 
+  filter(Name=="Vancouver",Period=="2001-2006",Metric=="Unoccupied",`Structural type`=="Total") %>%
+  select(`Share change`,`Recalibrated share change`)
+
+```
+
+
+That changes the change in 'surplus' share 2001-2006 from `r scales::percent(change_surplus_2001_2006 %>% pull('Share change'),accuracy=0.1)` to `r scales::percent(change_surplus_2001_2006 %>% pull('Recalibrated share change'),accuracy=0.1)` after re-calibrating.
+
+If we take a less cynical approach to students and other people in more temporary living conditions and don't count dwellings occupied by temporarily present persons as 'surplus', we get two census periods of increases in unoccupied dwellings followed by one period of essentially no change, after accounting for re-classification.
+The 2001-2006 change in share of unoccupied units drops from `r scales::percent(change_unoccupied_2001_2006 %>% pull('Share change'),accuracy=0.1)` to `r scales::percent(change_unoccupied_2001_2006 %>% pull('Recalibrated share change'),accuracy=0.1)` after re-calibrating.
+
+To elaborate on the importance of suites in this we quickly graph the number of 'surplus' dwelling units by structural type in Metro Vancouver.
+
+```{r}
+data %>%
+  filter(Metric!="Total",`Structural type`!="Total",GeoUID=="59933") %>%
+  group_by(Year,`Structural type`) %>% summarize(Value=sum(Value),Total=first(Total)) %>%
+  ggplot(aes(x=as.factor(Year),y=Value,fill=`Structural type`)) +
+  geom_bar(stat="identity") +
+  my_theme +
+  #facet_wrap("Metric") +
+  #theme(axis.text.x = element_text(angle = 70, hjust = 1),
+  #      legend.position = "bottom") +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=structure_colours) +
+  labs(y="Number of 'surplus' units",x="",fill="",
+       title="Metro Vancouver 'surplus' units by structural type")
+```
+
+This shows that the 2016 census counted more 'surplus' duplex units (mostly units in suited SFH) than 'surplus' units in any other structural type broken out in the census, including highrise (apartments, five or more storeys).
+
+At this point it is useful to also look at unoccupied units instead of 'surplus' dwelling units.
+
+```{r}
+unoccupied_duplex_share <- data %>%
+  filter(Metric=="Unoccupied",`Structural type`!="Total",GeoUID=="59933",Year==2016) %>%
+  group_by(Year,`Structural type`) %>% summarize(Value=sum(Value)) %>%
+  ungroup() %>%
+  mutate(Share=Value/sum(Value)) %>%
+  filter(`Structural type`=="Duplex") %>%
+  pull(Share)
+
+
+data %>%
+  filter(Metric=="Unoccupied",`Structural type`!="Total",GeoUID=="59933") %>%
+  group_by(Year,`Structural type`) %>% summarize(Value=sum(Value),Total=first(Total)) %>%
+  ggplot(aes(x=as.factor(Year),y=Value,fill=`Structural type`)) +
+  geom_bar(stat="identity") +
+  my_theme +
+  #facet_wrap("Metric") +
+  #theme(axis.text.x = element_text(angle = 70, hjust = 1),
+  #      legend.position = "bottom") +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=structure_colours) +
+  labs(y="Number of unoccupied units",x="",fill="",
+       title="Metro Vancouver unoccupied units by structural type")
+```
+
+Unoccupied units shows a more gradual increase in Metro Vancouver, with again duplex (i.e. suited SFH) units accounting for most of the growth 2011-2016 and making up `r scales::percent(unoccupied_duplex_share)` of all unoccupied units, the largest contingent of unoccupied units by structural type in 2016. And secondary suites are excluded from the City of Vancouver Empty Homes Tax, as well as the vacancy tax component of the provincial Speculation and Vacancy Tax.
+
+## Other factors contributing to 'surplus' dwelling units
+```{r}
+csds <- list_census_regions("CA16") %>% filter(level=="CSD") %>% 
+  filter(grepl("Waterloo|^Vancouver$|Toronto|Calgary|Ottawa|Halifax|St John's|Edmonton|Regina$|Victoria$|St John|Montréal$|Hamilton|London$|St. John's",name),!is.na(CMA_UID)) %>% arrange(-pop)
+csd_ids <- csds$region
+cmas <- list_census_regions("CA16") %>% filter(level=="CMA") %>% mutate(ShortGeoUID=ifelse(nchar(region)==3,region,substr(region,3,5)),GeoUID=region)
+cma_ids <- cmas$GeoUID
+old_toronto_cts <- cancensusHelpers:::get_old_toronto_data("CA16")$GeoUID
+provinces <- list_census_regions("CA16") %>% filter(level=="PR") 
+province_lookup <- set_names(cansim:::short_prov.en[provinces$name],provinces$region)
+
+# process_unoccupied_data <- function(data){
+#   data %>%
+#     collect() %>%
+#     mutate(Value=`Total - Structural type of dwelling`) %>%
+#     select(GeoUID,Geography,GEO_NAME,`Document Type`,Value) %>%
+#     spread(key="Document Type",value="Value") 
+# }
+compute_shares <- function(data){
+  data %>% 
+    mutate(Unoccupied=Unoccupied/`Total - Private dwellings by document type`) %>%
+    mutate(`Occupied by temporarily present persons`=`Occupied by foreign/temporary-present persons`/`Total - Private dwellings by document type`) %>% 
+    #top_n(30,Unoccupied) %>%
+    gather(key="Type",value="Share",c("Unoccupied","Occupied by temporarily present persons"),factor_key = TRUE) %>%
+    group_by(Name,GeoUID) %>%
+    mutate(Total=sum(Share)) %>%
+    rename(Dwellings=`Total - Private dwellings by document type`) %>%
+    select(Name,Type,Share,Total,Dwellings) %>%
+    ungroup 
+}
+
+unoccupied_data_for_regions <- function(regions){
+   get_census("CA16",regions=regions,
+                                  vectors=c("Unoccupied"="v_CA16xSD_28",
+                                            "Occupied by foreign/temporary-present persons"="v_CA16xSD_19",
+                                            "Total - Private dwellings by document type"="v_CA16xSD_1")) %>%
+  mutate(Name=`Region Name`) %>%
+    select(GeoUID,Name=`Region Name`,Unoccupied,`Occupied by foreign/temporary-present persons`,`Total - Private dwellings by document type`)
+}
+
+
+unoccupied_data_csd <- unoccupied_data_for_regions(list(CSD=csd_ids))
+unoccupied_data_pr <- unoccupied_data_for_regions(list(PR=provinces$region))
+unoccupied_data_cma <- unoccupied_data_for_regions(list(CMA=cma_ids))
+unoccupied_data_ot <- unoccupied_data_for_regions(list(CT=old_toronto_cts)) %>%
+  summarise_at(vars(-one_of("GeoUID", "Name")),sum) %>%
+  mutate(GeoUID="XXX",Name="Old Toronto")
+
+plot_data_ot <- unoccupied_data_ot  %>% 
+  compute_shares()
+
+plot_data_csd <- unoccupied_data_csd %>%
+  select(-Name) %>%
+  left_join(csds %>% 
+              rename(GeoUID=region) %>% 
+              mutate(Name=paste0(name," ",municipal_status)) %>%
+              select(GeoUID,Name),
+            by="GeoUID") %>%
+  compute_shares() %>%
+  bind_rows(plot_data_ot)
+ 
+plot_data_cma <- unoccupied_data_cma %>%
+  select(-Name) %>%
+  left_join(cmas %>% 
+              mutate(Name=paste0(name, " CMA")) %>%
+              select(GeoUID,Name),
+            by="GeoUID") %>%
+  compute_shares()
+
+plot_data_pr <- unoccupied_data_pr %>%
+  compute_shares()
+
+
+canada_colours <- c("Unoccupied"="brown","Occupied by temporarily present persons"="steelblue")
+canada_caption <- "Canada 2016 census custom tabulation"
+
+empty_homes_theme <- list(
+  geom_hline(yintercept = c(0.04,0.08,0.12),linetype="dashed",alpha=0.1),
+  geom_bar(stat="identity"),
+  coord_flip(),
+  theme_light(),
+  theme(legend.position = "bottom"),
+  guides(fill=guide_legend(ncol=2)),
+  scale_y_continuous(labels=scales::percent,breaks=c(0,0.04,0.08,0.12))
+)
+```
+
+
+```{r}
+survey="acs1"
+year=2016
+us_caption=paste0("US ",year," ",survey %>% toupper)
+
+all_vars <- load_variables(year,survey)
+
+cre_vars_data <- all_vars %>%
+  filter(grepl("B25005",name)) %>%
+  mutate(short_label=gsub(".+!!","",label)) %>%
+  filter(short_label!="Total")
+cre_vars <- rlang::set_names(c("B25001_001",cre_vars_data$name),c("Dwellings",cre_vars_data$short_label))
+
+us_data <- get_acs("metropolitan statistical area/micropolitan statistical area",
+                      variables=cre_vars,year=year,survey=survey) %>%
+  filter(grepl("Metro Area",NAME)) %>%
+  left_join((.) %>% filter(variable=="Dwellings") %>% select(GEOID,estimate) %>% rename(Dwellings=estimate)) %>%
+  filter(variable!="Dwellings") %>%
+  mutate(Share=estimate/Dwellings)%>%
+    mutate(variable=recode(variable,!!!c("Vacant - current residence elsewhere"="Current residence elsewhere")))
+
+county_data_cre <- get_acs("county",variables=cre_vars,
+                       year=year,survey = survey) %>%
+  filter(grepl("new york county|san francisco",NAME,ignore.case = TRUE)) %>%
+  left_join((.) %>% filter(variable=="Dwellings") %>% select(GEOID,estimate) %>% rename(Dwellings=estimate)) %>%
+  filter(variable!="Dwellings") %>%
+  mutate(Share=estimate/Dwellings) %>%
+    mutate(variable=recode(variable,!!!c("Vacant - current residence elsewhere"="Current residence elsewhere")))
+
+combined_colours <- c("Occupied by temporarily present persons"="#1f78b4","Current residence elsewhere"="#a6cee3","Unoccupied"="#e31a1c","All other vacant units"="#fb9a99")
+
+
+vv <- all_vars %>% 
+  filter(grepl("^B25004",name)) %>%
+  mutate(short_label=gsub(".+!!","",label)) %>%
+  filter(short_label!="Total") 
+
+vars <- rlang::set_names(c("B25001_001",vv$name),c("Dwellings",vv$short_label))
+
+compute_vacant_share <- function(data){
+  data %>%
+    left_join((.) %>% 
+                filter(variable=="Dwellings") %>%
+                select(GEOID,estimate) %>%
+                rename(Dwellings=estimate),
+              by="GEOID") %>%
+    mutate(Share=estimate/Dwellings) %>%
+    filter(variable!="Dwellings") %>%
+    group_by(GEOID) %>%
+    mutate(TotalShare=sum(Share)) %>%
+    ungroup
+}
+
+metro_data <- get_acs("metropolitan statistical area/micropolitan statistical area",
+                      variables=vars,year=year,survey=survey) %>%
+  filter(grepl("Metro Area",NAME)) %>%
+  compute_vacant_share
+
+county_data_r <- get_acs("county",variables=vars,
+                       year=year,survey = survey) %>%
+  filter(grepl("new york county|san francisco",NAME,ignore.case = TRUE)) %>%
+  compute_vacant_share
+
+
+
+
+us_categories <- metro_data$variable %>% unique
+us_colours <- set_names(c(RColorBrewer::brewer.pal(length(us_categories),"Dark2"),"grey"),us_categories,"Unknown")
+
+
+```
+
+As mentioned in the introduction, Rose suggests the 'surplus' dwelling units are due to "domestic or foreign speculators, visiting students, temporary workers, or those owning a second home in Canadian cities". And while some 'surplus' dwelling units are indeed used in such a way, we know that it's not the majority. This is a good opportunity to share the infographic we made [based on a previous post with Nathan Lauster](https://doodles.mountainmath.ca/blog/2019/08/19/running-on-empties/) for [Maclean's 2020 charts to watch](https://www.macleans.ca/economy/the-most-important-canadian-economic-charts-to-watch-in-2020/), and include the code in this post or added transparency or in case others want to play with it. 
+
+```{r fig.height=7, fig.width=12}
+names_recodes <- c("Atlanta-Sandy Springs-Roswell, GA Metro Area"="Atlanta Metro Area",
+"Boston-Cambridge-Newton, MA-NH Metro Area"="Boston Metro Area",
+"Chicago-Naperville-Elgin, IL-IN-WI Metro Area"="Chicago Metro Area",
+"Dallas-Fort Worth-Arlington, TX Metro Area"="Dallas Metro Area",
+"Detroit-Warren-Dearborn, MI Metro Area"="Detroit Metro Area",
+"Houston-The Woodlands-Sugar Land, TX Metro Area"="Houston Metro Area",
+"Los Angeles-Long Beach-Anaheim, CA Metro Area"="Los Angeles Metro Area",
+"Miami-Fort Lauderdale-West Palm Beach, FL Metro Area"="Miami Metro Area",
+"New York-Newark-Jersey City, NY-NJ-PA Metro Area"="New York Metro Area",
+"Philadelphia-Camden-Wilmington, PA-NJ-DE-MD Metro Area"="Philadelphia Metro Area",
+"Phoenix-Mesa-Scottsdale, AZ Metro Area"="Phoenix Metro Area",
+"San Francisco-Oakland-Hayward, CA Metro Area"="San Francisco Metro Area",
+"Seattle-Tacoma-Bellevue, WA Metro Area"="Seattle Metro Area",
+"Washington-Arlington-Alexandria, DC-VA-MD-WV Metro Area"="Washington DC Metro Area",
+"Los Angeles County, California"="Los Angeles County",
+"San Francisco County, California"="San Francisco (City)",
+"New York County, New York"="Manhattan (NYC)",
+"King County, Washington"="King County")
+
+plot_data1 <- us_data %>% 
+  filter(NAME %in% ((.) %>% filter(!duplicated(NAME)) %>% top_n(14,Dwellings) %>% pull(NAME))) %>%
+  bind_rows(county_data_cre) %>%
+  rename(Name=NAME,Type=variable) %>%
+  select(Name,Type,Share) %>%
+  bind_rows(plot_data_cma %>% 
+              filter(Name %in% ((.) %>% filter(!duplicated(Name)) %>% top_n(6,Dwellings) %>% pull(Name))) %>% 
+              select(Name,Type,Share)) %>%
+  bind_rows(plot_data_csd %>% 
+              filter(Name %in% c("Vancouver CY","Toronto C","Waterloo CY")) %>% 
+              select(Name,Type,Share)) %>%
+  group_by(Name) %>%
+  mutate(TotalShare=sum(Share)) %>%
+  mutate(Type=factor(Type,levels=names(combined_colours))) %>%
+  ungroup() %>%
+  mutate(Name=recode(Name,!!!names_recodes)) %>%
+  filter(!grepl("Detroid|Philadelphia|Atlanta|Dallas",Name)) %>% 
+  mutate(Metric="Non-primary residences") %>%
+  mutate(Name=gsub(" C$| CY$"," (City)",Name) %>% gsub(" CMA$"," Metro Area",.))
+
+plot_data2 <- metro_data %>% 
+  filter(NAME %in% ((.) %>% filter(!duplicated(NAME)) %>% top_n(14,Dwellings) %>% pull(NAME))) %>%
+  bind_rows(county_data_r) %>%
+  rename(Name=NAME,Type=variable) %>%
+  select(Name,Type,Share) %>%
+  bind_rows(plot_data_cma %>% 
+              filter(Name %in% ((.) %>% filter(!duplicated(Name)) %>% top_n(6,Dwellings) %>% pull(Name))) %>% 
+              select(Name,Type,Share) %>% group_by(Name) %>% summarize(Share=sum(Share)) %>% mutate(Type="Unknown")) %>%
+  bind_rows(plot_data_csd %>% 
+              filter(Name %in% c("Vancouver CY","Toronto C","Waterloo CY")) %>% 
+              select(Name,Type,Share) %>% group_by(Name) %>% summarize(Share=sum(Share)) %>% mutate(Type="Unknown")) %>%
+  group_by(Name) %>%
+  mutate(TotalShare=sum(Share)) %>%
+  #mutate(Type=factor(Type,levels=names(combined_colours))) %>%
+  ungroup() %>%
+  mutate(Name=recode(Name,!!!names_recodes)) %>%
+  filter(!grepl("Detroid|Philadelphia|Atlanta|Dallas",Name)) %>% 
+  mutate(Metric="Reason for vacancy") %>%
+  mutate(TotalShare=coalesce(TotalShare,Share)) %>%
+  mutate(Name=gsub(" C$| CY$"," (City)",Name) %>% gsub(" CMA$"," Metro Area",.))
+
+
+
+reason_levels <- c(
+"For sale only",
+"Sold, not occupied",
+"For rent",
+"Rented, not occupied",
+"For migrant workers",
+"For seasonal, recreational, or occasional use",
+"Other vacant",
+"Unknown")
+
+mwrap <- function(s,l){
+  stringr::str_wrap(s,l) %>%
+    gsub("\\\n","<br>",.)
+}
+
+news_base_x <- "Toronto (City)"
+cma_csd_base_x <- "Washington DC Metro Area"
+uo_label_x <- "San Francisco (City)"# "Vancouver CY, BC"
+u_label_x <- "Calgary Metro Area"
+
+text_annotation1 <- bind_rows(
+  tibble(x = uo_label_x, y = 0.12, color = "steelblue",
+         label = mwrap("Some dwellings are occupied, but not primary residences. These often house students and workers temporarily at a different city. This gets emphasized in university towns. Reports often don't break these out and suggest they are unoccupied too.",23)),
+  tibble(x = u_label_x, y = 0.065, color = "brown",
+         label = mwrap("Unoccupied dwellings are homes the enumerator determined to be vacant on census day.",30)),
+  tibble(x = news_base_x, y = 0.075, color = "black", label_size=0.25,
+         label = mwrap("US Metros tend to have higher rates than their Canadian counterparts",30)),
+  tibble(x = cma_csd_base_x, y = 0.10, color = "black",
+         label = mwrap("Central cities usually have higher shares of unoccupied units than their metro areas",26)),
+) %>% mutate(Metric=unique(plot_data1$Metric))
+
+text_annotation2 <- bind_rows(
+  tibble(x = u_label_x, y = 0.065, color = "black", #label_size=0.25,
+         label = mwrap("Canadian census does not collect reasons for being vacant. Comparing to US data can provide some context of how vacant dwellings may split.",38)),
+  tibble(x = "Detroit Metro Area", y = 0.12, color = "black", 
+         label = "Miami has a large<br>portion of homes for<br><span style='color:#66A61E'>**seasonal,<br>recreational,<br>or occasional use**</span>"),
+  tibble(x = "Chicago Metro Area", y = 0.09, color = "black", 
+         label = "Detroit has a large share of<br>homes that don't fit into any<br>of the <span style='color:#A6761D'>**other**</span> categories.<br>These could be abandoned or<br>otherwise held off the market."),
+  tibble(x = "Los Angeles Metro Area", y = 0.08, color = "black", 
+         label = "Homes<br><span style='color:#7570B3'>**for sale**</span>,<br><span style='color:#E7298A'>**sold but not moved in yet**</span>,<br><span style='color:#1B9E77'>**for rent**</span>, or<br><span style='color:#D95F02'>**rented and not moved in yet**</span><br>are important to facilitate<br>residential mobility."),
+) %>% mutate(Metric=unique(plot_data2$Metric))
+
+
+uo_label_xx <- "Phoenix Metro Area"# "Vancouver CY, BC"
+uo_label_x <- "San Francisco (City)"# "Vancouver CY, BC"
+u_label_x <- "Calgary Metro Area"
+u_label_x2 <- "Toronto Metro Area"
+uo_label_x2 <- "Waterloo (City)"
+news_label_x <- "Washington DC Metro Area"
+
+curve_annotation1 <- bind_rows(
+  tibble(x = uo_label_xx, y = 0.12, xend = uo_label_x2, yend = 0.09,curvature=0.1),
+  tibble(x = u_label_x, y = 0.065, xend = u_label_x2, yend = 0.02,curvature=-0.1),
+  tibble(x = cma_csd_base_x, y = 0.10, xend = "Vancouver (City)", yend = 0.055,curvature=0.1),
+  tibble(x = cma_csd_base_x, y = 0.10, xend = "Vancouver Metro Area", yend = 0.05,curvature=-0.1)
+) %>% mutate(Metric=unique(plot_data1$Metric))
+
+curve_annotation2 <- bind_rows(
+  tibble(x = "Waterloo (City)", y = 0.135, xend = "Miami Metro Area", yend = 0.09,curvature=0.1),
+  tibble(x = "Houston Metro Area", y = 0.1, xend = "Detroit Metro Area", yend = 0.08,curvature=0.1),
+  tibble(x = "Los Angeles Metro Area", y = 0.08, xend = "Washington DC Metro Area", yend = 0.005,curvature=-0.1),
+  tibble(x = "Los Angeles Metro Area", y = 0.08, xend = "Washington DC Metro Area", yend = 0.03,curvature=-0.1),
+  tibble(x = "Calgary Metro Area", y = 0.065, xend = "Calgary Metro Area", yend = 0.05,curvature=-0.001),
+) %>% mutate(Metric=unique(plot_data2$Metric))
+
+segment_annotation <- bind_rows(
+  tibble(x="Washington DC Metro Area",xend="Washington DC Metro Area",y=0,yend=0.0353),
+  tibble(x="Washington DC Metro Area",xend="Washington DC Metro Area",y=0,yend=0),
+  tibble(x="Washington DC Metro Area",xend="Washington DC Metro Area",y=0.0353,yend=0.0353)
+)%>% mutate(Metric=unique(plot_data2$Metric))
+
+plot_data <- bind_rows(plot_data1,
+                       plot_data2) %>%
+  mutate(Type=factor(Type,levels=c(names(combined_colours),reason_levels %>% rev)))
+
+curve_annotation<-bind_rows(curve_annotation1,curve_annotation2)
+text_annotation<-bind_rows(text_annotation1,text_annotation2)
+
+region_labels <- c(setNames(paste0(plot_data1$Name," \U1F1E8"),plot_data1$Name),
+                   setNames(paste0(plot_data2$Name," \U1F1F8"),plot_data2$Name))
+region_labels <- c(setNames(paste0(plot_data1$Name," x"),plot_data1$Name),
+                   setNames(paste0(plot_data2$Name," y"),plot_data2$Name))
+
+
+g<-ggplot(plot_data,aes(x=reorder(Name,TotalShare),y=Share,fill=Type)) +
+  empty_homes_theme +
+  scale_fill_manual(values=c(us_colours,combined_colours)) +
+  theme(legend.position = "none") +
+  geom_richtext(
+    data = text_annotation %>% filter(is.na(label_size)),
+    aes(x = x, y = y, label = label, color=color), 
+    hjust = 0, 
+    size=4,
+    alpha=0.8,
+    lineheight = .8,
+    label.size = NA,
+    inherit.aes = FALSE
+  ) + 
+  geom_richtext(
+    data = text_annotation %>% filter(!is.na(label_size)),
+    aes(x = x, y = y, label = label, color=color), 
+    hjust = 0, 
+    size=4,
+    alpha=0.8,
+    lineheight = .8,
+    label.size = 0.25,
+    inherit.aes = FALSE
+  ) + 
+  geom_curve(
+    data = curve_annotation %>% filter(curvature>0),
+    mapping = aes(x = x, y = y, xend = xend, yend = yend),
+    colour = "grey22",
+    size = 0.5,
+    curvature	= 0.1,
+    arrow = arrow(length = unit(0.01, "npc"), type = "closed"),
+    inherit.aes = FALSE
+  ) +
+  geom_curve(
+    data = curve_annotation %>% filter(curvature<0),
+    mapping = aes(x = x, y = y, xend = xend, yend = yend),
+    colour = "grey22",
+    size = 0.5,
+    curvature	= - 0.1,
+    arrow = arrow(length = unit(0.01, "npc"), type = "closed"),
+    inherit.aes = FALSE
+  ) +
+  scale_color_identity() +
+  facet_wrap("Metric") +
+  labs(title="Non-primary residence dwelling units in Canada and US",
+       caption="MountainMath, StatCan 2016 census, US 2016 ACS1",
+       x=NULL,y=NULL,fill="")
+g
+
+#ggsave("~/Desktop/mcleans_vacant.png",g,width=12,height=7)
+```
+
+Putting data on the Canadian 'surplus' dwelling units in context with US data, where the ACS collects information about why the dwelling unit was unoccupied or occupied by temporary residents, helps us distinguish "good vacancies", like unoccupied homes for sale or for rent or sold and rented homes that have not been moved in yet that are needed to enable residential mobility, from "potentially bad vacancies" like vacation homes or otherwise empty homes".
+
+Thus changes in residential mobility can lead to changes in 'surplus' dwelling units. [Rental vacancy rates have been fairly flat over our time period](https://doodles.mountainmath.ca/blog/2018/11/28/vacancy-rate-and-rent-change/), the variation is unlikely to create more than 500 vacancies. Variations in number of residential listings and sales can be larger, and while only a portion of for sale units are empty, they can have noticeable effect the count of 'surplus' units. Units vacant for these reasons tend to be geographically spread out, so they blend in as background noise [in maps that break out the share of 'surplus' units on fine geographies](https://censusmapper.ca/maps/584). 
+
+The same can not be said when apartment buildings complete close to census day and all units in a large building are ready to get occupied all at once. New apartment buildings take time to fill in. With ever-increasing planning and [construction times](https://doodles.mountainmath.ca/blog/2017/11/28/under-construction/) in Vancouver, it is hard for buyers of new apartments to time their move-in to completion time. Even in the case of resale transactions it can take some time for people to move into their new unit and selling their old one, leaving one of their units vacant in the meantime. These vacancies are fairly short-lived and a normal part of residential mobility. But when larger buildings complete in the months before the census, this can lead to large local distortions in 'surplus' units that have [tripped up the reporters in the past and lead to false claims of problematic 'surplus' units in media reports](https://doodles.mountainmath.ca/blog/2017/04/03/joyce-collingwood/).
+
+Similar effects can occur at the metropolitan level if the number of completions close to the census varies from census year to census year. CMHC keeps track of completions data, although they can't distinguish between lowrise and highrise completions.
+
+```{r}
+ggplot(pre_census %>% filter(GeoUID=="59933"),aes(x=as.factor(Year),y=Apartment)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  my_theme +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Metro Vancouver apartment completions Jan-May of census year",
+       caption="MountainMath, CMHC Scss",x="",y="Number of apartment completions Jan-May")
+```
+
+It would take more time to develop a robust model how exactly timing of completions effect, which will have to wait for a later time and incidentally is part of the reason why we have obtained the more detailed cross-tabulation on unoccupied units used in this post. The above graph suggests that we should expect to see a increase in 'surplus' apartment units 2001-2006 and 2011-2016, and a slight drop 2006-2011 based on apartment completions close to the census. Another metric that can be used to estimate variation in the size of mobility-related vacancies are the number of for sale listings and sold properties as well as rental vacancy rates around census time, the latter of which did not vary much in Vancouver over our time frame.
+
+## Upshot
+In this post we focused on the change in 'surplus' dwelling units as defined by Rose and showed that a substantial portion of which are directly attributable to a change in census methods that lead to reclassification of existing dwelling units. Moreover, change in 'surplus' dwelling units is largely constrained to the 2001 to 2006 timeframe. 
+
+As usual, the code for the analysis is [available on GitHub](#), including access to the data on unoccupied and 'surplus' units by structural type via the CensusMapper API, which was obtained through CMHC funding for an unrelated project we am working on and is now available under the usual StatCan open data licence.
+
+That's it for the main part of the post. We looked at some related questions that aren't essential for the post, but might be of interest to some people. Instead of burying them on our computer we decided to throw them into an appendix.
+<hr>
+
+# Appendix
+This does not touch on the other methodological problems in Rose's Working Paper Version 1. While we are at it and have the data at our hands, let's look at one more issue.
+
+Rose compares his 'surplus' dwelling units with the increase in (some inconsistent contraption of) dwelling values to incomes, which are, relative to other larger Canadian Metro areas, concentrated in the 2011 to 2016 timeframe. Rose then rolls these changes that occur during different time frames into one by rolling everything into the 2001-2016 timeframe, without explaining how one change that occurs at the beginning of the 15 year time period affects another occurring at the end. Dismissing this concern because the "15 year period of assessment prevents the analysis from being distorted by shorter term periods of expansion and contraction in the housing stock and household numbers" is lazy at best.
+
+There are still lots of issues using median dwelling values to median incomes as a metric, but let's follow Rose's methods using census estimates for dwelling values and households incomes to get a somewhat consistent median multiple ratio, and index it to understand how it changed across Canadian metro areas.
+
+```{r}
+dw_inc_data <- get_census("CA16",regions=list(CMA=regions$region),
+                                              vectors=c(dw_2001="v_CA01_1674",inc_2001="v_CA01_1633",
+                                                        dw_2006="v_CA06_2054",inc_2006="v_CA06_2001",
+                                                        dw_2011="v_CA11N_2287",inc_2011="v_CA11N_2563",
+                                                        dw_2016="v_CA16_4896",inc_2016="v_CA16_4985")) %>%
+  left_join(regions %>% select(GeoUID=region,Name=name),by="GeoUID") %>%
+  pivot_longer(names_to=c("Metric","Year"),values_to = "Value",names_pattern="^(.+)_(.+)$",cols=matches("dw_|inc_")) %>% 
+  select(GeoUID,Name,Metric,Year,Value) %>%
+  pivot_wider(names_from = Metric,values_from = Value) %>%
+  mutate(`Average multiple`=dw/inc) %>%
+  group_by(GeoUID) %>%
+  mutate(last=lag(`Average multiple`,order_by = Year),
+         Period=paste0(lag(Year,order_by = Year),"-",Year)) %>%
+  mutate(Change=`Average multiple`/last) %>%
+  mutate(Change2=`Average multiple`-last) %>%
+  group_by(GeoUID,Name) %>%
+  mutate(Index=`Average multiple`/first(`Average multiple`,order_by = Year)*100) %>%
+  mutate(top_region=Name %in% top_n(regions,6,pop)$name)
+
+
+ggplot(dw_inc_data,aes(x=Year,y=Index,color=Name,group=Name)) +
+  geom_line(data=~filter(.,Name %in% top_n(regions,6,pop)$name)) +
+  geom_line(data=~filter(.,!(Name %in% top_n(regions,6,pop)$name)),color="grey",alpha=0.3) +
+  my_theme +
+  scale_color_brewer(palette = "Set2") +
+  labs(title="Average dwelling value to average household income",
+       subtitle="(floating CMA boundaries)",
+       caption="MountainMath, StatCan Census 2001-2016",
+       x="",y="Indexed average multiple",
+       color="Metro area")
+```
+
+Next we plot the relative change in 'affordability' (using the dwelling values to income metric) to the relative change in 'surplus' dwelling units for each of the census periods.
+
+```{r fig.height=7, fig.width=12}
+x_data <- new_surplus_data_all %>%
+  filter(Metric=="uour",`Structural type`=="Total") %>%
+  select(GeoUID,Name,Period,Share,`Recalibrated share`,`Share change`,`Recalibrated share change`,Year) %>%
+  group_by(GeoUID) %>%
+  mutate(rs=`Share`/lag(Share,order_by = Year),
+         rrs=Share/lag(`Recalibrated share`,order_by = Year)) %>%
+  filter(Year!=2001) %>%
+  select(GeoUID,Name,Period,`Share change`,`Recalibrated share change`,rs,rrs) %>%
+  ungroup()
+
+y_data <- dw_inc_data %>% filter(Year!=2001) %>%
+  ungroup() %>%
+  select(GeoUID,Name,Period,Change,Change2)
+
+combined_data <- left_join(x_data,y_data,by=c("GeoUID","Name","Period")) %>%
+  select(Name,Period,rs,rrs,Change) %>%
+  group_by(Name,Period) %>%
+  pivot_longer(c("rs","rrs")) %>%
+  mutate(name=recode(name,!!!c("rs"="Census change in 'surplus' units","rrs"="Recalibrated change in 'surplus' units")))
+
+ggplot(combined_data,aes(x=value,y=Change,color=Period)) +
+  geom_point() +
+  geom_smooth(method = "lm",alpha=0.2) +
+  my_theme +
+  theme(legend.position = "bottom") +
+  facet_wrap("name",scales="free_x") +
+  ggrepel::geom_label_repel(data=~filter(.,Name %in% c("Vancouver","Toronto","Montréal","Calgary")),aes(label=paste0(Name," (",Period,")")),show.legend = FALSE) +
+  labs(title="Change in 'affordability' vs change in 'surplus' dwelling units",
+       subtitle="(floating CMA boundaries)",
+       x="Change in 'surplus' dwelling units",y="Change in average multiple")
+```
+
+As expected, none of these time frames show a relationship that's significantly different from zero, whether using re-calibrated change in 'surplus' dwelling units or taking census numbers at face value.
+
+That's mostly because the metric contrived by Rose is non-nonsensical. The equation of his 'surplus' dwelling units as 'supply', as well as equating household formation as 'demand' at best grossly misunderstands the nature of his 'surplus' dwelling units and cynically invalidates not just the existence of students and other people counted in the census as occupying dwellings temporarily, but also denies the existence of people shut out of the Vancouver housing market entirely by only counting "households" that managed to live in Vancouver.
+
+## Mapping neighbourhood level recalibration estimates
+
+```{r}
+variables <- seq(2001,2016,5) %>%
+  lapply(function(year){
+  short_year=substr(as.character(year),3,4)
+  ds = paste0("CA",short_year,"xSD")
+    c(paste0("v_",ds,"_",seq(1,9)),
+    paste0("v_",ds,"_",seq(1,9)+9))
+  }) %>% unlist
+
+
+geo_data <- tongfen::get_tongfen_census_ct_from_da(regions=list(CMA="59933"),vectors = variables,geo_format = "sf")
+```
+
+
+```{r}
+
+plot_data <- geo_data %>%
+  mutate(`Total 2001`=1-v_CA01xSD_10/v_CA01xSD_1,
+         `Single-detached 2001`=1-v_CA01xSD_11/v_CA01xSD_2,
+         `Duplex 2001`=1-v_CA01xSD_14/v_CA01xSD_5,
+         `Duplex 2001`=1-v_CA01xSD_14/v_CA01xSD_5,
+         `Lowrise 2001`=1-v_CA01xSD_15/v_CA01xSD_6,
+         `Highrise 2001`=1-v_CA01xSD_16/v_CA01xSD_7) %>%
+  mutate(`Total 2006`=1-v_CA06xSD_10/v_CA01xSD_1,
+         `Single-detached 2006`=1-v_CA06xSD_11/v_CA06xSD_2,
+         `Duplex 2006`=1-v_CA06xSD_14/v_CA06xSD_5,
+         `Lowrise 2006`=1-v_CA06xSD_15/v_CA06xSD_6,
+         `Highrise 2006`=1-v_CA06xSD_16/v_CA06xSD_7) %>%
+  mutate(`Total 2011`=1-v_CA11xSD_10/v_CA11xSD_1,
+         `Single-detached 2011`=1-v_CA11xSD_11/v_CA11xSD_2,
+         `Duplex 2011`=1-v_CA11xSD_14/v_CA11xSD_5,
+         `Lowrise 2011`=1-v_CA11xSD_15/v_CA11xSD_6,
+         `Highrise 2011`=1-v_CA11xSD_16/v_CA11xSD_7) %>%
+  mutate(`Total 2016`=1-v_CA01xSD_10/v_CA01xSD_1,
+         `Single-detached 2016`=1-v_CA16xSD_11/v_CA16xSD_2,
+         `Duplex 2016`=1-v_CA16xSD_14/v_CA16xSD_5,
+         `Lowrise 2016`=1-v_CA16xSD_15/v_CA16xSD_6,
+         `Highrise 2016`=1-v_CA16xSD_16/v_CA16xSD_7) %>%
+  mutate(`Total 2001-2006`=v_CA06xSD_1-v_CA01xSD_1,
+         `Single-detached 2001-2006`=v_CA06xSD_2-v_CA01xSD_2,
+         `Semi 2001-2006`=v_CA06xSD_3-v_CA01xSD_3,
+         `Row 2001-2006`=v_CA06xSD_4-v_CA01xSD_4,
+         `Duplex 2001-2006`=v_CA06xSD_5-v_CA01xSD_5,
+         `Lowrise 2001-2006`=v_CA06xSD_6-v_CA01xSD_6,
+         `Highrise 2001-2006`=v_CA06xSD_7-v_CA01xSD_7) %>%
+  mutate(`Total occupied 2001-2006`=v_CA06xSD_10-v_CA01xSD_10,
+         `Single-detached occupied 2001-2006`=v_CA06xSD_11-v_CA01xSD_11,
+         `Semi occupied 2001-2006`=v_CA06xSD_12-v_CA01xSD_12,
+         `Row occupied 2001-2006`=v_CA06xSD_13-v_CA01xSD_13,
+         `Duplex occupied 2001-2006`=v_CA06xSD_14-v_CA01xSD_14,
+         `Lowrise occupied 2001-2006`=v_CA06xSD_15-v_CA01xSD_15,
+         `Highrise occupied 2001-2006`=v_CA06xSD_16-v_CA01xSD_16) %>%
+  mutate(`Total surplus 2001-2006`=`Total 2001-2006`-`Total occupied 2001-2006`,
+         `Single-detached surplus 2001-2006`=`Single-detached 2001-2006`-`Single-detached occupied 2001-2006`,
+         `Duplex surplus 2001-2006`=`Duplex 2001-2006`-`Duplex occupied 2001-2006`,
+         `Lowrise surplus 2001-2006`=`Lowrise 2001-2006`-`Lowrise occupied 2001-2006`,
+         `Highrise surplus 2001-2006`=`Highrise 2001-2006`-`Highrise occupied 2001-2006`) %>%
+  mutate(`Duplex change 2001-2016`=ifelse(v_CA01xSD_5>50,`Duplex 2016`-`Duplex 2001`,NA))
+
+bbox <- mountainmathHelpers::metro_van_bbox()
+
+labels_for_cutoffs <- function(breaks, formatter=scales::comma,
+                               glue_string=" to ", bottom_string="Less than ", top_string="Above "){
+  if (is.infinite(breaks[1]))
+    labels=c(paste0(bottom_string,formatter(breaks[2])))
+  else
+    labels=c(paste0(breaks[1],glue_string,formatter(breaks[2])))
+  for (i in seq(2,length(breaks)-2)) {
+    labels=c(labels,paste0(formatter(breaks[i]),glue_string,formatter(breaks[i+1])))
+  }
+  if (is.infinite(breaks[length(breaks)]))
+    labels=c(labels,paste0(top_string,formatter(breaks[length(breaks)-1])))
+  else
+    labels=c(labels,paste0(formatter(breaks[length(breaks)-1]),glue_string,formatter(breaks[length(breaks)])))
+  labels
+}
+
+  
+my_breaks <- c(-Inf,-1000,-750,-500,-250,-100,-50,-10,10,50,100,250,500,750,1000,Inf)
+my_colors <- setNames(c(rev(RColorBrewer::brewer.pal(7,"Reds")),"white",RColorBrewer::brewer.pal(7,"Blues")),labels_for_cutoffs(my_breaks))
+
+set_color_limits <- function(data,...){
+  data %>% 
+    mutate(d=cut(...,breaks=my_breaks,labels=labels_for_cutoffs(my_breaks)))
+}
+
+
+
+```
+
+To round things off we map the change in single-detached dwellings 2001-2006 to show where single-detached homes got added, and where they got re-classified.
+
+```{r}
+plot_data %>%
+  mutate(d=cut(`Single-detached 2001-2006`,
+               breaks=my_breaks,labels=labels_for_cutoffs(my_breaks))) %>%
+ggplot(aes(fill=d)) +
+  geom_sf(size=0.1) +
+  my_theme +
+  scale_fill_manual(values=my_colors) +
+  coord_sf(datum=NA,xlim=c(bbox$xmin,bbox$xmax),ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(fill="",title="Change in Single-detached homes 2001-2006")
+```
+
+To home in on the re-classification we can add half of the change in the number of duplex units, to validate that one single-detached turned into two duplex units.
+
+```{r}
+plot_data %>%
+  mutate(d=cut(`Single-detached 2001-2006`+`Duplex 2001-2006`/2,
+               breaks=my_breaks,labels=labels_for_cutoffs(my_breaks))) %>%
+ggplot(aes(fill=d)) +
+  geom_sf(size=0.1) +
+  my_theme +
+  scale_fill_manual(values=my_colors) +
+  coord_sf(datum=NA,xlim=c(bbox$xmin,bbox$xmax),ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(fill="",title="Change in single-detached and (half of) duplex homes" )
+```
+
+That evens out the areas where we lost single-detached units considerably. We can take this one step further and add in one third of the change in lowrise units -- if that change has been positive, as well as the change in (half of the) semi-detached dwelling units.
+
+```{r}
+plot_data %>%
+  mutate(d=cut(`Single-detached 2001-2006`+
+                 `Semi 2001-2006`/2+
+                 `Duplex 2001-2006`/2+
+                 `Lowrise 2001-2006`/3,
+               breaks=my_breaks,labels=labels_for_cutoffs(my_breaks))) %>%
+ggplot(aes(fill=d)) +
+  geom_sf(size=0.1) +
+  my_theme +
+  scale_fill_manual(values=my_colors) +
+  coord_sf(datum=NA,xlim=c(bbox$xmin,bbox$xmax),ylim=c(bbox$ymin,bbox$ymax)) +
+  labs(fill="",title="Change in single-detached, and (half of) duplex and semi, and (third of) lowrise homes")
+
+```
+
+That further smooths out the areas that saw large losses in single-detached homes, confirming the theory that some single-detached got classified into "lowrise" buildings with 3 or more units. At the same time it throws the measure off in areas where new lowrise buildings got built. It also highlights areas where lowrise buildings have been re-classified to highrise buildings, and vice versa. 
+
+But it still shows a significant shortage in dwelling units in many areas dominated by SFH, where we would expect this calculus to come out as close to even. The prevalence of this suggests that prior to the 2001-2006 change in methodology some SFH were likely double-counted, with households in the main unit and households in a secondary suite both being counted as living in a single-detached house.
+
+### Tenure and sampling
+```{r}
+npr_duplex_2006 <- data %>% 
+  filter(GeoUID=="59933",Year==2006,Metric %in% c("Unoccupied","Temporary"),`Structural type`=="Duplex") %>%
+  pull(Value) %>% 
+  sum()
+```
+
+In [our first post](https://doodles.mountainmath.ca/blog/2017/12/11/some-thoughts-on-the-supply-myth/) we looked at tenure as a way to estimate unoccupied and temporarily occupied secondary suites. The argument was that almost all "duplex" units in Metro Vancouver are single family homes with secondary suites, only very few units classified as "duplex" in the census are stratified. In particular, there can be at most one owner household per structure containing two duplex units. But we found that the 2006 census counted about 26k more owner than renter households in duplex units, which, by the pigeon hole principle, leads us to estimate that there must be (at least) around 26k empty duplex units. 
+
+In [our follow-up post](https://doodles.mountainmath.ca/blog/2018/01/25/empty-suites/) we noted, using a 2011 NHS cross-tab, that this method likely significantly over-estimates the number of duplex units not occupied by usual residents. We can now extent that check using 2006 and 2016 data.
+
+The 2006 census only counted `r scales::comma(npr_duplex_2006)` duplex units not occupied by usual residents. In other words, using our tenure calculus over-estimates the number of duplex units not occupied by usual residents in 2006 by roughly a factor of 2.
+
+That's a huge discrepancy, which points to three possible directions already [discussed in our previous post](https://doodles.mountainmath.ca/blog/2018/01/25/empty-suites/). One is that there may be a substantial difference in long form response rates by renters in suites compared to renters in other structural types, that has not been adjusted for in census post-processing. The other is the question of how extended families in suited SFH identify in the census. Some may identify as a single household, with the suite showing up as empty in the census. More important to our question at hand, some may identify as two separate households, one in the main unit and one in the suite, with both identifying as owner households. Which would break our assumption that there can be at most one owner household per structure containing two (non-stratified) duplex units. Lastly, there is the possibility that condominium status of duplex units suffers from significant under-reporting.
+
+The same issue shows up in 2016 data, although to a lesser degree. Using 2016 data has the added benefit that we can separate out (self-identified) stratified units, so let's take a quick look.
+
+```{r}
+tenure_condo_data <- get_sqlite_xtab("98-400-X2016221"," https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=110565&OFT=CSV") %>%
+  rename(GeoUID=`GEO_CODE (POR)`) %>%
+  filter(GeoUID=="933",
+         `Dwelling condition`=="Total - Dwelling condition",
+         `Period of construction`=="Total - Period of construction",
+         `Structural type of dwelling`=="Apartment or flat in a duplex") %>%
+  collect() %>%
+  standardize_xtab() %>% 
+  select(`Condominium status`,Tenure,Value) %>%
+  filter(`Condominium status`!="Total - Condominium status",
+         Tenure != "Total - Tenure")
+
+npr_2016 <- data %>% 
+  filter(GeoUID=="59933",Year==2016,Metric %in% c("Unoccupied","Temporary"),`Structural type`=="Duplex") %>%
+  pull(Value) %>% 
+  sum()
+
+plot_data <- bind_rows(tenure_condo_data,
+                       tibble(`Condominium status`="Unknown",Tenure="Not occupied by usual residents",Value=npr_2016)) %>%
+  mutate(Tenure=factor(Tenure,levels=c("Band housing","Renter","Owner","Not occupied by usual residents")))
+
+ggplot(plot_data,aes(x=Tenure,y=Value,fill=`Condominium status`)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels = scales::comma) +
+  scale_fill_brewer(palette = "Set2") +
+  theme_light() +
+  labs(title="Metro Vancouver occupied duplex units 2016",
+       x=NULL,y="Number of occupied units",
+       caption="MountainMath, StatCan table 98-400-X2016221") 
+```
+
+
+```{r}
+owner_renter_gap <- plot_data %>% filter(`Condominium status`=="Not condominium",Tenure=="Owner") %>% pull(Value) -
+  plot_data %>% filter(`Condominium status`=="Not condominium",Tenure=="Renter") %>% pull(Value)
+owner_renter_gap_all <- plot_data %>% filter(Tenure=="Owner") %>% pull(Value) %>% sum() -
+  plot_data %>% filter(Tenure=="Renter") %>% pull(Value) %>% sum()
+
+```
+
+The observation here is that the 2016 census counted `r scales::comma(owner_renter_gap)` more owner than renter households in occupied non-stratified duplex units (`r scales::comma(owner_renter_gap_all)` when also including the stratified duplex units), but only `r scales::comma(npr_2016)` duplex units not occupied by usual residents.
+
+In summary, this points to another complication on how to interpret census data of (occupied) duplex units. Secondary suites is the rabbit hole gift that keeps on giving.
+
+
+
