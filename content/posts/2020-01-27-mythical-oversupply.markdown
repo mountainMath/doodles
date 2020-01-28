@@ -24,9 +24,22 @@ type: "post"
 
 It's been over two years now since the news media [reported on John Rose claiming that Vancouver has a surplus of housing](https://www.theglobeandmail.com/real-estate/vancouver/academic-takes-on-vancouvers-housing-supply-myth/article37015584/) and [Rose shared his Working Paper, Version 1](https://www.kpu.ca/sites/default/files/The%20Housing%20Supply%20Myth%20Report%20John%20Rose.pdf) detailing his claims of some mythical oversupply of housing in Vancouver.
 
-We have [written about this](https://doodles.mountainmath.ca/blog/2017/12/11/some-thoughts-on-the-supply-myth/) on [several occasions](https://doodles.mountainmath.ca/blog/2018/01/25/empty-suites/), but we were missing a piece of data that can greatly simplify our arguments: Cross-tabulations of structural type by document type (whether a dwelling was *occupied by usual residents*, or *occupied by temporarily present persons*, or *unoccupied*) for the censuses 2001-2016. Recently we needed this for a different project, and were [able to make it openly available thanks to CMHC](https://doodles.mountainmath.ca/blog/2020/01/26/unoccupied-dwellings-data/), so here is a supposed0-to-be-quick-but-turned-out-lengthy post to on what that means for the "supply myth". 
+We have [written about this](https://doodles.mountainmath.ca/blog/2017/12/11/some-thoughts-on-the-supply-myth/) on [several occasions](https://doodles.mountainmath.ca/blog/2018/01/25/empty-suites/), but we were missing a piece of data that can greatly simplify our arguments: Cross-tabulations of structural type by document type (whether a dwelling was *occupied by usual residents*, or *occupied by temporarily present persons*, or *unoccupied*) for the censuses 2001-2016. Recently we needed this for a different project, and were [able to make it openly available thanks to CMHC](https://doodles.mountainmath.ca/blog/2020/01/26/unoccupied-dwellings-data/), so here is a supposed-to-be-quick-but-turned-out-lengthy post to on what that means for the "supply myth". 
 
-The main claim of Rose's working paper is that Vancouver has a 'surplus' of dwelling units, and that this 'surplus' must be attributable to "domestic or foreign speculators, visiting students, temporary workers, or those owning a second home in Canadian cities". In Table 3 of his report we see that this surplus was almost entirely created between 2001 and 2006 when the share of 'surplus' units jumped from 3.5% to 6.2%, while increasing a bit more to 6.5% in 2016. 
+The main claim of Rose's working paper is that Vancouver has a 'surplus' of dwelling units, and that this 'surplus' must be attributable to "domestic or foreign speculators, visiting students, temporary workers, or those owning a second home in Canadian cities". In Table 3 of his report we see that this surplus was almost entirely created between 2001 and 2006 when the share of 'surplus' units jumped from 3.5% to 6.2%, while increasing a bit more to 6.5% in 2016.
+
+## TL;DR
+No, you weren’t hallucinating when everyone was talking about how Vancouver was swimming in ‘surplus’ housing but you felt that there were few available apartments and lots of competition when looking for a new rental. There is no mythical oversupply. 
+
+Yes, census numbers indicate there was an uptick in the share of dwellings “not occupied by usual residents” 2001-2016,  but at least half of that was due to a change in census methods and goes away when re-calibrating to adjust for that change. And the rest is concentrated in the 2001-2006 timeframe, tying this to "speculation" and the 2015-ish price increases is more than a stretch. 
+
+Basement suites are at the root of this mixup, they are the most empty form of dwelling according to the census, they are the Schrödinger’s cat of dwelling units. Lots of people live in basements, and lots of basements don't have people living in them or do have people living in them that we, apparently, don't want to count.
+
+<video width="100%" autoplay="autoplay" loop="loop">
+<source src="https://mountainmath.s3.ca-central-1.amazonaws.com/data/basements.mp4" type="video/mp4">
+</video>
+
+## The long version
 
 Rose defines 'surplus' dwelling units as units that are either unoccupied, or units that are occupied by temporarily present persons that think of their primary residence being elsewhere. We struggle with the 'surplus' terminology and will keep it in quotation marks throughout this post.
 
@@ -46,11 +59,6 @@ At the same time this will increase the number of households, a.k.a "occupied dw
 
 While all of this has been explained in detail before, the arguments were not always as direct as they could have been since nobody, including Rose, bothered to pull a census cross tabulation to look at unoccupied dwellings by structural type for the 2001 and 2006 censuses. But now we got one.
 
-Can basements suites really throw off the numbers to invalidate Rose's results? Lots of people live in basements, and lots of basements don't have people living in them or do have people living in them that we, apparently, don't want to count.
-
-<video width="100%" autoplay="autoplay" loop="loop">
-<source src="https://mountainmath.s3.ca-central-1.amazonaws.com/data/basements.mp4" type="video/mp4">
-</video>
 
 ## The numbers
 
