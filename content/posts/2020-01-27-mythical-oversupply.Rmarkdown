@@ -1116,7 +1116,7 @@ It would take more time to develop a robust model how exactly timing of completi
 ## Upshot
 In this post we focused on the change in 'surplus' dwelling units as defined by Rose and showed that a substantial portion of which are directly attributable to a change in census methods that lead to reclassification of existing dwelling units. Moreover, change in 'surplus' dwelling units is largely constrained to the 2001 to 2006 timeframe. 
 
-As usual, the code for the analysis is [available on GitHub](#), including access to the data on unoccupied and 'surplus' units by structural type via the CensusMapper API, which was obtained through CMHC funding for an unrelated project we am working on and is now available under the usual StatCan open data licence.
+As usual, the code for the analysis is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-01-27-mythical-oversupply.Rmarkdown), including access to the data on unoccupied and 'surplus' units by structural type via the CensusMapper API, which was obtained through CMHC funding for an unrelated project we am working on and is now available under the usual StatCan open data licence.
 
 That's it for the main part of the post. We looked at some related questions that aren't essential for the post, but might be of interest to some people. Instead of burying them on our computer we decided to throw them into an appendix.
 <hr>
