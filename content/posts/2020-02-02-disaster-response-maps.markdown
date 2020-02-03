@@ -109,7 +109,7 @@ Looking at single variables and overlaying them in some way, including the way i
 Similarly, StatCan could look at how many people fail one vulnerability metric, and how many fail two or three or more at the same time. This gives us a much better picture of vulnerability that can guide recovery operations.
 
 ## Outdated data
-Another point to mention is that the census data is now almost 4 years old. It still can serve as a decent proxy in areas that did not change too much, but using these maps we will be flying in the dark in areas where lots of new development came in. We are working on ways to make census data more up-to-date, more on that soon. But this will only work well for some variables, and is harder to do for others. And our upcoming project only goes down to census tract level geographies, which is of limited use in disaster recovery efforts. This provides yet another opportunity for StatCan to show leadership and leverage their much better data.
+Another point to mention is that the census data is now almost 4 years old. It still can serve as a decent proxy in areas that did not change too much, but using these maps we will be flying in the dark in areas where lots of new development came in. We are working on ways to make census data more up-to-date, more on that soon. Construction data, as well as annual tax data can both play a role here. But this will only work well for some metrics, and is harder to do for others. And our upcoming project only goes down to census tract level geographies, which is of limited use in disaster recovery efforts. This provides yet another opportunity for StatCan to show leadership and leverage their much better data.
 
 <hr>
 
