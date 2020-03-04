@@ -205,12 +205,15 @@ Of some concern, lots of the places identified above have had recent outbreaks o
 First let's look at up-to-date active confirmed Coronavirus cases drawing on data collected at [Johns Hopkins](https://systems.jhu.edu/research/public-health/ncov/).
 
 ```{r fig.height=5, fig.width=9}
-ggplot(corona_data %>% filter(Active>0) %>% st_transform(54009) %>% arrange(-Active)) +
+corona_plot_data <- corona_data %>% filter(Active>0) %>% st_transform(54009) %>% arrange(-Active)
+bbox=st_bbox(corona_plot_data)
+ggplot(corona_plot_data) +
   geom_sf(data =world_countries,fill="lightgrey",size=0.1) +
   geom_sf(fill="red",color="black",alpha=0.8,aes(size=Active),show.legend = "point",shape=21) +
   scale_size_area() +
-  labs(title=paste0("Active Coronavirus COVID-19 cases ",today),caption="Johns Hopkins CSSE") +
-  coord_sf(datum=NA)
+  theme(legend.position="bottom") +
+  labs(title=paste0("Active confirmed Coronavirus COVID-19 cases ",today),caption="Johns Hopkins CSSE",color="Active confirmed") +
+  coord_sf(datum=NA,xlim=c(bbox$xmin,bbox$xmax),ylim=c(bbox$ymin,bbox$ymax))
 ```
 
 Wuhan, of course, appears as the centre of the outbreak, and Hubei Province in China contains most of the active confirmed cases to date (as of `r strftime(today,format="%B %d, %Y")`!) The number of cases is important to track, obviously, and the starting point for healthcare workers and epidemiologists alike. But focusing on these numbers can provide a misleading impression of how widespread the Coronavirus has become. So let’s come up with a crude estimate of prevalence instead of case numbers. Here we're going to use active confirmed cases as our starting point. Another option is to track all confirmed cases, including those who have recovered (no longer testing positive) or died from coronavirus. But active confirmed cases might arguably give us a better sense of current spread. 
