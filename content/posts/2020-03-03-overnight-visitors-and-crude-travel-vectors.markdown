@@ -21,7 +21,7 @@ blackfriday:
   hrefTargetBlank: true
 ---
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2020/03/03/overnight-visitors-and-crude-travel-vectors/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2020/03/04/overnight-visitors-and-travel-vectors/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 
@@ -76,7 +76,7 @@ Here we can see rapidly changing vector possibilities. Conditions are changing f
 
 Here is a still of the most recent snapshot as of the writing of this.
 
-
+<img src="/posts/2020-03-03-overnight-visitors-and-crude-travel-vectors_files/figure-html/unnamed-chunk-6-1.png" width="672" />
 
 ## Upshot
 So here are the big takeaways from our exercise: 1) Visitor data to Metro Vancouver is actually really interesting, even for those outside of the tourism business. 2) Don’t shun travelers from abroad! The likelihood of anyone you meet, even coming from an outbreak centre, being a carrier of coronavirus is very, very low. 3) The combination of travel patterns plus coronavirus prevalence gives us some interesting ways to model evolving vector risks in Metro Vancouver. 4) But it’s not clear how much we should trust our data. Travel patterns have surely altered, and we need better coronavirus testing fast, especially in places like Washington State.

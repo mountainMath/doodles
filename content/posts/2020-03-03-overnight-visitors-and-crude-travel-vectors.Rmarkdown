@@ -21,7 +21,7 @@ blackfriday:
   hrefTargetBlank: true
 ---
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2020/03/03/overnight-visitors-and-crude-travel-vectors/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2020/03/04/overnight-visitors-and-travel-vectors/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
@@ -349,7 +349,7 @@ But what about travel patterns writ large? Surely even if any individual present
 
 Let's run with this for recent coronavirus outbreak data based on travel volumes similar to past years - EXCEPT excluding cases from Hubei province in China after January 23rd (when the quarantine went in place). What does our crude evolving overnight travel vector risk look like?
 
-```{r}
+```{r include=FALSE}
 corona_risk_path <- here::here("static/images/corona_risk.gif")
 if (!file.exists(corona_risk_path)) {
 anim <- merged_data2 %>%
@@ -401,7 +401,7 @@ Here we can see rapidly changing vector possibilities. Conditions are changing f
 
 Here is a still of the most recent snapshot as of the writing of this.
 
-```{r include=FALSE}
+```{r}
 newest_date <- merged_data2$Date %>% na.omit %>% max()
 merged_data2 %>%
   filter(!is.na(Date)) %>%
