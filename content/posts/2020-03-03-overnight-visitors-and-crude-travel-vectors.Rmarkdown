@@ -1,0 +1,446 @@
+---
+title: Overnight Visitors and Crude Travel Vectors
+author: Jens von Bergmann
+date: '2020-03-03'
+slug: overnight-visitors-and-crude-travel-vectors
+categories:
+  - Vancouver
+  - Transportation
+  - geeky
+tags: []
+description: "Checking in on Vancouver travel data. And the novel corona virus."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2020-03-03-overnight-visitors-and-crude-travel-vectors_files/figure-html/vancouver-visitors-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+math: true
+blackfriday:
+  fractions: false
+  hrefTargetBlank: true
+---
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2020/03/03/overnight-visitors-and-crude-travel-vectors/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+library(tidyverse)
+library(cancensus)
+library(sf)
+library(lubridate)
+library(gganimate)
+```
+
+```{r}
+#data <- tabulizer::extract_tables("https://assets.simpleviewinc.com/simpleview/image/upload/v1/clients/vancouverbc/ytd_visitor_volume_2019_08bc91f6-e02e-4ecf-b753-fb19a1f35de5.pdf")
+data <- read_csv(here::here("static/data/ytd_visitor_volume_2019.csv"),col_types = cols(.default = "c")) %>%
+  select(-X1) 
+
+visitor_data <- names(data) %>% 
+  lapply(function(n){
+    data[,n]  %>% lapply(function(d)strsplit(d,"\r")) %>% unlist %>% as.character()
+  }) %>% bind_cols() %>%
+  set_names(names(data)) %>%
+  mutate_at(vars(-one_of("Region","%\rchange")),function(d)gsub(",","",d) %>% as.integer) %>%
+  bind_rows(tibble(Region="Iran"))
+ 
+
+get_corona_data_for_date <- function(date){
+  if (is.character(date)) data=as.Date(date)
+  read_csv(paste0("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/",strftime(date,"%m-%d-%Y"),".csv"),progress=FALSE)
+}
+
+today <- as.Date("2020-03-03")#Sys.Date() %m+% days(-1)
+
+corona_data <- get_corona_data_for_date(today) %>%
+  st_as_sf(coords = c("Longitude", "Latitude"), 
+                 crs = 4326, agr = "constant") %>%
+  mutate(Active=Confirmed-coalesce(Deaths,0)-coalesce(Recovered,0))
+
+world_countries <- rworldmap::countriesCoarseLessIslands %>% st_as_sf()
+
+geocode_visitor_data <- function(visitor_data){
+  provinces <- c("British Columbia", "Alberta", "Ontario")
+  states <- c("Washington", "Oregon", "California")
+  countries <- c("South Korea", "Taiwan", "New Zealand", "Australia", "China", "Malaysia", 
+                 "India", "France", "Germany", "United Kingdom", "Italy", "Netherlands", 
+                 "Austria", "Spain",  "Switzerland",  "Brazil" , "Mexico", "Argentina","Japan","Iran")
+  cities <- c("Singapore","Hong Kong","Xianggangdao")
+  
+  regions <- visitor_data %>% filter(!grepl("TOTAL|Other",Region)) %>% pull(Region)
+  other <- visitor_data %>% filter(grepl("Other",Region)) %>% pull(Region)
+
+  ro <- read_sf(here::here("static/data/other.geojson")) %>%
+    cbind(st_coordinates(.)) %>%
+    st_set_geometry(NULL)  %>%
+    select(Region,lat=Y,lon=X)
+  
+  rcc <- maps::world.cities %>% filter(name %in% cities) %>%
+    mutate(name=recode(name,!!!c("Xianggangdao"="Hong Kong"))) %>%
+    select(Region=name,lat,lon=long,population=pop)
+  
+  rp <- list_census_regions("CA16") %>% 
+    filter(level=="PR",name %in% provinces)  %>%
+    as_census_region_list() %>%
+    get_census("CA16",regions=.,geo_format="sf") %>%
+    st_centroid(of_largest_polygon = TRUE) %>%
+    cbind(st_coordinates(.)) %>%
+    st_set_geometry(NULL) %>%
+    select(Region=name,population=Population,lat=Y,lon=X)
+  
+  rs<-tigris::states() %>%
+    st_as_sf() %>%
+    filter(NAME %in% states) %>%
+    st_set_geometry(NULL) %>%
+    select(Region=NAME,lat=INTPTLAT,lon=INTPTLON) %>%
+    mutate_at(c("lat","lon"),as.numeric) %>%
+    left_join(tidycensus::get_acs("state",variables = c(population="B01003_001"),survey="acs1") %>%
+                select(Region=NAME,population=estimate),
+              by="Region")
+  
+  # r <- c(provinces,states) %>% lapply(function(r){
+  #   geonames::GNsearch(name=r) %>% filter(fcode=="ADM1") %>% mutate(Region=r)
+  # }) %>% 
+  #   bind_rows() %>% 
+  #   group_by(Region) %>% 
+  #   top_n(1,population) %>%
+  #   select(Region,population,lat,lon) %>%
+  #   mutate_at(vars(-one_of("Region")),as.numeric)
+ 
+  rc <- world_countries %>%
+    st_set_geometry(NULL) %>%
+    filter((NAME %in% countries)|(ADMIN %in% countries),FeatureCla=="Admin-0 countries") %>% 
+    mutate(Region=ADMIN)  %>% 
+    bind_rows() %>% 
+    select(Region=ADMIN,population=POP_EST,lat=LAT,lon=LON) %>%
+    mutate(Region=as.character(Region))
+
+   visitor_data %>% 
+     left_join(bind_rows(rp,rs,rc,rcc,ro),by="Region") #%>%
+     #st_as_sf(coords = c("lon", "lat"), crs = 4326, agr = "constant",na.fail=FALSE)
+}
+
+geo_visitor_data <- mountainmathHelpers::simpleCache(visitor_data %>% geocode_visitor_data(),
+                                                    "geocoded_visitor_data.rda",path=here::here("static/data"))
+
+
+my_properties <- c(
+  "title"="Metro Vancouver overnight visitors",
+  "description"="Number of visitors staying overnight in Metro Vancouver",
+  "source.name"="Statistics Canada",
+  "source.url"="https://assets.simpleviewinc.com/simpleview/image/upload/v1/clients/vancouverbc/ytd_visitor_volume_2019_08bc91f6-e02e-4ecf-b753-fb19a1f35de5.pdf",
+  "createdBy.name"="Jens von Bergmann & Nathan Lauster",
+  "createdBy.email"="jens@mountainmath.ca",
+  "createdBy.url"="https://doodles.mountainmath.ca"   ,
+  "mapbox.mapStyle"=NA,
+  "colors.scheme"="Default",
+  "colors.darkMode"="yes",
+  "animate.flows"="yes",
+  "clustering"="no"
+)
+
+properties <- tibble(property=names(my_properties)) %>%
+  mutate(value=my_properties[property])
+locations <- geo_visitor_data %>%
+  filter(!is.na(lon)) %>%
+  #filter(!st_is_empty(.)) %>%
+  #cbind(st_coordinates(.)) %>%
+  #st_set_geometry(NULL) %>%
+  mutate(id=Region) %>%
+  select(id,name=Region,lat,lon) %>%
+  bind_rows(tibble(id="Vancouver",name="Vancouver",lat=49.282,lon=-123.1203))
+
+flows <- geo_visitor_data %>%
+  filter(!is.na(lon)) %>%
+  #filter(!st_is_empty(.)) %>%
+  #st_set_geometry(NULL) %>%
+  mutate(dest="Vancouver") %>%
+  select(origin=Region,dest,count=`YTD 2019`)
+
+update_flow=FALSE
+
+if (update_flow) {
+  library(googlesheets4)
+  my_new_sheet <- sheets_get("1WFgU9dpg0w-OKOpAnq45qjIxdrK5FshkS18XMVpmG40")
+  write_sheet(properties,my_new_sheet,"properties")
+  write_sheet(locations,my_new_sheet,"locations")
+  write_sheet(flows,my_new_sheet,"flows")
+}
+
+# map at https://flowmap.blue/1WFgU9dpg0w-OKOpAnq45qjIxdrK5FshkS18XMVpmG40
+```
+
+The spread of Coronavirus is reminding us of just how often people travel around, especially as various locations become quarantined and international travel corridors get shut down. So let's take a look at some basic data on travel patterns here of relevance to us here in Vancouver. Then we'll put them back in the context of Coronavirus.
+
+TLDR: travel data is really interesting, don't be frightened of travelers, and there's still a lot we don't know about coronavirus
+
+We've looked at the movement of people before in terms of [migration](https://homefreesociology.com/2017/05/05/good-age-specific-net-migration-estimates-come-in-threes/), [immigration](https://homefreesociology.com/2019/06/17/gateway-communities-of-vancouver/) and [commuting patterns](https://doodles.mountainmath.ca/blog/2020/01/06/flow-maps/). But these are movements that are either regularized, everyday, and routine (e.g. commuting) or shuffle people between one settled set of routines and another (e.g. migration). Travel data gives us something different, representing something more like the unsettled movement of people. People travel for work, to visit family, and of course, for tourism. The Tourism Industry is interested enough in travel data that they ask Statistics Canada to compile data for them. Stats Canada combines Canadian travel surveys and border crossing administrative data to get us a decent look at overnight stays. So it is that we get overnight stayer data for Vancouver!
+
+Let's look at where people are visiting Metro Vancouver from. The [Tourism Vancouver data](https://www.tourismvancouver.com/about/research/) has an interesting selection of countries available, with special breakdowns for Canada and the USA. More than a quarter of all overnight stays in Metro Vancouver are trips from elsewhere in British Columbia. Another quarter plus of trips arrive from elsewhere in Canada, with Ontario and Alberta leading the way. The USA accounts for just under a quarter of overnight visits. Altogether, Canada and the USA account for over 8 million of the roughly 10 million visits. Most American visitors to Metro Vancouver arrive from nearby neighbours down the Pacific Coast (WA, OR, CA), which together account for over half of travel from the USA. About as many people visit from all of Mexico as from nearby Oregon (140k).
+
+
+```{r vancouver-visitors}
+visitor_data %>% filter(!grepl("TOTAL|Iran",Region)) %>%
+  mutate(y=1/`YTD 2019`^2) %>%
+  ggplot(aes(x=reorder(Region,`YTD 2019`),y=`YTD 2019`)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  coord_flip() +
+  scale_y_continuous(labels=scales::comma,trans="sqrt",breaks=c(10000,100000,250000,500000,1000000,2000000,3000000)) +
+  labs(title="Overnight visitors to Metro Vancouver",y="2019 totals (sqrt scale)",x=NULL,
+       caption = "StatCan via Tourism Vancouver") 
+```
+
+
+Of the slightly less than two million international visitors from beyond NAFTA borders, a little over half arrive from Asian/Pacific countries, with most of the remainder from Europe. China, the UK, and Australia, Japan, India, and Germany each accounted for more than 100k visitors in 2019, South Korea, Hong Kong, and Taiwan not far behind. Let's put all these flows together on a map.
+
+<iframe width="800" height="600" src="https://flowmap.blue/1WFgU9dpg0w-OKOpAnq45qjIxdrK5FshkS18XMVpmG40/embed" frameborder="0" allowfullscreen></iframe>
+
+Of some concern, lots of the places identified above have had recent outbreaks of Coronavirus. We're still in early days of tracking the virus. And we know it's already having major effects on travel. But can we look at current prevalence estimates and recent travel patterns to give some insights into crude vector risks for Metro Vancouver? Maybe. But it's worth keeping in mind that everything is still pretty much up in the air in terms of what we know!
+
+First let's look at up-to-date active confirmed Coronavirus cases drawing on data collected at [Johns Hopkins](https://systems.jhu.edu/research/public-health/ncov/).
+
+```{r fig.height=5, fig.width=9}
+ggplot(corona_data %>% filter(Active>0) %>% st_transform(54009) %>% arrange(-Active)) +
+  geom_sf(data =world_countries,fill="lightgrey",size=0.1) +
+  geom_sf(fill="red",color="black",alpha=0.8,aes(size=Active),show.legend = "point",shape=21) +
+  scale_size_area() +
+  labs(title=paste0("Active Coronavirus COVID-19 cases ",today),caption="Johns Hopkins CSSE") +
+  coord_sf(datum=NA)
+```
+
+Wuhan, of course, appears as the centre of the outbreak, and Hubei Province in China contains most of the active confirmed cases to date (as of `r strftime(today,format="%B %d, %Y")`!) The number of cases is important to track, obviously, and the starting point for healthcare workers and epidemiologists alike. But focusing on these numbers can provide a misleading impression of how widespread the Coronavirus has become. So let’s come up with a crude estimate of prevalence instead of case numbers. Here we're going to use active confirmed cases as our starting point. Another option is to track all confirmed cases, including those who have recovered (no longer testing positive) or died from coronavirus. But active confirmed cases might arguably give us a better sense of current spread. 
+
+We can plot the evolving nature of active confirmed cases in terms of prevalence estimates across places, effectively dividing total number of active confirmed cases by population for our data reported so far. Setting this to motion, we can track outbreaks by prevalence across time. Even just looking at active confirmed cases, we get a sense that recorded prevalence has recently stopped climbing for Hubei province. Meanwhile, outbreaks in South Korea, Iran, Hong Kong, and the nearby state of Washington continue to grow. Also worth noting, some countries (e.g. South Korea) seem to have a better handle on testing the virus, providing better confidence in their numbers. The numbers coming out of other locales (Iran and the USA) seem far less reliable, either because of inconsistent testing, untrustworthy reporting by officials, or both. This sets a real limit on what we can know so far.
+
+
+
+```{r}
+
+state_translations <- c(
+  "British Columbia"="BC",
+  "Alberta"="AB",
+  "Ontario"="ON",
+  "Washington"="WA",
+  "Oregon"="OR",
+  "California"="CA",
+  "Hubei"="Hubei"
+)
+
+get_all_corona_data <- function(){
+  seq(0,41) %>% lapply(function(d) {
+  dd <- today %m+% days(-d)
+  get_corona_data_for_date(dd) %>%
+  #st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326, agr = "constant") %>%
+    select(`Province/State`, `Country/Region`,Confirmed, Deaths, Recovered) %>%  
+    mutate(Date=dd)
+}) %>% 
+  bind_rows()
+}
+
+corona_data <- mountainmathHelpers::simpleCache(get_all_corona_data(),key="corona_data.rda",path=here::here("static/data")) %>%
+  mutate(Active=Confirmed-coalesce(Deaths,0)-coalesce(Recovered,0)) %>%
+  mutate(state=gsub("^.+, ","",`Province/State`) %>% gsub(" (From Diamond Princess)","",.)) %>%
+  mutate(state=recode(state,"British Columbia"="BC"))
+
+corona_states <- corona_data %>% 
+  filter(state %in% as.character(state_translations)) %>%
+  group_by(state,Date) %>% summarize_at(c("Confirmed", "Deaths", "Recovered","Active"),sum) %>%
+  mutate(Region=set_names(names(state_translations),as.character(state_translations))[state])
+
+corona_states2 <- corona_data %>%
+  filter(state %in% as.character(state_translations) | `Province/State`=="Hubei") %>%
+  group_by(state,Date) %>% summarize_at(c("Confirmed", "Deaths", "Recovered","Active"),sum) %>%
+  mutate(Region=set_names(names(state_translations),as.character(state_translations))[state])
+
+
+corona_countries <- corona_data %>% 
+  mutate(`Country/Region`=recode(`Country/Region`,"Mainland China"="China","UK"="United Kingdom")) %>%
+  filter(`Country/Region` %in% c(visitor_data$Region)) %>%
+  group_by(Region=`Country/Region`,Date) %>% summarize_at(c("Confirmed", "Deaths", "Recovered","Active"),sum) 
+
+corona_countries2 <- corona_data %>% 
+  mutate(`Country/Region`=recode(`Country/Region`,"Mainland China"="China","UK"="United Kingdom")) %>%
+  filter(`Country/Region` %in% c(visitor_data$Region),is.na(`Province/State`) | `Province/State`!="Hubei") %>%
+  group_by(Region=`Country/Region`,Date) %>% summarize_at(c("Confirmed", "Deaths", "Recovered","Active"),sum)  %>%
+  ungroup() %>%
+  mutate(Region=recode(Region,"China"="China w/o Hubei"))
+
+
+merged_data <- geo_visitor_data %>% 
+  filter(!grepl("TOTAL",Region)) %>%
+  mutate(Region=recode(Region,"Other West U.S."="Other U.S.")) %>%
+  left_join(bind_rows(corona_states,corona_countries),by="Region") %>%
+  mutate(risk=1-(1-Active/population)^(January+February+March),
+         prevalence=Active/population)
+
+hubei_pop = 58500000
+merged_data2 <- geo_visitor_data %>% 
+  bind_rows(tibble(Region="Hubei",population=hubei_pop)) %>%
+  filter(!grepl("TOTAL",Region)) %>%
+  mutate(population=ifelse(Region=="China",population-hubei_pop,population)) %>%
+  mutate(Region=recode(Region,"Other West U.S."="Other U.S.","China"="China w/o Hubei")) %>%
+  left_join(bind_rows(corona_states2,corona_countries2),by="Region") %>%
+  mutate(risk=1-(1-Active/population)^(January+February+March),
+         prevalence=Active/population) %>%
+  mutate(prev=prevalence*100000)
+```
+
+
+```{r include=FALSE}
+corona_prevalence_path <- here::here("static/images/corona_prevalence.gif")
+if (!file.exists(corona_prevalence_path)) {
+anim <- merged_data2 %>%
+  filter(!is.na(prevalence)) %>%
+  filter(Region!="British Columbia") %>%
+  group_by(Date) %>%
+  mutate(rank = rank(-prevalence)) %>%
+  filter(rank<=10) %>%
+  ungroup %>%
+  ggplot(aes(y=rank,x=prev,group=Region,fill = log(1+prev))) +
+  geom_text(aes(x = 0, label = Region), vjust = 0.2, hjust = 1.1) +
+  #geom_bar(stat="identity",fill="purple") +
+  geom_tile(aes(x = prev/2,  width = prev, height = 0.9), alpha = 0.8, color = NA) +
+  coord_cartesian(clip = "off", expand = FALSE) +
+  labs(title="{frame_time} prevalence of corona virus",
+       y=NULL,x="Active confirmed cases per 100,000 population",
+       caption="Johns Hopkins") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_fill_viridis_c(guide = FALSE) +
+  theme(axis.line=element_blank(),
+        #axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        #axis.ticks=element_blank(),
+        axis.ticks.y=element_blank(),
+        #axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        legend.position="none",
+        panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.grid.major.x = element_line( size=.1, color="grey" ),
+        panel.grid.minor.x = element_line( size=.1, color="grey" ),
+        #plot.title=element_text(size=25, hjust=0.5, face="bold", colour="grey", vjust=-1),
+        #plot.subtitle=element_text(size=18, hjust=0.5, face="italic", color="grey"),
+        #plot.caption =element_text(size=8, hjust=0.5, face="italic", color="grey"),
+        plot.background=element_blank(),
+       plot.margin = margin(2,2, 2, 4, "cm"))
+
+animate(anim + transition_time(Date) + view_follow(fixed_y = TRUE)
+        , 200, fps = 10,  width = 800, height = 600, 
+        duration= 30,end_pause = 3,
+        renderer = gifski_renderer(corona_prevalence_path))
+}
+```
+![](/images/corona_prevalence.gif)
+
+
+Overall it needs to be stressed that - given the numbers we have so far - the prevalence of coronavirus is still very low. Even in Hubei province, the centre of the outbreak, not much more than a single active confirmed case per thousand people has been confirmed. Comparing locations of cases to surrounding populations, most places around with the world with outbreaks still see only about one active confirmed case per hundred thousand people. Even setting aside the hyper-cautious mood around the world and its effects on travel, if you met a visitor from one of these places in Metro Vancouver, it's less likely they'd be a vector for the coronavirus (one-in-a-hundred-thousand) than that you'd ultimately end up a [murder victim](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3510006801). Which is to say it's not likely at all. There's no reason to be scared of individual travelers!
+
+But what about travel patterns writ large? Surely even if any individual presents a very low risk as a vector, by sheer number, the masses of people traveling through Vancouver from places with coronavirus outbreaks represent a risk. Indeed, that's how the coronavirus has spread so far. We can very crudely estimate this risk by setting a base likelihood that each individual traveler from a given outbreak location is coronavirus-free (1 - cases / population). In other words, we might use currently acrtive confirmed cases as our measure of prevalence, estimating we can be 99.99964% certain that a given traveler from Washington State will not be a carrier for coronavirus. But what if a LOT of people travel from Washington? Then we exponentiate 0.9999964 by the number of visitors to come up with an estimate that none of these travelers carry the virus (we really should be drawing without replacement here, but this is a good approximation), with the complement giving a rough estimate of at least one visitor being a carrier. This provides us with a measure of vector risk to Metro Vancouver that combines risk of coronavirus with travel volumes. Do we know travel volumes? Not really, but we can use last year's overnight stay data as a proxy!
+
+Let's run with this for recent coronavirus outbreak data based on travel volumes similar to past years - EXCEPT excluding cases from Hubei province in China after January 23rd (when the quarantine went in place). What does our crude evolving overnight travel vector risk look like?
+
+```{r}
+corona_risk_path <- here::here("static/images/corona_risk.gif")
+if (!file.exists(corona_risk_path)) {
+anim <- merged_data2 %>%
+  filter(!is.na(risk)) %>%
+  filter(Region!="British Columbia",Region!="Hubei") %>%
+  group_by(Date) %>%
+  mutate(rank = rank(-risk)) %>%
+  filter(rank<=10) %>%
+  ungroup %>%
+  ggplot(aes(x=rank,y=risk,group=Region,fill=risk)) +
+  geom_text(aes(y = 0, label = Region), vjust = 0.2, hjust = 1,nudge_y = -0.01) +
+  #geom_bar(stat="identity",fill="purple") +
+  geom_tile(aes(y = risk/2,  height = risk, width = 0.9), alpha = 0.8, color = NA) +
+  scale_fill_viridis_c(guide = FALSE) +
+  coord_flip(clip = "off", expand = FALSE) +
+  labs(title="{frame_time} Crude in-bound overnight travel vector risk estimates for Metro Vancouver",
+       caption="Johns Hopkins, StatCan via Tourism Vancouver",
+       x=NULL,y=NULL) +
+  transition_time(Date) + 
+  theme(axis.line=element_blank(),
+        axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        legend.position="none",
+        panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.grid.major.x = element_line( size=.1, color="grey" ),
+        panel.grid.minor.x = element_line( size=.1, color="grey" ),
+        #plot.title=element_text(size=25, hjust=0.5, face="bold", colour="grey", vjust=-1),
+        #plot.subtitle=element_text(size=18, hjust=0.5, face="italic", color="grey"),
+        #plot.caption =element_text(size=8, hjust=0.5, face="italic", color="grey"),
+        plot.background=element_blank(),
+       plot.margin = margin(2,2, 2, 4, "cm"))
+  #coord_cartesian(clip = 'off')
+
+animate(anim, 200, fps = 10,  width = 800, height = 600, 
+        duration= 30,end_pause = 3,
+        renderer = gifski_renderer(corona_risk_path))
+}
+```
+
+![](/images/corona_risk.gif)
+
+Here we can see rapidly changing vector possibilities. Conditions are changing fast! Still, it's hard to know how much to trust these numbers. Given what we understand about testing at the moment, it's likely we're still overstating the risk from high quality testing locales ([South Korea](https://www.nytimes.com/2020/03/02/health/coronavirus-testing-cdc.html#click=https://t.co/6lRUKPH5PH)), as well as understating the risk from places where testing has been poor (Washington) and places where we don't have any visitor data at all (Iran). We're also missing current data on how travel is changing as well as data on where people from Metro Vancouver are traveling, which is a big deal given that most of our cases so far represent returned travelers from abroad.
+
+Here is a still of the most recent snapshot as of the writing of this.
+
+```{r include=FALSE}
+newest_date <- merged_data2$Date %>% na.omit %>% max()
+merged_data2 %>%
+  filter(!is.na(Date)) %>%
+  filter(Date==newest_date) %>%
+  filter(!is.na(risk)) %>%
+  filter(Region!="British Columbia",Region!="Hubei") %>%
+  mutate(rank = rank(-risk)) %>%
+  filter(rank<=10) %>%
+  ggplot(aes(x=rank,y=risk,group=Region,fill=risk)) +
+  geom_text(aes(y = 0, label = Region), vjust = 0.2, hjust = 1,nudge_y = -0.01) +
+  #geom_bar(stat="identity",fill="purple") +
+  geom_tile(aes(y = risk/2,  height = risk, width = 0.9), alpha = 0.8, color = NA) +
+  scale_fill_viridis_c(guide = FALSE) +
+  coord_flip(clip = "off", expand = FALSE) +
+  labs(title=paste0(newest_date," Crude in-bound overnight travel\nvector risk estimates for Metro Vancouver"),
+       caption="Johns Hopkins, StatCan via Tourism Vancouver",
+       x=NULL,y=NULL) +
+  theme(axis.line=element_blank(),
+        axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        legend.position="none",
+        panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.grid.major.x = element_line( size=.1, color="grey" ),
+        panel.grid.minor.x = element_line( size=.1, color="grey" ),
+        #plot.title=element_text(size=25, hjust=0.5, face="bold", colour="grey", vjust=-1),
+        #plot.subtitle=element_text(size=18, hjust=0.5, face="italic", color="grey"),
+        #plot.caption =element_text(size=8, hjust=0.5, face="italic", color="grey"),
+        plot.background=element_blank(),
+       plot.margin = margin(2,2, 2, 4, "cm"))
+```
+
+## Upshot
+So here are the big takeaways from our exercise: 1) Visitor data to Metro Vancouver is actually really interesting, even for those outside of the tourism business. 2) Don’t shun travelers from abroad! The likelihood of anyone you meet, even coming from an outbreak centre, being a carrier of coronavirus is very, very low. 3) The combination of travel patterns plus coronavirus prevalence gives us some interesting ways to model evolving vector risks in Metro Vancouver. 4) But it’s not clear how much we should trust our data. Travel patterns have surely altered, and we need better coronavirus testing fast, especially in places like Washington State.
+
+Overall, integrating travel data with coronavirus data may, if nothing else, help people and agencies prepare and plan better. Practically any planning is better than some of the ad hoc decisions being made out there, as when American Airlines susppended its flights to Milan only after [pilots refused to fly there](https://www.cnbc.com/2020/03/01/united-postpones-new-pilot-class-amid-coronavirus-outbreak.html). For most people, the important thing is to listen to local health agencies, like the [BC Centre for Disease Control](http://www.bccdc.ca/health-info/diseases-conditions/coronavirus-(novel)), wash your hands, and be kind to those around you, wherever they come from. 
+
+As usual, the code for the post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-03-03-overnight-visitors-and-crude-travel-vectors.Rmarkdown) in case anyone wants to refine or adapt it for their own purposes.
+
+
