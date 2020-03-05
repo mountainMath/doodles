@@ -85,4 +85,5 @@ Overall, integrating travel data with coronavirus data may, if nothing else, hel
 
 As usual, the code for the post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-03-03-overnight-visitors-and-crude-travel-vectors.Rmarkdown) in case anyone wants to refine or adapt it for their own purposes.
 
-
+## Update (2020-03-04)
+For a look at how the professionals are joining international travel data to coronavirus data, see [Gardner (et al) (now unfortunately outdated!)](https://systems.jhu.edu/research/public-health/ncov-model-2/)
