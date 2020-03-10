@@ -74,6 +74,8 @@ In all of this it is important to remember that census unoccupied counts were ta
 
 Bottom line is that a much more reasonable expectation of the number of homes that may be targeted by a West Vancouver empty homes tax at this point is around 221, the [number of vacant homes paying the SVT](https://news.gov.bc.ca/files/SVT_Consultation_All.pdf).
 
+![](https://doodles.mountainmath.ca/images/west_van_svt.png)
+
 The next two *whereas* speak to revenue expectations.
 
 >    AND WHEREAS the Province reported that in 2018, $58 million was collected under the Speculation and Vacancy Tax program, and that $6.6 million of that was collected from West Vancouver homeowners;
