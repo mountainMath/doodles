@@ -1,0 +1,624 @@
+---
+title: Behaviour change in response to COVID-19
+author: Jens von Bergmann
+date: '2020-03-22'
+slug: behaviour-change-in-response-to-covid-19
+categories:
+  - Surrey
+  - covid-19
+  - geeky
+  - Transportation
+tags: []
+description: "Looking into real-time metrics to measure behaviour change."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2020-03-22-behaviour-change-in-response-to-covid-19_files/figure-html/traffic_change-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width=8,
+	cache=TRUE
+)
+library(tidyverse)
+library(sf)
+library(mountainmathHelpers)
+library(lubridate)
+library(httr)
+```
+
+With COVID-19 cases growing exponentially, Canada has introduced sweeping restrictions to curb the spread of the virus. People are asked to practice *social distancing*, work from home if possible, keep shopping trips to a minimum, keep a distance of at least 6 feet to people outside of their household, universities and schools have been closed, and travel has been restricted.
+
+## Why *social distancing*?
+Just in case it's not clear what the problem is, let's take a look at the trajectory we are currently on. John Burn-Murdoch has been doing [excellent graphing of case trajectories](https://twitter.com/jburnmurdoch/status/1241820436167643138?s=20) at the Financial Times, we will adapt this method to understand Canada's situation, focusing on other western countries as comparables.
+
+```{r fig.height=7}
+get_ecdc_data <- function(){
+  url <- paste("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-",format(today, "%Y-%m-%d"), ".xlsx", sep = "")
+  GET(url, authenticate(":", ":", type="ntlm"), write_disk(tf <- tempfile(fileext = ".xlsx")))
+  data <- readxl::read_excel(tf) %>%
+    mutate(Date=as.Date(DateRep))
+}
+
+today=as.Date("2020-03-22")
+
+get_jhs_data_for_date <- function(date){
+  if (is.character(date)) data=as.Date(date)
+  read_csv(paste0("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/",strftime(date,"%m-%d-%Y"),".csv"),progress=FALSE)
+}
+get_all_jhs_data <- function(){
+  seq(0,80) %>% lapply(function(d) {
+  dd <- today %m+% days(-d)
+  print(dd)
+  print(d)
+  tryCatch({
+    get_jhs_data_for_date(dd) %>%
+  #st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326, agr = "constant") %>%
+    select(`Province/State`, `Country/Region`,Confirmed, Deaths, Recovered) %>%  
+    mutate(Date=dd)
+  },
+  error = function(cond) {
+    print("No data found")
+    NULL
+  })
+}) %>% 
+  bind_rows()
+}
+
+# jhs_data <- simpleCache(get_all_jhs_data(),"jhs_data_2020-03-21") %>%
+#   mutate(`Country/Region`=recode(`Country/Region`, "Taipei and environs"="Taiwan")) %>%
+#   select(-`Province/State`) %>%
+#   group_by(Date,`Country/Region`) %>%
+#   summarise_all(sum,na.rm=TRUE) %>%
+#   group_by(`Country/Region`) %>%
+#   filter(Confirmed>=100) %>%
+#   mutate(d=difftime(Date,min(Date),units="days") %>% as.integer)
+# 
+# top_10 <- jhs_data %>% 
+#   ungroup %>% 
+#   filter(Date==max(Date)) %>% 
+#   top_n(10,Confirmed) %>% 
+#   pull(`Country/Region`) %>%
+#   setdiff(c("China","Iran")) %>%
+
+ecdc_data <- simpleCache(get_ecdc_data(),"ecdc_2020-03-22") %>%
+  mutate(`Countries and territories`=recode(`Countries and territories`,"CANADA"="Canada")) %>%
+  mutate(`Countries and territories`=gsub("_"," ",`Countries and territories`)) 
+
+top_10 <- ecdc_data %>% 
+  filter(Date==max(Date)) %>% 
+  top_n(10,Cases) %>% 
+  pull(`Countries and territories`) %>%
+  setdiff(c("China","Iran","Belgium","Netherlands"))
+
+
+# jhs_data %>%
+#   filter(`Country/Region` %in% c(top_10,"Canada")) %>%
+  
+maxpd=20
+maxpd2=20
+intercept=100
+intercept2=209
+
+plot_data <- ecdc_data %>% 
+  filter(`Countries and territories` %in% c("Canada",top_10)) %>%
+  mutate(`Countries and territories`=factor(`Countries and territories`,levels=c("Canada",top_10))) %>%
+  mutate(`Countries and territories`=fct_recode(`Countries and territories`,
+                                                "USA"="United States of America",
+                                                "UK"="United Kingdom")) %>%
+  group_by(`Countries and territories`) %>%
+  arrange(Date) %>%
+  mutate(Confirmed=cumsum(Cases),CumulativeDeaths=cumsum(Deaths)) 
+  #mutate(Confirmed=Confirmed/min(Confirmed)) %>%
+  
+death_labels <- c("None","1-9","10-24","25-49","50-99","100 or more")
+death_colours <- setNames(c("white",RColorBrewer::brewer.pal(5,"YlOrRd")),death_labels)
+
+plot_data %>%
+  filter(Confirmed>=100) %>%
+  mutate(nx = ifelse(as.character(`Countries and territories`) %in%
+                       c("Spain","USA","Switzerland"), -1,1)) %>% 
+  mutate(d=difftime(Date,min(Date),units="days") %>% as.integer) %>%
+  mutate(dd=cut(Deaths,breaks=c(-Inf,0.5,9.5,24.5,49.5,99.5,Inf),labels=death_labels)) %>%
+  ggplot(aes(x=d,y=Confirmed,color=`Countries and territories`)) +
+  geom_line(data=tibble(x=c(0,maxpd),y=c(intercept,intercept*2**(maxpd/3))),aes(x=x,y=y),
+            linetype="dashed",
+            inherit.aes = FALSE) +
+  geom_line(data=tibble(x=c(0,maxpd),y=c(intercept2,intercept2*2**(maxpd/3))),aes(x=x,y=y),
+            linetype="dashed",
+            inherit.aes = FALSE) +
+  geom_text(data=tibble(x=10,y=25000),aes(x=x,y=y),
+            label="doubling every 3 days",
+            size=3,
+            hjust=0.5,
+            inherit.aes = FALSE) +
+  geom_curve(data=tibble(x=10,y=22000,xend=15,yend=3100),
+             aes(x=x,y=y,xend=xend,yend=yend),
+             arrow = arrow(length = unit(0.02, "npc"), type = "closed"),
+             curvature = 0.1,inherit.aes = FALSE) +
+  geom_curve(data=tibble(x=10,y=22000,xend=17.5,yend=12000),
+             aes(x=x,y=y,xend=xend,yend=yend),
+             arrow = arrow(length = unit(0.02, "npc"), type = "closed"),
+             curvature = -0.1,inherit.aes = FALSE) +
+  geom_line(size=0.5) +
+  geom_point(size=2,shape=21) +
+  scale_fill_manual(values=death_colours) +
+  theme_bw() +
+  ggrepel::geom_text_repel(data=~filter(.,d==max(d)),
+                           aes(label=`Countries and territories`,hjust=-1.5*nx+1),
+                            color="black") +
+  scale_y_continuous(labels=scales::comma,trans="log10") +
+  theme(legend.position = "bottom",legend.box="vertical") +
+  #guides(color=guide_legend(nrow=3,byrow=TRUE)) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(title="Confirmed Covid-19 cases since 100th case",
+       x="Days since 100th case",y="Confirmed cases (log scale)",
+       caption=paste0("MountainMath, ECDC (as of ",max(plot_data$Date),")"),
+       color="Country",fill="Daily deaths")
+```
+
+The log scale graph is useful to capture the exponential nature of the growth of cases. All these countries lie roughly in the band of doubling cases every 3 days. "Flattening the curve" means lowering the slope of the trajectory, "planking" means to get the slope to be horizontal.
+
+Canada falls right into this band of doubling every 3 days, but is roughly 6 days behind the UK, 9 days behind the US and Spain, 11 days behind France and Germany and 17 days behind Italy. Some countries are showing evidence of modest flattening, for example the trajectory of the last 6 days in Italy is displaying a slightly lower slope (growth rate) than the previous trend. But that's only a small consolidation, especially given how far out on the curve Italy is. None of these countries come close to "plank" their curve yet.
+
+Looking at deaths is another way to compare countries and see how we are fairing. 
+
+```{r}
+intercept <- 10
+intercept2 <- 28
+ 
+plot_data %>%
+  filter(CumulativeDeaths>=10) %>%
+  mutate(nx = ifelse(as.character(`Countries and territories`) %in%
+                       c("Spain","Italy","France","UK"), -1,1)) %>% 
+  mutate(d=difftime(Date,min(Date),units="days") %>% as.integer) %>%
+  mutate(dd=cut(Deaths,breaks=c(-Inf,0.5,9.5,24.5,49.5,99.5,Inf),labels=death_labels)) %>%
+  ggplot(aes(x=d,y=CumulativeDeaths,color=`Countries and territories`)) +
+  geom_line(data=tibble(x=c(0,maxpd),y=c(intercept,intercept*2**(maxpd/3))),aes(x=x,y=y),
+            linetype="dashed",
+            inherit.aes = FALSE) +
+  geom_line(data=tibble(x=c(0,maxpd),y=c(intercept2,intercept2*2**(maxpd/3))),aes(x=x,y=y),
+            linetype="dashed",
+            inherit.aes = FALSE) +
+  geom_text(data=tibble(x=22,y=300),aes(x=x,y=y),
+            label="doubling every 3 days",
+            size=3,
+            hjust=0.5,
+            inherit.aes = FALSE) +
+  geom_curve(data=tibble(x=22,y=350,xend=17,yend=500),
+             aes(x=x,y=y,xend=xend,yend=yend),
+             arrow = arrow(length = unit(0.02, "npc"), type = "closed"),
+             curvature = 0.1,inherit.aes = FALSE) +
+  geom_curve(data=tibble(x=22,y=350,xend=17.5,yend=1600),
+             aes(x=x,y=y,xend=xend,yend=yend),
+             arrow = arrow(length = unit(0.02, "npc"), type = "closed"),
+             curvature = 0.1,inherit.aes = FALSE) +
+  geom_line(size=0.5) +
+  geom_point(size=2,shape=21) +
+  theme_bw() +
+  ggrepel::geom_text_repel(data=~filter(.,d==max(d)),
+                           aes(label=`Countries and territories`,hjust=-1.5*nx+1),
+                            color="black") +
+  scale_y_continuous(labels=scales::comma,trans="log10") +
+  theme(legend.position = "bottom",legend.box="vertical") +
+  #guides(color=guide_legend(nrow=3,byrow=TRUE)) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(title="Covid-19 deaths since 10th death",
+       x="Days since 10th death",y="Deaths (log scale)",
+       caption=paste0("MountainMath, ECDC (as of ",today,")"),color="Country")
+```
+
+Starting at lower cutoff of 10 deaths adds to the volatility of the graph, especially at the beginning. But countries further ahead seem to again approach the slope of doubling every 3 days. If Canada follows the same trend of doubling every 3 days, then Canada is 4 days behind Germany, 7 days behind the UK, and 12 days behind France. 
+
+
+After initial seeding, the exponential growth of the virus is driven by local transmissions. In Canada we are now seeing internal travel restrictions, it makes sense to also take a look at local growth rates. Unfortunately, Canada does not publish official data, but the [*COVID-19 Canada Open Data Working Group* has manually assembled Canadian data](https://github.com/ishaberry/Covid19Canada) and made them available for others to use.
+
+```{r include=FALSE}
+data_sheet <- googlesheets4::sheets_get("1D6okqtBS3S2NRC7GFVHzaZ67DuTw7LX49-fqSLwJyeo")
+covid_cases <- googlesheets4::read_sheet(data_sheet,"Cases",skip=2) %>%
+  mutate(Date=as.Date(date_report))
+```
+
+```{r}
+start_cutoff=20
+
+provincial_data <- covid_cases %>% 
+  group_by(province,Date) %>%
+  summarize(count=n()) %>%
+  group_by(province) %>%
+  arrange(Date) %>%
+  mutate(total=cumsum(count)) %>%
+  ungroup %>%
+  bind_rows((.) %>% 
+              group_by(Date) %>%
+              summarize(count=sum(count)) %>%
+              ungroup %>%
+              arrange(Date) %>%
+              mutate(total=cumsum(count)) %>%
+              mutate(province="Canada")) %>%
+  filter(total>=start_cutoff) %>%
+  group_by(province) %>%
+  mutate(d=difftime(Date,min(Date),units="days")) %>%
+  mutate(maxd=max(d)) %>%
+  ungroup %>%
+  filter(province %in% filter(.,maxd>5)$province) %>%
+  mutate(province=recode(province,"BC"="British Columbia"))
+
+
+maxpd = max(provincial_data$d) %>% as.integer()
+maxpd2 = 16
+intercept = filter(provincial_data,d==min(d))$total %>% as.integer() %>% mean
+
+ggplot(provincial_data,aes(x=as.integer(d),y=total,color=province)) +
+  scale_y_continuous(trans="log10") +
+  #geom_smooth(method="lm",alpha=0.3,size=0.5) +
+  geom_line(size=1) +
+  geom_point(size=2,shape=21,alpha=0.5) +
+  geom_line(data=tibble(x=c(0,maxpd),y=c(intercept,intercept*2**(maxpd/4.5))),aes(x=x,y=y),
+            linetype="dashed",
+            inherit.aes = FALSE) +
+  geom_line(data=tibble(x=c(0,maxpd2),y=c(intercept,intercept*2**(maxpd2/2.5))),aes(x=x,y=y),
+            linetype="dashed",
+            inherit.aes = FALSE) +
+  scale_color_brewer(palette = "Dark2",guide=FALSE) +
+  geom_text(data=~filter(group_by(.,province),d==max(d)),
+            # aes(label=province, 
+            #     hjust=1.2*(as.numeric(d>5)-0.5)*2),
+            aes(label=province), hjust=1.1,
+            size=4,
+            vjust=0) +
+  geom_text(data=tibble(x=13,y=50),aes(x=x,y=y),
+            label="doubling every 4.5 days",
+            size=3,
+            hjust=0.5,
+            inherit.aes = FALSE) +
+  geom_curve(data=tibble(x=13,y=55,xend=13,yend=140),
+             aes(x=x,y=y,xend=xend,yend=yend),
+             arrow = arrow(length = unit(0.02, "npc"), type = "closed"),
+             curvature = 0.1,inherit.aes = FALSE) +
+  geom_text(data=tibble(x=10,y=1000),aes(x=x,y=y),
+            label="doubling every 2.5 days",
+            size=3,
+            hjust=0.5,
+            inherit.aes = FALSE) +
+  geom_curve(data=tibble(x=10,y=900,xend=10,yend=380),
+             aes(x=x,y=y,xend=xend,yend=yend),
+             arrow = arrow(length = unit(0.02, "npc"), type = "closed"),
+             curvature = 0.1,inherit.aes = FALSE) +
+  labs(title="COVID-19 cases in select Canadian provinces",
+       subtitle = paste0("As of ",max(provincial_data$Date)),
+       x=paste0("Days after reporting at least ",start_cutoff," cases"),
+       y="Number of cases (log scale)",color="Health Region",
+       caption="MountainMath, Data: COVID-19 Canada Open Data Working Group")
+```
+
+Drilling down even further we can look at health regions.
+
+```{r}
+all_data <- covid_cases %>% 
+  group_by(health_region,Date) %>%
+  summarize(count=n()) %>%
+  group_by(health_region) %>%
+  arrange(Date) %>%
+  mutate(total=cumsum(count))
+ 
+regions <- all_data %>%
+  group_by(health_region) %>%
+  filter(Date==max(Date)) %>%
+  ungroup() %>%
+  filter(total>=50) %>%
+  filter(health_region != "Not Reported") %>%
+  filter(health_region != "Toronto") %>%
+  pull(health_region)
+
+plot_data <- all_data %>%
+  ungroup %>%
+  filter(health_region %in% regions) %>%
+  filter(Date>=as.Date("2020-03-01")) %>%
+  filter(total>=9) %>%
+  # bind_rows(tibble(health_region=c("Vancouver Coastal","Fraser","Toronto","Calgary"),
+  #                  Date=rep(as.Date("2020-03-20"),4),
+  #                  total=c(200,95,161,126))) %>%
+  group_by(health_region) %>%
+  mutate(d=difftime(Date,min(Date),units="days"))
+maxd = max(plot_data$d) %>% as.integer()
+
+ggplot(plot_data,aes(x=as.integer(d),y=total,color=health_region)) +
+  scale_y_continuous(trans="log10") +
+  #geom_smooth(method="lm",alpha=0.3,size=0.5) +
+  geom_line(size=1) +
+  geom_point(size=2,shape=21,alpha=0.5) +
+  geom_line(data=tibble(x=c(0,maxd),y=c(10,10*2**(maxd/4))),aes(x=x,y=y),
+            linetype="dashed",
+            inherit.aes = FALSE) +
+  scale_color_brewer(palette = "Dark2",guide=FALSE) +
+  geom_text(data=tibble(x=15,y=50),aes(x=x,y=y),
+            label="doubling every 4 days",
+            size=3,
+            hjust=0.5,
+            inherit.aes = FALSE) +
+  geom_text(data=~filter(.,d==max(d)),
+            aes(label=health_region),
+            size=4,
+            vjust=0,
+            hjust=1.2) +
+  geom_curve(data=tibble(x=15,y=55,xend=15,yend=130),
+             aes(x=x,y=y,xend=xend,yend=yend),
+             arrow = arrow(length = unit(0.02, "npc"), type = "closed"),
+             curvature = 0.1,inherit.aes = FALSE) +
+  labs(title="COVID-19 cases in select Canadian health regions",
+       subtitle = paste0("As of ",max(plot_data$Date)),
+       x="Days after reporting around 10 cases",
+       y="Number of cases (log scale)",color="Health Region",
+       caption="MountainMath, Data: COVID-19 Canada Open Data Working Group")
+```
+
+As we drill down into smaller regions, the numbers get more volatile, but they help in understanding how the local growth progresses. We start at a fairly low cutoff of 20 and 10 cases to get decent length timelines.
+
+The slope of these graphs corresponds to the growth rate of confirmed cases, the stabilize around a doubling every 4 days. Differences in slope can indicate different local rates of growth, but they can also be impacted by changes in testing. Confirmed cases only make up a portion of all infections, some go undetected. For example, group of US scientists [estimated that about 85% of infections in Wuhan were undocumented](https://science.sciencemag.org/content/early/2020/03/13/science.abb3221). Detection rates will vary across countries, but a difference in detection rates that's constant over time will not impact the growth rates in our log-graph. But when the detection rates change over time, it does impact the slope. This can happen when testing is increasing over time.
+
+
+## The solution
+To deal with the virus we need to slow down the growth rate, ideally to zero. In absence of having a vaccine, our only way to do this is to change people's behaviour. If people stay away from each other, wash their hands with soap regularly, and don't touch their face, the growth rate can be slowed down significantly. That's the idea behind *social distancing*. But changing behaviour is hard, and the ways people respond to calls for social distancing varies.
+
+As we have seen in Europe, and are now seeing in Canada, government will impose successively more restrictive conditions when people don't follow the *social distancing* guidelines. And all of this costs time. Time we don't have.
+
+## The laggy steering wheel
+We have seen early on in the example of Wuhan that measures we are implementing today will only become visible in the data in about two weeks in the future.
+
+{{<tweet 1241413598989041666>}}
+
+Changes in behaviour today means the number of people getting infected tomorrow will be lower than otherwise. These infected people won't develop symptoms until after [on average 5 days](https://www.who.int/news-room/q-a-detail/q-a-coronaviruses), sometimes it can take up to 14 days. These people may watch the symptoms for a couple of days (hopefully self-isolating) until they request a test. Depending on the local protocol, they will get tested within a couple of days. Then it takes a couple of days for the results to come in and get reported (BC did not report any cases yesterday, we will have to wait until 10 am Monday to get the update for Sunday), and then make it into the data feeds and the newspapers for people to see. In other words, we don't know how effective our behaviour change is until two weeks later.
+
+The New York Times has a [great article highlighting Italy's journey to more effective social distancing](https://www.nytimes.com/2020/03/21/world/europe/italy-coronavirus-center-lessons.html?referringSource=articleShare). People tend to react to what they see right now and aren't wired to react today to what we expect to see in two weeks time.
+
+There are several ways to attack this problem. One is to do a better job explaining why we act now while the numbers still seem relatively low. Another is to reduce the time it takes for infected people to enter the official statistics. We can encourage people to seek testing earlier and increase the turnaround time for tests and set up live centralized data feeds for reporting new cases that makes it easy for news outlets to report in a timely manner.
+
+In the meantime we should find alternative live measure of behaviour change. Italy has used cell phone mobility data to understand population-level compliance with social distancing.
+
+## Traffic As a Live Measure
+One way to measure real-time behaviour change is to look at traffic. People have already been [looking at change in congestion](https://twitter.com/jburnmurdoch/status/1241730634109894656?s=20) as a metric for how people change behaviour due to COVID-19, others have looked at [changes in transit ridership](https://twitter.com/JeromeMayaud/status/1241435854867922946?s=20). 
+
+Here in Vancouver we can also look at [congestion](https://twitter.com/vb_jens/status/1241762841381580800?s=20), but it is hard do estimate changes in traffic from changes in congestion. [TransLink aggregate ridership data](https://www.translink.ca/Plans-and-Projects/Accountability-Centre/Ridership.aspx) has a significant lag and only monthly temporal resolution, so it isn't useful for this.
+
+A good way to understand change in traffic due to COVID-19 is to look at traffic loop counts. [Surrey Open Data makes traffic loop counts available](https://data.surrey.ca/dataset/traffic-loop-count). We already looked at this to estimate the [traffic impact of school dropoff and pickup traffic](https://doodles.mountainmath.ca/blog/2018/01/09/school-traffic/).
+
+
+```{r}
+get_surrey_loop_locations <- function(refresh=FALSE){
+  simpleCache(read_sf("http://gis.surrey.ca:8080/fmedatastreaming/TrafficLoopCount/TrafficLoops.fmw") %>% 
+                cbind(st_coordinates(.)),
+              "surrey_loop_locations_2020-03-22")
+}
+
+get_surry_loop_counts <- function(day,day2=NULL,refresh=FALSE){
+  if (is.null(day2)) day2=day
+  cache_key=paste0("surrey_loop_counts",day,"_",day2,".Rda")
+  url=paste0("http://gis.surrey.ca:8080/fmedatastreaming/TrafficLoopCount/TrafficLoopCounts.fmw?startdatetime=",day,"T00:00:00&enddatetime=",day2,"T23:59:59")
+  simpleCache(jsonlite::fromJSON(url),cache_key)
+}
+
+```
+
+```{r}
+loop_locations <- get_surrey_loop_locations()
+
+pedestrian <- function(LOOP_ID) grepl("-25$|-26$|-27$|-28$",LOOP_ID)
+
+week4 <- get_surry_loop_counts("2020-03-22","2020-03-22") %>% mutate(week=4)
+week3 <- get_surry_loop_counts("2020-03-15","2020-03-21") %>% mutate(week=3)
+week2 <- get_surry_loop_counts("2020-03-08","2020-03-14") %>% mutate(week=2)
+week1 <- get_surry_loop_counts("2020-03-01","2020-03-07") %>% mutate(week=1)
+week0 <- get_surry_loop_counts("2020-02-23","2020-02-29") %>% mutate(week=0)
+
+control4 <- get_surry_loop_counts("2019-03-24","2019-03-24") %>% mutate(week=4)
+control3 <- get_surry_loop_counts("2019-03-17","2019-03-23") %>% mutate(week=3)
+control2 <- get_surry_loop_counts("2019-03-10","2019-03-16") %>% mutate(week=2)
+control1 <- get_surry_loop_counts("2019-03-03","2019-03-09") %>% mutate(week=1)
+control0 <- get_surry_loop_counts("2019-02-24","2019-03-02") %>% mutate(week=0)
+
+weeks <- bind_rows(week0,week1,week2,week3,week4)
+controls <- bind_rows(control0,control1,control2,control3,control4)
+
+spring_break <- tibble(Date=c("2019-03-17","2020-03-15"),Date2=c("2019-03-25","2020-03-23"),
+                       type=c("2019","2020")) %>%
+  mutate(Date=as.POSIXct(Date),Date2=as.POSIXct(Date2))
+
+weeks_loops <- weeks$LOOP_ID %>% unique
+controls_loops <- controls$LOOP_ID %>% unique
+
+common_loops <- intersect(controls_loops,weeks_loops)
+
+common_car_loops <- common_loops[!pedestrian(common_loops)]
+```
+
+
+```{r}
+summarize_all_loops <- function(data) {
+  data %>%
+    group_by(DATETIME,week) %>% 
+    summarize(TRAFFIC_COUNT=sum(TRAFFIC_COUNT))
+}
+
+plot_data <- bind_rows(weeks %>% 
+                         filter(LOOP_ID %in% common_car_loops) %>%
+                         summarize_all_loops() %>% 
+                         mutate(type="2020"),
+                       controls %>% 
+                         filter(LOOP_ID %in% common_car_loops) %>%
+                         summarize_all_loops() %>% 
+                         mutate(type="2019")) %>%
+  mutate(Date=strptime(paste0(.data$DATETIME,"00"),format="%Y-%m-%dT%H:%M:%S%z") %>% as.POSIXct()) 
+```
+
+
+```{r}
+plot_data %>% 
+  filter(strftime(Date,"%H:%M:%S")!="00:00:00") %>% # drop unreliable counts in database update window
+  # mutate(Date=case_when(type=="2019" ~ .data$Date + lubridate::days(364),
+  #                    TRUE ~ .data$Date)) %>%
+  ggplot(aes(x=Date,y=TRAFFIC_COUNT,colour=type,group=type)) +
+  geom_rect(data=spring_break,
+            inherit.aes = FALSE,
+            aes(xmin=Date,xmax=Date2,fill="Spring break"),
+            ymin=-Inf,ymax=Inf,alpha=0.5) +
+  scale_fill_manual(values=c("Spring break"="grey80")) +
+  geom_line() +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels=scales::comma) +
+  scale_color_manual(values=c("2019"="steelblue","2020"="brown"),labels=c("2020"="2020","2019"="Previous year")) +
+  facet_wrap("type",scales="free_x",ncol=1) +
+  geom_smooth(se=FALSE,n=4*7*2) +
+  labs(title="Surrey traffic loop counts",
+       x=NULL,y="Aggregate traffic loop counts",
+       fill=NULL, colour=NULL,
+       caption="MountainMath, Surrey Open Data") 
+```
+
+We see that overall 2020 traffic levels were higher than 2019 levels, but that reversed in the past week when 2020 traffic levels dropped.
+
+To compare this more easily we can shift the 2019 data forward so that the respective spring break periods match up plot both on the same graph, focusing in on the past two weeks.
+
+
+```{r traffic_change}
+plot_data %>% 
+  filter(week >= 2) %>%
+  filter(strftime(Date,"%H:%M:%S")!="00:00:00") %>% # drop unreliable counts in database update window
+  filter(strftime(Date,"%H:%M:%S")!="23:45:00") %>% # drop unreliable counts in database update window
+  mutate(Date=case_when(type=="2019" ~ .data$Date + lubridate::days(364),
+                     TRUE ~ .data$Date)) %>%
+  ggplot(aes(x=Date,y=TRAFFIC_COUNT,colour=type,group=type)) +
+  geom_rect(data=spring_break %>% filter(type=="2020"),
+            inherit.aes = FALSE,
+            aes(xmin=Date,xmax=Date2,fill="Spring break"),
+            ymin=-Inf,ymax=Inf,alpha=0.5) +
+  scale_fill_manual(values=c("Spring break"="grey80")) +
+  geom_line() +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_x_datetime(labels=function(d)strftime(d,"%a %b %d"),
+                   date_breaks="1 day",guide = guide_axis(n.dodge = 2)) +
+  scale_y_continuous(labels=scales::comma) +
+  scale_color_manual(values=c("2019"="steelblue","2020"="brown"),labels=c("2020"="2020","2019"="Previous year")) +
+  geom_smooth(se=FALSE,n=4*7*2) +
+  labs(title="Surrey traffic loop counts",
+       x=NULL,y="Aggregate traffic loop counts",
+       fill=NULL, colour=NULL,
+       caption="MountainMath, Surrey Open Data") 
+```
+
+Here we see how social distancing has evolved over time. We observe how the 2020 numbers change from exceeding 2019 traffic counts before the spring break weekend to increasing falling below them during the first week of spring break.
+
+We can zoom into that even further by computing the percent change in traffic compared to last year and see how that changes over time.
+
+```{r}
+pd2 <- plot_data %>% 
+  #filter(week %in% c(2,3)) %>%
+  filter(strftime(Date,"%H:%M:%S")!="00:00:00") %>% # drop unreliable counts in database update window
+  filter(strftime(Date,"%H:%M:%S")!="23:45:00") %>% # drop unreliable counts in database update window
+  mutate(Date=case_when(type=="2019" ~ .data$Date + lubridate::days(364),
+                     TRUE ~ .data$Date)) %>%
+  ungroup %>%
+  mutate(Day=strftime(Date,"%Y-%m-%d") %>% 
+           paste0(.,"T12") %>% 
+           strptime(format = "%Y-%m-%dT%H") %>% 
+           as.POSIXct()) %>%
+  group_by(Day,type) %>%
+  summarize(TRAFFIC_COUNT=sum(TRAFFIC_COUNT)) %>%
+  ungroup %>%
+  #select(Date,type,TRAFFIC_COUNT) %>%
+  group_by(Day) %>%
+  pivot_wider(names_from = type,values_from = TRAFFIC_COUNT) %>%
+  mutate(difference=`2020`-`2019`,ratio=pmax(500,`2020`)/pmax(500,`2019`)) %>%
+  ungroup
+
+ggplot(pd2,aes(x=Day,y=ratio-1,group=1)) +
+  geom_rect(data=spring_break %>% filter(type=="2020"),
+            inherit.aes = FALSE,
+            aes(xmin=Date,xmax=Date2,fill="Spring break"),
+            ymin=-Inf,ymax=Inf,alpha=0.5) +
+  scale_fill_manual(values=c("Spring break"="grey90")) +
+  geom_bar(stat="identity",fill="steelblue") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_x_datetime(labels=function(d)strftime(d,"%a %b %d"),
+                   breaks = strptime("2020-02-23T12",format="%Y-%m-%dT%H") %>% 
+                     as.POSIXct() + days(seq(0,27,2)),
+                   guide = guide_axis(n.dodge = 2)) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Surrey daily traffic loop counts",
+       x=NULL,y="Change of 2020 to 2019 traffic volumes",
+       fill=NULL, colour=NULL,
+       caption="MountainMath, Surrey Open Data") 
+```
+
+There is quite a bit of volatility in the data, with a clear successive decrease in traffic volumes in the past week. Behaviour change takes time for people to follow through with, and increasing government restrictions facilitate this too.
+
+
+```{r}
+pd3 <- plot_data %>% 
+  #filter(week %in% c(2,3)) %>%
+  filter(strftime(Date,"%H:%M:%S")!="00:00:00") %>% # drop unreliable counts in database update window
+  filter(strftime(Date,"%H:%M:%S")!="23:45:00") %>% # drop unreliable counts in database update window
+  mutate(Date=case_when(type=="2019" ~ .data$Date + lubridate::days(364),
+                     TRUE ~ .data$Date)) %>%
+  ungroup %>%
+  mutate(Day=strftime(Date,"%Y-%m-%d") %>% as.Date) %>%
+  mutate(Hour=strftime(Date,"%Y-%m-%dT%H") %>% strptime("%Y-%m-%dT%H") %>% as.POSIXct()) %>%
+  group_by(Hour,type) %>%
+  summarize(TRAFFIC_COUNT=sum(TRAFFIC_COUNT)) %>%
+  ungroup %>%
+  #select(Date,type,TRAFFIC_COUNT) %>%
+  group_by(Hour) %>%
+  pivot_wider(names_from = type,values_from = TRAFFIC_COUNT) %>%
+  mutate(difference=`2020`-`2019`,ratio=pmax(500,`2020`)/pmax(500,`2019`)) %>%
+  ungroup %>%
+  filter(Hour >= strftime("2020-03-13",format="%Y-%m-%d") %>% as.POSIXct()) %>%
+  mutate(h=strftime(Hour,format="%H")) %>%
+  mutate(w=strftime(Hour,format="%a")) %>%
+  mutate(traffic=case_when((h %in% c("08","09","16","17")) & !(w %in% c("Sat","Sun"))~ "Rush hour",TRUE ~ "Other"))
+
+ggplot(pd3,aes(x=Hour,y=ratio-1,group=1)) +
+  geom_rect(data=spring_break %>% filter(type=="2020"),
+            inherit.aes = FALSE,
+            aes(xmin=Date,xmax=Date2),
+            ymin=-Inf,ymax=Inf,fill="grey80",alpha=0.5) +
+  #scale_fill_manual(values=c("Spring break"="grey90")) +
+  scale_fill_manual(values=c("Rush hour"="brown","Other"="steelblue")) +
+  geom_bar(stat="identity",aes(fill=traffic)) +#fill="steelblue") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_x_datetime(labels=function(d)strftime(d,"%a %b %d"),
+                   breaks = strptime("2020-03-13T12",format="%Y-%m-%dT%H") %>% as.POSIXct() + days(seq(0,8)),
+                   guide = guide_axis(n.dodge = 2)) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Surrey hourly traffic loop counts",
+       x=NULL,y="Change of 2020 to 2019 traffic volumes",
+       fill=NULL, colour=NULL,
+       caption="MountainMath, Surrey Open Data") 
+```
+
+An interesting observation here is that commuting (rush hour) traffic is reduced by at least as much as non-commuting traffic. On the surface this contradicts the observation by John Burn-Murdoch that [rush hour congestion decreased more than discresionary (midday) traffic](https://twitter.com/jburnmurdoch/status/1241730634109894656?s=20) in some cities. But those two might be reconciled by the fact that reduction in "congestion", as measured by TomTom, is quite different from measuring a reduction in traffic volumes. Removing even a small percentage of traffic at rush hour will lead to a much larger reduction of travel speeds than removing the same share at midday. The coming weeks will tell if this was just a part of the slow adapting to social distancing and midday travel will eventually drop by more than commute traffic.
+
+## Upshot
+Slowing the spread of the virus is extremely important. And we have to do this while the numbers are still relatively small and the health system is not yet completely overwhelmed. Change is hard when there is such a large gap between behaviour changes and when we will see the results. We need to closely monitor how well people's behaviour changes at the population level. It's only a proxy metric for how we are doing in fighting the virus, but we get immediate feedback to guide if governments needs to increase restrictions to further force behaviour change.
+
+Some behaviour change, or lack thereof, is obvious. The images and videos of people playing basketball or soccer, having parties at the beach, or failing to practice appropriate social distancing walking along the crowded seawall, all are making the rounds on social media, and are testament to that. It is understandable that it can be hard to extrapolate individuals' behaviour to the population level, it's hard to quantify the extent of it. We need more systematic ways of tracking this, relying on social media reports to bubble up and trigger piecemeal action is better than nothing, but it's a far cry from a holistic response. That's where metrics like traffic patterns, or even better, cell phone mobility data as used in Italy, become useful. They tell us at the population level how well social distancing is practised. 
+
+Not everything can be monitored, and not everything needs to be monitored. A selection of several key metrics would probably suffice to get a good holistic picture.
+
+ For example, Taiwan will monitor compliance with self-quarantine rules for travellers and other people needing to self-quarantine by monitoring their cell phone location. These measures may seem overly intrusive, but they have, together with a host of other measures, enabled [Taiwan to keep schools open and people going to work as normal](https://www.cbc.ca/news/business/inside-taiwan-during-covid-19-how-they-keep-schools-and-businesses-open-1.5505031). 
+
+There are countries that go even further and conduct individual level monitoring. [Epidemological models of the virus](https://alhill.shinyapps.io/COVID19seir/) tell us that interventions like social distancing will have to be kept up for very long times, otherwise we will again end up with rising cases. Democratic countries like Taiwan and Singapore have shown that there are other ways to keep the virus in check. Both countries have massive population hygiene education campaigns facilitating collective behaviour change, including measuring temperature prior to leaving home for school or work, temperature measurements before entering stores or large public spaces, submitting to intrusive surveillance of self-quarantine of all incoming travellers, and combining mobility data with aggressive (and intrusive) data-driven contact tracing. These intrusive measures buy other freedoms, kids can go to school, [people can go to work and life functions somewhat normally](https://www.cbc.ca/news/business/inside-taiwan-during-covid-19-how-they-keep-schools-and-businesses-open-1.5505031). 
+
+Right now we are sacrificing basic freedom of movement and assembly, freedom to go to school or to work. Taiwan and Singapore show that we can regain some of these by giving up other freedoms and submitting to some level of surveillance. Behaviour change is key, but on top of that we need to make tough choices what freedoms we are willing to give up and which ones to keep. At least until we have a vaccine available that can be safely deployed at scale.
+
+
+
