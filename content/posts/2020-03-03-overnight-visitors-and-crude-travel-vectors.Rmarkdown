@@ -6,6 +6,7 @@ slug: overnight-visitors-and-crude-travel-vectors
 categories:
   - Vancouver
   - Transportation
+  - covid-19
   - geeky
 tags: []
 description: "Checking in on Vancouver travel data. And the novel corona virus."
