@@ -120,6 +120,10 @@ plot_data <- ecdc_data %>%
 death_labels <- c("None","1-9","10-24","25-49","50-99","100 or more")
 death_colours <- setNames(c("white",RColorBrewer::brewer.pal(5,"YlOrRd")),death_labels)
 
+factor <- 10
+major_grid <- 100 * factor**(seq(0,2))
+minor_grid <- lapply(major_grid,function(d)seq(d,factor*d,d)) %>% unlist
+
 plot_data %>%
   filter(Confirmed>=100) %>%
   mutate(nx = ifelse(as.character(`Countries and territories`) %in%
@@ -153,7 +157,7 @@ plot_data %>%
   ggrepel::geom_text_repel(data=~filter(.,d==max(d)),
                            aes(label=`Countries and territories`,hjust=-1.5*nx+1),
                             color="black") +
-  scale_y_continuous(labels=scales::comma,trans="log10") +
+  scale_y_continuous(labels=scales::comma,trans="log10",breaks=major_grid,minor_breaks = minor_grid) +
   theme(legend.position = "bottom",legend.box="vertical") +
   #guides(color=guide_legend(nrow=3,byrow=TRUE)) +
   scale_color_brewer(palette = "Dark2") +
@@ -172,7 +176,12 @@ Looking at deaths is another way to compare countries and see how we are fairing
 ```{r}
 intercept <- 10
 intercept2 <- 28
+
+factor <- 10
+major_grid <- 10 * factor**(seq(0,2))
+minor_grid <- lapply(major_grid,function(d)seq(d,factor*d,d)) %>% unlist
  
+
 plot_data %>%
   filter(CumulativeDeaths>=10) %>%
   mutate(nx = ifelse(as.character(`Countries and territories`) %in%
@@ -205,7 +214,7 @@ plot_data %>%
   ggrepel::geom_text_repel(data=~filter(.,d==max(d)),
                            aes(label=`Countries and territories`,hjust=-1.5*nx+1),
                             color="black") +
-  scale_y_continuous(labels=scales::comma,trans="log10") +
+  scale_y_continuous(labels=scales::comma,trans="log10",breaks = major_grid,minor_breaks = minor_grid) +
   theme(legend.position = "bottom",legend.box="vertical") +
   #guides(color=guide_legend(nrow=3,byrow=TRUE)) +
   scale_color_brewer(palette = "Dark2") +
@@ -221,12 +230,17 @@ After initial seeding, the exponential growth of the virus is driven by local tr
 
 ```{r include=FALSE}
 data_sheet <- googlesheets4::sheets_get("1D6okqtBS3S2NRC7GFVHzaZ67DuTw7LX49-fqSLwJyeo")
-covid_cases <- googlesheets4::read_sheet(data_sheet,"Cases",skip=2) %>%
-  mutate(Date=as.Date(date_report))
+covid_cases <- googlesheets4::read_sheet(data_sheet,"Cases",skip=3) %>%
+  mutate(Date=as.Date(date_report)) %>%
+  filter(Date<=as.Date("2020-03-22"))
 ```
 
 ```{r}
 start_cutoff=20
+
+factor <- 10
+major_grid <- 10 * factor**(seq(0,2))
+minor_grid <- lapply(major_grid,function(d)seq(d,factor*d,d)) %>% unlist
 
 provincial_data <- covid_cases %>% 
   group_by(province,Date) %>%
@@ -256,7 +270,7 @@ maxpd2 = 16
 intercept = filter(provincial_data,d==min(d))$total %>% as.integer() %>% mean
 
 ggplot(provincial_data,aes(x=as.integer(d),y=total,color=province)) +
-  scale_y_continuous(trans="log10") +
+  scale_y_continuous(trans="log10",breaks=c(start_cutoff,major_grid),minor_breaks = minor_grid) +
   #geom_smooth(method="lm",alpha=0.3,size=0.5) +
   geom_line(size=1) +
   geom_point(size=2,shape=21,alpha=0.5) +
@@ -329,8 +343,13 @@ plot_data <- all_data %>%
   mutate(d=difftime(Date,min(Date),units="days"))
 maxd = max(plot_data$d) %>% as.integer()
 
+factor <- 10
+major_grid <- 10 * factor**(seq(0,2))
+minor_grid <- lapply(major_grid,function(d)seq(d,factor*d,d)) %>% unlist
+
+
 ggplot(plot_data,aes(x=as.integer(d),y=total,color=health_region)) +
-  scale_y_continuous(trans="log10") +
+  scale_y_continuous(trans="log10",breaks=major_grid,minor_breaks = minor_grid) +
   #geom_smooth(method="lm",alpha=0.3,size=0.5) +
   geom_line(size=1) +
   geom_point(size=2,shape=21,alpha=0.5) +
