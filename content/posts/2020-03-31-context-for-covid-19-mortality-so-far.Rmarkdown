@@ -35,13 +35,13 @@ library(gganimate)
 ```
 
 ```{r}
-  who_recodes <- c("Iran (Islamic Republic of)"="Iran",
-                        "Venezuela (Bolivarian Republic of)"="Venezuela",
-                        "Republic of Korea"="South Korea",
-                        "China, Taiwan Province of China"="Taiwan",
-                        "China, Hong Kong SAR"="Hong Kong",
-                        "China, Macao SAR"="Macao",
-                        "Bolivia (Plurinational State of)"="Bolivia",
+who_recodes <- c("Iran (Islamic Republic of)"="Iran",
+                 "Venezuela (Bolivarian Republic of)"="Venezuela",
+                 "Republic of Korea"="South Korea",
+                 "China, Taiwan Province of China"="Taiwan",
+                 "China, Hong Kong SAR"="Hong Kong",
+                 "China, Macao SAR"="Macao",
+                 "Bolivia (Plurinational State of)"="Bolivia",
                  "United States of America"="USA",
                  "United Kingdom"="UK")
 
@@ -89,7 +89,7 @@ get_who_population_crude_death_rates <- function(){
 
 ```{r}
 data <- get_country_timeline_ecdc_jhs_data() %>%
-  inner_join(get_who_population_crude_death_rates(),by="Country")
+  inner_join(get_who_population_crude_death_rates(),by="Country") 
 ```
 
 
@@ -99,8 +99,9 @@ Below we follow the rise in deaths attributed to COVID-19 through time relative 
 
 
 
-```{r include=FALSE}
+```{r include=FALSE} 
 plot_data <- data %>%
+  filter(Date<=as.Date("2020-03-31")) %>% # pin at date of original publishing of post
   group_by(Country) %>%
   mutate(NewDeaths=Deaths-lag(Deaths,order_by = Date,default = 0)) %>%
   filter(Deaths>=20) %>%
@@ -119,28 +120,30 @@ plot_data <- data %>%
 
 image_path <- here::here("static/images/covid_mortality.gif")
 if (!file.exists(image_path)) {
-g <- ggplot(plot_data,aes(x=d,y=increase, group = Country)) +
-  geom_line(data=~filter(.,!label),linetype="twodash",size=0.25,alpha=0.6) + 
-  geom_line(data=~filter(.,label),linetype="twodash",size=0.25) + 
-  geom_point(data=~filter(.,!label),size = 2,aes(colour=last),alpha=0.6) + 
-  #geom_point(data=~filter(.,label),size = 2.5,color="black") + 
-  geom_point(data=~filter(.,label),size = 2,aes(colour=last)) + 
-  scale_color_manual(values=c("TRUE"="brown","FALSE"="steelblue"),guide=FALSE) +
-  #geom_segment(aes(xend = max(cd$Date), yend = Country), linetype = 2, colour = 'grey') + 
-  ggrepel::geom_text_repel(data=~filter(.,label==TRUE),aes(label = Country), 
-                           vjust = -1.5,segment.color="grey",
-                           min.segment.length=0.1) + 
-  transition_reveal(d) + 
-  coord_cartesian(clip = 'off') + 
-  theme_minimal() + 
-  scale_y_continuous(labels=scales::percent) +
-  theme(plot.margin = margin(5.5, 40, 5.5, 5.5)) +
-  #ggrepel::geom_label_repel(data=~filter(.,label==TRUE),aes(label=Country)) +
-  labs(title="Increase in overall mortality since 20 COVID-19 related deaths",
-       subtitle=paste0("{round(frame_along)} days after reaching 20 deaths (compared to 2019 mortality rates)"),
-       x="Days after 20th death",
-       y="Percent increase in overall mortality",
-       caption="WHO, ECSD, JHS")
+  g <-   plot_data %>%
+    filter(Date<=as.Date("2020-03-31")) %>%
+    ggplot(aes(x=d,y=increase, group = Country)) +
+    geom_line(data=~filter(.,!label),linetype="twodash",size=0.25,alpha=0.6) + 
+    geom_line(data=~filter(.,label),linetype="twodash",size=0.25) + 
+    geom_point(data=~filter(.,!label),size = 2,aes(colour=last),alpha=0.6) + 
+    #geom_point(data=~filter(.,label),size = 2.5,color="black") + 
+    geom_point(data=~filter(.,label),size = 2,aes(colour=last)) + 
+    scale_color_manual(values=c("TRUE"="brown","FALSE"="steelblue"),guide=FALSE) +
+    #geom_segment(aes(xend = max(cd$Date), yend = Country), linetype = 2, colour = 'grey') + 
+    ggrepel::geom_text_repel(data=~filter(.,label==TRUE),aes(label = Country), 
+                             vjust = -1.5,segment.color="grey",
+                             min.segment.length=0.1) + 
+    transition_reveal(d) + 
+    coord_cartesian(clip = 'off') + 
+    theme_minimal() + 
+    scale_y_continuous(labels=scales::percent) +
+    theme(plot.margin = margin(5.5, 40, 5.5, 5.5)) +
+    #ggrepel::geom_label_repel(data=~filter(.,label==TRUE),aes(label=Country)) +
+    labs(title="Increase in overall mortality since 20 COVID-19 related deaths",
+         subtitle=paste0("{round(frame_along)} days after reaching 20 deaths (compared to 2019 mortality rates)"),
+         x="Days after 20th death",
+         y="Percent increase in overall mortality",
+         caption="WHO, ECSD, JHS")
 anim_save(image_path,animation = g)
 }
 ```
@@ -150,8 +153,8 @@ anim_save(image_path,animation = g)
 This visualization places deaths reported from COVID-19 in the context of expected deaths overall. This helps establish where we know the mortality toll has already been enormous. As of `r strftime(max(plot_data$Date),format="%B %d")`, the end-point of the animation, Italy leads the overall count in deaths attributed to COVID-19. Here we can also report that in just over a month, Italy's deaths so far attributed to COVID-19 already add more than 20% to its expected deaths. But Spain's toll relative to its expected number of deaths is ever higher. In just over three weeks time, we can see that COVID-19 already accounts for more than a 30% rise over the deaths that would've been expected without COVID-19. 
 
 
-```{r covid-19-mortality-final}
-plot_data %>%
+```{r covid-19-mortality-final, fig.height=5, fig.width=7, out.width='100%'}
+plot_data %>% 
   group_by(Country) %>%
   mutate(label2=label & d==max(d)) %>%
   ggplot(aes(x=d,y=increase, group = Country)) +
@@ -186,18 +189,18 @@ But the possibility for data gaps is very real. It will be quite awhile before w
 More concretely, COVID-19 deaths will [show up in the mortality databases with code U07.1 or U07.2](https://www.who.int/classifications/icd/covid19/en/) in the current ICD-10 classification system (or RA01.0 and RA01.1 once ICD-11 comes into effect). But many will likely also get classifed as J11, J18 or J22. When the dust settles, we will have to check how these cases have evolved over time and estimate how many cases in 2020 (or late 2019 in the case of China) are likely misclassified COVID-19 cases.
 
 
-```{r fig.height=7}
+```{r fig.height=7} 
 data_j <- get_cansim("13-10-0782") %>% normalize_cansim_values(factors = TRUE)
 #data_u <- get_cansim("13-10-0391") %>% normalize_cansim_values(factors = TRUE)
 
-plot_data <- data_j %>% 
+plot_data2 <- data_j %>% 
   filter(`Classification Code for Cause of death (ICD-10)` %in% c("[J22]","[J11]","[J18]")) %>%
 #  bind_rows(data_u %>% 
 #              filter(`Classification Code for Cause of death (ICD-10)` %in% c("[U00-U49]"))) %>%
   filter(Sex=="Both sexes",
          `Age group`!="Total, all ages")
 
-plot_data %>% filter(REF_DATE>="2013") %>%
+plot_data2 %>% filter(REF_DATE>="2013") %>%
 ggplot(aes(x=`Age group`,y=VALUE,fill=`Cause of death (ICD-10)`)) +
   geom_bar(stat="identity") +
   facet_wrap("REF_DATE",ncol=3) +
@@ -214,3 +217,85 @@ The mortality data coming in bears watching, both in terms of COVID-19 attribute
 
 As usual, the code for the post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-03-31-context-for-covid-19-mortality-so-far.Rmarkdown) in case anyone wants to refine or adapt it for their own purposes.
 
+## Update (2020-04-06)
+It's been a week since we posted this, and things are changing fast with covid-19 related deaths increasing exponentially and background mortality estimates only increasing linearly with time. The traces in the animated GIF already highlight this, but here is a quick update of what the graph looks like using data from a week later.
+
+
+```{r include=FALSE, fig.height=5, fig.width=7} 
+plot_data <- data %>%
+  group_by(Country) %>%
+  mutate(NewDeaths=Deaths-lag(Deaths,order_by = Date,default = 0)) %>%
+  filter(Deaths>=20) %>%
+  mutate(d=difftime(Date,min(Date),units="days") %>% as.integer()+1) %>%
+  mutate(covid_rate=(Deaths-20)/Total*365/d*1000) %>%
+  #filter(Country!="Luxembourg") %>%
+  mutate(last=Date==max(Date)) %>%
+  mutate(increase=covid_rate/rate) %>%
+  mutate(label=Country %in% 
+           c(filter(.,increase>0.08,Country!="Luxembourg")$Country %>% unique,
+             "USA","UK","China","Canada","Iran")) %>%
+  mutate(c=case_when(label ~ "label",
+                     last ~"last",
+                     TRUE ~ "regular")) %>%
+  filter(d<=40) 
+
+image_path <- here::here("static/images/covid_mortality2.gif")
+if (TRUE | !file.exists(image_path)) {
+g <- ggplot(plot_data,aes(x=d,y=increase, group = Country)) +
+  geom_line(data=~filter(.,!label),linetype="twodash",size=0.25,alpha=0.6) + 
+  geom_line(data=~filter(.,label),linetype="twodash",size=0.25) + 
+  geom_point(data=~filter(.,!label),size = 2,aes(colour=last),alpha=0.6) + 
+  #geom_point(data=~filter(.,label),size = 2.5,color="black") + 
+  geom_point(data=~filter(.,label),size = 2,aes(colour=last)) + 
+  scale_color_manual(values=c("TRUE"="brown","FALSE"="steelblue"),guide=FALSE) +
+  #geom_segment(aes(xend = max(cd$Date), yend = Country), linetype = 2, colour = 'grey') + 
+  ggrepel::geom_text_repel(data=~filter(.,label==TRUE),aes(label = Country), 
+                           vjust = -1.5,segment.color="grey",
+                           min.segment.length=0.1) + 
+  transition_reveal(d) + 
+  coord_cartesian(clip = 'off') + 
+  theme_minimal() + 
+  scale_y_continuous(labels=scales::percent) +
+  theme(plot.margin = margin(5.5, 40, 5.5, 5.5)) +
+  #ggrepel::geom_label_repel(data=~filter(.,label==TRUE),aes(label=Country)) +
+  labs(title="Increase in overall mortality since 20 COVID-19 related deaths",
+       subtitle=paste0("{round(frame_along)} days after reaching 20 deaths (compared to 2019 mortality rates)"),
+       x="Days after 20th death",
+       y="Percent increase in overall mortality",
+       caption="WHO, ECSD, JHS")
+anim_save(image_path,animation = g, width= 846, height=604,res = 120) 
+}
+```
+
+![](/images/covid_mortality2.gif)
+
+
+And for completeness, here is the static graph with the latest availabel numbers.
+
+```{r covid-19-mortality-final2, fig.height=5, fig.width=7, out.width='100%'}
+plot_data %>% 
+  group_by(Country) %>%
+  mutate(label2=label & d==max(d)) %>%
+  ggplot(aes(x=d,y=increase, group = Country)) +
+  geom_line(data=~filter(.,!label),linetype="twodash",size=0.25,alpha=0.6) + 
+  geom_line(data=~filter(.,label),linetype="twodash",size=0.25) + 
+  geom_point(data=~filter(.,d==max(d),!label),size = 2,aes(colour=last),alpha=0.6) + 
+  #geom_point(data=~filter(.,d==max(d),label),size = 2.5,color="black") + 
+  geom_point(data=~filter(.,d==max(d),label),size = 2,aes(colour=last,)) + 
+  scale_color_manual(values=c("TRUE"="brown","FALSE"="steelblue"),guide=FALSE) +
+  #geom_segment(aes(xend = max(cd$Date), yend = Country), linetype = 2, colour = 'grey') + 
+  ggrepel::geom_text_repel(data=~filter(.,label2==TRUE),aes(label = Country), 
+                           vjust = -1.5,segment.color="grey",
+                           min.segment.length=0.1) + 
+  #transition_reveal(d) + 
+  coord_cartesian(clip = 'off') + 
+  theme_minimal() + 
+  scale_y_continuous(labels=scales::percent) +
+  theme(plot.margin = margin(5.5, 40, 5.5, 5.5)) +
+  #ggrepel::geom_label_repel(data=~filter(.,label==TRUE),aes(label=Country)) +
+  labs(title="Increase in overall mortality since 20 COVID-19 related deaths",
+       subtitle=paste0("(as of ",max(plot_data$Date),", compared to 2019 mortality rates)"),
+       x="Days after 20th death",
+       y="Percent increase in overall mortality",
+       caption="WHO, ECSD, JHS")
+```

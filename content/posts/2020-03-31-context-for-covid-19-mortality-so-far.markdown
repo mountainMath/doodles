@@ -40,7 +40,7 @@ Below we follow the rise in deaths attributed to COVID-19 through time relative 
 This visualization places deaths reported from COVID-19 in the context of expected deaths overall. This helps establish where we know the mortality toll has already been enormous. As of March 31, the end-point of the animation, Italy leads the overall count in deaths attributed to COVID-19. Here we can also report that in just over a month, Italy's deaths so far attributed to COVID-19 already add more than 20% to its expected deaths. But Spain's toll relative to its expected number of deaths is ever higher. In just over three weeks time, we can see that COVID-19 already accounts for more than a 30% rise over the deaths that would've been expected without COVID-19. 
 
 
-<img src="/posts/2020-03-31-context-for-covid-19-mortality-so-far_files/figure-html/covid-19-mortality-final-1.png" width="768" />
+<img src="/posts/2020-03-31-context-for-covid-19-mortality-so-far_files/figure-html/covid-19-mortality-final-1.png" width="100%" />
 
 
 Unfortunately, most curves are still rising. So far. Initially curves grow exponentially, until aggressive containment or mitigation strategies flatten them. Curves that stabilize and flatten, or even begin to turn downward, reflect countries where deaths attributed to COVID-19 are being overtaken by deaths that might've been expected to occur anyway. Hopefully this reflects an outbreak coming increasingly under control - GOOD NEWS - rather than a data gap.
@@ -59,3 +59,15 @@ The mortality data coming in bears watching, both in terms of COVID-19 attribute
 
 As usual, the code for the post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-03-31-context-for-covid-19-mortality-so-far.Rmarkdown) in case anyone wants to refine or adapt it for their own purposes.
 
+## Update (2020-04-06)
+It's been a week since we posted this, and things are changing fast with covid-19 related deaths increasing exponentially and background mortality estimates only increasing linearly with time. The traces in the animated GIF already highlight this, but here is a quick update of what the graph looks like using data from a week later.
+
+
+
+
+![](/images/covid_mortality2.gif)
+
+
+And for completeness, here is the static graph with the latest availabel numbers.
+
+<img src="/posts/2020-03-31-context-for-covid-19-mortality-so-far_files/figure-html/covid-19-mortality-final2-1.png" width="100%" />
