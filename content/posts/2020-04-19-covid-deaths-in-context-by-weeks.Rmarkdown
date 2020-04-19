@@ -1,0 +1,368 @@
+---
+title: COVID deaths in context by weeks
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
+date: '2020-04-19'
+slug: covid-deaths-in-context-by-weeks
+categories:
+  - covid-19
+tags: []
+description: "An updated view at covid-19 mortality and excess mortality."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2020-04-19-covid-deaths-in-context-by-weeks_files/figure-html/covid-mortality-weekly-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2020/04/19/covid-deaths-in-context-by-weeks/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	fig.width = 8,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE
+)
+#remotes::install_git("mountainMath/CanCovidData")
+library(CanCovidData)
+library(cansim)
+library(tidyverse)
+library(gganimate)
+library(parsedate)
+```
+
+
+
+In our [previous post](https://doodles.mountainmath.ca/blog/2020/03/31/context-for-covid-19-mortality-so-far/) on [COVID mortality in context](https://homefreesociology.com/2020/04/01/context-for-covid-19-mortality-so-far/), we tried to place COVID deaths, as recorded so far this year, in the context of expected deaths from previous years. There have been a lot more developments since that post. And unfortunately a lot more deaths too.
+
+Here we’re providing an update to our [previous post](https://doodles.mountainmath.ca/blog/2020/03/31/context-for-covid-19-mortality-so-far/), but also expanding on that post by talking a bit more about new mortality analyses and the progression of outbreaks in terms of expected deaths on a weekly basis. First, an update! We previously placed COVID deaths in the context of expected deaths at the national level, starting after the 20th death was recorded. What does that look like now?
+
+
+```{r}
+who_recodes <- c("Iran (Islamic Republic of)"="Iran",
+                 "Venezuela (Bolivarian Republic of)"="Venezuela",
+                 "Republic of Korea"="South Korea",
+                 "China, Taiwan Province of China"="Taiwan",
+                 "China, Hong Kong SAR"="Hong Kong",
+                 "China, Macao SAR"="Macao",
+                 "Bolivia (Plurinational State of)"="Bolivia",
+                 "United States of America"="USA",
+                 "United Kingdom"="UK")
+
+get_who_population <- function(){
+  tmp <- tempfile()
+  download.file("https://www.who.int/healthinfo/global_burden_disease/GHE2016_DALYs-2016-country.xls?ua=1",tmp)
+  
+  m <- readxl::read_xls(tmp,"DALYs All ages",skip=6,col_types = "text")
+  
+  iso <- m %>% slice(1)
+  
+  mm<-m %>% slice(-1) %>%
+    filter(Sex=="Persons") %>%
+    select(-Sex,-`...3`,  -`GHE cause`, -`...5`,  -`...6`,-`Member State\n(See Notes for explanation of colour codes)`) %>%
+    pivot_longer(-`GHE code`,names_to = "Country",values_to = "Value") %>%
+    mutate(`GHE code`=coalesce(`GHE code`,"Total")) %>%
+    mutate(Value=as.numeric(Value)) %>%
+    left_join((.) %>% filter(`GHE code`=="Total") %>% select(Country,Total=Value),by="Country") %>%
+    mutate(Total=Total*1000) %>%
+    mutate(rate=Value/Total)
+  
+  mm %>% filter(`GHE code`=="0") %>% #filter(Country=="Canada") %>%
+    select(Country, Mortality=Value, Total) %>%
+    mutate(Mortality=Mortality/1000) %>%
+    mutate(Country=recode(Country,!!!who_recodes))
+}
+
+get_who_crude_death_rates <- function(){
+  tmp <- tempfile()
+  download.file("https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/EXCEL_FILES/3_Mortality/WPP2019_MORT_F02_CRUDE_DEATH_RATE.xlsx",tmp)
+  readxl::read_xlsx(tmp,skip=16) %>%
+    filter(Type=="Country/Area") %>%
+    select(Country=`Region, subregion, country or area *`,Code=`Country code`,rate=`2015-2020`) %>%
+    mutate(Country=recode(Country,!!!who_recodes),
+           rate=as.numeric(rate)) 
+}
+
+get_who_population_crude_death_rates <- function(){
+  get_who_crude_death_rates() %>% 
+    full_join(get_who_population(),by="Country")
+}
+
+```
+
+
+```{r}
+data <- get_country_timeline_ecdc_jhs_data() %>%
+  inner_join(get_who_population_crude_death_rates(),by="Country") 
+```
+
+```{r include=FALSE} 
+plot_data <- data %>%
+  #filter(Date<=as.Date("2020-03-31")) %>% # pin at date of original publishing of post
+  group_by(Country) %>%
+  mutate(NewDeaths=Deaths-lag(Deaths,order_by = Date,default = 0)) %>%
+  filter(Deaths>=20) %>%
+  mutate(d=difftime(Date,min(Date),units="days") %>% as.integer()+1) %>%
+  mutate(covid_rate=(Deaths-20)/Total*365/d*1000) %>%
+  #filter(Country!="Luxembourg") %>%
+  mutate(last=Date==max(Date)) %>%
+  mutate(increase=covid_rate/rate) %>%
+  mutate(label=Country %in% 
+           c(filter(.,increase>0.08,Country!="Luxembourg")$Country %>% unique,
+             "USA","UK","China","Canada","Iran")) %>%
+  mutate(c=case_when(label ~ "label",
+                     last ~"last",
+                     TRUE ~ "regular")) %>%
+  filter(d<=55) 
+
+image_path <- here::here("static/images/covid_mortality3.gif")
+if (!file.exists(image_path)) {
+  g <-   plot_data %>%
+    #filter(Date<=as.Date("2020-03-31")) %>%
+    ggplot(aes(x=d,y=increase, group = Country)) +
+    geom_line(data=~filter(.,!label),linetype="twodash",size=0.25,alpha=0.6) + 
+    geom_line(data=~filter(.,label),linetype="twodash",size=0.25) + 
+    geom_point(data=~filter(.,!label),size = 2,aes(colour=last),alpha=0.6) + 
+    #geom_point(data=~filter(.,label),size = 2.5,color="black") + 
+    geom_point(data=~filter(.,label),size = 2,aes(colour=last)) + 
+    scale_color_manual(values=c("TRUE"="brown","FALSE"="steelblue"),guide=FALSE) +
+    #geom_segment(aes(xend = max(cd$Date), yend = Country), linetype = 2, colour = 'grey') + 
+    ggrepel::geom_text_repel(data=~filter(.,label==TRUE),aes(label = Country), 
+                             vjust = -1.5,segment.color="grey",
+                             min.segment.length=0.1) + 
+    transition_reveal(d) + 
+    coord_cartesian(clip = 'off') + 
+    theme_minimal() + 
+    scale_y_continuous(labels=scales::percent) +
+    theme(plot.margin = margin(5.5, 40, 5.5, 5.5)) +
+    #ggrepel::geom_label_repel(data=~filter(.,label==TRUE),aes(label=Country)) +
+    labs(title="Increase in overall mortality since 20 COVID-19 related deaths",
+         subtitle=paste0("{round(frame_along)} days after reaching 20 deaths (compared to 2019 mortality rates)"),
+         x="Days after 20th death",
+         y="Percent increase in overall mortality",
+         caption="WHO, ECSD, JHS")
+anim_save(image_path,animation = g, width= 846, height=604,res = 120) 
+}
+```
+
+![](/images/covid_mortality3.gif)
+
+```{r covid-19-mortality-final3, fig.height=5, fig.width=7, out.width='100%'}
+plot_data %>% 
+  group_by(Country) %>%
+  mutate(label2=label & d==max(d)) %>%
+  ggplot(aes(x=d,y=increase, group = Country)) +
+  geom_line(data=~filter(.,!label),linetype="twodash",size=0.25,alpha=0.6) + 
+  geom_line(data=~filter(.,label),linetype="twodash",size=0.25) + 
+  geom_point(data=~filter(.,d==max(d),!label),size = 2,aes(colour=last),alpha=0.6) + 
+  #geom_point(data=~filter(.,d==max(d),label),size = 2.5,color="black") + 
+  geom_point(data=~filter(.,d==max(d),label),size = 2,aes(colour=last,)) + 
+  scale_color_manual(values=c("TRUE"="brown","FALSE"="steelblue"),guide=FALSE) +
+  #geom_segment(aes(xend = max(cd$Date), yend = Country), linetype = 2, colour = 'grey') + 
+  ggrepel::geom_text_repel(data=~filter(.,label2==TRUE),aes(label = Country), 
+                           vjust = -1.5,segment.color="grey",
+                           min.segment.length=0.1) + 
+  #transition_reveal(d) + 
+  coord_cartesian(clip = 'off') + 
+  theme_minimal() + 
+  scale_y_continuous(labels=scales::percent) +
+  theme(plot.margin = margin(5.5, 40, 5.5, 5.5)) +
+  #ggrepel::geom_label_repel(data=~filter(.,label==TRUE),aes(label=Country)) +
+  labs(title="Increase in overall mortality since 20 COVID-19 related deaths",
+       subtitle=paste0("(as of ",max(plot_data$Date),", compared to 2019 mortality rates)"),
+       x="Days after 20th death",
+       y="Percent increase in overall mortality",
+       caption="WHO, ECSD, JHS")
+```
+As visible in the mortality data, Belgium has moved to the forefront of the COVID outbreak in Europe in terms of COVID deaths relative to expected deaths from years prior. Ireland, the UK, and the US appear to continue to climb. By contrast, Spain and Italy, early centres of the outbreak in Europe, have largely levelled off. Though the USA "leads" in deaths from COVID-19, this doesn't (yet) show up in the relationship between COVID deaths and expected deaths because the USA is enormous, with a lot of expected deaths every year, and the outbreaks of COVID deaths have been heavily concentrated in a few locales so far. Even so, as the NYTimes suggests, [COVID is now arguably the leading cause of death in the USA](https://www.nytimes.com/2020/04/18/health/coronavirus-america-future.html), ahead of heart disease and cancer. 
+
+Overall, and [as mentioned previously](https://homefreesociology.com/2020/04/01/context-for-covid-19-mortality-so-far/), there’s still a lot we don’t know in these comparisons. For instance, we don’t know if we’re actually counting all of the deaths due to COVID. Lots of people don’t get tested, and cause of death is always tricky to determine in the best of times, let alone with an overloaded medical system and coroners’ offices. As a result, revisions to the data can add dramatically to the death toll, as happened [recently in New York City](https://www.nytimes.com/2020/04/14/nyregion/new-york-coronavirus-deaths.html). In addition to good COVID death data, we’d also like updated data on mortality overall. We’ve seen recent – and very preliminary – data out of [NYC](https://www.nytimes.com/interactive/2020/04/10/upshot/coronavirus-deaths-new-york-city.html) and scattered other locales suggesting that [all-cause mortality has risen dramatically](https://www.nytimes.com/interactive/2020/04/10/upshot/coronavirus-deaths-new-york-city.html) in places with severe COVID outbreaks. 
+
+Where we have it, we can put updated all-cause mortality in conjunction with COVID mortality and expected mortality all together. Putting this on a weekly basis really provides a sense of the progression of outbreaks and how overloaded they leave medical systems in terms of the normal deaths they have to deal with. Given some of the data from NYC, here’s roughly what that looks like.
+
+```{r}
+numerics <- c("PERCENT P&I", "NUM INFLUENZA DEATHS", "NUM PNEUMONIA DEATHS", 
+              "TOTAL DEATHS", "PERCENT COMPLETE", "WEEK")
+
+flu_data <-read_csv(here::here("data/State_Custom_data.csv"),col_types = cols(.default="c")) %>%
+  mutate_at(numerics,function(d)as.numeric(gsub(",|%","",d))) %>%
+  mutate(Year=as.integer(substr(SEASON,1,4))+as.integer(WEEK<40)) %>%
+  mutate(Date=parse_iso_8601(paste0(Year, "-W",str_pad(WEEK,2,side="left",pad = "0"),"-7")) %>% as.Date)
+  
+# clean_nytimes_data <- function(data){
+#   data %>%
+#     group_by(region) %>%
+#     arrange(Date) %>%
+#     mutate(newCases=cases-lag(cases,order_by = Date,default = 0),
+#            newDeaths=deaths-lag(deaths,order_by = Date,default = 0)) %>%
+#     mutate(newCases=pmax(newCases,0)) %>%
+#     mutate(newDeaths=pmax(newDeaths,0)) %>%
+#     mutate(Confirmed=cumsum(newCases),
+#            Deaths=cumsum(newDeaths)) %>%
+#     ungroup()
+# }
+
+# county_data <- read_csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv", 
+#                         col_types = cols(.default="c")) %>%
+#   mutate(Date=as.Date(date),region=fips) %>%
+#   mutate_at(c("cases","deaths"),as.integer) %>%
+#   clean_nytimes_data %>%
+#   filter(county=="New York City") %>%
+#   mutate(Date=as.POSIXlt(paste0(strftime(Date,"%Y %U "),1),format="%Y %U %u") %>% as.Date) %>%
+#   group_by(county,Date) %>%
+#   summarize(Deaths=sum(newDeaths))
+
+county_data2 <- read_csv("https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv") %>%
+  filter(Admin2=="New York") %>%
+  pivot_longer(matches("/20$")) %>%
+  mutate(Date=as.Date(name,format="%m/%d/%y")) %>%
+  mutate(Deaths=value-lag(value,order_by = Date,default = 0)) %>%
+  filter(Deaths>0) %>%
+  mutate(Date=parse_iso_8601(strftime(Date,"%Y-W%V-7")) %>% as.Date) %>%
+  group_by(Admin2,Date) %>%
+  summarize(Deaths=sum(Deaths)) 
+```
+
+
+```{r covid-nyc-mortality}
+plot_data <- flu_data %>% filter(`SUB AREA`=="New York City") %>%
+  pivot_longer(cols=c("NUM INFLUENZA DEATHS", "NUM PNEUMONIA DEATHS", "TOTAL DEATHS")) %>%
+  mutate(name=recode(name,"NUM INFLUENZA DEATHS"="Influenza", 
+                     "NUM PNEUMONIA DEATHS"="Pneumonia", 
+                     "TOTAL DEATHS"="All cause")) %>%
+  mutate(Source="CDC FluView") %>%
+  bind_rows(county_data2 %>% 
+              select(Date,value=Deaths) %>%
+              mutate(name="Covid-19 reported deaths",
+                     Source="JHU")) %>%
+  # bind_rows(county_data %>% 
+  #             select(`SUB AREA`=county,Date,value=Deaths) %>%
+  #             mutate(name="Covid-19 reported deaths")) %>%
+  filter(Date>=as.Date("2019-10-01"))
+
+ggplot(plot_data,aes(x=Date,y=as.integer(value),group=name,color=name,linetype=Source)) +
+  geom_line() +
+  theme_bw() +
+  geom_point(#data=~filter(.,Date>=as.Date("2020-03-20")),
+             shape=21) +
+  scale_y_continuous(labels=scales::comma) +
+  #facet_wrap("`SUB AREA`") +
+  labs(title="New York City weekly deaths",x=NULL,y="Weekly deaths",color="Cause of death",
+       caption="CDC FluView, JHU")
+```
+
+```{r eval=FALSE, include=FALSE}
+cdc_data <- read_csv("data/COVID-CDC-Apr17.csv")
+
+# this graph has provlems, some of the categories overlap (I think)
+cdc_data %>% 
+  filter(Group=="By week",Indicator != "Total Deaths") %>%
+  mutate(Date=as.Date(Indicator,format="%m/%d/%Y")) %>%
+  pivot_longer(cols=c("All COVID-19 Deaths (U07.1)","All Pneumonia Deaths (J12.0-J18.9)",
+                      "Deaths with Pneumonia and COVID-19 (J12.0-J18.9 and U07.1)",
+                      "All Influenza Deaths (J09-J11)")) %>%
+  ggplot(aes(x=Date,y=as.integer(value),group=name,fill=name)) +
+  geom_bar(stat="identity") +
+  theme_bw() +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Covid-19, influenza, and pneumonia related deaths in US",
+       y="Weekly deaths", x=NULL, fill=NULL,
+       caption="CDC National Vital Statistics System\nProvisional Death Counts for Coronavirus Disease")
+```
+
+We notice a downturn in deaths as recorded by the [CDC FluView](https://www.cdc.gov/flu/weekly/index.htm) for the last week they report data (the week ending on `r filter(plot_data,Source=="CDC FluView")$Date %>% max`). This is not a REAL downturn. Rather it illustrates the reporting lag for data on deaths. It can take several weeks for the numbers to fill in and stabilize. We added the reported Covid-19 related deaths as [assembled by the JHU](https://github.com/CSSEGISandData/COVID-19) for reference. JHU data was aggregated up the week ending `r filter(plot_data,Source=="JHU")$Date %>% max`, so it's nominally a week ahead of the FluView data. However, these deaths are coded by date reported, unlike the CDC data that is coded by date of death, which causes the JHU data to lead a bit. Even accounting for a possible time shift in JHU data, it appears that JHU data does not account for the full increase in all-case mortality, hinting at likely under-reporting of Covid-19 deaths in the JHU data.
+
+Unfortunately we still don’t have updated all-cause mortality on the country level. As suggested by the lag in NYC data, it takes awhile to compile in the best of times (here's a look at efforts to gather [some of the European data](http://www.euromomo.eu/index.html)). So here we’ll provide a replication of our previous analysis, but breaking out COVID deaths against expected deaths on a weekly basis for countries instead of across the entire length of the outbreak.
+
+```{r include=FALSE} 
+plot_data <- data %>%
+  #filter(Date<=as.Date("2020-03-31")) %>% # pin at date of original publishing of post
+  group_by(Country) %>%
+  mutate(NewDeaths=pmax(0,Deaths-lag(Deaths,n=7L,order_by = Date,default = 0))) %>%
+  #filter(Deaths>=20) %>%
+  #mutate(d=difftime(Date,min(Date),units="days") %>% as.integer()+1) %>%
+  mutate(covid_rate=NewDeaths/Total*365/7*1000) %>%
+  mutate(last=Date==max(Date)) %>%
+  mutate(increase=covid_rate/rate) %>%
+  mutate(label=Country %in% 
+           c(filter(.,increase>0.2,Country!="Luxembourg")$Country %>% unique, "Canada")) %>%
+  mutate(c=case_when(label ~ "label",
+                     last ~"last",
+                     TRUE ~ "regular")) %>%
+  filter(Date>=as.Date("2020-02-01")) 
+
+image_path <- here::here("static/images/covid_mortality4.gif")
+if (!file.exists(image_path)) {
+  g <-   plot_data %>%
+    filter(Date>=as.Date("2020-03-15")) %>%
+    #filter(Date==max(Date)) %>%
+    ggplot(aes(x=Date,y=increase, group = Country)) +
+    geom_line(data=~filter(.,!label),linetype="twodash",size=0.25,alpha=0.6) + 
+    geom_line(data=~filter(.,label),linetype="twodash",size=0.25) + 
+    geom_point(data=~filter(.,!label),size = 2,aes(colour=last),alpha=0.6) + 
+    #geom_point(data=~filter(.,label),size = 2.5,color="black") + 
+    geom_point(data=~filter(.,label),size = 2,aes(colour=last)) + 
+    scale_color_manual(values=c("TRUE"="brown","FALSE"="steelblue"),guide=FALSE) +
+    #geom_segment(aes(xend = max(cd$Date), yend = Country), linetype = 2, colour = 'grey') + 
+    ggrepel::geom_text_repel(data=~filter(.,label==TRUE),aes(label = Country), 
+                             vjust = -1.5,segment.color="grey",
+                             min.segment.length=0.1) + 
+    transition_reveal(Date) + 
+    coord_cartesian(clip = 'off') + 
+    theme_minimal() + 
+    scale_y_continuous(labels=scales::percent) +
+    theme(plot.margin = margin(5.5, 40, 5.5, 5.5)) +
+    #ggrepel::geom_label_repel(data=~filter(.,label==TRUE),aes(label=Country)) +
+    labs(title="Increase in overall weekly mortality",
+         subtitle=paste0("{round(frame_along)} days after reaching 20 deaths (compared to 2019 mortality rates)"),
+         x=NULL,
+         y="Percent increase in overall weekly mortality",
+         caption="WHO, ECSD, JHU")
+anim_save(image_path,animation = g, width= 846, height=604,res = 120) 
+}
+```
+
+![](/images/covid_mortality4.gif)
+
+
+
+```{r covid-mortality-weekly, fig.height=5, fig.width=7, out.width='100%'}
+plot_data %>%
+  filter(Date>=as.Date("2020-03-15")) %>%
+  #filter(Date==max(Date)) %>%
+  ggplot(aes(x=Date,y=increase, group = Country)) +
+  geom_line(data=~filter(.,!label),linetype="twodash",size=0.25,alpha=0.6) + 
+  geom_line(data=~filter(.,label),linetype="twodash",size=0.25) + 
+  geom_point(data=~filter(.,!label,Date==max(Date)),size = 2,aes(colour=last),alpha=0.6) + 
+  #geom_point(data=~filter(.,label),size = 2.5,color="black") + 
+  geom_point(data=~filter(.,label,Date==max(Date)),size = 2,aes(colour=last)) + 
+  scale_color_manual(values=c("TRUE"="brown","FALSE"="steelblue"),guide=FALSE) +
+  #geom_segment(aes(xend = max(cd$Date), yend = Country), linetype = 2, colour = 'grey') + 
+  ggrepel::geom_text_repel(data=~filter(.,label==TRUE,Date==max(Date)),aes(label = Country), 
+                           hjust = -1,segment.color="grey",
+                           min.segment.length=0.1) + 
+  #transition_reveal(Date) + 
+  coord_cartesian(clip = 'off',xlim = c(as.Date("2020-03-15"),as.Date("2020-04-20"))) + 
+  theme_minimal() + 
+  scale_y_continuous(labels=scales::percent) +
+  theme(plot.margin = margin(5.5, 40, 5.5, 5.5)) +
+  #ggrepel::geom_label_repel(data=~filter(.,label==TRUE),aes(label=Country)) +
+  labs(title="Increase in overall weekly mortality",
+       subtitle=paste0("(as of ",max(plot_data$Date),", compared to 2019 mortality rates)"),
+       x=NULL,
+       y="Percent increase in overall weekly mortality",
+       caption="WHO, ECSD, JHU")
+
+```
+
+Overall, weekly COVID deaths as a percentage of expected deaths looks broadly similar to our earlier figure, which charted the rise in COVID deaths as a percentage of expected deaths since outbreak deaths began. But there are a few significant differences. The weekly chart better highlights the evolving overload on hospitals and health systems, as well as coroners' offices, and this is reflected in the y-axis, demonstrating that COVID deaths in Belgium have more than doubled the expected deaths in the last week for which we have data. The weekly chart also more quickly identifies declines in the relative impact of COVID deaths in places where the worst of the outbreak has passed, like Spain, Italy, and France. It will take a long time for the expected death toll to diminish the impact of the overall death toll of COVID in our figures at the top of the post. But on a weekly basis, we can already see the toll of COVID receding in many places.
+
+As we've [noted previously](https://doodles.mountainmath.ca/blog/2020/03/31/context-for-covid-19-mortality-so-far/), it will still take a long time to sort out the overall effects of COVID on mortality. Why? Well, we're still nowhere near done with the outbreak, and we can expect deaths to continue until we have a vaccine and have reached some level of "herd immunity." But we'll also be sorting through the mortality data for years to come. Also important: the toll at national levels, while helpful in assessing cross-national differences, masks the impact at local levels where outbreaks often occur. So it is that the estimate from Belgium, where most recent weekly COVID deaths appear to have more than doubled expected mortality, is dwarfed by the estimate from New York City, where the most recent weekly COVID deaths appear to be more than six times the expected (pre-COVID) mortality. 
+
+As usual, the code for the post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-04-19-covid-deaths-in-context-by-weeks.Rmarkdown) in case anyone wants to refine or adapt it for their own purposes.
+
+
