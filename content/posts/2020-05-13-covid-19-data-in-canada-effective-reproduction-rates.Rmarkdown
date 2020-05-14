@@ -258,8 +258,11 @@ on_estimates_hr <- on_cases_hr %>%
   top_n(5,n) %>%
   pull(Reporting_PHU) %>%
   lapply(function(hr){
-    estimate_from_cases(cases = on_cases_hr %>% filter(Reporting_PHU==hr))$rts %>% mutate(Region=hr)
-}) %>% bind_rows
+    estimate_from_cases(cases = on_cases_hr %>% 
+                          filter(Reporting_PHU==hr,date<=cutoff_date)
+                        )$rts %>% 
+      mutate(Region=hr)
+}) %>% bind_rows 
 ```
 
 ```{r fig.height=8}
@@ -268,7 +271,7 @@ ggplot(on_estimates_hr) +
   facet_wrap("Region",ncol=1) +
   labs(title="Ontario Health Region effective reproduction rate estimates", x="Onset of symptoms date",
        caption=caption_for("Ontario Open Date")) +
-  coord_cartesian(ylim = c(0,3.5))
+  coord_cartesian(ylim = c(0,3.5)) 
 ```
 
 
