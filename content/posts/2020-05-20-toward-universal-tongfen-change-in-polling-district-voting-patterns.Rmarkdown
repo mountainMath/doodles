@@ -1,0 +1,604 @@
+---
+title: 'Toward universal TongFen: Change in polling district voting patterns'
+author: Jens von Bergmann
+date: '2020-05-20'
+slug: toward-universal-tongfen-change-in-polling-district-voting-patterns
+categories:
+  - cancensus
+  - CensusMapper
+  - tongfen
+tags: []
+description: "Expanding tongfen to arbitrary geometries, with an example application to Canadian federal election polling districts."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2020-05-20-toward-universal-tongfen-change-in-polling-district-voting-patterns_files/figure-html/vote-change-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width=8,
+	cache=TRUE
+)
+
+library(tidyverse)
+library(tidyverse)
+library(cancensus)
+#remotes::install_git("mountainMath/tongfen")
+library(tongfen)
+library(sf)
+#remotes::install_git("mountainMath/mountainmathHelpers")
+library(mountainmathHelpers)
+
+vsb_regions <- list(CSD=c("5915022","5915803"),CT=c("9330069.00","9330069.01","9330069.02"))
+```
+
+Geographic data often comes on different geographic breakdowns. A prime example is census data, where the underlying census geographies can change from census year to census year. This makes it difficult to compare census data across censuses. But comparing census data across censuses at fine geographies is important for many applications.
+
+There are two main ways how people deal with this problem.
+1. Estimate data for one of the two geographies by (usually at some point) relying on area-weighted interpolation.
+2. Aggregate up areas in both geographic datasets until one arrives at a common tiling.
+
+The first method has the advantage that it always works, but the disadvantage that it is only an estimate and inevitably produces incorrect estimates. One example of an effort along this lines is [this dataset](https://dataverse.scholarsportal.info/dataset.xhtml?persistentId=doi:10.5683/SP/EUG3DT) giving weights to pairs of Canadian census tracts across the 1971 through 2016 censuses, details can be found [in this article](https://jamaps.github.io/docs/Allen_Taylor_2018_TCG_census_tract_database.pdf). Analysis based on this method needs to include an extra level of sensitivity checks to quantify how sensitive the analysis is to the assumptions (implicitly) used in the estimates. I am not aware of a good tool to aid such a sensitivity analysis, which significantly diminished the usefulness of this approach for academic research.
+
+The second method has the advantage that it's (fairly) exact. The [Statisitcs Canada Correspondence files](https://www12.statcan.gc.ca/census-recensement/2011/geo/ref/cor-eng.cfm) are a prime example of this approach, they encode instructions on how to link geographies in each census in order to achieve a common tiling. While only correspondence files for adjacent censuses are available, and the only geographies covered are Dissemination Blocks and Dissemination Ares, this can be trivially extended to span multiple censuses and other census geographies via joining multiple tables. 
+
+## TongFen
+Both of these methods have value, and we have incorporated them into our [TongFen](https://mountainmath.github.io/tongfen/index.html), which has become an integral part of our data analysis pipeline.
+
+The [`tongfen_estimate` function](https://mountainmath.github.io/tongfen/reference/tongfen_estimate.html) provides the ability to estimate data given on one geography on a different geography. It is essentially a downsampling method that distributes data from a larger geography into smaller geographies. In its simplest form this reduces to area weighted interpolation, and can be extended to dasymetric interpolation via the [`proportional_reaggregate` function](https://mountainmath.github.io/tongfen/reference/proportional_reaggregate.html) if other contextual data, for example Dissemination Block level counts in the census context, or secondary data like land use patterns that can help reduce downsampling errors, are available. It handles arbitrary geographies and is not constrained to any particular type like e.g. census tracts.
+
+This is the method we use when geographies aren't congruent in the sense that they don't support a common tiling (other than aggregating the data into a single unit), or when we have fixed geographic target areas that we don't want to aggregate up further. A rundown of how to use this method, including refining via dasymetric estimates, as well as an analysis in the errors this introduces, can be found in [our example estimtes of census data for Toronto Wards](https://doodles.mountainmath.ca/blog/2018/10/22/toronto-wards/), where a custom tabulation with exact counts is available as an authoritative check against the estimated values.
+
+Because of the implicit and hard to estimate errors when estimating data for a fixed target geography we try to resort to aggregating areas up to a common tiling whenever possible. This process, making data comparable by finding a (least) common geography, is what we call **TongFen**, named after the Mandarin word for bringing two fractions onto the same (lowest) common denominator.
+
+We have demonstrated this [using multi-year census data for Vancouver](https://doodles.mountainmath.ca/blog/2019/06/03/2001-census-data-and-tongfen/) and [for Toronto](https://doodles.mountainmath.ca/blog/2019/06/04/multi-census-tongfen/) and more recently using Census Tract level annual CRA tax data (https://doodles.mountainmath.ca/blog/2020/04/23/census-tract-level-t1ff-tax-data/), and this is also what's [baked into CensusMapper for 2011/2016 comparative interactive maps](https://censusmapper.ca/maps/731?index=0#10/49.2620/-123.1142). The main drawback is that StatCan correspondence files are only available for census geographies, and that they only allow linking of census data back to 2001. On the plus side, the TongFen package leverages CensusMapper metadata to also automatically aggregate up the census variables, which can be a bit of a headache when dealing with variables that aren't straight-up counts like averages or percentages. But this breaks down for medians, medians can't be aggregated up this way and TongFen resorts to estimation instead (while emitting a warning message).
+
+## Universal TongFen
+There are two obvious ways to extend the existing methods. One is to add tools for automated sensitivity analysis to accompany `tongfen_estimate`, which is still work in progress. The other is to extend TongFen methods that aggregate geographies to a common tiling for arbitrary geographies, not just the ones where we already have correspondence files like the 2001 through 2016 censuses. That's what we mean by **universal TongFen**. At the base of this the new `estimate_tongfen_correspondence` function that generates a correspondence between two arbitrary geographic datasets. We will first demonstrate how this works using census data, and then apply this to federal election polling district level data.
+
+## Estimating correspondence files
+To start out we need to understand why this necessarily is a matter of *estimation* and not *computation*. Geographic data tends to be messy and the spatial accuracy of geographic dataset varies. Because of the nature of how inaccuracies enter into spacial data, these accuracy issues tend to be distance based.
+
+When finding a common tiling of two separate geographic datasets we have to answer the question when we consider geographic regions form each of the datasets to be "the same". The `estimate_tongfen_correspondence` function addresses this by allowing the specification of a *tolerance* parameter, that determines by how much we allow regions to differ before we consider them to be different regions. 
+
+
+```{r}
+geos_2016 <- get_census("CA16",regions=vsb_regions,geo_format="sf",level="DA") %>%
+  rename(GeoUID2016=GeoUID)
+geos_2006 <- get_census("CA06",regions=vsb_regions,geo_format="sf",level="DA") %>%
+  rename(GeoUID2006=GeoUID)
+
+tongfen_core <- c("59153821","59153825","59153826","59151429","59151430",
+                  "59151436","59151428","59151437","59151432","59151420",
+                  "59151419","59150336","59150337","59151433","59151434","59151435")
+
+bbox <- rbind(geos_2006 %>% select(GeoUID=GeoUID2006),
+              geos_2016 %>% select(GeoUID=GeoUID2016)) %>%
+  filter(GeoUID %in% tongfen_core) %>%
+  st_buffer(0.001) %>% 
+  st_bbox()
+```
+
+To see how this works let's take a look at the dissemination areas in the City of Vancouver, including Musqueam 2 and the unincorporated area around UBC to the west.
+
+```{r fig.height=4}
+rbind(geos_2006 %>% select(TongfenID=GeoUID2006) %>% mutate(type="2006"),
+      geos_2016 %>% select(TongfenID=GeoUID2016) %>% mutate(type="2016")) %>%
+ggplot() +
+  geom_water() +
+  geom_sf(size=0.5) +
+  geom_roads(color="white") +
+  geom_sf(data=bbox_to_polygon(bbox),color="red",fill=NA,size=1) +
+  coord_sf(datum=NA) +
+  facet_wrap("type") +
+  labs(title="Comparison between 2006 and 2016 dissemination areas",
+       caption="MountainMath, StatCan Census 2006,2016")
+```
+
+Most of the areas appear unchanged between the censuses. We notice some larger changes highlighted in the red square, let's take a closer look.
+
+```{r} 
+rbind(geos_2006 %>% select(TongfenID=GeoUID2006) %>% mutate(type="2006"),
+      geos_2016 %>% select(TongfenID=GeoUID2016) %>% mutate(type="2016")) %>%
+ggplot() +
+  geom_sf(size=0.5,color="brown") +
+  geom_roads(size=0.1, data = bbox %>% bbox_to_polygon() %>% st_buffer(0.01), 
+             transform = function(d)filter(d,grepl("primary|secondary|tertiary|residential",kind_detail))) +
+  geom_sf(data=bbox_to_polygon(bbox),color="red",fill=NA,size=1) +
+  coord_bbox(bbox) + 
+  ggspatial::annotation_scale(location = "bl", width_hint = 0.5) +
+  facet_wrap("type") +
+  labs(title="Comparison between 2006 and 2016 dissemination areas",
+       caption="MountainMath, StatCan Census 2006,2016")
+```
+
+Zooming in, and using the fixed road network (taken from Open Street Map) for reference, we notice that next to the larger boundary changes where polygons got re-assembled, many of the other polygon boundaries changed slightly between 2006 and 2016, mostly to better align with the road network.
+
+```{r}
+geos_statcan <- get_tongfen_census_da(regions=vsb_regions,
+                                      vectors = c("v_CA16_1","v_CA06_1"),
+                                      geo_format = 'sf')
+
+crs <- lambert_conformal_conic_at(geos_2006)
+
+correspondences <- c(10,20,30,50,100) %>% 
+  lapply(function(t){
+  estimate_tongfen_correspondence(geos_2006 %>% st_transform(crs),
+                                  geos_2016 %>% st_transform(crs),
+                                  "GeoUID2006","GeoUID2016",tolerance = t)
+})
+
+geos_manual <- lapply(correspondences,function(correspondence){
+  geos_2016 %>% 
+  left_join(correspondence,by="GeoUID2016") %>%
+  group_by(TongfenID) %>%
+  summarize()
+})
+
+```
+
+This gives us some indication of what kind of tolerance we want to choose when trying to match up the areas. A 10 metre tolerance will probably trip up on some of the small boundary adjustments to better align with the road network, but if we choose the tolerance too large we might miss meaningful boundary changes. Given that a typical lot in Vancouver is about 110 feet deep, a 30 or 40 metre tolerance will be probably coarse enough to allow for minor alignment adjustments, but fine enough to pick up boundary changes that move one lot to a different geographic area.
+
+We can put that theory to the test by plotting the results of `estimate_tongfen_correspondence` with 10, 20, and 30 metre tolerance, while also plotting the original geographies and the results of using `get_tongfen_census_da` that utilizes the official StatCan correspondence file for matching up regions.
+
+```{r fig.height=6}
+rbind(geos_statcan %>% select(TongfenID) %>% mutate(type="StatCan correspondence"),
+      geos_manual[[1]] %>% mutate(type="TongFen correspondence 10m"),
+      geos_manual[[2]] %>% mutate(type="TongFen correspondence 20m"),
+      geos_manual[[3]] %>% mutate(type="TongFen correspondence 30m"),
+      geos_2006 %>% select(TongfenID=GeoUID2006) %>% mutate(type="2006") %>% st_transform(4326),
+      geos_2016 %>% select(TongfenID=GeoUID2016) %>% mutate(type="2016") %>% st_transform(4326)) %>%
+ggplot() + 
+  geom_sf(size=0.5,color="brown") +
+  geom_roads(size=0.1, data = bbox %>% bbox_to_polygon() %>% st_buffer(0.01), 
+             transform = function(d)filter(d,grepl("primary|secondary|tertiary|residential",kind_detail))) +
+  geom_sf(data=bbox_to_polygon(bbox),color="red",fill=NA,size=1) +
+  coord_bbox(bbox) +
+  ggspatial::annotation_scale(location = "bl", width_hint = 0.5) +
+  facet_wrap("type",ncol=3) +
+  labs(title="Comparison between 2006 and 2016 dissemination areas",
+       caption="MountainMath, StatCan Census 2006,2016") 
+```
+
+Indeed, using 10 metre tolerance gets tripped up on a lot of the minor boundary adjustments and amalgamates the geographies into large regions. A 20 metre tolerance gets a much finer view, but still get tripped up by the boundary adjustments along Broadway along the bottom of our area of interest. The 30 metre tolerance seems to strike the right balance, at least of the geographies in this map view.
+
+```{r include=FALSE}
+geos_2011 <- get_census("CA11",regions=vsb_regions,geo_format="sf",level="DA")
+
+correspondence <- estimate_tongfen_correspondence(geos_manual[[3]] %>% st_transform(crs),
+                                                  geos_2011 %>% st_transform(crs),
+                                                  "TongfenID","GeoUID",tolerance = 30)
+geos_2011 %>% 
+  left_join(correspondence,by="GeoUID") %>%
+  group_by(TongfenID) %>%
+  summarize() %>%
+  ggplot() +
+  geom_sf(size=0.5,color="brown") +
+  geom_roads(size=0.1, data = bbox %>% bbox_to_polygon() %>% st_buffer(0.01), 
+             transform = function(d)filter(d,grepl("primary|secondary|tertiary|residential",kind_detail))) +
+  geom_sf(data=bbox_to_polygon(bbox),color="red",fill=NA,size=1) +
+  coord_bbox(bbox) +
+  ggspatial::annotation_scale(location = "bl", width_hint = 0.5) +
+  #facet_wrap("type",ncol=3) +
+  labs(title="Comparison between 2006 and 2016 dissemination areas",
+       caption="MountainMath, StatCan Census 2006,2016")
+```
+
+We notice a difference between the amalgamation using the StatCan correspondence files and the 30 metre tolerance estimate in the top right quadrant, where the StatCan correspondence files tell us to dissolve an east-west boundary that our `estimate_tongfen_correspondence` leaves untouched. This is likely a change introduced by StatCan because of issues of comparability for the data across those censuses, possibly due to geocoding errors across the boundaries. In theory it could also be due to boundary changes in the 2011 census, as the StatCan correspondence files between 2006 and 2016 are bridged by the 2011 geographies, but closer inspection reveals this is not the culprit in this case.
+
+For completeness here is a comparison of the 2006, 2016, TongFen based on the StatCan correspondence files and TongFen based on estimating the correspondence via `estimate_tongfen_correspondence`. Next to our 30m tolerance, we'll throw in estimates based on 50m and 100m tolerance.
+
+```{r fig.height=10}
+rbind(geos_statcan %>% select(TongfenID) %>% mutate(type="StatCan correspondence"),
+      geos_manual[[3]] %>% mutate(type="TongFen correspondence 30m"),
+      geos_manual[[4]] %>% mutate(type="TongFen correspondence 50m"),
+      geos_manual[[5]] %>% mutate(type="TongFen correspondence 100m"),
+      geos_2006 %>% select(TongfenID=GeoUID2006) %>% mutate(type="2006") %>% st_transform(4326),
+      geos_2016 %>% select(TongfenID=GeoUID2016) %>% mutate(type="2016") %>% st_transform(4326)) %>%
+  mutate(type=factor(type,levels=c("2006","2016","StatCan correspondence","TongFen correspondence 30m","TongFen correspondence 50m","TongFen correspondence 100m"))) %>%
+ggplot() + 
+  geom_water() +
+  geom_roads(size=0.1,color="darkgrey") +
+  geom_sf(size=0.25,color="brown") +
+  coord_sf(datum=NA) +
+  facet_wrap("type",ncol=2) +
+  labs(title="Comparison between 2006 and 2016 dissemination areas",
+       caption="MountainMath, StatCan Census 2006,2016") 
+```
+
+The TongFen estimates with 30 metres tolerance still loose a fair bit of detail in several areas, especially where census boundaries are curvy and 2006 tracing of them is proving rather rough.
+
+The 50m tolerance recaptures a lot of the lost detail, but also fails to amalgamate some ares where the StatCan correspondence files dictate a boundary change should have happened, for example at UBC. However, the StatCan correspondence based amalgamation at UBC may well be driven by geocoding issues rather than significant boundary changes. Aided by having the comparison with the StatCan correspondence files, it appears that the 50m tolerance gives very good overall results for our area of interest.
+
+The 100m tolerance estimates captures some areas correctly that the 50m estimate missed, for example in the north-east corner of Vancouver or at the south end of Imperial Drive at Pacific Spirit Park. At the same time, it introduces quite a few more issues where it fails to amalgamate data. Given that a 100m tolerance will miss some block-level changes, this should not come as a surprise.
+
+In summary, in our example the `estimate_tongfen_correspondence` is quite effective at reproducing the tiling obtained via the StatCan correspondence files, and there is nothing in the physical geography that can explain the coarser tiling from the StatCan correspondence file for the cases where both tilings differ. One has to take care how to pick the tolerance, understanding context, like the fact that census boundaries generally follow city blocks and knowledge about the shape of blocks can help to pick an useful tolerance that walks the line between retaining as fine a geography as possible without running the risk of missing meaningful boundary changes.
+
+## Federal election polling districts
+[Steve Tornes](https://twitter.com/Steve_Tornes) has been comparing polling district level election results between the 2015 and 2019 federal elections.
+
+{{<tweet 1257736726770040835>}}
+
+The maps are quite pretty, and the obvious question is how to get results for both of those election onto the same map to compare the data polling district by polling district. This of course is a perfect application case for TongFen. And Steve asking me about this was part of the motivation for me to get my act together and add this functionality to the `tongfen` package.
+
+```{r}
+get_canada_federal_election_polling_division_geos <- function(year=2019){
+  base_path=file.path(tempdir(),paste0("polling_division_boundaries_",year))
+    if (year==2015) {
+      url= "http://ftp.maps.canada.ca/pub/elections_elections/Electoral-districts_Circonscription-electorale/polling_divisions_boundaries_2015/polling_divisions_boundaries_2015_shp.zip"
+      layer="PD_A"
+    } else if (year==2019) {
+      url="http://ftp.maps.canada.ca/pub/elections_elections/Electoral-districts_Circonscription-electorale/Elections_Canada_2019/polling_divisions_boundaries_2019.shp.zip"
+      layer="PD_CA_2019_EN"
+    } else {
+      stop("Year needs to be 2015 or 2019")
+    }
+  if (!dir.exists(base_path)) {
+    dir.create(base_path)
+    tmp=tempfile()
+    download.file(url,tmp)
+    fs <- unzip(tmp,exdir = base_path)
+  }
+  path <- file.path(base_path,dir(base_path,pattern="\\.shp$"))
+  #rgdal::ogrListLayers(path)
+  d<-read_sf(path, layer = layer) %>%
+    mutate_at(vars(-any_of("geometry")), as.character)
+}
+
+
+get_canada_federal_election_polling_division_votes <- function(year=2019){
+  base_path=file.path(tempdir(),paste0("polling_division_data_",year))
+  if (year==2019) {
+    url="https://www.elections.ca/res/rep/off/ovr2019app/51/data_donnees/pollresults_resultatsbureauCanada.zip"
+  } else if (year==2015) {
+    url="https://www.elections.ca/res/rep/off/ovr2015app/41/data_donnees/pollresults_resultatsbureauCanada.zip"
+  }
+  #url="https://www.elections.ca/res/rep/off/ovr2019app/51/data_donnees/pollresults_resultatsbureauCanada.zip"
+  #url="https://www.elections.ca/res/rep/off/ovr2019app/51/data_donnees/polldayregistrations_enregistjourduscrutinCanada.zip"
+  if (!dir.exists(base_path)) {
+    tmp=tempfile()
+    download.file(url,tmp)
+    unzip(tmp,exdir = base_path)
+  }
+  dir(base_path,pattern="*.csv") %>%
+    file.path(base_path,.) %>%
+    lapply(read_csv,col_type=cols(.default="c")) %>%
+    bind_rows
+}
+
+clean_poll_data <- function(data){
+  data %>% 
+    select(FED_NUM=`Electoral District Number/Numéro de circonscription`,
+           Merge=`Merge With/Fusionné avec`,
+           no_poll=`No Poll Held Indicator/Indicateur de bureau sans scrutin`,
+           void_poll=`Void Poll Indicator/Indicateur de bureau supprimé`,
+           PD_NUM=`Polling Station Number/Numéro du bureau de scrutin`,
+           Party=`Political Affiliation Name_English/Appartenance politique_Anglais`,
+           Incumbent=`Incumbent Indicator/Indicateur_Candidat sortant`,
+           Elected=`Elected Candidate Indicator/Indicateur du candidat élu`,
+           Votes=`Candidate Poll Votes Count/Votes du candidat pour le bureau`) %>%
+    filter(!is.na(PD_NUM)) %>%
+    mutate(PDNUM=PD_NUM,PD_NUM=gsub('[^0-9.]$','',PD_NUM)) %>%
+    mutate(Votes=as.integer(Votes))
+}
+```
+
+```{r}
+# docus on Vancouver
+fed_nums <- c("59034","59035","59036","59038","59039","59040")
+
+data_2015 <- simpleCache(get_canada_federal_election_polling_division_votes(2015),
+                         "electoral_district_votes_2015.rda") %>%
+  clean_poll_data() %>%
+  filter(FED_NUM %in% fed_nums) %>%
+  mutate(PD_2015=paste0(FED_NUM,"_",coalesce(Merge,PD_NUM)))
+data_2019 <- simpleCache(get_canada_federal_election_polling_division_votes(2019),
+                         "electoral_district_votes_2019.rda") %>%
+  clean_poll_data() %>%
+  filter(FED_NUM %in% fed_nums) %>%
+  mutate(PD_2019=paste0(FED_NUM,"_",coalesce(Merge,PD_NUM)))
+
+geo_2015 <- simpleCache(get_canada_federal_election_polling_division_geos(2015) %>%
+                          st_make_valid(),"electoral_districts_2015.rda") %>%
+  select(FED_NUM,PD_NUM,POLL_NAME,ADV_POLL) %>%
+  filter(FED_NUM %in% fed_nums) %>%
+  mutate(AP_2015=paste0(FED_NUM,"_",ADV_POLL)) %>%
+  left_join(data_2015 %>%
+              select(FED_NUM,PD_NUM,PD_2015) %>%
+              unique(),
+            by=c("FED_NUM","PD_NUM")) 
+
+geo_2019 <- simpleCache(get_canada_federal_election_polling_division_geos(2019) %>% 
+                          st_make_valid(),"electoral_districts_2019.rda") %>%
+  select(FED_NUM=FEDNUM,PD_NUM=PDNUM,POLL_NAME=POLLNAME,ADV_POLL=ADVPOLLNUM) %>%
+  filter(FED_NUM %in% fed_nums) %>%
+  mutate(AP_2019=paste0(FED_NUM,"_",ADV_POLL)) %>%
+  left_join(data_2019 %>%
+              select(FED_NUM,PD_NUM,PD_2019) %>%
+              unique(),
+            by=c("FED_NUM","PD_NUM"))
+```
+
+Before we jump into mapping we need to understand some of the [details around voting](https://www.elections.ca/content.aspx?section=vot&dir=vote&document=index&lang=e). For our purpose, it's important to distinguish three types of voting:
+
+1. Voting at a polling station
+2. Advance voting
+3. Voting by mail
+
+People voting by the first method will do so at their designated polling stations, which is determined by their residential address. There are great for mapping purposes. Some last minute changes mean that some voting districts get pooled in this end, that adds a minor inconvenience.
+
+People voting by the second method go to their advance voting station. Several polling districts typically share the same advance polling station. We can still map this data, but at a coarser geography than polling districts.
+
+The last method, voting by mail, has no geography associated with it other than the riding, so they can only be mapped at the riding level.
+
+We will look at the ridings that cover the City of Vancouver, Musqueam 2 and the unincorporated area around UBC. These ridings are Vancouver Centre (59034), Vancouver East (59035), Vancouver Granville (59036), Vancouver Kingsway (59038), Vancouver Quadra (59039), and Vancouver South (59040).
+
+```{r fig.width=9}
+
+main_parties <- data_2019 %>% 
+  group_by(Party) %>% 
+  summarize(Votes=sum(Votes,na.rm=TRUE)) %>% 
+  top_n(6,Votes) %>%
+  arrange(-Votes) %>%
+  pull(Party)
+
+
+party_colours <- c(
+  "People's Party"="#4a3389",
+  Conservative="#0C499C",
+  "Bloc Québécois"="#02819E",
+  Liberal="#A50B0B",
+  NDP="#DA3D00",
+  "Green Party"="#2E8724",
+  "Independent"="#676767",
+  Other="yellow"
+)
+
+all_votes <- data_2019 %>%
+  select(FED_NUM,PD_NUM,Party,Votes) %>%
+  mutate(Year="2019") %>%
+  bind_rows(data_2015 %>% 
+              select(FED_NUM,PD_NUM,Party,Votes) %>%
+              mutate(Year="2015")) %>%
+  mutate(type=case_when(grepl("S/R",PD_NUM) ~ "Letter",
+                        as.integer(PD_NUM)>600 ~ "Advance",
+                        TRUE ~ "Poll")) %>%
+  mutate(Party=case_when(Party %in% main_parties ~ Party,
+                         TRUE ~ "Other")) %>%
+  mutate(Pary=factor(Party,levels=c(main_parties,"Other"))) %>%
+  group_by(FED_NUM,Year,type,Party) %>%
+  summarize(Votes=sum(Votes,na.rm=TRUE)) %>%
+  mutate(type=factor(type,levels = c("Letter", "Advance","Poll"))) %>%
+  mutate(Party=fct_recode(Party,NDP="NDP-New Democratic Party"))
+
+ggplot(all_votes,aes(x=type,y=Votes,fill=Party)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=party_colours) +
+  scale_y_continuous(labels=scales::comma) +
+  facet_grid(Year ~ FED_NUM) +
+  theme_light() +
+  theme(legend.position = "bottom") +
+  labs(title="Federal election votes by riding, voting type, and party",
+       caption="MountainMath, Elections Canada",x=NULL,y=NULL)
+```
+
+There are few people voting by letter in each riding, but the number of people voting in advance polls is quite substantial. If we are mapping polling district level data, we are only counting the votes of the people that voted in person at the polls. If people living in a polling district voting in advance polls vote substantially different from people voting on election day, then polling district level map won't accurately reflect the voting pattern living in the polling district. 
+
+That's a problem if we want to do serious analysis with the data, but for today we are mostly interested in how to apply TongFen to this data. For now we will just take a quick peak at differences in shares of votes by voting method, this gives some indication how the different campaigns have structures their get-out-the-vote initiatives.
+
+```{r fig.width=9}
+ggplot(all_votes,aes(x=type,y=Votes,fill=Party)) +
+  geom_bar(stat="identity",position="fill") +
+  scale_fill_manual(values=party_colours) +
+  scale_y_continuous(labels=scales::percent) +
+  facet_grid(Year ~ FED_NUM) +
+  theme_light() +
+  theme(legend.position = "bottom") +
+  labs(title="Federal election votes by riding, voting type, and party",
+       caption="MountainMath, Elections Canada",x=NULL,y=NULL)
+```
+
+
+With that done, it's time to dive into TongFen. The main step is to generate the correspondence estimates. Visual inspection shows that polling districts generally also follow block outlines and are in size not dissimilar from dissemination ares. So we will use the same tolerance of 30m for this.
+
+
+```{r}
+tolerance <- 30 # 20m tolerance when matching
+
+# estimate correspondence between PDs
+correspondence <- estimate_tongfen_correspondence(geo_2015, geo_2019 ,
+                                                  "PD_2015","PD_2019",
+                                                  tolerance = tolerance) 
+
+correspondence2 <- estimate_tongfen_correspondence(geo_2015, geo_2019, 
+                                                  "AP_2015","AP_2019",
+                                                  tolerance = tolerance) 
+
+
+vote_data <- correspondence %>% 
+  left_join(data_2019 %>% select(PD_2019,Party,Votes_2019=Votes),by="PD_2019") %>%
+  left_join(data_2015 %>% select(PD_2015,Party,Votes_2015=Votes),by=c("PD_2015","Party")) %>%
+  group_by(TongfenID,Party) %>% 
+  summarize_at(vars(starts_with("Votes")),sum,na.rm=TRUE) %>%
+  group_by(TongfenID) %>%
+  mutate(Total_2019=sum(Votes_2019,na.rm=TRUE),
+         Total_2015=sum(Votes_2015,na.rm=TRUE)) %>%
+  mutate(Share_2015=Votes_2015/Total_2015,
+         Share_2019=Votes_2019/Total_2019) %>%
+  ungroup() 
+
+advance_votes_data <- correspondence2 %>%
+  left_join(data_2019 %>% select(AP_2019=PD_2019,Party,Votes_2019=Votes),by="AP_2019") %>%
+  left_join(data_2015 %>% select(AP_2015=PD_2015,Party,Votes_2015=Votes),by=c("AP_2015","Party")) %>%
+  group_by(TongfenID,Party) %>% 
+  summarize_at(vars(starts_with("Votes")),sum,na.rm=TRUE) %>%
+  group_by(TongfenID) %>%
+  mutate(Total_2019=sum(Votes_2019,na.rm=TRUE),
+         Total_2015=sum(Votes_2015,na.rm=TRUE)) %>%
+  mutate(Share_2015=Votes_2015/Total_2015,
+         Share_2019=Votes_2019/Total_2019) %>%
+  ungroup() 
+```
+
+
+
+
+```{r fig.height=3}
+cutout_geometry <- get_census("CA16",regions=list(CSD=c("5915022","5915803"),
+                                                  CT=c("9330069.01","9330069.02")),
+                              geo_format="sf") %>% 
+  summarise() %>%
+  st_transform(st_crs(geo_2019))
+
+
+
+base_geo <- geo_2019 %>% 
+  left_join(correspondence,by=c("PD_2019")) %>%
+  group_by(TongfenID) %>%
+  summarise() %>%
+  st_intersection(cutout_geometry) #%>%
+  #st_transform(lambert_conformal_conic_at(.))
+
+focus_area <- base_geo[base_geo$TongfenID=="59039_51",]
+
+bbox <- focus_area %>% st_buffer(200) %>% st_transform(4326) %>% st_bbox()
+
+compare_geos <- rbind(geo_2015 %>% mutate(type="2015") %>% select(type) %>% st_transform(4326),
+      geo_2019 %>% mutate(type="2019") %>% select(type) %>% st_transform(4326),
+      base_geo %>% mutate(type="TongFen") %>% select(type) %>% st_transform(4326)) %>% 
+  st_intersection(cutout_geometry %>% st_transform(4326))
+
+ridings <- geo_2019 %>% 
+  filter(FED_NUM %in% fed_nums) %>%
+  group_by(FED_NUM) %>%
+  summarize() %>%
+  st_intersection(cutout_geometry) %>%
+  st_transform(lambert_conformal_conic_at(.)) %>%
+  rmapshaper::ms_simplify()
+
+
+ggplot(compare_geos) +
+  facet_wrap("type") +
+  geom_water() +
+  geom_sf(size=0.25) +
+  geom_sf(data=ridings,size=0.75,fill=NA) +
+  geom_roads(color="white") +
+  geom_sf(data=bbox_to_polygon(bbox),color="red",fill=NA,size=1) +
+  coord_sf(datum = NA) +
+  labs(title="Federal electoral poll district boundaries TongFen",caption="MountainMath, Elections Canada")
+```
+
+The east side looks fairly intact after TongFen. Areas on the west side have changes considerably, which translates into large agglomerations of poll areas through TongFen. This is emphasized by polling areas on the west side being larger, due to lower population density but also large green areas like the Pacific Spirit Park. If one was interested in a more detailed analysis it might pay of to first cut out large unpopulated areas and thus ignoring boundary changes that do not result in people getting moved to a different polling district.
+
+To better understand the mechanics we focus in on the red square in Kitsilano.
+
+```{r fig.height=3}
+ggplot(bbox_to_polygon(bbox)) +
+  facet_wrap("type") +
+  geom_water() +
+  geom_sf(data=compare_geos,color="brown",size=1) +
+  geom_roads(data=~st_buffer(.,0.03)) +
+  geom_sf(color="red",fill=NA,size=2) +
+  coord_bbox(bbox) +
+  labs(title="Federal electoral poll district boundaries TongFen",caption="MountainMath, Elections Canada")
+```
+
+We observe many boundary changes in the centre of the area, as well as the left side, with smaller changes on the right side of the cutout. Visual inspection confirms that the TongFen works as intended in finding an optimal common tiling.
+
+Time to do some mapping. Now that we have a common tiling based on the 2015 and 2019 polling districts, we can compare the voting data for those elections. At least for the portion of the population that voted at the polls on election day. Here is the percentage point change in votes for each of the larger parties in each area.
+
+```{r vote-change}
+plot_data <- base_geo %>%
+  left_join(vote_data %>% 
+              filter(Party %in% main_parties) %>%
+              group_by(TongfenID) %>%
+              complete(Party=main_parties,fill=list(Share_2015=0,Share_2019=0)) %>%
+              mutate(Party=factor(Party,levels=main_parties)) %>%
+              mutate(Party=fct_recode(Party,"NDP-New Democratic Party"="NDP")),
+            by="TongfenID")
+
+
+plot_data %>% 
+  st_transform(lambert_conformal_conic_at(.)) %>%
+  ggplot(aes(fill=Share_2019-Share_2015)) +
+  geom_water() +
+  geom_sf(size=0.01) +
+  geom_sf(data=ridings,size=0.5,fill=NA) +
+  scale_fill_gradient2(labels=function(d)scales::percent(d,suffix="pp")) +
+  facet_wrap("Party") +
+  theme(legend.position="bottom", legend.key.width = unit(2.5, "cm")) +
+  coord_sf(datum = NA) +
+  labs(title="Percentage point change in share of polling station votes 2015-2019",
+       fill="Percentage point\nchange 2015-2019",
+       caption="MountainMath, Elections Canada")
+
+```
+
+Vancouver Granville stands out, that's where Jody Wilson-Raybould ran as a Liberal in 2015 and as Independent in 2019. On the east side, where we have retained a fairly granular geographic breakdown, we notice interesting patterns of diverging vote movement.
+
+We can repeat a similar process for the people that voted in advance polls by first aggregating polling districts that had a common advance poll station, and then using TongFen to bring these advance polling districts onto a common geography.
+
+```{r}
+base_geo <- geo_2019 %>% 
+  filter(FED_NUM %in% fed_nums) %>%
+  left_join(correspondence2,by=c("AP_2019")) %>%
+  group_by(TongfenID) %>%
+  summarise() %>%
+  st_intersection(cutout_geometry) %>%
+  st_transform(lambert_conformal_conic_at(.))
+
+plot_data <- base_geo %>%
+  left_join(advance_votes_data %>% 
+              filter(Party %in% main_parties) %>%
+              group_by(TongfenID) %>%
+              complete(Party=main_parties,fill=list(Share_2015=0,Share_2019=0)) %>%
+              mutate(Party=factor(Party,levels=main_parties)) %>%
+              mutate(Party=fct_recode(Party,"NDP-New Democratic Party"="NDP")),
+            by="TongfenID") 
+
+
+
+plot_data %>% 
+  ggplot(aes(fill=Share_2019-Share_2015)) +
+  geom_water() +
+  geom_sf(size=0.1) +
+  geom_sf(data=ridings,size=0.5,fill=NA) +
+  scale_fill_gradient2(labels=function(d)scales::percent(d,suffix="pp")) +
+  theme(legend.position="bottom", legend.key.width = unit(2.5, "cm")) +
+  facet_wrap("Party") +
+  coord_sf(datum=NA) +
+  labs(title="Percentage point change in share of advance poll votes 2015-2019",
+       fill="Percentage point\nchange 2015-2019",
+       caption="MountainMath, Elections Canada")
+
+```
+
+For Vancouver Granville the advance poll data confirms observations from the election day poll seen above that show that the vote swing away from Liberal was in line with many of the adjacent areas, and NDP as well as conservatives also significantly contributed to Jody Wilson-Raybould's vote total. But that's something we can already read off from the riding level summaries at the top of this section and does not require TongFen.
+
+Bottom line, while there is some geographic variation visible, most of the interesting story about voter migration happens at the riding level. One interesting sub-riding level story might be in Vancouver East, where advance polling data shows an increase in NDP votes on the western side and a decrease on the east, while election day polling district data shows the reverse. A mirrored pattern can be observed in the Liberal vote change, partially masked by an overall decline in their vote share.
+
+## Upshot
+Our new `estimate_tongfen_correspondence` opens the door to **universal TongFen**, enabling quick and easy estimation of correspondence data for different geographic breakdowns. It find the least common denominator geography, given a specified tolerance, and enables us to make the data geographically comparable.
+
+This is only useful if the different geographic breakdowns are sufficiently congruent, if not we will have to resort to the traditional `tongfen_estimate` and make due with estimates instead of exact counts. A logical next step would be to round up the functionality of `tongfen_estimate` by adding an easy way to do sensitivity analysis. But that will require some thinking and will have to wait for another day.
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-05-20-toward-universal-tongfen-change-in-polling-district-voting-patterns.Rmarkdown) for anyone to reproduce or adapt for their own TongFen project.
+
+<details><summary>Reproducibility receipt</summary>
+```{r}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
