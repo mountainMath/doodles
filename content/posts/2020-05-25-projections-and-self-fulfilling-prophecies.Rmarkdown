@@ -164,7 +164,7 @@ equal_pop2 <- pop_growth %>%
   pull(difference)
 ```
 
-And population in the City has grown consistently at a lower rate than overall Metro Vancouver population. In fact, if the City of Vancouver had grown at the same rate as Metro Vancouver over those 20 years, Vancouver would have had `r scales::comma(equal_pop)` more people within city limits in 2016. But maybe people would just rather live farther out in the surrounding suburbs? Again, there are variations, but overall that is not what the price and rent data tell us.
+And population in the City has grown consistently at a lower rate than overall Metro Vancouver population. In fact, if the City of Vancouver had grown at the same rate as Metro Vancouver over those 20 years, Vancouver would have had roughly `r scales::comma(equal_pop,accuracy=1000)` more people within city limits in 2016. But maybe people would just rather live farther out in the surrounding suburbs? Again, there are variations, but overall that is not what the price and rent data tell us.
 
 
 ```{r}

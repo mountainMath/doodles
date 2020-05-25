@@ -62,7 +62,7 @@ The 1% annual growth rate roughly checks out, although there have been variation
 
 
 
-And population in the City has grown consistently at a lower rate than overall Metro Vancouver population. In fact, if the City of Vancouver had grown at the same rate as Metro Vancouver over those 20 years, Vancouver would have had 59,810 more people within city limits in 2016. But maybe people would just rather live farther out in the surrounding suburbs? Again, there are variations, but overall that is not what the price and rent data tell us.
+And population in the City has grown consistently at a lower rate than overall Metro Vancouver population. In fact, if the City of Vancouver had grown at the same rate as Metro Vancouver over those 20 years, Vancouver would have had roughly 60,000 more people within city limits in 2016. But maybe people would just rather live farther out in the surrounding suburbs? Again, there are variations, but overall that is not what the price and rent data tell us.
 
 
 <img src="/posts/2020-05-25-projections-and-self-fulfilling-prophecies_files/figure-html/unnamed-chunk-3-1.png" width="768" />
