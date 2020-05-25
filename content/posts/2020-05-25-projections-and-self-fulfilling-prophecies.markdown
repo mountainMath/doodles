@@ -1,6 +1,8 @@
 ---
 title: Projections and self-fulfilling prophecies
-author: Jens von Bergmann
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
 date: '2020-05-25'
 slug: projections-and-self-fulfilling-prophecies
 categories:
