@@ -230,7 +230,7 @@ Maybe it's best to just strip down the model and throw out the income variable, 
 library(ecoreg)
 model.eco <- eco(cbind(Confirmed,pop) ~ density,
                  binary = ~ share_black + share_65p,
-                 data = all_data %>% mutate(log_med_inc_at=log(med_income_at)))
+                 data = all_data)
 
 model.eco
 ```

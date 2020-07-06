@@ -378,7 +378,7 @@ Maybe it's best to just strip down the model and throw out the income variable, 
 library(ecoreg)
 model.eco <- eco(cbind(Confirmed,pop) ~ density,
                  binary = ~ share_black + share_65p,
-                 data = all_data %>% mutate(log_med_inc_at=log(med_income_at)))
+                 data = all_data)
 
 model.eco
 ```
@@ -386,7 +386,7 @@ model.eco
 ```
 ## Call:
 ## eco(formula = cbind(Confirmed, pop) ~ density, binary = ~share_black + 
-##     share_65p, data = all_data %>% mutate(log_med_inc_at = log(med_income_at)))
+##     share_65p, data = all_data)
 ## 
 ## Aggregate-level odds ratios:
 ##                       OR          l95          u95
@@ -424,7 +424,7 @@ Sys.time()
 ```
 
 ```
-## [1] "2020-05-27 23:30:04 PDT"
+## [1] "2020-07-06 13:18:16 PDT"
 ```
 
 ```r
@@ -435,7 +435,7 @@ git2r::repository()
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [8a196e8] 2020-05-25: fix author list
+## Head:     [e01bdc0] 2020-05-28: census-covid post
 ```
 
 ```r
@@ -446,7 +446,7 @@ sessionInfo()
 ```
 ## R version 4.0.0 (2020-04-24)
 ## Platform: x86_64-apple-darwin17.0 (64-bit)
-## Running under: macOS Catalina 10.15.4
+## Running under: macOS Catalina 10.15.5
 ## 
 ## Matrix products: default
 ## BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
@@ -459,26 +459,28 @@ sessionInfo()
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] sf_0.9-3           cancensus_0.2.2    CanCovidData_0.1.1 forcats_0.5.0     
-##  [5] stringr_1.4.0      dplyr_0.8.5        purrr_0.3.4        readr_1.3.1       
-##  [9] tidyr_1.0.2        tibble_3.0.1       ggplot2_3.3.0      tidyverse_1.3.0   
+##  [1] ecoreg_0.2.3       sf_0.9-4           cancensus_0.3.2    CanCovidData_0.1.2
+##  [5] forcats_0.5.0      stringr_1.4.0      dplyr_1.0.0        purrr_0.3.4       
+##  [9] readr_1.3.1        tidyr_1.1.0        tibble_3.0.1       ggplot2_3.3.1     
+## [13] tidyverse_1.3.0   
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] tidyselect_1.1.0   xfun_0.13          haven_2.2.0        lattice_0.20-41   
-##  [5] colorspace_1.4-1   vctrs_0.3.0        generics_0.0.2     htmltools_0.4.0   
-##  [9] yaml_2.2.1         rlang_0.4.6        e1071_1.7-3        pillar_1.4.4      
-## [13] glue_1.4.1         withr_2.2.0        DBI_1.1.0          dbplyr_1.4.3      
-## [17] modelr_0.1.6       readxl_1.3.1       lifecycle_0.2.0    munsell_0.5.0     
-## [21] blogdown_0.18      gtable_0.3.0       cellranger_1.1.0   rvest_0.3.5       
-## [25] evaluate_0.14      knitr_1.28         class_7.3-16       fansi_0.4.1       
-## [29] broom_0.5.6        Rcpp_1.0.4.6       KernSmooth_2.23-16 classInt_0.4-3    
-## [33] cansim_0.3.5       scales_1.1.1       backports_1.1.6    jsonlite_1.6.1    
-## [37] fs_1.4.1           hms_0.5.3          digest_0.6.25      stringi_1.4.6     
-## [41] bookdown_0.18      grid_4.0.0         cli_2.0.2          tools_4.0.0       
-## [45] magrittr_1.5       crayon_1.3.4       pkgconfig_2.0.3    ellipsis_0.3.1    
-## [49] xml2_1.3.2         reprex_0.3.0       lubridate_1.7.8    assertthat_0.2.1  
-## [53] rmarkdown_2.1      httr_1.4.1         rstudioapi_0.11    R6_2.4.1          
-## [57] git2r_0.26.1       units_0.6-6        nlme_3.1-147       compiler_4.0.0
+##  [1] Rcpp_1.0.4.6       lubridate_1.7.9    lattice_0.20-41    class_7.3-17      
+##  [5] assertthat_0.2.1   digest_0.6.25      R6_2.4.1           cellranger_1.1.0  
+##  [9] backports_1.1.8    reprex_0.3.0       evaluate_0.14      e1071_1.7-3       
+## [13] httr_1.4.1         blogdown_0.19      pillar_1.4.4       rlang_0.4.6       
+## [17] readxl_1.3.1       rstudioapi_0.11    blob_1.2.1         rmarkdown_2.2     
+## [21] munsell_0.5.0      broom_0.5.6        compiler_4.0.0     modelr_0.1.8      
+## [25] xfun_0.15          pkgconfig_2.0.3    htmltools_0.4.0    tidyselect_1.1.0  
+## [29] bookdown_0.19      codetools_0.2-16   fansi_0.4.1        crayon_1.3.4      
+## [33] dbplyr_1.4.4       withr_2.2.0        grid_4.0.0         nlme_3.1-148      
+## [37] jsonlite_1.6.1     cansim_0.3.5       gtable_0.3.0       lifecycle_0.2.0   
+## [41] DBI_1.1.0          git2r_0.27.1       magrittr_1.5       units_0.6-7       
+## [45] scales_1.1.1       KernSmooth_2.23-17 cli_2.0.2          stringi_1.4.6     
+## [49] fs_1.4.1           xml2_1.3.2         ellipsis_0.3.1     generics_0.0.2    
+## [53] vctrs_0.3.1        tools_4.0.0        glue_1.4.1         hms_0.5.3         
+## [57] yaml_2.2.1         colorspace_1.4-1   classInt_0.4-3     rvest_0.3.5       
+## [61] knitr_1.28         haven_2.3.1
 ```
 </details>
 
