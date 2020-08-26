@@ -1,0 +1,441 @@
+---
+title: Covid Series 3 Survey
+author: Jens von Bergmann
+date: '2020-08-25'
+slug: covid-series-3-survey
+categories:
+  - covid-19
+  - CANSIM
+description: "A quick tour through Covid series 3 survey data."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2020-08-25-covid-series-3-survey_files/figure-html/health-risk-concerns-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width=8,
+	cache=TRUE
+)
+
+library(tidyverse)
+```
+
+I was browsing the [Canadian Perspectives Survey Series 3](https://www150.statcan.gc.ca/n1/en/catalogue/45250007) on **Resuming Economic and Social Activities During COVID-19** and thought that some of the results were interesting. I don't have time to do a detailed post on this, but thought that others might enjoy a quick series of graphs highlighting some of the result. The survey is only released as microdata, and I have not seen much uptake or reporting other than the high-level results put out by StatCan in The Daily.
+
+StatCan PUMF microdata can be a bit of a pain to work with, StatCan does not include general purpose metadata. It comes as a flat fixed-width file and the metadata needs to get scraped out of language-specific command files. This shows that StatCan still has a long way to go to actually open up their data. The secondary purpose of this post is to share code to parse the SPSS command files to scrape out the metadata needed to read and interpret the PUMF data. The code for the post [can be found on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-08-25-covid-series-3-survey.Rmarkdown).
+
+```{r}
+path <- file.path(getOption("custom_data_path"),"pumf","covid-series-3","Data_donnÇes")
+
+s<-read_lines(file.path(path,"Syntax_Syntaxe","SPSS","CPSS2020SEPC_S3_P_i.sps")) %>%
+  as_tibble() %>%
+  slice(-1) %>%
+  filter(!grepl("\\s+\\.*$",value)) %>%
+  mutate(name=str_extract(value,"^\\s+([a-zA-Z0-9_]+)\\s+") %>% trimws() %>% unlist()) %>%
+  mutate(start=str_extract(value,"\\s+(\\d+)\\s+-\\s+") %>% gsub("-","",.) %>% trimws() %>% unlist()) %>%
+  mutate(end=str_extract(gsub("\\s+\\(.+\\)$","",value),"(\\d+)$")) %>%
+  mutate_at(c("start","end"),as.integer) %>%
+  select(name,start,end)
+
+s1 <- read_lines(file.path(path,"Syntax_Syntaxe","SPSS","CPSS2020SEPC_S3_P_vare.sps"),
+                 locale = locale(encoding = "Windows-1252")) %>%
+  as_tibble() %>%
+  filter(grepl('"$',value)) %>%
+  mutate(name=str_extract(value,"^\\s+([a-zA-Z0-9_]+)\\s+") %>% trimws() %>% unlist()) %>%
+  mutate(label=str_extract(value,'"(.+)"') %>% gsub('\"','',.) %>% trimws() %>% unlist()) %>%
+  select(name,label) %>%
+  mutate(short_label=gsub("^.+ -\\s+","",label)) %>%
+  mutate(label=factor(label),
+         short_label=factor(short_label))
+
+s2 <- read_lines(file.path(path,"Syntax_Syntaxe","SPSS","CPSS2020SEPC_S3_P_vale.sps"),
+                 locale = locale(encoding = "Windows-1252")) %>%
+  as_tibble() %>%
+  filter(!grepl("^\\s+[\\.]*$",value))
+cuts <- which(grepl("\\s+\\/",s2$value))
+translation <- seq(1,length(cuts)) %>%
+                     lapply(function(i){
+  p1=cuts[i]
+  p2=ifelse(i==length(cuts),nrow(s2),cuts[i+1]-1)
+  section <- s2[seq(p1,p2),]
+  fl <- section$value[1]
+  indent <- fl %>% gsub("/.+$","",.) %>% nchar + 1
+  header_rows <- section %>% filter(!grepl(paste0(rep(" ",indent+1),collapse=""),value))
+  value_rows <- section %>% filter(grepl(paste0(rep(" ",indent+1),collapse=""),value))
+  nn <- paste0(header_rows$value,collapse="") %>% gsub("/","",.) %>% trimws() %>% unlist() %>% strsplit(" ") %>% map(trimws) %>% unlist
+  nn <- nn[nn!=""]
+  ss <- value_rows %>%
+    mutate(val=str_extract(value,"^\\s+([a-zA-Z0-9_]+)\\s+") %>% trimws() %>% unlist()) %>%
+    mutate(label=str_extract(value,'"(.+)"') %>% gsub('\"','',.) %>% trimws() %>% unlist()) %>%
+    select(val,label)
+  
+  sss <- nn %>% 
+    lapply(function(n) ss %>% mutate(name=n)) %>%
+    bind_rows() %>%
+    select(name,val,label)
+}) %>%
+  bind_rows()
+
+
+code_variables <- function(data){
+  s2 <- read_lines(file.path(path,"Syntax_Syntaxe","SPSS","CPSS2020SEPC_S3_P_vale.sps"),
+                   locale = locale(encoding = "Windows-1252")) %>%
+    as_tibble() %>%
+    filter(!grepl("^\\s+[\\.]*$",value))
+  cuts <- which(grepl("\\s+\\/",s2$value))
+  
+  for ( i in seq(1,length(cuts))){
+    p1=cuts[i]
+    p2=ifelse(i==length(cuts),nrow(s2),cuts[i+1]-1)
+    section <- s2[seq(p1,p2),]
+    fl <- section$value[1]
+    indent <- fl %>% gsub("/.+$","",.) %>% nchar + 1
+    header_rows <- section %>% filter(!grepl(paste0(rep(" ",indent+1),collapse=""),value))
+    value_rows <- section %>% filter(grepl(paste0(rep(" ",indent+1),collapse=""),value))
+    nn <- paste0(header_rows$value,collapse="") %>% gsub("/","",.) %>% 
+      trimws() %>% unlist() %>% strsplit(" ") %>% map(trimws) %>% unlist
+    nn <- nn[nn!=""]
+    ss <- value_rows %>%
+      mutate(val=str_extract(value,"^\\s+([a-zA-Z0-9_]+)\\s+") %>% trimws() %>% unlist()) %>%
+      mutate(label=str_extract(value,'"(.+)"') %>% gsub('\"','',.) %>% trimws() %>% unlist()) %>%
+      select(val,label)
+    
+    recodes <- setNames(ss$label,ss$val)
+    
+    data <- data %>%
+      mutate_at(nn,function(d)d=recode(d,!!!recodes)) %>%
+      mutate_at(nn,function(d)d=factor(d,levels=ss$label))
+  }
+  data
+}
+
+summarize_variables <- function(data,...){
+  data %>%
+    group_by(...) %>%
+    summarize(Count=sum(PERS_WGT),.groups="drop") %>%
+    mutate(Share=Count/sum(Count))
+}
+
+label_data <- tibble()
+
+pivot_matched_vars <- function(data,match_string) {
+  data %>% 
+    pivot_longer(matches(match_string)) %>%
+    left_join(s1,by="name") 
+}
+
+series3<-read_fwf(file.path(path,"CPSS2020SEPC_S3_P.txt"),col_positions = fwf_positions(s$start,s$end,s$name)) %>%
+  code_variables() %>%
+  mutate(PERS_WGT=as.numeric(PERS_WGT))
+```
+
+## Tracing app
+Part of my motivation to look at the data was to understand people's attitudes toward the contact tracing app. To start off we can look at how likely people say they will use the app. This is important, as the usefulness of the contact tracing app depends to a large degree on how many people will install it. Research says that that the app will start to become useful when about 15% of the population has the app installed, and a much-cited preprint estimates that starting [at an adoption rate of 60% the app could suppress the epdimeic on it's own without other major interventions](https://045.medsci.ox.ac.uk/files/files/report-effective-app-configurations.pdf). This has often been misrepresented to mean that the app won't be useful below 60% adoption rate, which is false.
+
+The other part about the Canadian contact tracing app I am interested in is privacy concerns. Generally Canadian provinces have botched this badly. Alberta started out with rolling out a contact tracing app with centralized design, that is quite a bit more privacy invasive than our national app (and also was next to useless on iOS). BCCDC went completely overboard and [pitched the possibility of a location based app to BC residents in their covid survey](https://twitter.com/vb_jens/status/1260637672772472833?s=20), which is not just a stupid thing to ask but also serves to poison the well for much more privacy focused (and at the same time more effective) solutions like Canada's national contact tracing app.
+
+Given that, I was [somewhat dismayed that a StatCan survey gave people the option to give *I don't want the government to have access to my location data* as a possible answer](https://twitter.com/vb_jens/status/1294493725100404736?s=20) to why they don't want to use the contact tracing app. But [as others poited out to me](https://twitter.com/chadskelton/status/1294740415581585409?s=20), this might still be good information to have (although I am not convinced it needs to be an offial government survey that asks this question), it's a fine line between collecting information and amplifying misinformation.
+
+But what's done is done, so we might as well look at the data.
+
+```{r}
+plot_data <- series3 %>% 
+  summarize_variables(HR_25A)
+
+likely=plot_data %>%filter(grepl(" likely",HR_25A)) %>% pull(Share) %>% sum()
+
+ggplot(plot_data,aes(x=HR_25A,y=Share)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  scale_y_continuous(labels=scales::percent) +
+  #geom_text(aes(label=scales::percent(share,accuracy = 0.1)),vjust=-0.3) +
+  labs(title="Likelihood of using tracing apps",
+       x=NULL,y=NULL,
+       caption="MountainMath, StatCan Covid-19 Series 3 PUMF 45-25-0007")
+```
+
+Turns out `r scales::percent(likely)` of respondents are at least somewhat likely to install the app. Not enough to reach the 60% install base, especially when accounting for the fact that only [about 80% of Canadians have a smartphone](https://www.statista.com/statistics/467190/forecast-of-smartphone-users-in-canada/) and not all smartphones can run the app. But it's certainly enough for the app to be useful and help reduce the spread alongside other measures.
+
+
+Let's check in more detail how comfortable the people that said they were at least *somewhat likely* to install the app are with the data sharing. Of course this is a weird question, it's essentially equivalent to asking how comfortable people are walking around with wifi or bluetooth turned on and thus their MAC address being advertised. But most won't read the question this way and again, I am not sure how I feel about misleading questions being asked on a government survey that could result in lower adoption. But here we go.
+
+```{r}
+series3 %>% 
+  filter(HR_25A !="Not stated") %>%
+  pivot_matched_vars("HR_25[^A]") %>%
+  filter(value!="Valid skip") %>%
+  group_by(HR_25A,value) %>%
+  summarize(Count=sum(PERS_WGT),.groups="drop") %>%
+  group_by(HR_25A) %>%
+  mutate(Share=Count/sum(Count)) %>%
+  ggplot(aes(x=HR_25A,y=Share,fill=fct_rev(value))) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::percent) +
+    coord_flip() +
+  scale_fill_brewer(palette = "Dark2", direction = -1) +
+  labs(title="Contact tracing apps - comfort with data sharing",
+       x="Likelihood of using tracing apps",y=NULL,
+       fill="Comfort with\ndata sharing",
+       caption="MountainMath, StatCan Covid-19 Series 3 PUMF 45-25-0007")
+```
+
+Similarly we can look at the reasons people were *somewhat unlikely* or *very unlikely* to use the app.
+
+```{r}
+series3 %>% 
+  filter(HR_25A !="Not stated") %>%
+  pivot_matched_vars("HR_30") %>%
+  filter(value!="Valid skip") %>%
+  group_by(HR_25A,short_label,value) %>%
+  summarize(Count=sum(PERS_WGT),.groups="drop") %>%
+  group_by(HR_25A,short_label) %>%
+  mutate(Share=Count/sum(Count)) %>%
+  ggplot(aes(x=short_label,y=Share,fill=fct_rev(value))) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::percent) +
+    coord_flip() +
+  facet_wrap("HR_25A") +
+  scale_fill_brewer(palette = "Dark2", direction = -1) +
+  #geom_text(aes(label=scales::percent(share,accuracy = 0.1)),vjust=-0.3) +
+  labs(title="Decline tracing app",
+       subtitle="(by likelihood of using tracing apps)",
+       x="Reasons for declining tracing apps",y=NULL,
+       fill=NULL,
+       caption="MountainMath, StatCan Covid-19 Series 3 PUMF 45-25-0007")
+```
+
+And what do you know, people flocked to the *invasion of privacy* and *don't want government to have my location data* answers. But also very interesting that many answered that they won't install it because they believe not enough people will install it. Some mixture between misinformation about what kind of install base makes this app useful and just circular logic.
+
+As expected, not having a smartphone or data plan also shows up as a reason.
+
+## Vaccines
+Another interesting question is that of vaccines and attitudes toward them.
+
+```{r}
+series3 %>% summarize_variables(HR_10) %>%
+  ggplot(aes(x=HR_10,y=Share)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  scale_y_continuous(labels=scales::percent) +
+  #geom_text(aes(label=scales::percent(share,accuracy = 0.1)),vjust=-0.3) +
+  labs(title="Likelihood of getting vaccine once available",
+       x=NULL,
+       caption="MountainMath, StatCan Covid-19 Series 3 PUMF 45-25-0007")
+```
+
+The good news is that the vast majority of Canadians would get a vaccine it if was available. Let's look at the reasons the others give.
+
+```{r}
+plot_data <- series3 %>% 
+  filter(HR_10 %in% c("Very unlikely","Somewhat unlikely")) %>%
+  pivot_matched_vars("HR_15") %>%
+  group_by(HR_10,short_label,value) %>%
+  summarize(Count=sum(PERS_WGT),.groups="drop")
+
+had_covid <- plot_data %>%
+  filter(short_label=="Already had or think I have had COVID-19", value=="Yes") %>%
+  pull(Count) %>%
+  sum()
+
+confirmed <- CanCovidData::get_canada_official_provincial_data() %>% 
+  filter(Date==as.Date("2020-06-30"),
+         PR_UID=="1") %>%
+  pull(Confirmed)
+
+ggplot(plot_data, aes(x=short_label,y=Count,fill=fct_rev(value))) +
+  geom_bar(stat="identity",position="fill") +
+  scale_y_continuous(labels=scales::percent) +
+    coord_flip() +
+  facet_wrap("HR_10") +
+  scale_fill_brewer(palette = "Dark2",direction =-1) +
+  #geom_text(aes(label=scales::percent(share,accuracy = 0.1)),vjust=-0.3) +
+  labs(title="Reasons not to get a vaccine",
+       subtitle="(by likelihood of getting vaccine)",
+       x=NULL,y=NULL,
+       fill="Likelihood of getting\nvaccine once available",
+       caption="MountainMath, StatCan Covid-19 Series 3 PUMF 45-25-0007")
+```
+
+Some of those unlikely to take the vaccine simply want to wait until they are convinced it's safe, but more aren't confident that the vaccine, whenever we get one and whichever we get, will be safe, or have general concerns about risks and side effects. The percentages of people with these concerns seem a bit higher than the overall anti-vaxxer attitudes in Canada, maybe because of talk about 'fast-tracking' of a covid vaccine.
+
+There are also people that don't think a vaccine is necessary.
+
+And then there are people with pre-existing conditions. And interesting `r scales::comma(had_covid)` people (respondents weighted and scaled to the Canadian population 15 years old or older) that say they think they have already had Covid, which is not out of line with the `r scales::comma(confirmed)` confirmed covid-19 cases in Canada by June 30, the release date of the survey, indicating under reporting cases of up to a factor 3, depending on assumptions about how many may have mis-diagnosed themselves.
+
+## Vaccines vs tracing apps
+One interesting question is around attitudes toward vaccines vs attitudes toward tracing apps.
+
+```{r}
+series3 %>% summarize_variables(HR_10,HR_25A) %>% 
+  ggplot(aes(x=HR_10,y=HR_25A,fill=Share)) +
+  scale_fill_viridis_c(labels=scales::percent) +
+  theme(axis.text.x = element_text(angle=60,hjust=1)) +
+  geom_tile() +
+  geom_text(data=~filter(.,Share >0.1),aes(label=scales::percent(Share,accuracy = 1))) +
+  geom_text(data=~filter(.,Share <0.1),aes(label=scales::percent(Share,accuracy = 1)),color="white") +
+  labs(title="Likelihood of getting vaccinated vs using tracing apps",
+       x="Likelihood of getting vaccinated",y="Likelihood of using tracing apps",
+       fill="Share of population",
+       caption="MountainMath, StatCan Covid-19 Series 3 PUMF 45-25-0007")
+```
+
+People that say they are very likely to get vaccinates also said that they were very or somewhat likely to install the contact tracing app. Which is not surprising, given that effective contact tracing can have effects similar to a vaccine. But there are interesting outliers, people that are very likely to get vaccinated but very unlikely to use the contact tracing app. And of course people that are very unlikely to either get vaccinated nor use the app.
+
+
+## Commute to work
+Another interesting question was about changes in commute to work pre and during covid-19.
+
+```{r}
+series3 %>% summarize_variables(CT_05,PCT_10) %>%
+  filter(!grepl("Not applicable|Not stated",CT_05),!grepl("Not applicable|Not stated",PCT_10)) %>%
+  #filter(CT_05!=PCT_10) %>%
+  mutate(Share=Count/sum(Count)) %>%
+  ggplot(aes(x=CT_05,y=PCT_10,fill=Share)) +
+  scale_fill_viridis_c(labels=scales::percent,trans="log") +
+  theme(axis.text.x = element_text(angle=60,hjust=1)) +
+  geom_tile() +
+  geom_text(data=~filter(.,Share >0.02),aes(label=scales::percent(Share,accuracy = 1))) +
+  geom_text(data=~filter(.,Share <0.02),aes(label=scales::percent(Share,accuracy = 0.1)),color="white") +
+  labs(title="Mode to work/school",
+       x="Mode before Covid-19",y="Mode during Covid-19",
+       fill="Share of population",
+       caption="MountainMath, StatCan Covid-19 Series 3 PUMF 45-25-0007")
+```
+
+The diagonal dominates in all rows and columns except the telework during covid 19 and public transit before covid 19. 
+
+## Precautions
+Another interesting question is on what kind of precautions people are taking.
+
+```{r precautions}
+series3 %>% 
+  pivot_matched_vars("HR_20") %>%
+  group_by(short_label,value) %>%
+  summarize(Count=sum(PERS_WGT),.groups="drop") %>%
+  ggplot(aes(x=short_label,y=Count,fill=fct_rev(value))) +
+  geom_bar(stat="identity",position="fill") +
+  scale_y_continuous(labels=scales::percent) +
+    coord_flip() +
+  scale_fill_brewer(palette = "Dark2",direction = -1) +
+  #geom_text(aes(label=scales::percent(share,accuracy = 0.1)),vjust=-0.3) +
+  labs(title="Precautions",
+       x=NULL,y=NULL,
+       fill=NULL,
+       caption="MountainMath, StatCan Covid-19 Series 3 PUMF 45-25-0007")
+```
+
+Turns out Canada is really good at washing hands but has failed to evolve with the science to take the same level of precautions against transmission through aerosols.
+
+## Health risk concerns
+People are concerned about health risks when resuming various activities as safety measures are relaxed. 
+
+```{r health-risk-concerns}
+series3 %>% 
+  pivot_matched_vars("PTC_05") %>%
+  #mutate(value=factor(value,levels=c("Yes","No","Not stated"))) %>%
+  group_by(short_label,value) %>%
+  summarize(Count=sum(PERS_WGT),.groups="drop") %>%
+  ggplot(aes(x=short_label,y=Count,fill=fct_rev(value))) +
+  geom_bar(stat="identity",position="fill") +
+  scale_y_continuous(labels=scales::percent) +
+    coord_flip() +
+  scale_fill_brewer(palette = "Dark2",direction = -1) +
+  #geom_text(aes(label=scales::percent(share,accuracy = 0.1)),vjust=-0.3) +
+  labs(title="Health risk concerns as measures are relaxed",
+       x=NULL,y=NULL,
+       fill=NULL,
+       caption="MountainMath, StatCan Covid-19 Series 3 PUMF 45-25-0007")
+```
+
+## Fear of being targeted
+An interesting set of questions revolve around people being afraid that they are being the target of unwanted behaviours because they may be judged for putting others at risk.
+
+
+```{r}
+series3 %>% summarize_variables(PTC_10) %>%
+  ggplot(aes(x=PTC_10,y=Share)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  scale_y_continuous(labels=scales::percent) +
+  #geom_text(aes(label=scales::percent(share,accuracy = 0.1)),vjust=-0.3) +
+  labs(title="Fear of being targeted because being judged for putting others at risk",
+       x=NULL,
+       caption="MountainMath, StatCan Covid-19 Series 3 PUMF 45-25-0007")
+```
+
+Almost 20% answered Yes to this. Let's look at what their concerns are.
+
+```{r}
+series3 %>% 
+  pivot_matched_vars("PTC_15") %>%
+  filter(value!="Valid skip") %>%
+  #mutate(value=factor(value,levels=c("Yes","No","Not stated"))) %>%
+  group_by(short_label,value) %>%
+  summarize(Count=sum(PERS_WGT),.groups="drop") %>%
+  ggplot(aes(x=short_label,y=Count,fill=fct_rev(value))) +
+  geom_bar(stat="identity",position="fill") +
+  scale_y_continuous(labels=scales::percent) +
+    coord_flip() +
+  scale_fill_brewer(palette = "Dark2",direction = -1) +
+  #geom_text(aes(label=scales::percent(share,accuracy = 0.1)),vjust=-0.3) +
+  labs(title="Fear of being targeted",
+       x=NULL,y=NULL,
+       fill=NULL,
+       caption="MountainMath, StatCan Covid-19 Series 3 PUMF 45-25-0007")
+```
+
+The main concern people have is that they will be targeted for not wearing a mask. Health conditions that may be mistaken for Covid-19 also rank prominently. 
+
+## Preparing for potential future waves
+The way people are preparing for potential future waves is interesting.
+
+```{r}
+series3 %>% 
+  pivot_matched_vars("PFW_05") %>%
+  #mutate(value=factor(value,levels=c("Yes","No","Not stated"))) %>%
+  group_by(short_label,value) %>%
+  summarize(Count=sum(PERS_WGT),.groups="drop") %>%
+  ggplot(aes(x=short_label,y=Count,fill=fct_rev(value))) +
+  geom_bar(stat="identity",position="fill") +
+  scale_y_continuous(labels=scales::percent) +
+    coord_flip() +
+  scale_fill_brewer(palette = "Dark2",direction = -1) +
+  #geom_text(aes(label=scales::percent(share,accuracy = 0.1)),vjust=-0.3) +
+  labs(title="Likelihood of preparing for future waves",
+       x=NULL,y=NULL,
+       fill=NULL,
+       caption="MountainMath, StatCan Covid-19 Series 3 PUMF 45-25-0007")
+```
+
+Cancelling travel plans seems to be on top of the list for Canadians, followed by stockpiling and home repairs. Upgrading internet speeds is generally a low concern.
+
+## Economic recovery
+Another question was about what people would spend more or less money on as stores and businesses reopen relative to pre-covid spending.
+
+```{r}
+series3 %>% 
+  pivot_matched_vars("ER_05") %>%
+  #mutate(value=factor(value,levels=c("Yes","No","Not stated"))) %>%
+  group_by(short_label,value) %>%
+  summarize(Count=sum(PERS_WGT),.groups="drop") %>%
+  ggplot(aes(x=short_label,y=Count,fill=fct_rev(value))) +
+  geom_bar(stat="identity",position="fill") +
+  scale_y_continuous(labels=scales::percent) +
+    coord_flip() +
+  scale_fill_brewer(palette = "Dark2",direction = -1) +
+  #geom_text(aes(label=scales::percent(share,accuracy = 0.1)),vjust=-0.3) +
+  labs(title="Spending money as businesses reopen relative to prior Covid levels",
+       x=NULL,y=NULL,
+       fill=NULL,
+       caption="MountainMath, StatCan Covid-19 Series 3 PUMF 45-25-0007")
+```
+
+It's interesting that in most categories people don't think they will change their spending habits, and generally there are not vastly different numbers estimating they will spend less as the ones estimating they will spend more in that category.
+
+## Next steps
+There are more variables in the data that we haven't looked at yet, and there are interesting ways to cross-tab the data. As usual, the code for this post [can be found on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-08-25-covid-series-3-survey.Rmarkdown) for anyone to reproduce and adapt for their own purposes.
+
