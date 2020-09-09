@@ -42,6 +42,8 @@ import matplotlib
 import matplotlib.pyplot as pyplot
 import itertools
 import numpy as np
+
+seed = 42
 ```
 
 
@@ -251,8 +253,11 @@ def generate_school_contact_network(num_cohorts=5,
                                     distance_fact = 0.2,
                                     classroom_weights = 1, 
                                     inter_classroom_weights = 1, 
-                                    inter_cohort_weight = 1):
-
+                                    inter_cohort_weight = 1, seed = None):
+                                    
+    if(seed is not None):
+        np.random.seed(seed)
+    
     cohortIndices = {}
     cohortClassroomIndices = {}
     classroomIndices = {}
@@ -377,6 +382,7 @@ def run_school_tti_sim(model, T, seed = None,
     if(seed is not None):
         np.random.seed(seed)
 
+    allExposures = np.random.poisson(lam=average_introductions_per_day,size=int(T))
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     # Testing cadences involve a repeating 28 day cycle starting on a Monday
@@ -441,9 +447,8 @@ def run_school_tti_sim(model, T, seed = None,
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if(int(model.t)!=int(timeOfLastIntroduction)):
 
+            numNewExposures = np.sum(allExposures[int(timeOfLastIntroduction):int(model.t)])
             timeOfLastIntroduction = model.t
-
-            numNewExposures = np.random.poisson(lam=average_introductions_per_day)
             
             model.introduce_exposures(num_new_exposures=numNewExposures)
 
@@ -783,6 +788,8 @@ networkGraphOptions = {
 ```
 
 ```{python}
+np.random.seed(seed)
+
 TOTAL_POP = 5000000
 
 ELEMENTARY_COHORTS = 500
@@ -816,7 +823,8 @@ schoolNetwork, cohorts_indices, cohort_classrooms, classroom_indices, group_indi
     num_nodes_per_cohort=STUDENTS_PER_COHORT,
     num_classrooms_per_cohort=CLASSROOMS_PER_COHORT,
     inter_classroom_connections=INTER_CLASSROOM_CONNECTIONS,
-    inter_cohort_connections = INTER_COHORT_CONNECTIONS)
+    inter_cohort_connections = INTER_COHORT_CONNECTIONS,
+    seed = seed)
 
 schoolNetworkQ = networkx.classes.function.create_empty_copy(schoolNetwork)  # perfect quarantine
 ```
@@ -943,6 +951,8 @@ Given what we do know, we assume that that positive cases in schools will self-i
 We assume a time-varying false positive rate around 20%, depending on the state of the infection.
 
 ```{python}
+np.random.seed(seed)
+
 INTERVENTION_START_PCT_INFECTED = 0 # always test/trace
 
 TESTING_CADENCE                 = 'everyday'    # how often to do tracing testing and random testing
@@ -1012,7 +1022,7 @@ We assume that transmission rates between children are at `r scales::percent(py$
 The model is probabilistic in nature, each model run differs slightly from the previous. For robust estimates we should average over several runs, but for our purposes a single model run should to do show the general effect of modifying the interventions.
 
 ```{python include=FALSE}
-model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = 123,
+model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = seed,
                              beta=BETA, sigma=SIGMA, lamda=LAMDA, gamma=GAMMA, 
                              beta_asym = BETA * BETA_ASYM_FACT,
                              beta_local = BETA,
@@ -1035,7 +1045,7 @@ model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = 123,
 
 T = 60       # run for 60 days
 
-run_school_tti_sim(model, T, seed=123,
+run_school_tti_sim(model, T, seed=seed,
             intervention_start_pct_infected=INTERVENTION_START_PCT_INFECTED,
             average_introductions_per_day=AVERAGE_INTRODUCTIONS_PER_DAY,
             testing_cadence=TESTING_CADENCE, pct_tested_per_day=PCT_TESTED_PER_DAY,
@@ -1085,7 +1095,7 @@ The graph shows how many students are in the exposed or infectious stages, as we
 ## Isolating the entire class
 
 ```{python include=FALSE}
-model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = 123,
+model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = seed,
                              beta=BETA, sigma=SIGMA, lamda=LAMDA, gamma=GAMMA, 
                              beta_asym = BETA * BETA_ASYM_FACT,
                              beta_local = BETA,
@@ -1107,7 +1117,7 @@ model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = 123,
 
 T = 60       # run for 60 days
 
-run_school_tti_sim(model, T, seed=123,
+run_school_tti_sim(model, T, seed=seed,
             intervention_start_pct_infected=INTERVENTION_START_PCT_INFECTED,
             average_introductions_per_day=AVERAGE_INTRODUCTIONS_PER_DAY,
             testing_cadence=TESTING_CADENCE, pct_tested_per_day=PCT_TESTED_PER_DAY,
@@ -1150,7 +1160,7 @@ Here we consider testing all contacts, including the entire classrooms, but only
 TESTING_COMPLIANCE_RATE_TRACED = 1
 TESTING_COMPLIANCE_TRACED  = (np.random.rand(N) < TESTING_COMPLIANCE_RATE_TRACED)
 
-model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = 123,
+model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = seed,
                              beta=BETA, sigma=SIGMA, lamda=LAMDA, gamma=GAMMA, 
                              beta_asym = BETA * BETA_ASYM_FACT,
                              beta_local = BETA,
@@ -1172,7 +1182,7 @@ model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = 123,
 
 T = 60       # run for 60 days
 
-run_school_tti_sim(model, T, seed=123,
+run_school_tti_sim(model, T, seed=seed,
             intervention_start_pct_infected=INTERVENTION_START_PCT_INFECTED, average_introductions_per_day=AVERAGE_INTRODUCTIONS_PER_DAY,
             testing_cadence=TESTING_CADENCE, pct_tested_per_day=PCT_TESTED_PER_DAY, test_falseneg_rate=TEST_FALSENEG_RATE, 
             testing_compliance_symptomatic=TESTING_COMPLIANCE_SYMPTOMATIC, max_pct_tests_for_symptomatics=MAX_PCT_TESTS_FOR_SYMPTOMATICS,
@@ -1208,7 +1218,7 @@ Another way to reduce the number of infections is to add random testing. In scho
 TESTING_COMPLIANCE_RATE_RANDOM = 0.25      
 TESTING_COMPLIANCE_RANDOM = (np.random.rand(N) < TESTING_COMPLIANCE_RATE_RANDOM)
 
-model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = 123,
+model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = seed,
                              beta=BETA, sigma=SIGMA, lamda=LAMDA, gamma=GAMMA, 
                              beta_asym = BETA * BETA_ASYM_FACT,
                              beta_local = BETA,
@@ -1230,7 +1240,7 @@ model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = 123,
 
 T = 60       # run for 60 days
 
-run_school_tti_sim(model, T, seed=123,
+run_school_tti_sim(model, T, seed=seed,
             intervention_start_pct_infected=INTERVENTION_START_PCT_INFECTED, average_introductions_per_day=AVERAGE_INTRODUCTIONS_PER_DAY,
             testing_cadence=TESTING_CADENCE, pct_tested_per_day=PCT_TESTED_PER_DAY, test_falseneg_rate=TEST_FALSENEG_RATE, 
             testing_compliance_symptomatic=TESTING_COMPLIANCE_SYMPTOMATIC, max_pct_tests_for_symptomatics=MAX_PCT_TESTS_FOR_SYMPTOMATICS,
@@ -1270,6 +1280,9 @@ bind_rows(results1,results2,results3,results4) %>%
   labs(title="Model comparison")
 ```
 
+This makes it easy to see the tradeoffs between the different strategies and how different quarantine and testing protocols impact the spread in the school (yellow and red colours) as well as the precautionary quarantine of non-infected people (green). The model (naively) assumes perfect quarantine, quarantining the entire classroom instead of smaller contact networks within classrooms predictably leads to smaller outbreak sizes but a larger number of healthy students in quarantine. A middle ground between these two is only quarantining smaller contact networks within classrooms by default but test and tracing the entire contact network. This leads to a similar sized outbreak with much fewer healthy children being quarantined.
+
+Especially in school environments the asymptomatic cases present a challenge. That's where random testing can be helpful as it can detect index cases early and avoid or reduce outbreaks. The random testing scenario assumes an aggressive testing regimen where a random sample of a quarter of the students gets tested daily. We don't have the testing capacity to do this right now, but this is something to consider, especially with cheaper fast-turnaround saliva tests starting to become available. These antigen tests have lower sensitivity and specificity, but those disadvantages are outweigh by their fast turnaround time and ease of use. And that it is in principle much easier to produce these kind of tests at volume and actually use them broadly in schools. This would likely still be complemented by PCR tests to weed out false positives.
 
 ## Upshot
 What can we learn from this? The number of infections in school aren't the main focus. As explained before, the model is hard to calibrate and not that useful to make accurate predictions. The cases the model produces are at the upper end of what one might expect to see. What it does show is how implementation details on the test, trace and isolate response matter to moderate the outbreak size.

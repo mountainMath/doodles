@@ -140,7 +140,7 @@ We need to set some basic covid-related parameters that govern the spread. These
 
 
 ```
-## Individual R0:  mean = 2.50, std = 0.50, 95% CI = (1.61, 3.57)
+## Individual R0:  mean = 2.50, std = 0.50, 95% CI = (1.62, 3.58)
 ```
 
 <img src="/posts/2020-09-08-covid-school-modelling_files/figure-html/unnamed-chunk-14-1.png" width="672" />
@@ -149,11 +149,11 @@ The distribution of `\(R_0\)` sets the general infectiousness of the virus, and 
 
 
 ```
-## latent period:  mean = 2.20, std = 1.10, 95% CI = (0.60, 4.83)
+## latent period:  mean = 2.20, std = 1.11, 95% CI = (0.60, 4.86)
 ## 
-## pre-symptomatic period:  mean = 3.00, std = 1.80, 95% CI = (0.58, 7.40)
+## pre-symptomatic period:  mean = 2.99, std = 1.78, 95% CI = (0.56, 7.40)
 ## 
-## (a)symptomatic period:  mean = 4.00, std = 1.59, 95% CI = (1.51, 7.67)
+## (a)symptomatic period:  mean = 3.99, std = 1.60, 95% CI = (1.50, 7.67)
 ```
 
 <img src="/posts/2020-09-08-covid-school-modelling_files/figure-html/unnamed-chunk-15-1.png" width="672" />
@@ -192,7 +192,7 @@ The model is probabilistic in nature, each model run differs slightly from the p
 
 
 
-Running the model for 60 days we get 277 total infections.
+Running the model for 60 days we get 428 total infections.
 We can visualize the infected and quarantined population over time.
 
 
@@ -216,7 +216,7 @@ The graph shows how many students are in the exposed or infectious stages, as we
 
 
 
-That brings it down to 234 total infections over the 60 day period, at the cost of quarantining more students.
+That brings it down to 339 total infections over the 60 day period, at the cost of quarantining more students.
 
 
 ## Testing all contacts
@@ -228,7 +228,7 @@ Here we consider testing all contacts, including the entire classrooms, but only
 
 
 
-That brings it down to 276 total infections over the 60 day period, at the cost of quarantining more students.
+That brings it down to 315 total infections over the 60 day period, at the cost of quarantining more students.
 
 ## Random testing
 Another way to reduce the number of infections is to add random testing. In schools we expect a fair share of asymptomatic cases, which we will never catch before they infect others unless we introduce random testing. We run a model that's the same as the previous with additionally a quarter of the students are randomly tested each day. 
@@ -240,13 +240,16 @@ Another way to reduce the number of infections is to add random testing. In scho
 
 
 
-That brings it down to 145 total infections over the 60 day period, at the cost of quarantining more students.
+That brings it down to 153 total infections over the 60 day period, at the cost of quarantining more students.
 
 
 For better comparison, here are the results for all model runs in one graph.
 
 <img src="/posts/2020-09-08-covid-school-modelling_files/figure-html/tti-comparison-1.png" width="672" />
 
+This makes it easy to see the tradeoffs between the different strategies and how different quarantine and testing protocols impact the spread in the school (yellow and red colours) as well as the precautionary quarantine of non-infected people (green). The model (naively) assumes perfect quarantine, quarantining the entire classroom instead of smaller contact networks within classrooms predictably leads to smaller outbreak sizes but a larger number of healthy students in quarantine. A middle ground between these two is only quarantining smaller contact networks within classrooms by default but test and tracing the entire contact network. This leads to a similar sized outbreak with much fewer healthy children being quarantined.
+
+Especially in school environments the asymptomatic cases present a challenge. That's where random testing can be helpful as it can detect index cases early and avoid or reduce outbreaks. The random testing scenario assumes an aggressive testing regimen where a random sample of a quarter of the students gets tested daily. We don't have the testing capacity to do this right now, but this is something to consider, especially with cheaper fast-turnaround saliva tests starting to become available. These antigen tests have lower sensitivity and specificity, but those disadvantages are outweigh by their fast turnaround time and ease of use. And that it is in principle much easier to produce these kind of tests at volume and actually use them broadly in schools. This would likely still be complemented by PCR tests to weed out false positives.
 
 ## Upshot
 What can we learn from this? The number of infections in school aren't the main focus. As explained before, the model is hard to calibrate and not that useful to make accurate predictions. The cases the model produces are at the upper end of what one might expect to see. What it does show is how implementation details on the test, trace and isolate response matter to moderate the outbreak size.
