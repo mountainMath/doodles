@@ -1,0 +1,1199 @@
+---
+title: Covid school modelling
+author: Jens von Bergmann
+date: '2020-09-08'
+slug: covid-school-modelling
+categories:
+  - covid-19
+tags: []
+description: "Looking at the impact of different test, trace and isolation protocols."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2020-09-08-covid-school-modelling_files/figure-html/tti-comparison-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+library(tidyverse)
+library(reticulate)
+use_python("/opt/anaconda3/envs/covid/bin/python")
+use_condaenv(condaenv="covid", conda = "/opt/anaconda3/condabin/conda", required = TRUE)
+#reticulate::py_config()
+```
+
+
+```{python}
+from seirsplus.models import *
+from seirsplus.networks import *
+from seirsplus.sim_loops import *
+from seirsplus.utilities import *
+import networkx
+import matplotlib
+import matplotlib.pyplot as pyplot
+import itertools
+import numpy as np
+```
+
+
+BC schools are about to restart, and there is a high level of anxiety among parents and teachers. In this post I want to
+
+* outline some common concerns, and
+* run some modelling adapted from the [University of Washington network-based model](https://github.com/ryansmcgee/seirsplus) to test the relative effectiveness of various test, trace, and isolate (**TTI**) scenarios.
+
+## Cases in schools
+It is important to understand that there will be cases at schools. Quebec already has [over 180 schools](https://www.covidecolesquebec.org/liste-alphabtique) with reported cases, Ontario had over 7 on their first day of school. Even in Metro Vancouver [we already had an exposure at a school](https://globalnews.ca/news/7321613/covid-19-exposure-west-vancouver-school/) that started a week early. 
+
+But this is not in of itself alarming. We need to distinguish between two types of cases, 
+
+* external introductions, and
+* transmissions at school.
+
+The former is inevitable, given our current levels of community spread. It will lead to school disruptions because it forces some children and teachers into precautionary quarantine. But external introductions is not a reason why we should worry about sending kids back to school.
+
+The second, transmissions at school, is more concerning as it means that schools are contributing to an accelerated spread as children are carrying the infection back into their homes and out of school community. The possibility of transmissions at schools is at the core of everyone's concerns.
+
+There are plenty of examples of outbreaks at schools, [including in Canada](https://montrealgazette.com/news/coronavirus-infects-nine-of-11-students-in-trois-rivieres-classroom). And more recently there have already been two outbreaks at Quebec schools after reopening, including one where [four teachers tested positive](https://www.cbc.ca/news/canada/montreal/covid-polyvalente-deux-montagnes-polyvalente-charlesbourg-1.5705978). The question is if the BC back to school protocol is enough to prevent in-school transmissions.
+
+Let's go through some of the main concerns people have about BC's school reopenings.
+
+## Concerns
+Provincial guidelines cap learning group sizes at 60 students for elementary and middle schools and 120 for high schools, where the decision to allow larger cohort sizes for older students seems to be oriented more on current school workings than epidemiological considerations.
+
+Much of the implementation details have been offloaded to local school boards, while the province is not making critical information like community spread rates available. 
+
+The province hasn't released modelling that informs the school reopening, and implementation details of how the province plans to deal with outbreaks are fuzzy. This makes it difficult to independently evaluate the reopening plan.
+
+### Community spread
+The level of community spread is the most important factor in setting guidelines for school reopening, but unlike other provinces BC is not making finer geography community spread statistics available. The closest we have is daily case numbers at the Health Authority geography, as well as two-week averages of new daily cases at the Health Region geography that (I am guessing) will get published every 2 weeks in image form. We also have provincial level data on new cases by symptom onset date and type of exposure published occasionally in the surveillance reports in image form. None of this is sufficient to make informed decisions at the school district level in our environment of rising case numbers, let alone make adjustments for individual schools within a school district that may face a higher risk. (And don't get me started on the broader Covid data issues in this province.)
+
+### Implementation details
+Modelling school reopening is hard, we simply don't have a good enough understanding of how the virus spreads to do detailed modelling of what will happen when schools start again. What we can do is
+
+* run relative modelling scenarios to understand what kind of interventions, ranging from cohort sizes to mask policies, and to test, trace and isolate (TTI) protocols, compare to one another in likely reduction of spread, and
+* look at other regions that already opened schools and learn from their mistakes.
+
+The province seems to be betting on the second option, at least I have not seen any official models looking at different school protocol implementations. In particular, provincial health officials have been pointing at Germany as one of the places they are monitoring. And indeed, the general school guidelines outlined above are in line with what we see in Germany, and so far there have been only a few transmission clusters at German schools, and they got under control fast.
+
+For example, in one school [a teacher tested positiv after developing symptoms](https://www.berliner-kurier.de/berlin/corona-ausbruch-in-der-schule-elf-infizierte-an-spandauer-gymnasium-li.101233) which triggered broad testing of 120 students, turning up 10 infected students across three cohorts. All of the infected students were taught by the infected teacher and none of the showed symptoms at the time of the test. The positive students triggered further testes and contact tracing outside of the school network without any new cases showing up. The school moved to online learning for a week and all students are set to get re-tested before returning to in-person learning.
+
+Implementation details matter, and and from the example we see that philosophically Germany is taking a very different approach to TTI than BC has done. To highlight the difference, it's worthwhile to look at how BC has been approaching outbreaks at Long Term Care facilities. This is a much higher vulnerability situation, and provincial health officials have repeatedly insisted that they don't want to test non-symptomatic staff and residents in an outbreak. The strategy has been to increase monitoring for symptoms, and then isolate and test symptomatic people only. As a reason [officials have been pointing to a false negative rate of 30% of the PCR tests](https://twitter.com/RonaldNHughes/status/1302472144664764417?s=20) (which strikes me as a tad high but that's besides the point), so PCR does not give conclusive answers on who is infected and who isn't. Without going into details, claiming that one should pass up on the option to identify 70% of infected cases early, especially in a high vulnerability environment, defies logic. It's [a question of fairly straight-forward mathematics](http://ctbergstrom.com/publications/pdfs/working-frequency-accuracy.pdf) to verify that even test with low sensitivity can help suppress outbreaks, and simulation studies confirm this. Notably, the provincial [Back to School Plan](https://www2.gov.bc.ca/gov/content/education-training/k-12/covid-19-return-to-school) makes no mention of testing in case of an exposure at a school.
+
+This does not bode well for chances of a robust provincial TTI strategy in the much lower vulnerability school setting, but hopefully the province will change their mind on this and also follow this aspect of Germany's model.
+
+### Cohort sizes
+This is where the size of the community spread and the TTI strategy come together. The size of the community spread determines how many cases will likely get introduced into the schools, and the TTI strategy negotiates the balance between quarantining a large number of students and risking in-school transmissions. The way this has played out in Germany is that once a case is detected, the whole class is immediately isolated. Comprehensive testing will then determine if and how classes can resume. Depending on situations and test outcomes, this has lead to entire classes and even cohorts or schools getting quarantined, as well as cases where everyone except closest contacts were able to return to in-person classes after testing. And everything in between, for example a case where the entire class was quarantined and the rest of the cohort was allowed back while wearing masks full-time.
+
+If community spread is low then implementation details don't matter that much. But at moderate or higher community spread, like parts of BC is facing right now, implementation details become important as we will see in the modelling below. If we don't broadly test in an outbreak we are forced to choose to either quarantine a large number of students or risk spread in the schools. 
+
+### The A-word
+At the beginning of the pandemic we have been focusing on two of the three main modes of respiratory viral transmission: formites and droplets. But increasingly we have evidence that the third one, aerosols, plays an important role too, in particular during outbreaks. Aerosols don't play much of a role outdoors where they get dispersed fast, while droplets and formites behave fairly similarly to indoors. But aerosols become increasingly important the less ventilated a place is. We know by now that viral dose matters for infections as well as severity of Covid-19, and aerosols generally carry a lower dose than droplets. But if a room is not well ventilated, or even worse, air is internally recirculated, aerosols can accumulate enough to become effective infection sources that can trigger larger outbreaks.
+
+In Germany the schools are currently keeping windows and doors open as much as possible, and there is an ongoing discussion on adding or upgrading HVAC systems so that good ventilation can be maintained into winter. Ontario has similarly been dedicating funds to improve ventilation in schools, although the total amount seems insufficient to guarantee good ventilation in all schools. In BC there hasn't been much discussion about measures to improve school ventilation from provincial health officials that go beyond recommendations to open windows, although there is a side remark in the [Back to School Plan](https://www2.gov.bc.ca/gov/content/education-training/k-12/covid-19-return-to-school) only mentions improvements in ventilation as a possible use of federal funds.
+
+In short, in the short term ventilation is likely not a major concern as the weather is still warm and we can keep windows open to maintain a steady exchange with outside air. (Classrooms without windows are likely already serviced by and  HVAC system and schools should make sure their throughput is maximized and filters be installed on any recirculating components.) But this strategy is bound to run into problems as soon as it gets colder, with many BC school currently having neither an HVAC nor any other in-class filters installed.
+
+## The model
+To understand the tradeoffs in school spread we are adapting the [University of Washington network-based model](https://github.com/ryansmcgee/seirsplus) and tweaking it for our purposes. The model is a standard SERIS model with the usual adaption of including infectious pre-symptomatic and asymptomatic compartments to fit what we know about Covid-19 spread, as well as having separate compartments for quarantined states that help us model the TTI cycle. This model differs somewhat from the one the province has been showing off in their press conference in that the model used by the province is a mean-field model where all individual in a compartment are assumed to behave in identical ways (with some added compartments to allow for some non-compliance with social distancing). These models have a hard time modelling outbreaks, and the are generally fitted to data that excludes cases from outbreaks.
+
+The model we are using is a network-based model that allows variability at the individual person level. This makes it easy to adapt to the school setting and also allows for enough variability to model outbreaks and potential super-spreader events. At the same time the model's number of parameters is huge, getting reliable predictive estimates from such a model requires imposing structure informed by what we know about the spread of the virus. And we don't really have a good enough understanding to fix these all in place.
+
+While we can roughly calibrate the parameters to fit with what we have seen in other places, it makes it hard to use the model to predict exactly what will happen as we reopen schools. But it still allows to test how different settings impact the spread. What happens when community spread goes up? How do cohort sizes impact transmissions at schools? How do different TTI strategies impact school operations. We will look at some of these questions.
+
+For this post we will only highlight some of the more important parameters we are setting, for more detail we [refer the interested reader to the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-09-08-covid-school-modelling.Rmarkdown).
+
+```{r}
+get_model_results <- function(model) {
+  tibble(time=model$tseries, 
+         Exposed=model$numE, 
+         `Pre symptomatic`=model$numI_pre, 
+         Symptomatic=model$numI_sym,
+         Asymptomatic=model$numI_asym,
+         Hospitalized=model$numH,
+         Fatality=model$numF,
+         `Quaratined susceptible`=model$numQ_S,
+         `Quaratined exposed`=model$numQ_E,
+         `Quaratined pre symptomatic`=model$numQ_pre,
+         `Quaratined symptomatic`=model$numQ_sym,
+         `Quaratined asymptomatic`=model$numQ_asym) %>%
+    pivot_longer(-time)
+}
+
+model_colours <- c(
+  Fatality="#111111",
+  Hospitalized="#aa22aa",
+  Exposed="#FFD700", 
+  `Pre symptomatic`="#f02222", 
+  Symptomatic="#b02222",
+  Asymptomatic="#802222",
+  `Quaratined symptomatic`="#a04444",
+  `Quaratined asymptomatic`="#804444",
+  `Quaratined pre symptomatic`="#f04444",
+  `Quaratined exposed`="#FFD744",
+  `Quaratined susceptible`="#44aa44"
+)
+
+model_graph <- function(data){
+  data %>%
+    mutate(type=factor(type,levels=c("Close group quarantine","Classroom quarantine", 
+                                     "Contact testing", "Random testing" ))) %>%
+    mutate(name=factor(name,levels=names(model_colours) %>% rev)) %>%
+    ggplot(aes(x=time,y=value,fill=name)) +
+    geom_area() +
+    scale_fill_manual(values=model_colours) +
+    coord_cartesian(xlim=c(0,60)) +
+    theme(legend.position = "bottom") +
+    labs(x="Day",
+         y="Number of students",
+         fill=NULL) +
+    guides(fill=guide_legend(ncol=4))
+}
+```
+
+
+```{python}
+def generate_school_contact_network(num_cohorts=5, 
+                                    num_nodes_per_cohort=60, 
+                                    num_classrooms_per_cohort=3,
+                                    inter_classroom_connections=6, 
+                                    inter_cohort_connections = 10,
+                                    distance_fact = 0.2,
+                                    classroom_weights = 1, 
+                                    inter_classroom_weights = 1, 
+                                    inter_cohort_weight = 1):
+
+    cohortIndices = {}
+    cohortClassroomIndices = {}
+    classroomIndices = {}
+    groupIndices = {}
+    G = networkx.Graph()
+    numClassrooms = sum(num_classrooms_per_cohort) if isinstance(num_classrooms_per_cohort, list) else num_classrooms_per_cohort * num_cohorts
+    classroomWeights = classroom_weights if isinstance(classroom_weights, list) else [classroom_weights] * numClassrooms
+    interClassroomWeights = inter_classroom_weights if isinstance(inter_classroom_weights, list) else [inter_classroom_weights] * num_cohorts
+    distanceFact = distance_fact if isinstance(distance_fact, list) else [distance_fact] * numClassrooms
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Generate dense classroom networks:
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    cli=0
+
+   
+    for ci in range(num_cohorts):
+        numNodes = num_nodes_per_cohort[ci] if isinstance(num_nodes_per_cohort, list) else num_nodes_per_cohort
+        numCl = num_classrooms_per_cohort[ci] if isinstance(num_classrooms_per_cohort, list) else num_classrooms_per_cohort
+        meanClassroomSize = numNodes/numCl
+        classroomSizes=list(map(lambda i: round(meanClassroomSize+np.random.randint(-meanClassroomSize/5,meanClassroomSize/5)),range(numCl)))
+        difference = numNodes - sum(list(classroomSizes))
+        index = classroomSizes.index(max(classroomSizes)) if difference > 0 else classroomSizes.index(min(classroomSizes))
+        classroomSizes[index]+=difference
+
+        cs = 'c'+str(ci)
+        cti = {}
+        for ti in classroomSizes:
+            i = len(classroomIndices)
+            class_weight = classroomWeights[i]
+            ts = 't'+str(i)
+            tids = list(range(len(G.nodes),len(G.nodes)+ti))
+            cti[ts]=tids
+            GT = networkx.complete_graph(tids)
+            networkx.set_node_attributes(GT,cs,'cohort')
+            networkx.set_node_attributes(GT,ts,'classroom')
+            networkx.set_edge_attributes(GT,cs,'cohort')
+            networkx.set_edge_attributes(GT,ts,'classroom')
+
+            # non-close contacts get weight down by distance factor
+            distance_weight = class_weight * distanceFact[ci]
+            networkx.set_edge_attributes(GT,distance_weight,'weight')
+
+            # generate clusters of about 4 as closer contacts
+            clusterEdges = {}
+            clusterNodes = {}
+            offset = min(tids)
+            end_offset=max(tids)
+            meanClusterSize = 4
+            while offset < end_offset:
+                step=meanClusterSize+np.random.randint(-2,2)
+                if offset+step>=end_offset:
+                    step=end_offset-offset+1
+                gi='g%d'%cli
+                groupIndices[gi]=range(offset,offset+step)
+                for i in range(step):
+                    clusterNodes[(offset+i)]={'group':gi}
+                    for j in range(i+1,step):
+                        #GT[offset+i][offset+j]['weight']=class_weight
+                        clusterEdges[(offset+i,offset+j)] = {'weight':class_weight}
+                offset+=step
+                cli+=1
+
+            # override weights for cluster contacts
+            networkx.set_edge_attributes(GT,clusterEdges)  
+            networkx.set_node_attributes(GT,clusterNodes)  
+
+            
+            G = networkx.compose(G,GT)
+            classroomIndices[ts]=tids
+
+        cohortClassroomIndices[cs]=list(cti.keys())
+        cohortIndices[cs]=np.concatenate(list(cti.values())).ravel().tolist()
+
+    
+    # Generate inter-classroom (intra cohort) connections
+
+    for ci in range(len(cohortIndices)):
+        cs = list(cohortIndices.keys())[ci]
+        numInterClassroomConnections = inter_classroom_connections[ci] if isinstance(inter_classroom_connections, list) else inter_team_connections
+        ts = cohortClassroomIndices[cs]
+        for i in range(len(ts)):
+            for j in range(i+1,len(ts)):
+                t1 = np.random.choice(classroomIndices[ts[i]],numInterClassroomConnections)
+                t2 = np.random.choice(classroomIndices[ts[j]],numInterClassroomConnections)
+                newEdges = list(map(lambda k: [t1[k],t2[k]],range(numInterClassroomConnections)))
+                G.add_edges_from(map(lambda e: e+[{'weight':interClassroomWeights[ci],'cohort':cs}],newEdges))
+
+
+                
+    # Generate inter-cohort connections
+
+    cs = list(cohortIndices.keys())
+    for i in range(len(cs)):
+        c1 = np.random.choice(cohortIndices[cs[i]],inter_cohort_connections)
+        c2 = list(map(lambda ccs: np.random.choice(cohortIndices[ccs]),
+                np.random.choice(cs,inter_cohort_connections)))
+        newEdges = list(map(lambda k: [c1[k],c2[k]],range(inter_cohort_connections)))
+        G.add_edges_from(map(lambda e: e+[{'weight':inter_cohort_weight}],newEdges))
+                            
+    return G, cohortIndices, cohortClassroomIndices, classroomIndices, groupIndices
+
+
+from __future__ import division
+import pickle
+import time
+
+def run_school_tti_sim(model, T, seed = None,
+                intervention_start_pct_infected=0, average_introductions_per_day=0,
+                testing_cadence='everyday', pct_tested_per_day=1.0, test_falseneg_rate='temporal', 
+                testing_compliance_symptomatic=[None], max_pct_tests_for_symptomatics=1.0,
+                testing_compliance_traced=[None], max_pct_tests_for_traces=1.0,
+                testing_compliance_random=[None], random_testing_degree_bias=0,
+                tracing_compliance=[None], num_contacts_to_trace=None, pct_contacts_to_trace=1.0, tracing_lag=1,
+                isolation_compliance_symptomatic_individual=[None], isolation_compliance_symptomatic_groupmate=[None], 
+                isolation_compliance_positive_individual=[None], isolation_compliance_positive_groupmate=[None],
+                isolation_compliance_positive_contact=[None], isolation_compliance_positive_contactgroupmate=[None],
+                isolation_lag_symptomatic=1, isolation_lag_positive=1, isolation_lag_contact=0, isolation_groups=None,
+                cadence_testing_days=None, cadence_cycle_length=28, temporal_falseneg_rates=None
+                ):
+
+    if(seed is not None):
+        np.random.seed(seed)
+
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    # Testing cadences involve a repeating 28 day cycle starting on a Monday
+    # (0:Mon, 1:Tue, 2:Wed, 3:Thu, 4:Fri, 5:Sat, 6:Sun, 7:Mon, 8:Tues, ...)
+    # For each cadence, testing is done on the day numbers included in the associated list.
+
+    if(cadence_testing_days is None):
+        cadence_testing_days    = {
+                                    'everyday':     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27],
+                                    'workday':      [0, 1, 2, 3, 4, 7, 8, 9, 10, 11, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25],
+                                    'semiweekly':   [0, 3, 7, 10, 14, 17, 21, 24],
+                                    'weekly':       [0, 7, 14, 21],
+                                    'biweekly':     [0, 14],
+                                    'monthly':      [0],
+                                    'cycle_start':  [0]
+                                }
+
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    if(temporal_falseneg_rates is None):
+        temporal_falseneg_rates = { 
+                                    model.E:        {0: 1.00, 1: 1.00, 2: 1.00, 3: 1.00},
+                                    model.I_pre:    {0: 0.25, 1: 0.25, 2: 0.22},
+                                    model.I_sym:    {0: 0.19, 1: 0.16, 2: 0.16, 3: 0.17, 4: 0.19, 5: 0.22, 6: 0.26, 7: 0.29, 8: 0.34, 9: 0.38, 10: 0.43, 11: 0.48, 12: 0.52, 13: 0.57, 14: 0.62, 15: 0.66, 16: 0.70, 17: 0.76, 18: 0.79, 19: 0.82, 20: 0.85, 21: 0.88, 22: 0.90, 23: 0.92, 24: 0.93, 25: 0.95, 26: 0.96, 27: 0.97, 28: 0.97, 29: 0.98, 30: 0.98, 31: 0.99},
+                                    model.I_asym:   {0: 0.19, 1: 0.16, 2: 0.16, 3: 0.17, 4: 0.19, 5: 0.22, 6: 0.26, 7: 0.29, 8: 0.34, 9: 0.38, 10: 0.43, 11: 0.48, 12: 0.52, 13: 0.57, 14: 0.62, 15: 0.66, 16: 0.70, 17: 0.76, 18: 0.79, 19: 0.82, 20: 0.85, 21: 0.88, 22: 0.90, 23: 0.92, 24: 0.93, 25: 0.95, 26: 0.96, 27: 0.97, 28: 0.97, 29: 0.98, 30: 0.98, 31: 0.99},
+                                    model.Q_E:      {0: 1.00, 1: 1.00, 2: 1.00, 3: 1.00},
+                                    model.Q_pre:    {0: 0.25, 1: 0.25, 2: 0.22},
+                                    model.Q_sym:    {0: 0.19, 1: 0.16, 2: 0.16, 3: 0.17, 4: 0.19, 5: 0.22, 6: 0.26, 7: 0.29, 8: 0.34, 9: 0.38, 10: 0.43, 11: 0.48, 12: 0.52, 13: 0.57, 14: 0.62, 15: 0.66, 16: 0.70, 17: 0.76, 18: 0.79, 19: 0.82, 20: 0.85, 21: 0.88, 22: 0.90, 23: 0.92, 24: 0.93, 25: 0.95, 26: 0.96, 27: 0.97, 28: 0.97, 29: 0.98, 30: 0.98, 31: 0.99},
+                                    model.Q_asym:   {0: 0.19, 1: 0.16, 2: 0.16, 3: 0.17, 4: 0.19, 5: 0.22, 6: 0.26, 7: 0.29, 8: 0.34, 9: 0.38, 10: 0.43, 11: 0.48, 12: 0.52, 13: 0.57, 14: 0.62, 15: 0.66, 16: 0.70, 17: 0.76, 18: 0.79, 19: 0.82, 20: 0.85, 21: 0.88, 22: 0.90, 23: 0.92, 24: 0.93, 25: 0.95, 26: 0.96, 27: 0.97, 28: 0.97, 29: 0.98, 30: 0.98, 31: 0.99},
+                                  }
+
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    # Custom simulation loop:
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    interventionOn         = False
+    interventionStartTime  = None
+
+    timeOfLastIntervention = -1
+    timeOfLastIntroduction = -1
+
+    testingDays            = cadence_testing_days[testing_cadence]
+    cadenceDayNumber       = 0
+
+    tests_per_day                 = int(model.numNodes * pct_tested_per_day)
+    max_tracing_tests_per_day     = int(tests_per_day * max_pct_tests_for_traces)
+    max_symptomatic_tests_per_day = int(tests_per_day * max_pct_tests_for_symptomatics)
+
+    tracingPoolQueue              = [[] for i in range(tracing_lag)]
+    isolationQueue_symptomatic    = [[] for i in range(isolation_lag_symptomatic)]
+    isolationQueue_positive       = [[] for i in range(isolation_lag_positive)]
+    isolationQueue_contact        = [[] for i in range(isolation_lag_contact)]
+
+    model.tmax  = T
+    running     = True
+    while running:
+
+        running = model.run_iteration()
+
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # Introduce exogenous exposures randomly:
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if(int(model.t)!=int(timeOfLastIntroduction)):
+
+            timeOfLastIntroduction = model.t
+
+            numNewExposures = np.random.poisson(lam=average_introductions_per_day)
+            
+            model.introduce_exposures(num_new_exposures=numNewExposures)
+
+            if(numNewExposures > 0):
+                print("[NEW EXPOSURE @ t = %.2f (%d exposed)]" % (model.t, numNewExposures))
+
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # Execute testing policy at designated intervals:
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        if(int(model.t)!=int(timeOfLastIntervention)):
+        
+            cadenceDayNumber = int(model.t % cadence_cycle_length)
+
+            timeOfLastIntervention = model.t
+
+            currentNumInfected = model.total_num_infected()[model.tidx]
+            currentPctInfected = model.total_num_infected()[model.tidx]/model.numNodes
+
+            if(currentPctInfected >= intervention_start_pct_infected and not interventionOn):
+                interventionOn        = True
+                interventionStartTime = model.t
+            
+            if(interventionOn):
+
+                print("[INTERVENTIONS @ t = %.2f (%d (%.2f%%) infected)]" % (model.t, currentNumInfected, currentPctInfected*100))
+                
+                nodeStates                       = model.X.flatten()
+                nodeTestedStatuses               = model.tested.flatten()
+                nodeTestedInCurrentStateStatuses = model.testedInCurrentState.flatten()
+                nodePositiveStatuses             = model.positive.flatten()
+
+                #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                # tracingPoolQueue[0] = tracingPoolQueue[0]Queue.pop(0)
+
+                #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                
+                newIsolationGroup_symptomatic = []
+                newIsolationGroup_contact     = []
+
+                #----------------------------------------
+                # Isolate SYMPTOMATIC cases without a test:
+                #----------------------------------------
+                numSelfIsolated_symptoms = 0
+                numSelfIsolated_symptomaticGroupmate = 0
+
+                if(any(isolation_compliance_symptomatic_individual)):
+                    symptomaticNodes = np.argwhere((nodeStates==model.I_sym)).flatten()
+                    for symptomaticNode in symptomaticNodes:
+                        if(isolation_compliance_symptomatic_individual[symptomaticNode]):
+                            if(model.X[symptomaticNode] == model.I_sym):
+                                numSelfIsolated_symptoms += 1   
+                                newIsolationGroup_symptomatic.append(symptomaticNode)
+
+                            #----------------------------------------
+                            # Isolate the GROUPMATES of this SYMPTOMATIC node without a test:
+                            #----------------------------------------
+                            if(isolation_groups is not None and any(isolation_compliance_symptomatic_groupmate)):
+                                isolationGroupmates = next((group for group in isolation_groups if symptomaticNode in group), None)
+                                for isolationGroupmate in isolationGroupmates:
+                                    if(isolationGroupmate != symptomaticNode):
+                                        if(isolation_compliance_symptomatic_groupmate[isolationGroupmate]):
+                                            numSelfIsolated_symptomaticGroupmate += 1
+                                            newIsolationGroup_symptomatic.append(isolationGroupmate)
+
+
+                #----------------------------------------
+                # Isolate the CONTACTS of detected POSITIVE cases without a test:
+                #----------------------------------------
+                numSelfIsolated_positiveContact = 0
+                numSelfIsolated_positiveContactGroupmate = 0
+
+                if(any(isolation_compliance_positive_contact) or any(isolation_compliance_positive_contactgroupmate)):
+                    for contactNode in tracingPoolQueue[0]:
+                        if(isolation_compliance_positive_contact[contactNode]):
+                            newIsolationGroup_contact.append(contactNode)
+                            numSelfIsolated_positiveContact += 1 
+
+                        #----------------------------------------
+                        # Isolate the GROUPMATES of this self-isolating CONTACT without a test:
+                        #----------------------------------------
+                        if(isolation_groups is not None and any(isolation_compliance_positive_contactgroupmate)):
+                            isolationGroupmates = next((group for group in isolation_groups if contactNode in group), None)
+                            for isolationGroupmate in isolationGroupmates:
+                                # if(isolationGroupmate != contactNode):
+                                if(isolation_compliance_positive_contactgroupmate[isolationGroupmate]):
+                                    newIsolationGroup_contact.append(isolationGroupmate)
+                                    numSelfIsolated_positiveContactGroupmate += 1
+                                    
+
+                #----------------------------------------
+                # Update the nodeStates list after self-isolation updates to model.X:
+                #----------------------------------------
+                nodeStates = model.X.flatten()
+
+
+                #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+                #----------------------------------------
+                # Allow SYMPTOMATIC individuals to self-seek tests
+                # regardless of cadence testing days
+                #----------------------------------------
+                symptomaticSelection = []
+
+                if(any(testing_compliance_symptomatic)):
+                    
+                    symptomaticPool = np.argwhere((testing_compliance_symptomatic==True)
+                                                     & (nodeTestedInCurrentStateStatuses==False)
+                                                     & (nodePositiveStatuses==False)
+                                                     & ((nodeStates==model.I_sym)|(nodeStates==model.Q_sym))
+                                                    ).flatten()
+
+                    numSymptomaticTests  = min(len(symptomaticPool), max_symptomatic_tests_per_day)
+                    
+                    if(len(symptomaticPool) > 0):
+                        symptomaticSelection = symptomaticPool[np.random.choice(len(symptomaticPool), min(numSymptomaticTests, len(symptomaticPool)), replace=False)]
+
+
+                #----------------------------------------
+                # Test individuals randomly and via contact tracing
+                # on cadence testing days:
+                #----------------------------------------
+
+                tracingSelection = []
+                randomSelection = []
+
+                if(cadenceDayNumber in testingDays):
+
+                    #----------------------------------------
+                    # Apply a designated portion of this day's tests 
+                    # to individuals identified by CONTACT TRACING:
+                    #----------------------------------------
+
+                    tracingPool = tracingPoolQueue.pop(0)
+
+                    if(any(testing_compliance_traced)):
+
+                        numTracingTests = min(len(tracingPool), min(tests_per_day-len(symptomaticSelection), max_tracing_tests_per_day))
+
+                        for trace in range(numTracingTests):
+                            traceNode = tracingPool.pop()
+                            if((nodePositiveStatuses[traceNode]==False)
+                                and (testing_compliance_traced[traceNode]==True)
+                                and (model.X[traceNode] != model.R)
+                                and (model.X[traceNode] != model.Q_R) 
+                                and (model.X[traceNode] != model.H)
+                                and (model.X[traceNode] != model.F)):
+                                tracingSelection.append(traceNode)
+
+                    #----------------------------------------
+                    # Apply the remainder of this day's tests to random testing:
+                    #----------------------------------------
+
+                    if(any(testing_compliance_random)):
+                        
+                        testingPool = np.argwhere((testing_compliance_random==True)
+                                                     & (nodePositiveStatuses==False)
+                                                     & (nodeStates != model.R)
+                                                     & (nodeStates != model.Q_R) 
+                                                     & (nodeStates != model.H)
+                                                     & (nodeStates != model.F)
+                                                    ).flatten()
+
+                        numRandomTests = max(min(tests_per_day-len(tracingSelection)-len(symptomaticSelection), len(testingPool)), 0)
+                        
+                        testingPool_degrees       = model.degree.flatten()[testingPool]
+                        testingPool_degreeWeights = np.power(testingPool_degrees,random_testing_degree_bias)/np.sum(np.power(testingPool_degrees,random_testing_degree_bias))
+
+                        if(len(testingPool) > 0):
+                            randomSelection = testingPool[np.random.choice(len(testingPool), numRandomTests, p=testingPool_degreeWeights, replace=False)]
+
+                
+                #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+                #----------------------------------------
+                # Perform the tests on the selected individuals:
+                #----------------------------------------
+
+                selectedToTest = np.concatenate((symptomaticSelection, tracingSelection, randomSelection)).astype(int)
+
+                numTested                     = 0
+                numTested_random              = 0
+                numTested_tracing             = 0
+                numTested_symptomatic         = 0
+                numPositive                   = 0
+                numPositive_random            = 0
+                numPositive_tracing           = 0
+                numPositive_symptomatic       = 0 
+                numIsolated_positiveGroupmate = 0
+                
+                newTracingPool = []
+
+                newIsolationGroup_positive = []
+
+                for i, testNode in enumerate(selectedToTest):
+
+                    model.set_tested(testNode, True)
+
+                    numTested += 1
+                    if(i < len(symptomaticSelection)):
+                        numTested_symptomatic  += 1
+                    elif(i < len(symptomaticSelection)+len(tracingSelection)):
+                        numTested_tracing += 1
+                    else:
+                        numTested_random += 1                  
+
+                    # If the node to be tested is not infected, then the test is guaranteed negative, 
+                    # so don't bother going through with doing the test:
+                    if(model.X[testNode] == model.S or model.X[testNode] == model.Q_S):
+                        pass
+                    # Also assume that latent infections are not picked up by tests:
+                    elif(model.X[testNode] == model.E or model.X[testNode] == model.Q_E):
+                        pass
+                    elif(model.X[testNode] == model.I_pre or model.X[testNode] == model.Q_pre 
+                         or model.X[testNode] == model.I_sym or model.X[testNode] == model.Q_sym 
+                         or model.X[testNode] == model.I_asym or model.X[testNode] == model.Q_asym):
+                        
+                        if(test_falseneg_rate == 'temporal'):
+                            testNodeState       = model.X[testNode][0]
+                            testNodeTimeInState = model.timer_state[testNode][0]
+                            if(testNodeState in list(temporal_falseneg_rates.keys())):
+                                falseneg_prob = temporal_falseneg_rates[testNodeState][ int(min(testNodeTimeInState, max(list(temporal_falseneg_rates[testNodeState].keys())))) ]
+                            else:
+                                falseneg_prob = 1.00
+                        else:
+                            falseneg_prob = test_falseneg_rate
+
+                        if(np.random.rand() < (1-falseneg_prob)):
+                            # +++++++++++++++++++++++++++++++++++++++++++++
+                            # The tested node has returned a positive test
+                            # +++++++++++++++++++++++++++++++++++++++++++++
+                            numPositive += 1
+                            if(i < len(symptomaticSelection)):
+                                numPositive_symptomatic  += 1
+                            elif(i < len(symptomaticSelection)+len(tracingSelection)):
+                                numPositive_tracing += 1
+                            else:
+                                numPositive_random += 1 
+                            
+                            # Update the node's state to the appropriate detected case state:
+                            model.set_positive(testNode, True)
+
+                            #----------------------------------------
+                            # Add this positive node to the isolation group:
+                            #----------------------------------------
+                            if(isolation_compliance_positive_individual[testNode]):
+                                newIsolationGroup_positive.append(testNode)
+
+                            #----------------------------------------
+                            # Add the groupmates of this positive node to the isolation group:
+                            #----------------------------------------  
+                            if(isolation_groups is not None and any(isolation_compliance_positive_groupmate)):
+                                isolationGroupmates = next((group for group in isolation_groups if testNode in group), None)
+                                for isolationGroupmate in isolationGroupmates:
+                                    if(isolationGroupmate != testNode):
+                                        if(isolation_compliance_positive_groupmate[isolationGroupmate]):
+                                            numIsolated_positiveGroupmate += 1
+                                            newIsolationGroup_positive.append(isolationGroupmate)
+
+                            #----------------------------------------  
+                            # Add this node's neighbors to the contact tracing pool:
+                            #----------------------------------------  
+                            if(any(tracing_compliance) or any(isolation_compliance_positive_contact) or any(isolation_compliance_positive_contactgroupmate)):
+                                if(tracing_compliance[testNode]):
+                                    testNodeContacts = list(model.G[testNode].keys())
+                                    np.random.shuffle(testNodeContacts)
+                                    if(num_contacts_to_trace is None):
+                                        numContactsToTrace = int(pct_contacts_to_trace*len(testNodeContacts))
+                                    else:
+                                        numContactsToTrace = num_contacts_to_trace
+                                    newTracingPool.extend(testNodeContacts[0:numContactsToTrace])
+
+        
+                # Add the nodes to be isolated to the isolation queue:
+                isolationQueue_positive.append(newIsolationGroup_positive)
+                isolationQueue_symptomatic.append(newIsolationGroup_symptomatic)
+                isolationQueue_contact.append(newIsolationGroup_contact)
+
+                # Add the nodes to be traced to the tracing queue:
+                tracingPoolQueue.append(newTracingPool)
+
+
+                print("\t"+str(numTested_symptomatic) +"\ttested due to symptoms  [+ "+str(numPositive_symptomatic)+" positive (%.2f %%) +]" % (numPositive_symptomatic/numTested_symptomatic*100 if numTested_symptomatic>0 else 0))
+                print("\t"+str(numTested_tracing)     +"\ttested as traces        [+ "+str(numPositive_tracing)+" positive (%.2f %%) +]" % (numPositive_tracing/numTested_tracing*100 if numTested_tracing>0 else 0))            
+                print("\t"+str(numTested_random)      +"\ttested randomly         [+ "+str(numPositive_random)+" positive (%.2f %%) +]" % (numPositive_random/numTested_random*100 if numTested_random>0 else 0))            
+                print("\t"+str(numTested)             +"\ttested TOTAL            [+ "+str(numPositive)+" positive (%.2f %%) +]" % (numPositive/numTested*100 if numTested>0 else 0))           
+
+                print("\t"+str(numSelfIsolated_symptoms)        +" will isolate due to symptoms         ("+str(numSelfIsolated_symptomaticGroupmate)+" as groupmates of symptomatic)")
+                print("\t"+str(numPositive)                     +" will isolate due to positive test    ("+str(numIsolated_positiveGroupmate)+" as groupmates of positive)")
+                print("\t"+str(numSelfIsolated_positiveContact) +" will isolate due to positive contact ("+str(numSelfIsolated_positiveContactGroupmate)+" as groupmates of contact)")
+
+                #----------------------------------------
+                # Update the status of nodes who are to be isolated:
+                #----------------------------------------
+
+                numIsolated = 0
+
+                isolationGroup_symptomatic = isolationQueue_symptomatic.pop(0)
+                for isolationNode in isolationGroup_symptomatic:
+                    model.set_isolation(isolationNode, True)
+                    numIsolated += 1
+
+                isolationGroup_contact = isolationQueue_contact.pop(0)
+                for isolationNode in isolationGroup_contact:
+                    model.set_isolation(isolationNode, True)
+                    numIsolated += 1
+
+                isolationGroup_positive = isolationQueue_positive.pop(0)
+                for isolationNode in isolationGroup_positive:
+                    model.set_isolation(isolationNode, True)
+                    numIsolated += 1
+
+                print("\t"+str(numIsolated)+" entered isolation")
+                
+            #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    interventionInterval = (interventionStartTime, model.t)
+
+    return interventionInterval
+
+
+    
+networkGraphOptions = {
+    #'node_color': 'steelblue',
+    'cmap':matplotlib.cm.jet,
+    'node_size': 50,
+    'node_shape':'o',
+    'line_color': 'brown',
+    'linewidths': 1,
+    'width': 1,
+}
+```
+
+```{python}
+TOTAL_POP = 5000000
+
+ELEMENTARY_COHORTS = 500
+SECONDARY_COHORTS = 100
+#ELEMENTARY_COHORTS = 100
+#SECONDARY_COHORTS = 20
+COHORTS = ELEMENTARY_COHORTS + SECONDARY_COHORTS
+STUDENTS_PER_COHORT = [60]*ELEMENTARY_COHORTS + [120]*SECONDARY_COHORTS
+CLASSROOMS_PER_COHORT = [3]*ELEMENTARY_COHORTS + [6]*SECONDARY_COHORTS
+INTER_CLASSROOM_CONNECTIONS = [6]*ELEMENTARY_COHORTS + [12]*SECONDARY_COHORTS # number of connections between classrooms within cohort
+INTER_COHORT_CONNECTIONS = 10               # number of connections between cohorts, (siblings and playdates)
+                                            # connections originating from each cohort randomly connecting to others
+total_classrooms = sum(CLASSROOMS_PER_COHORT)
+CLASSROOM_WEIGHTS = (np.random.random(total_classrooms)*0.5+0.2).tolist()  # classroom weights, maybe ventilation or adherence to protocol
+INTER_CLASSROOM_WEIGHTS = 0.5              # learning group outside classroom interactions transmission weight
+INTER_COHORT_WEIGHT = 1                    # siblings and playdates interactions transmission weight
+DISTANCE_FACT = 0.3                        # 
+#PCT_CONTACTS_INTERCOHORT = 0.05           # siblings and playdates
+
+N = sum(STUDENTS_PER_COHORT)
+
+```
+
+```{python}
+schoolNetwork, cohorts_indices, cohort_classrooms, classroom_indices, group_indices = generate_school_contact_network(
+    distance_fact = DISTANCE_FACT,
+    classroom_weights = CLASSROOM_WEIGHTS, 
+    inter_classroom_weights = INTER_CLASSROOM_WEIGHTS, 
+    inter_cohort_weight = INTER_COHORT_WEIGHT,
+    num_cohorts=COHORTS,
+    num_nodes_per_cohort=STUDENTS_PER_COHORT,
+    num_classrooms_per_cohort=CLASSROOMS_PER_COHORT,
+    inter_classroom_connections=INTER_CLASSROOM_CONNECTIONS,
+    inter_cohort_connections = INTER_COHORT_CONNECTIONS)
+
+schoolNetworkQ = networkx.classes.function.create_empty_copy(schoolNetwork)  # perfect quarantine
+```
+
+```{python}
+#plot_degree_distn(schoolNetwork)
+```
+
+To set up the model we build a school network that is roughly based on the provincial guidelines. Elementary cohorts have about 60 students, secondary cohorts have 120. Each classroom is strongly connected, and there are some connections between classrooms, in the secondary schools more than in elementary schools. Cohorts also feature some inter-connections, which we attribute to siblings and playdates.
+
+We divide each classroom into yet again smaller groups of around 4 students, which we think of mini-networks with stronger connections. Other within-classroom connections are weighted down by `r scales::percent(py$DISTANCE_FACT)`.
+
+We omit teachers in this model out of laziness, so we won't be able to use this current version to answer questions about the effect of interrupting teacher-to-teacher connections, different masking procedures or the effect of resource teachers that move between classrooms.
+
+Teachers do play an important role in this because they are much more effective as spreaders as they talk (and thus produce aerosols) at higher rates, because they likely have stronger connections to students than students on average to each other, and because they are more vulnerable to negative outcomes in case they contract the virus. This is something that should be dealt with in subsequent modelling.
+
+To account for different classroom conditions, in particular different levels of crowding and ventilation, we scale down the transmission rates for each classroom based on a random factor uniformly distributed between 0.2 and 0.7. Ventilation levels is a key assumption, in subsequent modelling we might want to make this time dependent to account for weather getting successively colder which will reduce ventilation in classrooms without HVAC systems.
+
+In our model we are considering a school district with a total of `r scales::comma(py$N)` students, roughly modelled on VSB.
+
+## Elementary school learning group network
+Here is a graph of a prototypical elementary school network in our model. We see three classrooms, and smaller sub-network within each classroom. There are also some connections between classrooms within the cohort.
+
+```{python}
+g = schoolNetwork.subgraph(cohorts_indices['c0'])
+colors = list(map(lambda x: int(x[1:]),networkx.get_node_attributes(g,'group').values()))
+networkx.draw(g, **networkGraphOptions, node_color=colors)
+pyplot.show()
+```
+
+```{python}
+#elementary_students = list(itertools.chain(*(map(lambda x: cohorts_indices['c' + str(x)],range(0,ELEMENTARY_COHORTS)))))
+#plot_degree_distn(schoolNetwork.subgraph(elementary_students))
+```
+
+## Secondary school learning group network
+Similarly, for secondary schools we have 6 classrooms in the cohort, again with smaller mini-clusters inside each classroom and connections between classrooms. One could probably improve on this model, but it will do for our purposes.
+
+```{python}
+g = schoolNetwork.subgraph(cohorts_indices['c'+str(ELEMENTARY_COHORTS)])
+colors = list(map(lambda x: int(x[1:]),networkx.get_node_attributes(g,'group').values()))
+networkx.draw(g, **networkGraphOptions, node_color=colors)
+pyplot.show()
+```
+
+```{python}
+#secondary_students = list(itertools.chain(*(map(lambda x: cohorts_indices['c' + str(x)],list(range(ELEMENTARY_COHORTS,SECONDARY_COHORTS+ELEMENTARY_COHORTS))))))
+#plot_degree_distn(schoolNetwork.subgraph(secondary_students))
+```
+
+## General Covid-parameters
+We need to set some basic covid-related parameters that govern the spread. These are fairly standard parameters that have been used in modelling, we include graphs of their distribution for convenience.
+
+```{python}
+R0_mean     = 2.5
+R0_coeffvar = 0.2
+
+R0 = gamma_dist(R0_mean, R0_coeffvar, N)
+
+dist_info(R0, "Individual R0", bin_size=0.1, plot=True, colors='crimson')
+```
+
+The distribution of $R_0$ sets the general infectiousness of the virus, and we will draw from this distribution to assign each person how infectious they are in our model.
+
+```{python}
+latentPeriod_mean, latentPeriod_coeffvar = 3.0, 0.6
+SIGMA   = 1 / gamma_dist(latentPeriod_mean, latentPeriod_coeffvar, N)
+
+presymptomaticPeriod_mean, presymptomaticPeriod_coeffvar = 2.2, 0.5
+LAMDA   = 1 / gamma_dist(presymptomaticPeriod_mean, presymptomaticPeriod_coeffvar, N)
+
+symptomaticPeriod_mean, symptomaticPeriod_coeffvar = 4.0, 0.4
+GAMMA   = 1 / gamma_dist(symptomaticPeriod_mean, symptomaticPeriod_coeffvar, N)
+
+infectiousPeriod = 1/LAMDA + 1/GAMMA
+
+dist_info([1/LAMDA, 1/SIGMA, 1/GAMMA], ["latent period", "pre-symptomatic period", "(a)symptomatic period"], plot=True, colors=['gold', 'darkorange', 'crimson'], reverse_plot=True)
+```
+
+Similarly we assign a distribution for the latent, pre-symptomatic and symptomatic (or asymptomatic in case the person does not develop symptoms) periods.
+
+```{python include=FALSE}
+onsetToHospitalizationPeriod_mean, onsetToHospitalizationPeriod_coeffvar = 11.0, 0.45
+ETA     = 1 / gamma_dist(onsetToHospitalizationPeriod_mean, onsetToHospitalizationPeriod_coeffvar, N)
+
+hospitalizationToDischargePeriod_mean, hospitalizationToDischargePeriod_coeffvar = 11.0, 0.45
+GAMMA_H = 1 / gamma_dist(hospitalizationToDischargePeriod_mean, hospitalizationToDischargePeriod_coeffvar, N)
+
+hospitalizationToDeathPeriod_mean, hospitalizationToDeathPeriod_coeffvar = 7.0, 0.45
+MU_H    = 1 / gamma_dist(hospitalizationToDeathPeriod_mean, hospitalizationToDeathPeriod_coeffvar, N)
+
+dist_info([1/ETA, 1/GAMMA_H, 1/MU_H], ["onset-to-hospitalization period", "hospitalization-to-discharge period", "hospitalization-to-death period"], plot=True, colors=['crimson', 'violet', 'darkgray'], reverse_plot=True)
+```
+
+Hospitalization (and death) is not a critical parameter for our model as children generally have comparatively low rates, but we include these in the model anyway.
+
+```{python}
+# derived progression parameters
+BETA = 1/infectiousPeriod * R0
+BETA_Q = BETA * (0.3/R0_mean)
+BETA_PAIRWISE_MODE  = 'infected'
+DELTA_PAIRWISE_MODE = 'infectee' #'mean'
+
+num_normal_contacts = 6
+# assume an average close contact number of num_normal_contacts per day for the overall population and
+# use that to replace the node degree in the denominator. We need to modify the
+# standard model for two reasons. For one we set weights in the network which
+# implicitly make their way into the pairwise infection matrix so node degree is not
+# the right normalization factor any more. And we think that in the school setting this
+# is not an appropriate normalization anyway. Scaling by num_normal_contacts is essentially a fudge
+# factor that normalizes the individual level infection rates to roughly match what we see in
+# other places that already opened schools. This needs to be worked out in more detail
+# to get better predictive models and not just evaluate relative value of interventions.
+DELTA = list(map(lambda x: x[1]/num_normal_contacts,list(schoolNetwork.degree)))
+```
+
+Lastly we need to tell the model how to go from a general $R_0$ to individual level pairwise transmission probabilities. We depart from the standard implementation of the model and replace the normalization by node degree by `r py$num_normal_contacts`, essentially assuming that on average people have `r py$num_normal_contacts` close contacts a day outside of their home. This is a bit of a fudge factor, and the main reason that the estimates should not be used as predictions, but that we should look at relative usefulness of interventions. 
+
+## Testing and quarantine protocol
+Lastly, we need to settle on the TTI protocol. Unfortunately we don't have details on how BC will do this. If Long Term Care centres are a guide we won't be testing non-symptomatic contacts or classmates, and will be conservative in quarantining students. In the Metro Vancouver case some students and staff were asked to self-quarantine for two weeks. The school was not told if the index case was a student or staff, or if students were exposed to an outside index case. This makes it hard to gain insight in how exactly TTI is handled, but it does not appear that BC is employing broad testing like what has been done in many cases in Germany. But again, it is hard to draw too many conclusions from this since the details of the exposure aren't known.
+
+Given what we do know, we assume that that positive cases in schools will self-isolate with 100% probability. Symptomatic cases will self-isolate with 90% probability, some might ignore or misinterpret their symptoms and the symptoms will go undetected at the school. We assume that the entire closer within-classroom networks will quarantine if it has a positive case, and some of the other contacts within and outside of the classroom will also self-isolate.
+
+We assume a time-varying false positive rate around 20%, depending on the state of the infection.
+
+```{python}
+INTERVENTION_START_PCT_INFECTED = 0 # always test/trace
+
+TESTING_CADENCE                 = 'everyday'    # how often to do tracing testing and random testing
+PCT_TESTED_PER_DAY              = 1             # max daily test allotment defined as a percent of population size
+TEST_FALSENEG_RATE              = 'temporal'    # test false negative rate, will use FN rate that varies with disease time
+MAX_PCT_TESTS_FOR_SYMPTOMATICS  = 1.0           # max percent of daily test allotment to use on self-reporting symptomatics
+MAX_PCT_TESTS_FOR_TRACES        = 1.0           # max percent of daily test allotment to use on contact traces
+RANDOM_TESTING_DEGREE_BIAS      = 0             # magnitude of degree bias in random selections for testing, none here
+
+PCT_CONTACTS_TO_TRACE           = 0.75         # percentage of primary cases' contacts that are traced
+TRACING_LAG                     = 1            # number of cadence testing days between primary tests and tracing tests
+
+ISOLATION_LAG_SYMPTOMATIC       = 0             # number of days between onset of symptoms and self-isolation of symptomatics
+ISOLATION_LAG_POSITIVE          = 1             # test turn-around time (TAT): number of days between administration of test and isolation of positive cases
+ISOLATION_LAG_CONTACT           = 0             # number of days between a contact being traced and that contact self-isolating
+
+TESTING_COMPLIANCE_RATE_SYMPTOMATIC                  = 1
+TESTING_COMPLIANCE_RATE_TRACED                       = 0
+TESTING_COMPLIANCE_RATE_RANDOM                       = 0             # can add random testing
+
+TRACING_COMPLIANCE_RATE                              = 1
+
+ISOLATION_COMPLIANCE_RATE_SYMPTOMATIC_INDIVIDUAL     = 0.9
+ISOLATION_COMPLIANCE_RATE_SYMPTOMATIC_GROUPMATE      = 0
+ISOLATION_COMPLIANCE_RATE_POSITIVE_INDIVIDUAL        = 1
+ISOLATION_COMPLIANCE_RATE_POSITIVE_GROUPMATE         = 1
+ISOLATION_COMPLIANCE_RATE_POSITIVE_CONTACT           = 0.1
+ISOLATION_COMPLIANCE_RATE_POSITIVE_CONTACTGROUPMATE  = 0
+
+TESTING_COMPLIANCE_RANDOM                        = (np.random.rand(N) < TESTING_COMPLIANCE_RATE_RANDOM)
+TESTING_COMPLIANCE_TRACED                        = (np.random.rand(N) < TESTING_COMPLIANCE_RATE_TRACED)
+TESTING_COMPLIANCE_SYMPTOMATIC                   = (np.random.rand(N) < TESTING_COMPLIANCE_RATE_SYMPTOMATIC)
+
+TRACING_COMPLIANCE                               = (np.random.rand(N) < TRACING_COMPLIANCE_RATE)
+
+ISOLATION_COMPLIANCE_SYMPTOMATIC_INDIVIDUAL      = (np.random.rand(N) < ISOLATION_COMPLIANCE_RATE_SYMPTOMATIC_INDIVIDUAL)
+ISOLATION_COMPLIANCE_SYMPTOMATIC_GROUPMATE       = (np.random.rand(N) < ISOLATION_COMPLIANCE_RATE_SYMPTOMATIC_GROUPMATE)
+ISOLATION_COMPLIANCE_POSITIVE_INDIVIDUAL         = (np.random.rand(N) < ISOLATION_COMPLIANCE_RATE_POSITIVE_INDIVIDUAL)
+ISOLATION_COMPLIANCE_POSITIVE_GROUPMATE          = (np.random.rand(N) < ISOLATION_COMPLIANCE_RATE_POSITIVE_GROUPMATE)
+ISOLATION_COMPLIANCE_POSITIVE_CONTACT            = (np.random.rand(N) < ISOLATION_COMPLIANCE_RATE_POSITIVE_CONTACT)
+ISOLATION_COMPLIANCE_POSITIVE_CONTACTGROUPMATE   = (np.random.rand(N) < ISOLATION_COMPLIANCE_RATE_POSITIVE_CONTACTGROUPMATE)
+```
+
+
+## Exogenous introductions and other assumptions
+```{python}
+PCT_ASYMPTOMATIC = 0.4                      # share of cases that are asymptomatic. 
+TOTAL_CASES_PER_DAY = 200                   # background cases causing exogenous introductions
+ALPHA = 0.75                                # susceptibility to infection, important assumption
+P_GLOBALINTXN = 0.05                        # probability of global interactions (network locality)
+#Q_GLOBALINTXN = 0.5
+BETA_ASYM_FACT = 0.75                       # factor by which to reduce infectiousness of pre- & asymptomatic
+
+NEW_CASES_PER_100k = 2.8
+NEW_CASES_PER_POP = NEW_CASES_PER_100k/100000                         #TOTAL_CASES_PER_DAY / TOTAL_POP (current VSB rate)
+AVERAGE_INTRODUCTIONS_PER_DAY   = N * NEW_CASES_PER_POP
+INIT_EXPOSED = max(1,int(AVERAGE_INTRODUCTIONS_PER_DAY *5))
+```
+
+We assume that there are `r py$NEW_CASES_PER_100k` new cases per 100,000 population in the the school district we are looking at, which matches the rate VSB was seeing about two weeks ago. These numbers are outdated and likely higher now, but that's the last numbers that were made public. We furthermore assume that the rate among children is similar to the overall rate, which roughly aligns with provincial data by age after accounting for higher asymptomatic cases that will likely fall through the provincial testing protocol. Our model assumes that `r scales::percent(py$PCT_ASYMPTOMATIC)` of cases are asymptomatic.
+
+This sets up the model with `r py$INIT_EXPOSED` exposed children on day 1 and an exogenous introduction of around `r round(py$AVERAGE_INTRODUCTIONS_PER_DAY,1)` introductions per day or `r round(py$AVERAGE_INTRODUCTIONS_PER_DAY*60,1)` introductions over our 60 day modelling period.
+
+We assume that transmission rates between children are at `r scales::percent(py$ALPHA)` of that of adults, and that pre and asymptomatic cases are on average only `r scales::percent(py$BETA_ASYM_FACT)` as infectious as symptomatic cases. We also allow for a small percentage of random close interactions independent of the established contact network.
+
+## Running the model
+The model is probabilistic in nature, each model run differs slightly from the previous. For robust estimates we should average over several runs, but for our purposes a single model run should to do show the general effect of modifying the interventions.
+
+```{python include=FALSE}
+model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = 123,
+                             beta=BETA, sigma=SIGMA, lamda=LAMDA, gamma=GAMMA, 
+                             beta_asym = BETA * BETA_ASYM_FACT,
+                             beta_local = BETA,
+                             xi = 0.0000001, nu = 0.0000001,
+                             beta_asym_local = BETA * BETA_ASYM_FACT,
+                             gamma_asym=GAMMA, eta=ETA, gamma_H=GAMMA_H, mu_H=MU_H,
+                             psi_asym = 0.9, psi_sym = 0.98, psi_pre = 0.9, psi_E = 0.6, psi_S = 0.0,
+                             a=PCT_ASYMPTOMATIC, h=0.01, f=0.00001,              
+                             alpha=ALPHA, beta_pairwise_mode=BETA_PAIRWISE_MODE, 
+                             delta_pairwise_mode=DELTA_PAIRWISE_MODE,
+                             delta_Q = 0,
+                             delta = DELTA, 
+                             G_Q=schoolNetworkQ, isolation_time=14,
+                             store_Xseries = True,
+                             transition_mode = 'time_in_state',
+                             beta_Q=BETA_Q, 
+                             #q=0, o= 0.2, prevalence_ext =  NEW_CASES_PER_POP * 5,
+                             initE=INIT_EXPOSED)
+
+
+T = 60       # run for 60 days
+
+run_school_tti_sim(model, T, seed=123,
+            intervention_start_pct_infected=INTERVENTION_START_PCT_INFECTED,
+            average_introductions_per_day=AVERAGE_INTRODUCTIONS_PER_DAY,
+            testing_cadence=TESTING_CADENCE, pct_tested_per_day=PCT_TESTED_PER_DAY,
+            test_falseneg_rate=TEST_FALSENEG_RATE, 
+            testing_compliance_symptomatic=TESTING_COMPLIANCE_SYMPTOMATIC,
+            max_pct_tests_for_symptomatics=MAX_PCT_TESTS_FOR_SYMPTOMATICS,
+            testing_compliance_traced=TESTING_COMPLIANCE_TRACED, max_pct_tests_for_traces=MAX_PCT_TESTS_FOR_TRACES,
+            testing_compliance_random=TESTING_COMPLIANCE_RANDOM, random_testing_degree_bias=RANDOM_TESTING_DEGREE_BIAS,
+            tracing_compliance=TRACING_COMPLIANCE, pct_contacts_to_trace=PCT_CONTACTS_TO_TRACE, tracing_lag=TRACING_LAG,
+            isolation_compliance_symptomatic_individual=ISOLATION_COMPLIANCE_SYMPTOMATIC_INDIVIDUAL,
+            isolation_compliance_symptomatic_groupmate=ISOLATION_COMPLIANCE_SYMPTOMATIC_GROUPMATE, 
+            isolation_compliance_positive_individual=ISOLATION_COMPLIANCE_POSITIVE_INDIVIDUAL,
+            isolation_compliance_positive_groupmate=ISOLATION_COMPLIANCE_POSITIVE_GROUPMATE,
+            isolation_compliance_positive_contact=ISOLATION_COMPLIANCE_POSITIVE_CONTACT,
+            isolation_compliance_positive_contactgroupmate=ISOLATION_COMPLIANCE_POSITIVE_CONTACTGROUPMATE,
+            isolation_lag_symptomatic=ISOLATION_LAG_SYMPTOMATIC, isolation_lag_positive=ISOLATION_LAG_POSITIVE,
+            isolation_groups=list(group_indices.values()))
+            
+tot_infected = model.total_num_infected()[-1]+model.total_num_recovered()[-1]+model.numH[-1]+model.numF[-1]
+```
+
+Running the model for 60 days we get `r scales::comma(py$tot_infected)` total infections.
+We can visualize the infected and quarantined population over time.
+
+
+```{r}
+results1 <- get_model_results(py$model) %>% mutate(type="Close group quarantine")
+
+model_graph(results1) +
+  labs(title="Close contact quarantine")
+```
+
+
+
+```{python}
+#results_summary(model)
+```
+
+
+```{python}
+#fig, ax = model.figure_infections(combine_Q_infected=False, plot_Q_R='stacked', plot_Q_S='stacked', plot_percentages=False)
+```
+
+The graph shows how many students are in the exposed or infectious stages, as well as their quarantined counterparts. The green susceptible population in quarantine are non-infected students that were forced into quarantine.
+
+
+## Isolating the entire class
+
+```{python include=FALSE}
+model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = 123,
+                             beta=BETA, sigma=SIGMA, lamda=LAMDA, gamma=GAMMA, 
+                             beta_asym = BETA * BETA_ASYM_FACT,
+                             beta_local = BETA,
+                             xi = 0.0000001, nu = 0.0000001,
+                             beta_asym_local = BETA * BETA_ASYM_FACT,
+                             gamma_asym=GAMMA, eta=ETA, gamma_H=GAMMA_H, mu_H=MU_H,
+                             psi_asym = 0.9, psi_sym = 0.98, psi_pre = 0.9, psi_E = 0.6, psi_S = 0.0,
+                             a=PCT_ASYMPTOMATIC, h=0.01, f=0.00001,              
+                             alpha=ALPHA, beta_pairwise_mode=BETA_PAIRWISE_MODE, 
+                             delta_pairwise_mode=DELTA_PAIRWISE_MODE,
+                             delta_Q = 0,
+                             delta = DELTA, 
+                             G_Q=schoolNetworkQ, isolation_time=14,
+                             store_Xseries = True,
+                             transition_mode = 'time_in_state',
+                             beta_Q=BETA_Q, 
+                             #q=0, o= 0.2, prevalence_ext =  NEW_CASES_PER_POP * 5,
+                             initE=INIT_EXPOSED)
+
+T = 60       # run for 60 days
+
+run_school_tti_sim(model, T, seed=123,
+            intervention_start_pct_infected=INTERVENTION_START_PCT_INFECTED,
+            average_introductions_per_day=AVERAGE_INTRODUCTIONS_PER_DAY,
+            testing_cadence=TESTING_CADENCE, pct_tested_per_day=PCT_TESTED_PER_DAY,
+            test_falseneg_rate=TEST_FALSENEG_RATE, 
+            testing_compliance_symptomatic=TESTING_COMPLIANCE_SYMPTOMATIC,
+            max_pct_tests_for_symptomatics=MAX_PCT_TESTS_FOR_SYMPTOMATICS,
+            testing_compliance_traced=TESTING_COMPLIANCE_TRACED, max_pct_tests_for_traces=MAX_PCT_TESTS_FOR_TRACES,
+            testing_compliance_random=TESTING_COMPLIANCE_RANDOM, random_testing_degree_bias=RANDOM_TESTING_DEGREE_BIAS,
+            tracing_compliance=TRACING_COMPLIANCE, pct_contacts_to_trace=PCT_CONTACTS_TO_TRACE, tracing_lag=TRACING_LAG,
+            isolation_compliance_symptomatic_individual=ISOLATION_COMPLIANCE_SYMPTOMATIC_INDIVIDUAL,
+            isolation_compliance_symptomatic_groupmate=ISOLATION_COMPLIANCE_SYMPTOMATIC_GROUPMATE, 
+            isolation_compliance_positive_individual=ISOLATION_COMPLIANCE_POSITIVE_INDIVIDUAL,
+            isolation_compliance_positive_groupmate=ISOLATION_COMPLIANCE_POSITIVE_GROUPMATE,
+            isolation_compliance_positive_contact=ISOLATION_COMPLIANCE_POSITIVE_CONTACT,
+            isolation_compliance_positive_contactgroupmate=ISOLATION_COMPLIANCE_POSITIVE_CONTACTGROUPMATE,
+            isolation_lag_symptomatic=ISOLATION_LAG_SYMPTOMATIC, isolation_lag_positive=ISOLATION_LAG_POSITIVE,
+            isolation_groups=list(classroom_indices.values()))
+
+tot_infected = model.total_num_infected()[-1]+model.total_num_recovered()[-1]+model.numH[-1]+model.numF[-1]
+```
+
+```{r}
+results2 <- get_model_results(py$model) %>% mutate(type="Classroom quarantine")
+
+model_graph(results2) +
+  labs(title="Classroom quarantine")
+```
+
+```{python}
+#fig, ax = model.figure_infections(combine_Q_infected=False, plot_Q_R='stacked', plot_Q_S='stacked', plot_percentages=False)
+```
+
+That brings it down to `r scales::comma(py$tot_infected) ` total infections over the 60 day period, at the cost of quarantining more students.
+
+
+## Testing all contacts
+Here we consider testing all contacts, including the entire classrooms, but only immediately isolating the closer in-classroom networks of a positive case.
+
+```{python include=FALSE}
+TESTING_COMPLIANCE_RATE_TRACED = 1
+TESTING_COMPLIANCE_TRACED  = (np.random.rand(N) < TESTING_COMPLIANCE_RATE_TRACED)
+
+model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = 123,
+                             beta=BETA, sigma=SIGMA, lamda=LAMDA, gamma=GAMMA, 
+                             beta_asym = BETA * BETA_ASYM_FACT,
+                             beta_local = BETA,
+                             xi = 0.0000001, nu = 0.0000001,
+                             beta_asym_local = BETA * BETA_ASYM_FACT,
+                             gamma_asym=GAMMA, eta=ETA, gamma_H=GAMMA_H, mu_H=MU_H,
+                             psi_asym = 0.9, psi_sym = 0.98, psi_pre = 0.9, psi_E = 0.6, psi_S = 0.0,
+                             a=PCT_ASYMPTOMATIC, h=0.01, f=0.00001,              
+                             alpha=ALPHA, beta_pairwise_mode=BETA_PAIRWISE_MODE, 
+                             delta_pairwise_mode=DELTA_PAIRWISE_MODE,
+                             delta_Q = 0,
+                             delta = DELTA, 
+                             G_Q=schoolNetworkQ, isolation_time=14,
+                             store_Xseries = True,
+                             transition_mode = 'time_in_state',
+                             beta_Q=BETA_Q, 
+                             #q=0, o= 0.2, prevalence_ext =  NEW_CASES_PER_POP * 5,
+                             initE=INIT_EXPOSED)
+
+T = 60       # run for 60 days
+
+run_school_tti_sim(model, T, seed=123,
+            intervention_start_pct_infected=INTERVENTION_START_PCT_INFECTED, average_introductions_per_day=AVERAGE_INTRODUCTIONS_PER_DAY,
+            testing_cadence=TESTING_CADENCE, pct_tested_per_day=PCT_TESTED_PER_DAY, test_falseneg_rate=TEST_FALSENEG_RATE, 
+            testing_compliance_symptomatic=TESTING_COMPLIANCE_SYMPTOMATIC, max_pct_tests_for_symptomatics=MAX_PCT_TESTS_FOR_SYMPTOMATICS,
+            testing_compliance_traced=TESTING_COMPLIANCE_TRACED, max_pct_tests_for_traces=MAX_PCT_TESTS_FOR_TRACES,
+            testing_compliance_random=TESTING_COMPLIANCE_RANDOM, random_testing_degree_bias=RANDOM_TESTING_DEGREE_BIAS,
+            tracing_compliance=TRACING_COMPLIANCE, pct_contacts_to_trace=PCT_CONTACTS_TO_TRACE, tracing_lag=TRACING_LAG,
+            isolation_compliance_symptomatic_individual=ISOLATION_COMPLIANCE_SYMPTOMATIC_INDIVIDUAL, isolation_compliance_symptomatic_groupmate=ISOLATION_COMPLIANCE_SYMPTOMATIC_GROUPMATE, 
+            isolation_compliance_positive_individual=ISOLATION_COMPLIANCE_POSITIVE_INDIVIDUAL, isolation_compliance_positive_groupmate=ISOLATION_COMPLIANCE_POSITIVE_GROUPMATE,
+            isolation_compliance_positive_contact=ISOLATION_COMPLIANCE_POSITIVE_CONTACT, isolation_compliance_positive_contactgroupmate=ISOLATION_COMPLIANCE_POSITIVE_CONTACTGROUPMATE,
+            isolation_lag_symptomatic=ISOLATION_LAG_SYMPTOMATIC, isolation_lag_positive=ISOLATION_LAG_POSITIVE,
+            isolation_groups=list(group_indices.values()))
+            
+tot_infected = model.total_num_infected()[-1]+model.total_num_recovered()[-1]+model.numH[-1]+model.numF[-1]
+```
+
+```{r}
+results3 <- get_model_results(py$model) %>% mutate(type="Contact testing")
+
+model_graph(results3) +
+  labs(title="Contact testing")
+```
+
+```{python}
+#fig, ax = model.figure_infections(combine_Q_infected=False, plot_Q_R='stacked', plot_Q_S='stacked', plot_percentages=False)
+```
+
+That brings it down to `r scales::comma(py$tot_infected)` total infections over the 60 day period, at the cost of quarantining more students.
+
+## Random testing
+Another way to reduce the number of infections is to add random testing. In schools we expect a fair share of asymptomatic cases, which we will never catch before they infect others unless we introduce random testing. We run a model that's the same as the previous with additionally a quarter of the students are randomly tested each day. 
+
+```{python include=FALSE}
+TESTING_COMPLIANCE_RATE_RANDOM = 0.25      
+TESTING_COMPLIANCE_RANDOM = (np.random.rand(N) < TESTING_COMPLIANCE_RATE_RANDOM)
+
+model = ExtSEIRSNetworkModel(G=schoolNetwork, p=P_GLOBALINTXN, seed = 123,
+                             beta=BETA, sigma=SIGMA, lamda=LAMDA, gamma=GAMMA, 
+                             beta_asym = BETA * BETA_ASYM_FACT,
+                             beta_local = BETA,
+                             xi = 0.0000001, nu = 0.0000001,
+                             beta_asym_local = BETA * BETA_ASYM_FACT,
+                             gamma_asym=GAMMA, eta=ETA, gamma_H=GAMMA_H, mu_H=MU_H,
+                             psi_asym = 0.9, psi_sym = 0.98, psi_pre = 0.9, psi_E = 0.6, psi_S = 0.0,
+                             a=PCT_ASYMPTOMATIC, h=0.01, f=0.00001,              
+                             alpha=ALPHA, beta_pairwise_mode=BETA_PAIRWISE_MODE, 
+                             delta_pairwise_mode=DELTA_PAIRWISE_MODE,
+                             delta_Q = 0,
+                             delta = DELTA, 
+                             G_Q=schoolNetworkQ, isolation_time=14,
+                             store_Xseries = True,
+                             #transition_mode = 'time_in_state',
+                             beta_Q=BETA_Q, 
+                             #q=0, o= 0.2, prevalence_ext =  NEW_CASES_PER_POP * 5,
+                             initE=INIT_EXPOSED)
+
+T = 60       # run for 60 days
+
+run_school_tti_sim(model, T, seed=123,
+            intervention_start_pct_infected=INTERVENTION_START_PCT_INFECTED, average_introductions_per_day=AVERAGE_INTRODUCTIONS_PER_DAY,
+            testing_cadence=TESTING_CADENCE, pct_tested_per_day=PCT_TESTED_PER_DAY, test_falseneg_rate=TEST_FALSENEG_RATE, 
+            testing_compliance_symptomatic=TESTING_COMPLIANCE_SYMPTOMATIC, max_pct_tests_for_symptomatics=MAX_PCT_TESTS_FOR_SYMPTOMATICS,
+            testing_compliance_traced=TESTING_COMPLIANCE_TRACED, max_pct_tests_for_traces=MAX_PCT_TESTS_FOR_TRACES,
+            testing_compliance_random=TESTING_COMPLIANCE_RANDOM, random_testing_degree_bias=RANDOM_TESTING_DEGREE_BIAS,
+            tracing_compliance=TRACING_COMPLIANCE, pct_contacts_to_trace=PCT_CONTACTS_TO_TRACE, tracing_lag=TRACING_LAG,
+            isolation_compliance_symptomatic_individual=ISOLATION_COMPLIANCE_SYMPTOMATIC_INDIVIDUAL, isolation_compliance_symptomatic_groupmate=ISOLATION_COMPLIANCE_SYMPTOMATIC_GROUPMATE, 
+            isolation_compliance_positive_individual=ISOLATION_COMPLIANCE_POSITIVE_INDIVIDUAL, isolation_compliance_positive_groupmate=ISOLATION_COMPLIANCE_POSITIVE_GROUPMATE,
+            isolation_compliance_positive_contact=ISOLATION_COMPLIANCE_POSITIVE_CONTACT, isolation_compliance_positive_contactgroupmate=ISOLATION_COMPLIANCE_POSITIVE_CONTACTGROUPMATE,
+            isolation_lag_symptomatic=ISOLATION_LAG_SYMPTOMATIC, isolation_lag_positive=ISOLATION_LAG_POSITIVE,
+            isolation_groups=list(group_indices.values()))
+            
+tot_infected = model.total_num_infected()[-1]+model.total_num_recovered()[-1]+model.numH[-1]+model.numF[-1]
+```
+
+
+```{r}
+results4 <- get_model_results(py$model) %>% mutate(type="Random testing")
+
+model_graph(results4) +
+  labs(title="Contact and random testing")
+```
+
+```{python}
+#fig, ax = model.figure_infections(combine_Q_infected=False, plot_Q_R='stacked', plot_Q_S='stacked', plot_percentages=False)
+```
+
+That brings it down to `r scales::comma(py$tot_infected)` total infections over the 60 day period, at the cost of quarantining more students.
+
+
+For better comparison, here are the results for all model runs in one graph.
+
+```{r tti-comparison}
+bind_rows(results1,results2,results3,results4) %>%
+  model_graph() +
+  facet_wrap("type") +
+  labs(title="Model comparison")
+```
+
+
+## Upshot
+What can we learn from this? The number of infections in school aren't the main focus. As explained before, the model is hard to calibrate and not that useful to make accurate predictions. The cases the model produces are at the upper end of what one might expect to see. What it does show is how implementation details on the test, trace and isolate response matter to moderate the outbreak size.
+
+The specific implementation of our TTI protocol matters in controlling school outbreaks, and it can be the difference between schools being infection accelerators and places that experience occasional exposures but don't add significant transmissions.
+
+There are many interesting questions unanswered. The role of classroom and cohort sizes is one of them, the role of exogenous background spread that can seed school cases is another, and the feedback between school cases and background spread was also ignored in this post.
+
+Ideally we first get a better idea what our TTI protocol will look like, and then run an updated post where we fix the TTI and look at how other factors vary, otherwise there are too many moving parts for one post.
+
+As usual, the code for the post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-09-08-covid-school-modelling.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
