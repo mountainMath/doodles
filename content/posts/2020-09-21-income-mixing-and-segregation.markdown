@@ -61,21 +61,15 @@ The basic unit in the metric is *census families*. To compute the census tract l
 The census tract level D-index is then the weighted sum of the KL-divergence of the income distribution within each of these sub-categories (large apartment buildings and everything else) relative to the CMA-wide income distribution. The income distributions are quantized to quintiles based on the CMA level distribution, so the CMA-level reference distribution is by definition uniform.
 
 More formally, the tract-level D-index `\(D_c\)` for census tract `\(c\)` is given by
-$$
-D_c=\sum_{b\in B}\frac{n_b}{n_c} ~ D_{KL}(\pi_b~|~\pi_m)
-$$
+$$ D_c=\sum_{b\in B}\frac{n_b}{n_c} ~ D_{KL}(\pi_b~|~\pi_m) $$
 where `\(B\)` is the set of large apartment buildings and the "everything else" category, `\(n_b\)` is number of census families in the building (category) `\(b\)`, `\(n_c\)` is the number of families in census tract `\(c\)`, `\(\pi_b\)` is the discretized income distribution in building (category) `\(b\)` and `\(\pi_m\)` denotes the metro-wide (by definition uniform) discretized income distribution.
 
 As a reminder, the (discrete) KL-divergence is defined by
-$$
-D_{KL}(\pi_1~|~\pi_2)=\sum_{q\in Q}\pi_1(q) ~ \log\left(\frac{\pi_1(q)}{\pi_2(q)}\right)
-$$
+$$ D_{KL}(\pi_1~|~\pi_2)=\sum_{q\in Q}\pi_1(q) ~ \log\left(\frac{\pi_1(q)}{\pi_2(q)}\right) $$
 Where the sum runs over all income brackets `\(Q\)`.
 
 The authors point out that `\(D_c\)` can be (additively) decomposed into components separating out the contributions of variation across dwelling types and the contribution across large apartment buildings. In formulas
-$$
-D_c=D_{KL}(\pi_c~|~\pi_m) + \sum_{d\in T}\frac{n_d}{n_c} ~ D_{KL}(\pi_d~|~\pi_c) + \sum_{b\in A}\frac{n_b}{n_A} ~ D_{KL}(\pi_b~|~\pi_A) 
-$$
+$$ D_c=D_{KL}(\pi_c~|~\pi_m) + \sum_{d\in T}\frac{n_d}{n_c} ~ D_{KL}(\pi_d~|~\pi_c) + \sum_{b\in A}\frac{n_b}{n_A} ~ D_{KL}(\pi_b~|~\pi_A) $$
 Where `\(T\)` is the set of building types consisting of two elements (large apartments vs all others) and `\(A\)` is the set of large apartments. (So `\(B\)` is the union of `\(A\)` with the single element of all non-large apartment buildings.) While such a decomposition can generate useful insights, the individual components of `\(D_c\)` were unfortunately not made available in the dataset.
 
 Let's take the D-index for a drive and see what this looks like.
