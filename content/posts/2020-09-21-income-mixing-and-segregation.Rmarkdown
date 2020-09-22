@@ -15,6 +15,9 @@ featuredalt: ""
 featuredpath: ""
 linktitle: ''
 type: "post"
+blackfriday:
+  fractions: false
+  hrefTargetBlank: true
 ---
 
 
