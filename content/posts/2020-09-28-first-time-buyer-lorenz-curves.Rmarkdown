@@ -151,12 +151,12 @@ calgary_ftbs <-lorenz_data %>%
   filter(CMA =="Calgary") %>%
   mutate(a=`Can afford price percentile`)
 calgary_ftbs %>%
-  mutate(label=paste0(scales::percent(percentile)," of first-time buyers\ncan afford ", 
+  mutate(label=paste0("First time buyers at the ",round(percentile*100,0),"th income\npercentile can afford ", 
                       scales::percent(`Can afford price percentile`)," of homes")) %>%
   ggplot(aes(x=percentile, y=`Can afford price percentile`)) +
   lorenz_theme(0.1) +
   ggrepel::geom_text_repel(data=~filter(.,abs(percentile-0.4)<0.01),aes(label=label),hjust=-0.2,vjust=1,size=3) +
-  ggrepel::geom_text_repel(data=~filter(.,abs(percentile-0.9)<0.01),aes(label=label),hjust=0.5,vjust=4,size=3) +
+  ggrepel::geom_text_repel(data=~filter(.,abs(percentile-0.9)<0.01),aes(label=label),hjust=0.5,vjust=4.5,size=3) +
   labs(title = "Metro Calgary first-time home buyer Lorenz curve")
 ```
 
