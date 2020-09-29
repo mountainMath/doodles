@@ -1,0 +1,585 @@
+---
+title: First-time buyer Lorenz curves
+authors: 
+  - Keith Stewart
+  - Jens von Bergmann
+date: '2020-09-28'
+slug: first-time-buyer-lorenz-curves
+categories:
+  - geeky
+  - affordability
+tags: []
+description: "Taking a look at affordability for first-time buyers, and what useful metrics can be constructed the measure this."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2020-09-28-first-time-buyer-lorenz-curves_files/figure-html/lorenz_hh-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE
+)
+library(tidyverse)
+library(FinCal)
+library(patchwork)
+```
+
+At the end of this odd COVID-19 summer we launched a reading group to bring together people interested in diving into papers and books looking at housing issues. 
+
+Geoffrey Meen and Christine Whitehead's recently released book [Understanding Affordability: The Economics of Housing Markets](https://www.google.ca/search?lr=&hl=en&rlz=1G1GGLQ_ENCA326&sxsrf=ALeKk00e9C0Ju7rRnwPwg8MXIYXn5fcJOw%3A1601131692506&ei=rFRvX827HpT9-gTL-oqQCA&q=geoffrey+meen+and+christine+whitehead&oq=geoffrey+meen+and+christine+whitehead&gs_lcp=CgZwc3ktYWIQAzIECCMQJzoHCCMQsAIQJ1CBNFiBNGCONmgAcAB4AIABRYgBd5IBATKYAQCgAQGqAQdnd3Mtd2l6wAEB&sclient=psy-ab&ved=0ahUKEwjNwZSuiIfsAhWUvp4KHUu9AoIQ4dUDCA0&uact=5) has been the group's first read. We highly recommend the book, it's a good read for anyone looking for a practical understanding of how housing markets work and ways to think about supply and demand and what they mean for housing affordability.
+
+Part of the idea of the reading group was to take some of the methods and insights and use Vancouver or at least Canadian data to reproduce them. Both of us felt that a wider audience might benefit from this, so we decided to turn one aspect into a quick blog post: First-time buyer Lorenz curves.
+
+As we've argued on this blog time and time again our housing crisis is [ultimately a crisis for renters](https://doodles.mountainmath.ca/blog/2019/02/15/vancouver-renters/). Mean and Whitehead take this view as well and argue the best metrics for housing affordability should be based on renters, specifically the affordability of renting and the ability for renters to access home ownership. 
+
+## Issues with price-to-income
+The most widely reported income metric on affordability is price-to-income ratio usually reported as the mean or median multiple of market prices of all housing units to (typically) household income of all households regardless of tenure. 
+
+Price-to-income is an attractive metric because it's easy to compute, data to produce it is readily available, and it's easy to understand. But it suffers from a slew of problems, some of which [were discussed here before](https://doodles.mountainmath.ca/blog/2016/09/14/measuring-housing-affordability/). Meen and Whitehead conclude:
+
+>    We are highly critical of the simplest – the house price to earnings or income ratio – despite the fact that it is the most widely used and is built into land use planning policies. The ratio provides no information on the distribution of outcomes across household types and income levels, it can be misleading as an indicator of changes in affordability over time even at the aggregate level, and it is worrying that it is still widely used.
+
+But [composition of housing and households matters](https://doodles.mountainmath.ca/blog/2017/11/01/medians/). For instance [proportions of household-types accoss different areas are far from uniform](https://doodles.mountainmath.ca/blog/2017/12/01/what-s-a-household/).
+
+Also, as Meen and Whitehead point out, high price-to-income ratios are not considered "bad" by many owner-households and in fact represent owner-households' generally high net worth in high price-to-income regions. This is important to keep in mind, because for most geographies we're interested in Canada the majority of households own their homes.
+
+One point in particular that Meen and Whitehead stress throughout is that access to capital, or mortgage market constraints, have a large impact on affordability and generally serve to deepen inequality between existing and would-be owners. This applies especially in our low interest and low property tax rate environment (that additionally has seen significant home price appreciation).
+
+Fundamentally, the ability to rent in a city or metro area is at the core of the affordability question. But culturally Canadian place a lot of value on home ownership. And this is reflecting in the preferential tax treatment, most importantly the non-taxation of imputed rent, but also the non-taxation of principle residence capital gains, and even at the provincial level, the homeowner grant which reduces the property tax, as well as extremely low interest loans for property tax deferrals. In light of this, it makes sense that the public is also worried about making the jump from renting to owning, and that policy pays attention to that. 
+
+## First-time home buyer Lorenz curves
+```{r}
+path=file.path(getOption("custom_data_path"),"pumf/pumf_2016/Data","Census_2016_Individual_PUMF.sav") 
+#path="/Users/keithstewart/Data/Census/2016/Individual/Data/Census_2016_Individual_PUMF.sav"
+pumf_data <- foreign::read.spss(path) %>%
+  as_tibble() %>%
+  set_names(names(.) %>% toupper) %>%
+  mutate(housing=SHELCO*12) %>%
+  mutate(lower=case_when(HHINC=="Under $2,000" ~ 0,
+                         TRUE ~ as.numeric(gsub("\\$|,","",str_extract(as.character(HHINC),"^\\$[\\d,]+")))),
+         upper=case_when(HHINC=="$250,000 and over" ~ 350000,
+                         TRUE~as.numeric(gsub("\\$|,","",str_extract(as.character(HHINC),"\\$[\\d,]+$"))))) %>%
+  mutate(income=(lower+upper)/2) %>%
+  mutate(ef_lower=case_when(HHINC=="Under $2,000" ~ 0,
+                         TRUE ~ as.numeric(gsub("\\$|,","",str_extract(as.character(EFINC),"^\\$[\\d,]+")))),
+         ef_upper=case_when(HHINC=="$250,000 and over" ~ 350000,
+                         TRUE~as.numeric(gsub("\\$|,","",str_extract(as.character(EFINC),"\\$[\\d,]+$"))))) %>%
+  mutate(ef_income=(ef_lower+ef_upper)/2) %>%
+  mutate(lower2=case_when(HHINC_AT=="Under $2,000" ~ 0,
+                         TRUE ~ as.numeric(gsub("\\$|,","",str_extract(as.character(HHINC_AT),"^\\$[\\d,]+")))),
+         upper2=case_when(HHINC_AT=="$250,000 and over" ~ 300000,
+                         TRUE~as.numeric(gsub("\\$|,","",str_extract(as.character(HHINC_AT),"\\$[\\d,]+$"))))) %>%
+  mutate(income_at=(lower2+upper2)/2+GTRFS) %>%
+  filter(!is.na(income),!is.na(income_at),!is.na(housing),TENUR!="Not available") %>%
+  mutate(scir=pmin(1,housing/income),
+         scir_at=pmin(1,housing/income_at))
+
+
+interest_rate <- 0.0225
+mortgage_term <- 25
+mortgage_term2 <- 30
+percentiles <- seq(0,1,0.1)
+potential_buyers_age <- c("20 to 24 years", "25 to 29 years", "30 to 34 years", 
+                          "35 to 39 years", "40 to 44 years", "45 to 49 years")
+
+
+income_data <- pumf_data %>%
+  filter(PRIHM=="Person is primary maintainer", # count households only once
+         ATTSCH=="Did not attend school", # filter out students
+         !(SUBSIDY %in% c("Yes, a subsidized dwelling", "Not available")),
+         !(MOB1 %in% c("External migrants", "Not available")),  #Remove 1st year external migrants
+         AGEGRP %in% potential_buyers_age, 
+         income>0,
+         TENUR=="Rented or Band housing") %>%
+  group_by(CMA) %>%
+  summarize(Income=quantile(income, percentiles),percentile=percentiles,.groups="drop") %>%
+  mutate(`Max shelter cost`=0.3*Income)
+
+
+home_price_data <- pumf_data %>%
+  filter(PRIHM=="Person is primary maintainer", # count households only once
+         SHELCO>0, 
+         TENUR=="Owned by a member of the household",
+         DTYPE!= "Not available") %>%
+    mutate(`Annual mortgage cost`= 12*pmt(r=(interest_rate/12),pv=-0.99*VALUE, n=mortgage_term*12, fv=0)) %>%
+    mutate(`Annual mortgage cost 2`= case_when(VALUE < 1000000 ~ 12*pmt(r=(interest_rate/12),pv=-0.99*VALUE, n=mortgage_term*12, fv=0), #.99 is 5% down with 4% mortgage insurance  financed
+                                             VALUE >=1000000 ~ 12*pmt(r=(interest_rate/12),pv=-0.8*VALUE, n=mortgage_term2*12, fv=0))) %>%
+  left_join(income_data %>%
+              group_by(CMA) %>%
+              summarize(max_income=max(Income)),
+            by="CMA") %>%
+    mutate(`Annual mortgage cost`=pmin(`Annual mortgage cost`,0.3*max_income))  # align top-coding of income and home value
+  
+lorenz_data <- income_data %>%
+  group_by(CMA) %>%
+  group_modify(function(d,g)d %>% mutate(`Can afford price percentile`= ecdf(filter(home_price_data,CMA==g$CMA)$`Annual mortgage cost`)(`Max shelter cost`))) 
+```
+
+To better understand the the issues (potential) first-time buyers face Meen and Whitehead employ Lorenz curves. This is trying to understand the question what proportion of (potential) first-time buyers can afford what proportion of the housing stock. For the purpose of the metric we define *potential first time buyers* in a CMA as non-student renter households not in subsidized housing with income greater than zero between the ages of 20 to 49. Income data for that population is available from the census. This is only a rough approximation but it should do for our purposes. For simplicity we estimate home prices also from the census as estimated by owner-occupiers, in aggregate the differences between home price distributions from different sources does not matter much for our purposes.
+
+Armed with the income distribution of potential first-time buyers, and the distribution of home prices, we can check what portion of potential buyers can (at least) afford a given proportion of homes in the metro area, giving what Meen and Whitehead refer to as "Lorenz curves" of potential first time buyers in (rough) analogy to the well-known inequality metric.
+
+There is still one missing step, we need to determine how much housing a given income level can afford. Here we are focusing strictly on the ability to service a mortgage and assume 5% percent down payment. This also triggers mortgage insurance which brings the effective loan value to 99% of the home value. Starting at home values above \$500k [stricter down payment requirements](https://www.canada.ca/en/financial-consumer-agency/services/mortgages/down-payment.html) kick in, escalating to a minimum 20% down payment for homes over \$1M. Here we will assume an effective loan value of 99% for the entire spectrum of homes rather than adjust the down payment value, which implicitly helps account for longer time required to save up for a higher down payment. We use an interest rate of `r scales::percent(interest_rate,accuracy=0.01)` and an amortization period of `r mortgage_term` years. Finally, we use mortgage cost as 30% of income as the affordability threshold. 30% is the most widely used affordability threshold, and while financial institutions will lend to borrowers loans with payments above 30% of income those calculations include property taxes, utilities, and stress-testing the borrower(s) for potentially higher future interest rates. 
+
+```{r}
+lorenz_theme <- function(step=0.1){
+  list(
+    geom_point(),
+    geom_line(data=tibble(x=c(0,1),y=c(0,1)),aes(x=x,y=y)),
+    geom_smooth(se=FALSE, span=0.5,formula = y ~ x, method = 'loess'),
+    theme_minimal(),
+    scale_y_continuous(labels=scales::percent,breaks=seq(0,1,step)),
+    scale_x_continuous(labels=scales::percent,breaks=seq(0,1,step)),
+    labs(title = "Metro area first-time home buyer Lorenz curve",
+         caption = "Statistics Canada 2016 Individual Census PUMF",
+         x="Income percentile of (potential) first-time home buyers",
+         y="Home value distribution")
+  )
+}
+
+```
+
+Let's take a look what such a Lorenz curve for potential first-time buyers (essentially renters aged 20 through 49) looks like.
+
+```{r}
+calgary_ftbs <-lorenz_data %>%
+  filter(CMA =="Calgary") %>%
+  mutate(a=`Can afford price percentile`)
+calgary_ftbs %>%
+  mutate(label=paste0(scales::percent(percentile)," of first-time buyers\ncan afford ", 
+                      scales::percent(`Can afford price percentile`)," of homes")) %>%
+  ggplot(aes(x=percentile, y=`Can afford price percentile`)) +
+  lorenz_theme(0.1) +
+  ggrepel::geom_text_repel(data=~filter(.,abs(percentile-0.4)<0.01),aes(label=label),hjust=-0.2,vjust=1,size=3) +
+  ggrepel::geom_text_repel(data=~filter(.,abs(percentile-0.9)<0.01),aes(label=label),hjust=0.5,vjust=4,size=3) +
+  labs(title = "Metro Calgary first-time home buyer Lorenz curve")
+```
+
+In Calgary, potential first-time buyers at the bottom end of the renter income can't afford any of the homes. Someone at the 20th income percentile of potential first-time buyers can only afford `r scales::percent(filter(calgary_ftbs,abs(percentile-0.2)<0.01)$a)` of Calgary homes. But after that things pick up fast and someone at the 60th percentile can afford `r scales::percent(filter(calgary_ftbs,abs(percentile-0.6)<0.01)$a)`, at which point things even out and the Lorenz curve hugs the diagonal.
+
+This says nothing about what kind of home someone can afford, or where in the metro area an affordable home may be, or how well e.g. the number of bedrooms in the home matches the requirements of the potential first-time buyers. It also skirts the discussion about "starter homes" or more generally the question if there is a mismatch between homes first-time buyers are buying and the overall distribution of homes in the metro area in terms of quality or size. Or if there should be such a distinction. What this does is it gives a rough matchup between incomes of (potential) first-time buyers and home values.
+
+Looking at the Calgary data we are led to ask if the Calgary Lorenz curve is typical for Canadian metropolitan areas. Looking at the largest six metro areas, the answer is mostly Yes, except for Toronto and Vancouver.
+
+Note: The Census Public Use Miro File (PUMF) combines smaller metropolitan areas in the same province together (e.g. Regina-Saskatoon). 
+
+```{r lorenz_hh}
+large_cmas <- pumf_data %>% 
+  count(CMA) %>% 
+  filter(CMA!="Other census metropolitan areas, census agglomerations and other geographies") %>%
+  top_n(6,n) %>% 
+  arrange(-n) %>% 
+  pull(CMA)
+
+lorenz_data %>%
+  filter(CMA %in% large_cmas) %>%
+  mutate(CMA=factor(CMA,large_cmas)) %>%
+  ggplot(aes(x=percentile, y=`Can afford price percentile`)) +
+  lorenz_theme(0.2) +
+  facet_wrap("CMA")
+```
+
+
+Looking more broadly, Victoria and Hamilton have patterns broadly similar to Toronto and Vancouver, with Oshawa also exhibiting a lot of similarities, except in the top income decile.
+
+```{r}
+all_cmas <- pumf_data %>% 
+  count(CMA) %>% 
+  filter(CMA!="Other census metropolitan areas, census agglomerations and other geographies") %>%
+  arrange(-n) %>% 
+  pull(CMA)
+
+lorenz_data %>%
+  filter(CMA %in% all_cmas) %>%
+  mutate(CMA=factor(CMA,all_cmas)) %>%
+  ggplot(aes(x=percentile, y=`Can afford price percentile`)) +
+  lorenz_theme(0.25) +
+  facet_wrap("CMA")
+```
+
+This begs several questions: 
+* Is there a good way to condense these graphs into a simple to use metric?
+* How does such a metric compare to median multiples?
+* What are ways that we can refine the Lorenz curves to account for needed space and not just affordability?
+
+## The first times buyer GINI index
+The term "Lorenz curve" that we have adapted from Meen and Whitehead is a bit of a misnomer, Lorenz curves are used to compare a distribution with it's cdf, we are comparing the cdfs of two different distributions and compare them to a hypothetical case where both match up. One important difference is that our "Lorenz curves" can take values above the diagonal.
+
+There are many ways to condense the comparison between two distributions into an index, [we have recently looked in detail at several such indices](https://doodles.mountainmath.ca/blog/2020/09/21/income-mixing-and-segregation/). In this case we can stick with our Lorenz curve analogy and compute a **First-Time Buyer GINI Index**, defined as (double) the (signed) area between the first-time buyer Lorenz curve and the diagonal in analogy to the definition of the regular GINI index The regular GINI index takes values between 0 and 1, our first-time buyer GINI index takes values between -1 and 1. A value of -1 would mean that all potential first-time buyers could afford all homes, a value of 1 corresponds to no buyers being able to afford any of the homes. A value of 0 corresponds to the situation where, on average, a buyer at income percentile $x$ can buy all homes below the home value percentile $x$. 
+
+```{r fig.width=6, fig.height=3}
+perfect_affordability <- as_tibble(seq(0,1,0.001)) %>%
+  transmute(percentile=value) %>%
+  mutate(`Can afford price percentile`= case_when(percentile==0 ~ 0,
+                                                  TRUE ~ 1), 
+         Type="Perfect affordability (GINI = -1)")
+
+proportional_affordability <- as_tibble(seq(0,1,0.001)) %>%
+  transmute(percentile=value) %>%
+  mutate(`Can afford price percentile`= percentile,
+         Type="Proportional affordability (GINI = 0)")
+
+perfect_unaffordability <- as_tibble(seq(0,1,0.001)) %>%
+  transmute(percentile=value) %>%
+  mutate(`Can afford price percentile`= case_when(percentile==1 ~ 1,
+                                                  TRUE ~ 0), 
+         Type="Perfect unaffordability (GINI = 1)")
+
+example <- rbind(perfect_affordability, proportional_affordability, perfect_unaffordability)
+  
+ggplot(example, aes(x=percentile, y=`Can afford price percentile`, col=Type))+
+  geom_line(size=2) +
+    theme_minimal() + 
+    scale_y_continuous(labels=scales::percent,breaks=seq(0,1,0.1)) + 
+    scale_x_continuous(labels=scales::percent,breaks=seq(0,1,0.1)) +
+    labs(title = "First-time home buyer Lorenz curve",
+         x="Income percentile of (potential) first-time home buyers",
+         y="Home value distribution")
+```
+
+
+```{r}
+clean_cma_names <- function(data){
+  data %>%
+    mutate(CMA=gsub(" / Grand Sudbury","",CMA))
+}
+
+area_lorenz <- lorenz_data %>%
+  filter(CMA!="Other census metropolitan areas, census agglomerations and other geographies") %>%
+  group_by(CMA) %>%
+  mutate(partial_area=0.1*(`Can afford price percentile`- 0.5*(`Can afford price percentile` - lag(`Can afford price percentile`,order_by=percentile)))) %>%
+  summarise(lorenz_area=sum(partial_area, na.rm = TRUE),
+            diff_area=2*0.1*sum(percentile-`Can afford price percentile`), #same thing, easier calculation
+            .groups="drop") %>%
+  mutate(affordability_factor=2*round(0.5-lorenz_area, 3)) %>% # value of zero at equality line [1/2 (least affordable -> -1/2 most affordable)]
+  arrange(affordability_factor) %>%
+  mutate(rank=row_number()) %>%
+  select(CMA, rank,score=diff_area,score2=affordability_factor) %>%
+  mutate(type="Affordability factor") %>%
+  clean_cma_names()
+
+median_multiples <- pumf_data %>%
+  filter(CMA!="Other census metropolitan areas, census agglomerations and other geographies") %>%
+  mutate(value=ifelse(VALUE>=88888888,NA,VALUE)) %>%
+  group_by(CMA) %>%
+  summarise(median_income=median(income,na.rm = TRUE),
+            median_price=median(value,na.rm=TRUE),
+            .groups="drop") %>%
+  mutate(median_muliple=median_price/median_income) %>%
+  arrange(median_muliple) %>%
+  mutate(rank=row_number()) %>% 
+  select(CMA, rank,score=median_muliple) %>%
+  mutate(type="Median multiple") %>%
+  arrange(desc(rank)) %>%
+  clean_cma_names()
+
+```
+ 
+Taking the first-time buyer Lorenz curve to be piecewise linear, the calculation of the corresponding GINI coefficient is straight-forward. We contrast the first-time buyer GINI index with the familiar median multiple metric, computed over incomes of all households vs the values of owner-occupied homes.
+ 
+```{r fig.width=8} 
+g1<-ggplot(median_multiples,aes(x=reorder(CMA,rank), y=score)) +
+  geom_bar(stat="identity",fill="brown") +
+  coord_flip() +
+  labs(x=NULL,y="Median Multiple") 
+g2<-ggplot(area_lorenz,aes(x=reorder(CMA,rank), y=score)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  coord_flip() +
+  labs(x=NULL,y="First-time buyer GINI")
+
+g2+g1 + plot_annotation(
+  title = 'Comparison of median multiple to first time buyer GINI',
+  caption = 'StatCan Census 2016 PUMF'
+)
+
+```
+
+There is a broad correspondence between the two metrics, but it's interesting to explore the differences. Vancouver as expected stands out on the median multiples chart, but it trades places with Toronto when looking at the first-time buyer GINI index.
+
+## Refining the Lorenz curves
+One way to refine this is to take a closer look at home size requirements. A one-person household has very different requirements from a 3 or 4 person family. Moreover, household income is probably not the best metric here. Household income is useful when looking at ability to pay shelter costs at the current home, but it is less useful for looking at affordability of buying a new home. Households generally don't buy homes, family units and unattached individuals do. Economic family income (or maybe census family income) and income of unattached individuals is a better metric to use. And we should match up the family size with the number of bedrooms in a home. After all, we are not that concerned about whether an individual is or is not able to purchase a 4 bedroom home, but we are much more concerned about the ability to purchase a studio or 1-bedroom home. Similarly, it's not that relevant if a family of 3 can purchase a 1-bedroom unit, but it is very relevant if they can purchase a 2 or 3 bedroom unit.
+
+So we need to make a decision of housing that's adequate for an economic family, but also does not compare they to homes where they would be "overhoused". That's a tricky thing to do, we are going with the following rough categories:
+
+| Family size | Number of bedrooms|
+|---|---|
+|Single| 0 or 1|
+|2 persons| 1 or 2|
+|3 persons| 2 or 3|
+|4+ persons| 3 or more|
+
+
+```{r}
+ef_income_data <- pumf_data %>%
+  filter(PRIHM=="Person is primary maintainer", # count households only once
+         ATTSCH=="Did not attend school", # filter out students
+         !(SUBSIDY %in% c("Yes, a subsidized dwelling", "Not available")),
+         !(MOB1 %in% c("External migrants", "Not available")),  #Remove 1st year external migrants
+         AGEGRP %in% potential_buyers_age, 
+         ef_income>0,
+         EFSIZE!="Not available",
+         TENUR=="Rented or Band housing") %>%
+  mutate(ef_group=case_when(EFSIZE=="Person not in an economic family" ~ 1,
+                            EFSIZE=="2 persons" ~ 2,
+                            EFSIZE=="3 persons" ~ 3,
+                            TRUE ~ 4)) %>%
+  group_by(CMA,ef_group) %>%
+  summarize(Income=quantile(ef_income, percentiles),percentile=percentiles, cases=n(),.groups="drop") %>%
+  mutate(`Max shelter cost`=0.3*Income)
+
+
+ef_home_price_data <- pumf_data %>%
+  filter(PRIHM=="Person is primary maintainer", # count households only once
+         SHELCO>0, 
+         TENUR=="Owned by a member of the household",
+         BEDRM!="Not available",
+         DTYPE!= "Not available") %>%
+  mutate(brm_group=case_when(BEDRM=="No bedroom" ~ 0,
+                             BEDRM=="1 bedroom" ~ 1,
+                             BEDRM=="2 bedrooms" ~ 2,
+                             BEDRM=="3 bedrooms" ~ 3,
+                             TRUE ~ 4)) %>%
+  mutate(`Annual mortgage cost`= 12*pmt(r=(interest_rate/12),pv=-0.99*VALUE, n=mortgage_term*12, fv=0)) %>%
+  left_join(income_data %>%
+              group_by(CMA) %>%
+              summarize(max_income=max(Income)),
+            by="CMA") %>%
+    mutate(`Annual mortgage cost`=pmin(`Annual mortgage cost`,0.3*max_income))  # align top-coding of income and home value
+
+
+ef_lorenz_data <- ef_income_data %>%
+  group_by(CMA,ef_group) %>%
+  group_modify(function(d,g){
+    hp <- ef_home_price_data %>%
+      filter(CMA==g$CMA,
+             brm_group>=g$ef_group-1,
+             brm_group<=g$ef_group)
+    d %>% 
+      mutate(`Can afford price percentile`= ecdf(hp$`Annual mortgage cost`)(`Max shelter cost`))
+    }) 
+
+ef_labels <- c("1"="Not in economic family","2"="2 persons","3"="3 persons","4"="4+ persons")
+```
+
+
+```{r}
+calgary_ftbs <-ef_lorenz_data %>%
+  filter(CMA =="Calgary") %>%
+  mutate(a=`Can afford price percentile`)
+calgary_ftbs %>%
+  mutate(label=paste0(scales::percent(percentile)," of first time buyers\ncan afford ", 
+                      scales::percent(`Can afford price percentile`)," of homes")) %>%
+  ggplot(aes(x=percentile, y=`Can afford price percentile`)) +
+  lorenz_theme(0.2) +
+  labs(title = "Metro Calgary first-time home buyer Lorenz curve by economic family size") +
+  facet_wrap("ef_group",labeller = as_labeller(ef_labels))
+```
+
+
+```{r fig.height=8, fig.width=8}
+all_labels <- c(ef_labels,setNames(as.character(large_cmas),as.character(large_cmas)))
+ef_lorenz_data %>%
+  filter(CMA %in% large_cmas) %>%
+  mutate(CMA=factor(CMA,large_cmas)) %>%
+  ggplot(aes(x=percentile, y=`Can afford price percentile`)) +
+  lorenz_theme(0.2) +
+  facet_grid(CMA ~ ef_group,labeller = as_labeller(all_labels))
+```
+
+Looking at the distributions we notice that 2 person families fair quite well in terms of this metric. 
+
+```{r}
+brm_labels <- c("0"="Bachelor","1"="1 bedroom","2"="2 bedrooms","3"="3 bedrooms","4"="4+ bedrooms")
+ef_home_price_data %>%
+  count(CMA,brm_group) %>%
+  filter(CMA %in% large_cmas) %>%
+  mutate(CMA=factor(CMA,levels=large_cmas)) %>%
+  mutate(bedrooms=factor(brm_labels[as.character(brm_group)],levels=as.character(brm_labels))) %>%
+  ggplot(aes(x=fct_rev(CMA),y=n,fill=fct_rev(bedrooms))) +
+  geom_bar(stat="identity",position="fill") +
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_brewer(palette = "Dark2") +
+  coord_flip() +
+  labs(title="Distribution of bedrooms in owner-occupied homes",
+             x=NULL,y=NULL,fill=NULL,caption="StatCan 2016 Census PUMF")
+```
+
+Vancouver and Montreal stand out with a fairly high share of (owner-occupied) 1 and 2 bedroom homes. Montreal also has a noticeably lower share of 4+ bedroom homes, with Ottawa-Gatineau also showing markedly lower levels.
+
+```{r eval=FALSE, include=FALSE}
+ef_home_price_data %>%
+  group_by(CMA,brm_group) %>%
+  summarize(n=n(),w=sum(WEIGHT),`Average home value`=mean(VALUE),`Median home value`=median(VALUE),.groups="drop") %>%
+  filter(CMA %in% large_cmas) %>%
+  mutate(CMA=factor(CMA,levels=large_cmas)) %>%
+  mutate(bedrooms=factor(brm_labels[as.character(brm_group)],levels=as.character(brm_labels))) %>%
+  filter(bedrooms!="Bachelor") %>%
+  pivot_longer(c("Average home value","Median home value")) %>%
+  mutate(value=value/sqrt(brm_group)) %>%
+  ggplot(aes(x=bedrooms,y=value,group=name,color=name)) +
+  geom_line() +
+  facet_wrap("CMA") +
+  theme(axis.text.x = element_text(angle=40,hjust=1)) +
+  scale_y_continuous(labels=scales::dollar) +
+  labs(title="Distribution of bedrooms in owner-occupied homes",
+             x=NULL,y="Home value divided by square root of number of bedrooms",
+       color=NULL,caption="StatCan 2016 Census PUMF")
+
+```
+
+## Adjusted first-time buyer GINI index
+```{r}
+brm_labels2 <- c("0"="Bachelor","1"="1 bedroom","2"="2 bedrooms","3"="3 bedrooms",
+                 "4"="4 bedrooms","5"="5+ bedrooms","6"="Unknown")
+brm_value_data <- ef_home_price_data %>%
+    mutate(brm_group=case_when(BEDRM=="No bedroom" ~ 0,
+                             BEDRM=="1 bedroom" ~ 1,
+                             BEDRM=="2 bedrooms" ~ 2,
+                             BEDRM=="3 bedrooms" ~ 3,
+                             BEDRM=="4 bedrooms" ~ 4,
+                             BEDRM=="5 bedrooms or more" ~ 5,
+                             TRUE ~ 6)) 
+```
+
+```{r}
+#model1=glm(data=brm_value_data,formula=VALUE ~ CMA+DTYPE+sqrt(brm_group))
+#summary(model1)
+```
+
+Dealing with a slew of different family sizes and bedroom counts gets complicated fast, to simplify things we can try and condense the home value into an "adjusted home value". For our purposes the question is how home values scale with the number of bedrooms. Experimenting with the functional form it appears that dividing by the square root of the number of bedrooms gives a decent fit to normalize the home values. This dove-tails well with the established concept of *adjusted family income*, that scales family income by the square root of the family size. As an aside, we note that while the adjusted family income is likely a useful metric to measure housing affordability from the perspective of a family, banks and government regulation generally don't take family size into consideration in loan underwriting requirements.
+
+```{r}
+brm_value_data %>%
+  group_by(CMA,brm_group) %>%
+  summarize(n=n(),w=sum(WEIGHT),`Average home value`=mean(VALUE),`Median home value`=median(VALUE),.groups="drop") %>%
+  filter(CMA %in% large_cmas) %>%
+  mutate(CMA=factor(CMA,levels=large_cmas)) %>%
+  mutate(bedrooms=factor(brm_labels2[as.character(brm_group)],levels=as.character(brm_labels2))) %>%
+  filter(bedrooms!="Bachelor") %>%
+  pivot_longer(c("Average home value","Median home value")) %>%
+  mutate(value=value/(sqrt(brm_group))) %>%
+  ggplot(aes(x=bedrooms,y=value,group=name,color=name)) +
+  geom_line() +
+  scale_color_manual(values=sanzo::duos$c103) +
+  facet_wrap("CMA",scales="free_y") +
+  theme(axis.text.x = element_text(angle=40,hjust=1)) +
+  scale_y_continuous(labels=scales::dollar,limits=c(0,NA)) +
+  theme(legend.position="bottom") +
+  labs(title="Distribution of bedrooms in owner-occupied homes",
+             x=NULL,y="Home value divided by square root of number of bedrooms",
+       color=NULL,caption="StatCan 2016 Census PUMF")
+
+```
+
+We removed bachelor units from this consideration because there are only very few owner-occupied bachelor units in each CMA. The relationship is nothing to write home about, but good enough for this post. It would be worthwhile to investigate this in more detail. But this likely requires better data, in particular on location as well as better data on dwelling type, which we are missing when working with CMA-level data. Assessment data should work reasonably well for this, but comparable data is not available on a national scale. Ideally we would build our own model, like our (highly experimental and gpu-intensive) [interactive fine-geography home valuation model](https://mountainmath.ca/hpe).
+
+For now we will go with the simplistic **adjusted home value** that divides by the square root of the number of bedrooms, and pair that up with adjusted family income. A choice has to be made for how we should match up people and with homes. We can stick with family units, and homes, or take it down to people and bedrooms. Conceptually it might be easier to work with family units and homes, as this is the level at which purchase decisions are made. The difference when taking it down to people and bedrooms is that families with a larger number of members get weighted more, which seems like a reasonable adjustment. For this post we will stick with matching family units to homes.
+
+Note that this is a little more generous as our previous matchup of bedrooms to families as it implicitly affords each family member their own bedroom, instead of drawing from the distribution of homes with the same or one fewer bedrooms as family members.
+
+```{r}
+adj_ef_income_data <- pumf_data %>%
+  filter(PRIHM=="Person is primary maintainer", # count households only once
+         ATTSCH=="Did not attend school", # filter out students
+         !(SUBSIDY %in% c("Yes, a subsidized dwelling", "Not available")),
+         !(MOB1 %in% c("External migrants", "Not available")),  #Remove 1st year external migrants
+         AGEGRP %in% potential_buyers_age, 
+         ef_income>0,
+         EFSIZE!="Not available",
+         TENUR=="Rented or Band housing") %>%
+  mutate(ef_group=case_when(EFSIZE=="Person not in an economic family" ~ 1,
+                            EFSIZE=="2 persons" ~ 2,
+                            EFSIZE=="3 persons" ~ 3,
+                            EFSIZE=="4 persons" ~ 4,
+                            TRUE ~ 5)) %>%
+  group_by(CMA) %>%
+  summarize(Income=quantile(ef_income/sqrt(ef_group), percentiles),percentile=percentiles, cases=n(),.groups="drop") %>%
+  mutate(`Max shelter cost`=0.3*Income)
+
+
+adj_ef_home_price_data <- pumf_data %>%
+  filter(PRIHM=="Person is primary maintainer", # count households only once
+         SHELCO>0, 
+         TENUR=="Owned by a member of the household",
+         BEDRM!="Not available",
+         DTYPE!= "Not available") %>%
+  mutate(brm_group=case_when(BEDRM=="No bedroom" ~ 1, # count bachelor as 1
+                             BEDRM=="1 bedroom" ~ 1,
+                             BEDRM=="2 bedrooms" ~ 2,
+                             BEDRM=="3 bedrooms" ~ 3,
+                             BEDRM=="4 bedrooms" ~ 4,
+                             TRUE ~ 5)) %>%
+  mutate(`Annual mortgage cost`= 12*pmt(r=(interest_rate/12),pv=-0.99*VALUE/sqrt(brm_group), n=mortgage_term*12, fv=0)) %>%
+  left_join(income_data %>%
+              group_by(CMA) %>%
+              summarize(max_income=max(Income)),
+            by="CMA") %>%
+    mutate(`Annual mortgage cost`=pmin(`Annual mortgage cost`,0.3*max_income))  # align top-coding of income and home value
+
+
+adj_ef_lorenz_data <- adj_ef_income_data %>%
+  group_by(CMA) %>%
+  group_modify(function(d,g){
+    hp <- adj_ef_home_price_data %>%
+      filter(CMA==g$CMA)
+    d %>% 
+      mutate(`Can afford price percentile`= ecdf(hp$`Annual mortgage cost`)(`Max shelter cost`))
+    }) 
+```
+
+
+```{r}
+adj_ef_lorenz_data %>%
+  filter(CMA %in% large_cmas) %>%
+  mutate(CMA=factor(CMA,large_cmas)) %>%
+  ggplot(aes(x=percentile, y=`Can afford price percentile`)) +
+  lorenz_theme(0.2) +
+  facet_wrap("CMA") +
+  labs(x="Adjusted economic family income percentile of (potential) first-time home buyers",
+       y="Adjusted home value distribution",
+       title="Metro area first time home buyer adjusted Lorenz curves")
+```
+
+These curves look broadly similar to the ones we had initially by just naively using household income, but taking a closer look we also notice differences, especially at the upper end. We can again condense the data into an **adjusted first-time buyer GINI index**.
+
+```{r}
+adj_area_lorenz <- adj_ef_lorenz_data %>%
+  filter(CMA!="Other census metropolitan areas, census agglomerations and other geographies") %>%
+  group_by(CMA) %>%
+  summarise(diff_area=2*0.1*sum(percentile-`Can afford price percentile`), #same thing, easier calculation
+            .groups="drop") %>%
+  arrange(diff_area) %>%
+  mutate(rank=row_number()) %>%
+  select(CMA, rank,score=diff_area) %>%
+  mutate(type="Adjusted affordability factor") %>%
+  clean_cma_names()
+```
+
+```{r fig.width=8}
+g3<-ggplot(adj_area_lorenz,aes(x=reorder(CMA,rank), y=score)) + 
+  geom_bar(stat="identity",fill="purple") +
+  coord_flip() +
+  labs(x=NULL,y="Adjusted first-time buyer GINI")
+
+g3+g2 + plot_annotation(
+  title = 'Comparison of regular and adjusted first time buyer GINI',
+  caption = 'StatCan Census 2016 PUMF'
+)
+```
+
+This has the net effect of making housing more affordable for first-time buyers (And shuffles the order a little.) This suggests that one could make substantial affordability gains for first-time buyers by allowing housing to be used, and sold, more flexibly. In Vancouver we already have an important example of that with a comparatively high proliferation of secondary suites, sometimes officially sanctioned but mostly as informal housing. While this helps housing to be used more flexibly, it does little to help with first-time home buyer affordability as this is lacking flexibility on how portions of the house can be sold. Easing restrictions on flexible use of housing, in particular removing the legally dubious municipal definitions of "family" that regulate how a dwelling unit can be shared, as well as adding flexibility in subdividing homes and bringing informal dwelling units into the official housing stock and allowing these to be sold separately, is likely to enhance first-time home buyer affordability. Splitting or combining strata units remains a formidable undertaking in Canada and is rare, this may be an area where Canada can learn from other countries where this is more common.
+
+We should emphasize that having a negative GINI coefficient does not mean that everyone can afford a home matching their position in the income distribution. This is only true on average, as comparing with the Lorenz curve of e.g. Edmonton shows. Condensing the data into an index loses information, and we might want to also retain more complex representations like the Lorenz curve for better context.
+
+## Upshot
+In summary, Lorenz curves and the derived GINI index provide an interesting view into affordability for first-time buyers, a group whose position has been substantially weakened by growing wealth inequality combined with low interest and property tax rates. We think this provides a useful metric to watch.
+
+Refinements, like the adjusted first-time buyer Lorenz curves and GINI index can help remove distributional effects while still being easy to work with. It would be worthwhile to explore this further, and find a better way to add location information. This may also help firm up the best functional form of the adjustment on home values by bedrooms.
+
+
+
