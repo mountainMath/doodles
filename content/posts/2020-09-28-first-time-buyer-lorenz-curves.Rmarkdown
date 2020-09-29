@@ -581,5 +581,5 @@ In summary, Lorenz curves and the derived GINI index provide an interesting view
 
 Refinements, like the adjusted first-time buyer Lorenz curves and GINI index can help remove distributional effects while still being easy to work with. It would be worthwhile to explore this further, and find a better way to add location information. This may also help firm up the best functional form of the adjustment on home values by bedrooms.
 
-
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-09-28-first-time-buyer-lorenz-curves.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
 
