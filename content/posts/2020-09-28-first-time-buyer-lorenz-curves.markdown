@@ -9,7 +9,7 @@ categories:
   - geeky
   - affordability
 tags: []
-description: "Taking a look at affordability for first-time buyers, and what useful metrics can be constructed the measure this."
+description: "Taking a look at affordability for first-time buyers, and what useful metrics can be constructed to measure this."
 featured: ''
 images: ["https://doodles.mountainmath.ca/posts/2020-09-28-first-time-buyer-lorenz-curves_files/figure-html/lorenz_hh-1.png"]
 featuredalt: ""
@@ -25,7 +25,7 @@ Geoffrey Meen and Christine Whitehead's recently released book [Understanding Af
 
 Part of the idea of the reading group was to take some of the methods and insights and use Vancouver or at least Canadian data to reproduce them. Both of us felt that a wider audience might benefit from this, so we decided to turn one aspect into a quick blog post: First-time buyer Lorenz curves.
 
-As we've argued on this blog time and time again our housing crisis is [ultimately a crisis for renters](https://doodles.mountainmath.ca/blog/2019/02/15/vancouver-renters/). Mean and Whitehead take this view as well and argue the best metrics for housing affordability should be based on renters, specifically the affordability of renting and the ability for renters to access home ownership. 
+As we've argued on this blog time and time again our housing crisis is [ultimately a crisis for renters](https://doodles.mountainmath.ca/blog/2019/02/15/vancouver-renters/). Meen and Whitehead take this view as well and argue the best metrics for housing affordability should be based on renters, specifically the affordability of renting and the ability for renters to access home ownership. 
 
 ## Issues with price-to-income
 The most widely reported income metric on affordability is price-to-income ratio usually reported as the mean or median multiple of market prices of all housing units to (typically) household income of all households regardless of tenure. 
