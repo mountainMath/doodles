@@ -1,0 +1,177 @@
+---
+title: CHS Core Housing Need
+author: Jens von Bergmann
+date: '2020-10-02'
+slug: chs-core-housing-need
+categories:
+  - affordability
+  - CANSIM
+tags: []
+description: "A quick overview over the freshly released Canadian Housing Survey data"
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2020-10-02-chs-core-housing-need_files/figure-html/vulnerable_core_housing_need-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+blackfriday:
+  fractions: false
+  hrefTargetBlank: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 8,
+  cache = FALSE
+)
+library(tidyverse)
+library(cansim)
+```
+
+Today StatCan released four more tables of data from the Canadian Housing Survey, all around the concept of *Core Housing Need*. Core housing need aims to measure housing stress based on affordability, suitability (crowding) and adequacy (disrepair). It applies to all households with shelter-cost-to-income ratio less than 100%, excluding non-family student-lead households, that aren't able to afford an adequate and suitable home in their region.
+
+We want to give a quick overview what's in the new data release.
+
+```{r}
+data1 <- get_cansim("46-10-0037") %>% normalize_cansim_values(factors = TRUE)
+data2 <- get_cansim("46-10-0046") %>% normalize_cansim_values(factors = TRUE)
+data3 <- get_cansim("46-10-0055") %>% normalize_cansim_values(factors = TRUE)
+data4 <- get_cansim("46-10-0056") %>% normalize_cansim_values(factors = TRUE)
+```
+
+To start off, let's look at core housing need for priority vulnerable groups of the National Housing Strategy. It's good to see some of this data coming out. In particular it includes data on of first nations, visible minorities, seniors, young adults, immigrants and veterans which should help identify systemic gaps in our support systems. One important note is that the survey does not include First Nations reserves.
+
+```{r vulnerable_core_housing_need, fig.height=8, fig.width=8}
+data3 %>%  
+  filter(grepl("percentage",Statistics,ignore.case = TRUE),
+         `Living with housing problems`!="All living situations with or without housing problems") %>%
+  mutate(type=gsub("\\..+$","",`Hierarchy for Selected housing vulnerable populations`)) %>%
+  select(`Selected housing vulnerable populations`,`Living with housing problems`,Statistics,type,VALUE) %>%
+  pivot_wider(names_from=Statistics,values_from=VALUE) %>%
+  ggplot(aes(x=fct_rev(`Selected housing vulnerable populations`),y=`Percentage of persons`,fill=type)) +
+  geom_bar(stat="identity") +
+  geom_errorbar(aes(ymin=`Low 95% confidence interval, percentage of persons`, ymax=`High 95% confidence interval, percentage of persons`)) +
+  coord_flip() +
+  scale_fill_brewer(guide=FALSE,palette = "Dark2") +
+  scale_y_continuous(labels=scales::percent) +
+  facet_wrap("`Living with housing problems`") +
+  labs(title="Core housing need of selected housing vulnerable population in Canada, 2018",
+       x=NULL,y="Share of population",
+       caption="MountainMath, StatCan CHS Table 46-10-0055")
+  
+```
+
+Unfortunately the sample isn't thick enough to give good 95% confidence intervals for some of the categories. Out of th three metrics making up core housing need, housing inadequacy is the least prevalent, although Inuk, and to a lesser extent other First Nation people, stand out. There is a similar spike for Inuk in residential crowding, which is something [we have observed before](https://mountainmath.ca/housing_central_phrn_2019#9). Crowding is also elevated for recent refugees, West Asian, Black and Filipino populations.
+
+Seniors living alone stand out for facing affordability challenges, as do several visible minority populations. 
+
+
+Next up we focus on core housing need by tenure for select metro areas in Canada.
+
+```{r fig.height=5}
+data4 %>%
+  filter(grepl("Canada|Vancouver|Toronto|Calgary|Montr|Ottawa",GEO)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(grepl("Percentage of households",`Core housing need statistics`,ignore.case = TRUE)) %>%
+  select(Name,`Core housing need statistics`,`Tenure including first-time homebuyer and social and affordable housing status`,VALUE) %>%
+  pivot_wider(names_from = `Core housing need statistics`,values_from=VALUE) %>%
+  ggplot(aes(x=`Tenure including first-time homebuyer and social and affordable housing status`,y=`Percentage of households in core housing need`)) +
+  geom_bar(stat="identity",fill="brown") +
+  geom_errorbar(aes(ymin=`Low 95% confidence interval, percentage of households`, ymax=`High 95% confidence interval, percentage of households`)) +
+  coord_flip() +
+  facet_wrap("Name") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Core housing need by tenure, 2018",
+       x=NULL,y="Share of households",
+       caption="MountainMath, StatCan CHS Table 46-10-0056")
+  
+```
+
+Renters in social and affordable housing stand out, especially in Vancouver and Calgary, which is likely due to rental assistance programs that aren't counted as income (but as government transfers) with the full rent being reported. A BC senior receiving SAFER rental assistance would be such an example. To check if this is a Vancouver-specific phenomenon we can look how other areas in British Columbia fair.
+
+
+```{r fig.height=5,fig.width=10}
+data4 %>%
+  filter(grepl("British Columbia",GEO)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(grepl("Percentage of households",`Core housing need statistics`,ignore.case = TRUE)) %>%
+  select(Name,`Core housing need statistics`,`Tenure including first-time homebuyer and social and affordable housing status`,VALUE) %>%
+  pivot_wider(names_from = `Core housing need statistics`,values_from=VALUE) %>%
+  ggplot(aes(x=`Tenure including first-time homebuyer and social and affordable housing status`,y=`Percentage of households in core housing need`)) +
+  geom_bar(stat="identity",fill="brown") +
+  geom_errorbar(aes(ymin=`Low 95% confidence interval, percentage of households`, ymax=`High 95% confidence interval, percentage of households`)) +
+  coord_flip() +
+  facet_wrap("Name") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Core housing need by tenure in British Columbia, 2018",
+       x=NULL,y="Share of households",
+       caption="MountainMath, StatCan CHS Table 46-10-0056")
+  
+```
+
+Next we look at living situation of households, with the case where the reference person in the household has experienced homelessness in their lives broken out separately.
+
+```{r}
+data2 %>%
+  filter(`Living with housing problems`!="All living situations with or without housing problems") %>%
+  filter(grepl("Percentage of households",Statistics,ignore.case = TRUE)) %>%
+  select(`Selected housing vulnerable populations`,`Living with housing problems`,Statistics,VALUE) %>%
+  pivot_wider(names_from = Statistics,values_from=VALUE) %>%
+  ggplot(aes(x=`Selected housing vulnerable populations`,y=`Percentage of households`)) +
+  geom_bar(stat="identity",fill="brown") +
+  geom_errorbar(aes(ymin=`Low 95% confidence interval, percentage of households`, ymax=`High 95% confidence interval, percentage of households`)) +
+  coord_flip() +
+  facet_wrap("`Living with housing problems`") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Core housing need by living situation in Canada, 2018",
+       x=NULL,y="Share of households",
+       caption="MountainMath, StatCan CHS Table 46-10-0046")
+
+```
+
+On the affordability front, one person households have a higher incidence of living in unaffordable housing, women living alone more so than men. Persons that have experienced homelessness before are at elevated risk in any of these categories, in particular for inadequate housing (disrepair) and they have the overall highest share in core housing need.
+
+```{r}
+homelessness <- data2 %>%
+  filter(`Living with housing problems`=="All living situations with or without housing problems",
+         grepl("homeless|All households",`Selected housing vulnerable populations`),
+         grepl("number",Statistics,ignore.case = TRUE)) %>%
+  select(`Selected housing vulnerable populations`,Statistics,VALUE) %>%
+  pivot_wider(names_from=`Selected housing vulnerable populations`,values_from=VALUE) %>%
+  mutate(Share=`Reference person who experienced homelessness`/`All households`)
+  
+homeless_share <- homelessness %>% filter(Statistics=="Number of households") %>% pull(Share)
+```
+
+Overall, around `r scales::percent(homeless_share)` of reference persons in Canadian households have experienced homelessness.
+
+
+```{r eval=FALSE, fig.height=11, fig.width=6, include=FALSE}
+data1 %>%
+  filter(grepl("Canada|Vancouver|Toronto|Calgary|Montr|Ottawa",GEO),
+         grepl("percentage",Statistics,ignore.case = TRUE),
+         `Core housing need`!="Total, core housing need",
+         `Tenure including first-time homebuyer and social and affordable housing status` %in% 
+           c("Total, tenure","Owner","Renter")) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  select(Name,`Core housing need`,`Tenure including first-time homebuyer and social and affordable housing status`,Statistics,VALUE) %>%
+  pivot_wider(names_from=Statistics,values_from=VALUE) %>%
+  ggplot(aes(x=Name,y=`Percentage of households`,fill=Name)) +
+  geom_bar(stat="identity",position = "dodge") +
+  coord_flip() +
+  facet_grid(`Core housing need`~`Tenure including first-time homebuyer and social and affordable housing status`,
+             scales="free_y") +
+  geom_errorbar(aes(ymin=`Low 95% confidence interval, percentage of households`, ymax=`High 95% confidence interval, percentage of households`),position="dodge") +
+  scale_fill_brewer(palette = "Dark2",guide=FALSE) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Core housing need by tenure, 2018",
+       x=NULL,y="Share of households",
+       caption="MountainMath, StatCan CHS Table 46-10-0037")
+```
+
+That's it for this post, as usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-10-02-chs-core-housing-need.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
+
