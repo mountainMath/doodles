@@ -59,8 +59,9 @@ data3 %>%
   scale_fill_brewer(guide=FALSE,palette = "Dark2") +
   scale_y_continuous(labels=scales::percent) +
   facet_wrap("`Living with housing problems`") +
-  labs(title="Core housing need of selected housing vulnerable population in Canada, 2018",
-       x=NULL,y="Share of population",
+  labs(title="Core housing need in Canada",
+       subtitle="selected vulnerable populations",
+       x=NULL,y="Share of population in 2018",
        caption="MountainMath, StatCan CHS Table 46-10-0055")
   
 ```
@@ -85,8 +86,8 @@ data4 %>%
   coord_flip() +
   facet_wrap("Name") +
   scale_y_continuous(labels=scales::percent) +
-  labs(title="Core housing need by tenure, 2018",
-       x=NULL,y="Share of households",
+  labs(title="Core housing need by tenure",
+       x=NULL,y="Share of households in 2018",
        caption="MountainMath, StatCan CHS Table 46-10-0056")
   
 ```
@@ -107,8 +108,8 @@ data4 %>%
   coord_flip() +
   facet_wrap("Name") +
   scale_y_continuous(labels=scales::percent) +
-  labs(title="Core housing need by tenure in British Columbia, 2018",
-       x=NULL,y="Share of households",
+  labs(title="Core housing need by tenure in British Columbia",
+       x=NULL,y="Share of households in 2018",
        caption="MountainMath, StatCan CHS Table 46-10-0056")
   
 ```
@@ -127,8 +128,8 @@ data2 %>%
   coord_flip() +
   facet_wrap("`Living with housing problems`") +
   scale_y_continuous(labels=scales::percent) +
-  labs(title="Core housing need by living situation in Canada, 2018",
-       x=NULL,y="Share of households",
+  labs(title="Core housing need by living situation in Canada",
+       x=NULL,y="Share of households in 2018",
        caption="MountainMath, StatCan CHS Table 46-10-0046")
 
 ```
