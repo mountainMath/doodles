@@ -9,7 +9,7 @@ categories:
 tags: []
 description: "A quick overview over the freshly released Canadian Housing Survey data"
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2020-10-02-chs-core-housing-need_files/figure-html/vulnerable_core_housing_need-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2020-10-02-chs-core-housing-need_files/figure-html/vulnerable_chn-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -30,7 +30,7 @@ We want to give a quick overview what's in the new data release.
 
 To start off, let's look at core housing need for priority vulnerable groups of the National Housing Strategy. It's good to see some of this data coming out. In particular it includes data on of first nations, visible minorities, seniors, young adults, immigrants and veterans which should help identify systemic gaps in our support systems. One important note is that the survey does not include First Nations reserves.
 
-<img src="/posts/2020-10-02-chs-core-housing-need_files/figure-html/vulnerable_core_housing_need-1.png" width="768" />
+<img src="/posts/2020-10-02-chs-core-housing-need_files/figure-html/vulnerable_chn-1.png" width="768" />
 
 Unfortunately the sample isn't thick enough to give good 95% confidence intervals for some of the categories. Out of th three metrics making up core housing need, housing inadequacy is the least prevalent, although Inuk, and to a lesser extent other First Nation people, stand out. There is a similar spike for Inuk in residential crowding, which is something [we have observed before](https://mountainmath.ca/housing_central_phrn_2019#9). Crowding is also elevated for recent refugees, West Asian, Black and Filipino populations.
 
