@@ -44,7 +44,7 @@ Next up we focus on core housing need by tenure for select metro areas in Canada
 Renters in social and affordable housing stand out, especially in Vancouver and Calgary, which is likely due to rental assistance programs that aren't counted as income (but as government transfers) with the full rent being reported. A BC senior receiving SAFER rental assistance would be such an example. To check if this is a Vancouver-specific phenomenon we can look how other areas in British Columbia fair.
 
 
-<img src="/posts/2020-10-02-chs-core-housing-need_files/figure-html/unnamed-chunk-3-1.png" width="960" />
+<img src="/posts/2020-10-02-chs-core-housing-need_files/figure-html/unnamed-chunk-3-1.png" width="768" />
 
 Next we look at living situation of households, with the case where the reference person in the household has experienced homelessness in their lives broken out separately.
 
