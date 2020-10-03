@@ -63,7 +63,7 @@ This says nothing about what kind of home someone can afford, or where in the me
 
 Looking at the Calgary data we are led to ask if the Calgary Lorenz curve is typical for Canadian metropolitan areas. Looking at the largest six metro areas, the answer is mostly Yes, except for Toronto and Vancouver.
 
-Note: The Census Public Use Miro File (PUMF) combines smaller metropolitan areas in the same province together (e.g. Regina-Saskatoon). 
+Note: The Census Public Use Micro File (PUMF) combines smaller metropolitan areas in the same province together (e.g. Regina-Saskatoon). 
 
 <img src="/posts/2020-09-28-first-time-buyer-lorenz-curves_files/figure-html/lorenz_hh-1.png" width="672" />
 
