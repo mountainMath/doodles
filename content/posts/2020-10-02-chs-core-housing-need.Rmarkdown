@@ -148,7 +148,7 @@ homelessness <- data2 %>%
 homeless_share <- homelessness %>% filter(Statistics=="Number of households") %>% pull(Share)
 ```
 
-Overall, around `r scales::percent(homeless_share)` of reference persons in Canadian households have experienced homelessness.
+Overall, around `r scales::percent(homeless_share,accuracy=0.1)` of reference persons in Canadian households have experienced homelessness.
 
 
 ```{r eval=FALSE, fig.height=11, fig.width=6, include=FALSE}

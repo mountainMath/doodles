@@ -54,7 +54,7 @@ On the affordability front, one person households have a higher incidence of liv
 
 
 
-Overall, around 2% of reference persons in Canadian households have experienced homelessness.
+Overall, around 2.5% of reference persons in Canadian households have experienced homelessness.
 
 
 
