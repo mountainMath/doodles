@@ -1,0 +1,399 @@
+---
+title: COVID-19 Data in BC
+author: Jens von Bergmann
+date: '2020-10-22'
+slug: covid-19-data-in-bc
+categories:
+  - covid-19
+description: "Looking into what's going wrong with BC Covid data"
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2020-10-22-covid-19-data-in-bc_files/figure-html/covid-timeline-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE,
+	fig.width = 8
+)
+library(tidyverse)
+library(covidseir)
+library(CanCovidData)
+library(mountainmathHelpers)
+library(ggtext)
+
+extract_stl_trend <- function(c){
+  #print(length(c))
+  cc <- c %>%
+    ts(frequency = 7,start = as.numeric(format(Sys.Date(), "%j"))) %>% 
+    stl(s.window=14,t.window=14) 
+   
+  r <- as_tibble(cc$time.series)$trend
+  #print(r)
+  r
+}
+```
+
+
+We are growing increasingly concerned with the COVID-19 situation in BC. In particular the way there seems to be no strategy or goal to stop rising case numbers, and the relativism that excuses this by pointing to other provinces and countries that are doing worse. At upward of 150 cases a day we are looking at an average of one death a day and unknown numbers, likely in the mid to high two digits, with long lasting morbidity due to a COVID-19 infection.
+
+## What's our goal?
+The basic fact is that at some point we will have to act to at least stop the current growth, if not reduce current daily case counts. So what's the right level of daily cases at which we should stop the growth? There is no reason to believe that stopping the growth at 10 cases a day, like we had in late spring, is any harder than stopping the spread at 150, or 200, or 500 cases a day. And given that TTI (test-trace-isolate) resources are limited, there is good reason to believe that stopping the growth gets harder the longer we wait. Which begs the question why we wait. And also, why we don't aim for zero.
+
+For some context, let's consider our daily case counts, cleaned up a bit by removing the strong weekly seasonality in the daily counts and smoothing over nearby variations. For better context we added significant events where BC imposed restrictions or loosened restrictions to react to the behaviour of the spread.
+
+```{r covid-timeline}
+data <- get_british_columbia_case_data() %>%
+  #filter(`Health Authority` %in% c("Vancouver Coastal","Fraser")) %>%
+  count(Date=`Reported Date`,name="Cases") %>%
+  filter(Date<max(Date),Date>=as.Date("2020-03-01")) %>%
+  mutate(Trend=extract_stl_trend(.data$Cases))
+
+data %>% 
+  pivot_longer(c("Cases","Trend"),names_to="type",values_to="count") %>%
+  ggplot(aes(x = Date, y = count)) + 
+  geom_point(data=~filter(.,type=="Cases"),color="grey",size=0.5) +
+  geom_line(data=~filter(.,type=="Cases"),color="grey",size=0.5,alpha=0.5) +
+  geom_line(data=~filter(.,type=="Trend"),color="black",size=1) +
+  theme_bw() +
+  scale_x_date(breaks="month",labels=function(d)strftime(d,"%b")) +
+  theme(legend.position = "bottom") +
+  geom_vline(xintercept = as.Date(c("2020-05-14","2020-06-01","2020-06-08",
+                                    "2020-06-30","2020-07-02","2020-09-10")),
+             linetype="dashed",color="darkgreen",size=0.5) +
+  geom_vline(xintercept = as.Date(c("2020-05-19","2020-06-24")),linetype="dashed",color="darkgreen",size=1) +
+  geom_label(data = tibble(Date=as.Date(c("2020-05-19","2020-06-24")),
+                           count=c(150,150),
+                           label=c("Phase 2","Phase 3")),
+             aes(label=label),size=4,alpha=0.7,color="darkgreen") +
+  geom_vline(xintercept = as.Date(c("2020-03-18")),linetype="dashed",color="brown",size=1) +
+  geom_vline(xintercept = as.Date(c("2020-03-11","2020-03-12","2020-03-16","2020-03-17",
+                                    "2020-03-21","2020-03-22","2020-03-26","2020-04-18",
+                                    "2020-06-18","2020-08-21","2020-09-08")),linetype="dashed",color="brown",size=0.5) +
+  geom_label(data = tibble(Date=as.Date(c("2020-03-18")),
+                           count=c(150),
+                           label=c("Phase 1")),
+             aes(label=label),size=4,alpha=0.7,color="brown") +
+  #scale_y_continuous(trans="log") +
+  labs(title="COVID-19 daily new cases in British Columbia",
+       subtitle="Timeline of <b style='color:#A52A2A;'>closure</b> and <b style='color:#006400;'>reopening</b> events",
+       x=NULL,y=NULL,color=NULL,caption="MountainMath, Data: BCCDC") +
+  theme(plot.subtitle = element_markdown())
+ 
+```
+
+The case counts at the beginning of the period aren't directly comparable to the ones toward the middle and end as we were not testing in the same way, and not testing as much. (Testing data in BC has issues too and is largely uninterpretable at this point, we will leave this for another post.)
+
+We want to pay particular attention to the period in late spring and early summer, where we dipped into single digit daily new cases, only to let all that progress go to waste and allow the virus to grow again.
+
+```{r}
+data %>% 
+  pivot_longer(c("Cases","Trend"),names_to="type",values_to="count") %>%
+  filter(Date<as.Date("2020-08-06"),Date>=as.Date("2020-04-25")) %>%
+  ggplot(aes(x = Date, y = count)) + 
+  geom_point(data=~filter(.,type=="Cases"),color="grey",size=0.5) +
+  geom_line(data=~filter(.,type=="Cases"),color="grey",size=0.5,alpha=0.5) +
+  geom_line(data=~filter(.,type=="Trend"),color="black",size=1) +
+  theme_bw() +
+  scale_x_date(breaks="week",labels=function(d)strftime(d,"%b %d")) +
+  theme(legend.position = "bottom") +
+  geom_vline(xintercept = as.Date(c("2020-05-14","2020-06-01","2020-06-08",
+                                    "2020-06-30","2020-07-02")),linetype="dashed",color="darkgreen",size=0.5) +
+ geom_vline(xintercept = as.Date(c("2020-05-19","2020-06-24")),linetype="dashed",color="darkgreen",size=1) +
+  geom_label(data = tibble(Date=as.Date(c("2020-05-14","2020-05-19","2020-06-01","2020-06-08",
+                                        "2020-06-24","2020-06-30","2020-07-03")),
+                           count=c(55,40,50,35,45,35,55),
+                           label=c("BC Parks\nopen","Phase 2","Back to\nschool","Border\nexemptions",
+                                   "Phase 3","LTC restrictions\neased","Theatres\nopen")),
+             aes(label=label),size=4,alpha=0.7,color="darkgreen") +
+  geom_vline(xintercept = as.Date(c("2020-06-18")),linetype="dashed",color="brown",size=0.5) +
+  geom_label(x = as.Date(c("2020-06-18")),y=4,label="Peace Arch\nClosed",color="brown",size=4,alpha=0.7) +
+  #scale_y_continuous(trans="log") +
+  labs(title="COVID-19 daily new cases in British Columbia",
+       subtitle="Late spring success turning to early summer failure",
+       x=NULL,y=NULL,color=NULL,caption="MountainMath, Data: BCCDC")
+```
+
+Because of the inherent lag between infections and reported cases we expect about a week or two for changes in COVID-19 restrictions to become visible in the data. Going to Phase 2 seems to have resulted in only a modest increase in cases. In contrast, going to Phase 3 has started us on an upward trajectory undoing all the gains our hard work in Phase 1 has gotten us.
+
+Looking only at overall provincial numbers looses some important aspects of the story. In the short term, COVID-19 spread is a local story. But local spread can quickly jump and take hold in other areas.
+
+```{r}
+data <- get_british_columbia_case_data() %>%
+  mutate(HA=ifelse(`Health Authority` %in% c("Fraser","Vancouver Coastal"),`Health Authority`,"Rest of BC")) %>%
+  count(Date=`Reported Date`,HA,name="Cases") %>%
+  filter(Date<max(Date),Date>=as.Date("2020-03-01")) %>%
+  group_by(HA) %>%
+  mutate(Trend=extract_stl_trend(Cases))
+
+
+data %>% 
+  pivot_longer(c("Cases","Trend"),names_to="type",values_to="count") %>%
+  ggplot(aes(x = Date, y = count)) + 
+  geom_point(data=~filter(.,type=="Cases"),size=0.5,alpha=0.25,aes(color=HA,group=HA)) +
+  geom_line(data=~filter(.,type=="Cases"),size=0.5,alpha=0.25,aes(color=HA,group=HA)) +
+  geom_line(data=~filter(.,type=="Trend"),aes(color=HA,group=HA),size=1) +
+  theme_bw() +
+  scale_x_date(breaks="month",labels=function(d)strftime(d,"%b")) +
+  theme(legend.position = "bottom") +
+  geom_vline(xintercept = as.Date(c("2020-05-14","2020-06-01","2020-06-08",
+                                    "2020-06-30","2020-07-02","2020-09-10")),
+             linetype="dashed",color="darkgreen",size=0.5) +
+  geom_vline(xintercept = as.Date(c("2020-05-19","2020-06-24")),linetype="dashed",color="darkgreen",size=1) +
+  geom_label(data = tibble(Date=as.Date(c("2020-05-19","2020-06-24")),
+                           count=c(130,130),
+                           label=c("Phase 2","Phase 3")),
+             aes(label=label),size=4,alpha=0.7,color="darkgreen") +
+  geom_vline(xintercept = as.Date(c("2020-03-18")),linetype="dashed",color="brown",size=1) +
+  geom_vline(xintercept = as.Date(c("2020-03-11","2020-03-12","2020-03-16","2020-03-17",
+                                    "2020-03-21","2020-03-22","2020-03-26","2020-04-18",
+                                    "2020-06-18","2020-08-21","2020-09-08")),linetype="dashed",color="brown",size=0.5) +
+  geom_label(data = tibble(Date=as.Date(c("2020-03-18")),
+                           count=c(130),
+                           label=c("Phase 1")),
+             aes(label=label),size=4,alpha=0.7,color="brown") +
+  scale_color_manual(values=sanzo::trios$c157) +
+  labs(title="COVID-19 daily new cases in British Columbia",
+       subtitle="Timeline of <b style='color:#A52A2A;'>closure</b> and <b style='color:#006400;'>reopening</b> events",
+       x=NULL,y=NULL,color=NULL,caption="MountainMath, Data: BCCDC") +
+  theme(plot.subtitle = element_markdown())
+```
+
+Initially Vancouver Coastal may have acted as a seed, the "Kelowna cluster" visible in yellow around July 18 may have served as a catalyst to trigger the subsequent increase in Fraser and Vancouver Coastal. And the rapid increase in Fraser, reporting over 200 cases in a single day yesterday, may well spill back over into the neighbouring health authorities. Unfortunately we don't have more detailed epidemiological data available to verify these hunches to better understand how the virus spreads to avoid future outbreaks.
+
+
+## Problems
+Hand in hand with formulating a goal that's different from our current "muddling along without blowing through our hospital capacity until we maybe have a vaccine that's hopefully effective", we need to understand some of the problems with our response in BC. Those problems aren't unique to BC, but I strongly believe that they need fixing in order to have an effective response.
+
+BC's problems can be roughly divided into two parts:
+
+* catching up with the science
+* catching up with the data
+
+The second one is squarely in our wheelhouse, so we will talk mostly about that. That does not mean that the first one is less important, it centres around the issue that Canada and BCCDC have been slow in recognizing the role of aerosol spread and non-symptomatic transmissions. This has translated into problematic policy decisions and is also reflected in the inability to grapple with the over-dispersed nature of the virus that (at this point) manifests itself through the combination of aerosol and non-symptomatic spread. While this does deserve a lot more attention, we will save that for a different post.
+
+
+## Catching up with data
+We have written about the sorry state of COVID-19 data in Canada before, and things haven't improved much since. Some provinces and health regions, for example Toronto, have improved the spatial resolution of their data. For example, Toronto is now publishing epidemiologically relevant data, including onset of symptoms date and transmission types, at the local neighbourhood levels. But data gaps abound.
+
+In BC the data situation is pretty much as bad as it has been from day 1. It's frustrating to watch that the PHO is still presenting grossly outdated data in the press briefings and misrepresents the associated outdated models and summary stats as current, when the conclusions often simply don't hold any more in our fast-moving pandemic environment.
+
+### Out of date data
+In a pandemic it's incredibly important to have timely data to react fast to a changing landscape. We have a lag between infection and onset of symptoms, which often serves as a trigger for a test, that we cannot control. But we have control over everything that happens after. If we can get people to get a test right when they experience symptoms, and get the test result fast, TTI can stay ahead of the virus. Unfortunately, in BC this process is too slow with still around 5 days between onset of symptoms and test result, which means close contacts of the index case may have already lead to secondary infections before TTI even starts.
+
+But this is far from being the only issue, we frequently make decisions based on outdated data. Take the example of the [last modelling update on October 5](https://news.gov.bc.ca/files/COVID19_Going_Forward_Oct_2020.pdf), where the PHO was showing off modelling that put BC on a strong downward trend. However, this modelling was old, and already outdated at the time of the press conference. The dip in cases that the model was reflecting had already been undone in the meantime, and BC was on a clear upward trajectory.
+
+```{r}
+data <- get_british_columbia_case_data() %>%
+  mutate(HA=ifelse(`Health Authority` %in% c("Fraser","Vancouver Coastal"),`Health Authority`,"Rest of BC")) %>%
+  count(Date=`Reported Date`,name="Cases") %>%
+  filter(Date<max(Date),Date>=as.Date("2020-03-01")) %>%
+  filter(Date<=as.Date("2020-10-04")) %>%
+  mutate(Trend=extract_stl_trend(Cases))
+
+data %>% 
+  pivot_longer(c("Cases","Trend"),names_to="type",values_to="count") %>%
+  filter(Date<max(Date),Date>=as.Date("2020-03-01")) %>%
+  filter(Date<=as.Date("2020-10-04")) %>%
+  ggplot(aes(x = Date, y = count)) + 
+  geom_point(data=~filter(.,type=="Cases"),color="grey",size=0.5) +
+  geom_line(data=~filter(.,type=="Cases"),color="grey",size=0.5,alpha=0.5) +
+  geom_line(data=~filter(.,type=="Trend"),color="black",size=1) +
+  theme_bw() +
+  scale_x_date(breaks="month",labels=function(d)strftime(d,"%b")) +
+  theme(legend.position = "bottom") +
+  labs(title="COVID-19 daily new cases in British Columbia up to Oct 4th",
+       x=NULL,y=NULL,color=NULL,caption="MountainMath, Data: BCCDC")
+```
+
+This type of misinformation, spread by the chief medial officer no less, is dangerous during a pandemic. Claiming that we are "doing well" while current data does not support that can lead the public to let their guard down at a time when the opposite is required. And this isn't just a problem of using a different model, had the PHO included the data up to the previous day, Oct 4th in their dynamic compartmental model run, the PHO would have also noted that BC was on an upward trajectory.
+
+```{r include=FALSE}
+ymd <- lubridate::ymd
+
+f_seq_from_change_points <- function(change_points,n){
+  f_seg <- rep(0, n )
+  nn=1
+  for (d in as.character(change_points$date)) {
+    day_ch <- which(dat$date == ymd(d))
+    f_seg[seq(day_ch, length(f_seg))] <- nn
+    nn <- nn+1
+  }
+  f_seg
+}
+
+dat <- get_british_columbia_case_data() %>%
+  group_by(date=`Reported Date`) %>%
+  summarize(value=n(),.groups="drop") %>%
+  filter(date>=as.Date("2020-03-01"),date<max(date)) %>%
+  arrange(date) %>%
+  mutate(day=row_number()) %>%
+  filter(date<=as.Date("2020-10-04")) # druncate to oct 4
+
+samp_frac <- c(rep(0.14, 13), rep(0.21, 38))
+samp_frac <- c(samp_frac, rep(0.37, nrow(dat) - length(samp_frac)))
+
+change_points <- tibble(date=c(first(dat$date)+1,"2020-05-01","2020-06-01","2020-08-08","2020-08-14"),
+                        means=c(0.4, 0.6, 0.6, 0.6, 0.6),
+                        sds=rep(0.2, 5))
+fit <- covidseir::fit_seir(
+  daily_cases = dat$value,
+  samp_frac_fixed = samp_frac, 
+  f_seg = f_seq_from_change_points(change_points, nrow(dat)),
+  i0_prior = c(log(8), 1),
+  e_prior = c(0.8, 0.05),
+  start_decline_prior = c(log(15), 0.1),
+  end_decline_prior = c(log(22), 0.1),
+  f_prior = change_points %>% select(means,sds) %>% as.matrix(),
+  R0_prior = c(log(2.6), 0.2),
+  N_pop = 5.1e6, # BC population
+  fit_type = "optimizing", # for speed only
+  iter = 500 # number of posterior samples
+)
+
+proj <- covidseir::project_seir(fit, iter = 1:50)
+#proj
+tidy_proj <- covidseir::tidy_seir(proj, resample_y_rep = 20)
+#tidy_proj
+
+first_day <- min(dat$date)
+last_day <- 300 # how many days to create dates for
+lut <- dplyr::tibble(
+  day = seq_len(last_day),
+  date = seq(first_day, first_day + length(day) - 1, by = "1 day")
+)
+tidy_proj <- dplyr::left_join(tidy_proj, lut, by = "day")
+
+```
+```{r}
+covidseir::plot_projection(tidy_proj, obs_dat = dat,
+  value_column = "value", date_column = "date") +
+  labs(title="BC dynamic compartmental model using data up to Oct 4th")
+```
+
+Using outdated data to claim that "our growth rate is decreasing" while current data shows the opposite, that's obviously very problematic. (And not just because it is obvious to anyone watching the video that the PHO mixes up the function with it's first derivative.) Saying that number of new infections is decreasing (or that the growth rate is negative), when in fact the opposite is true, is sending counter-productive signals to the public.
+
+One might hope that BCCDC has up-to-date internal modelling, and only the modelling presented at the press conference lags for some reason. But it's preposterous to assume the PHO would have made those statements based on outdated modelling if she knew that up-to-date modelling told a different story.
+
+
+
+
+## Lack of spatial resolution
+As we have seen when looking at health region geography data, finger geographies matter in understanding short term trends In BC, much of the implementation details on school opening has been downloaded to the school districts. But school boards don't have timely information on the COVID-19 spread in their district, if at all. 
+
+In BC we only have daily data at the Health Authority geography, with weekly updates at the Health Region level. Health region level is only available in image form and needs to be manually transcribed to be useful. Moreover, historical data is not made available and it requires people to scrape the data to establish timelines.
+
+
+As an example we scraped today's and last week's data to compute the 7-day incidence, that is the (cumulative) number of cases over seven days per 100k population, at the health region geography.
+
+```{r}
+library(googlesheets4)
+health_region_renames <- c(
+  "Northwest" ="North West",
+  "North Shore - Coast Garibaldi" = "North Shore/Coast Garibaldi",
+  "Thompson Cariboo Shuswap" = "Thompson/Cariboo",
+  "Kootenay Boundary" ="Kootenay-Boundary"
+)
+
+
+hr_data <- sheets_read("https://docs.google.com/spreadsheets/d/1MAqfxwD6GVLA-S5xC3WcIHMqU9Cfe5nZ0145JTiANtw/edit#gid=1688823368",sheet="Sheet2") %>%
+  mutate(Name=recode(Region,!!!health_region_renames)) %>%
+  mutate(`Oct 15 - Oct 22`=`Oct 22`-`Oct 15`)
+
+cd <- get_health_region_census_2016_data() %>%
+  filter(GEO_LEVEL==2,grepl("^59",`GEO_CODE (POR)`))
+
+cdp <- cd %>% filter(`DIM: Profile of Health Regions (2247)`=="Population, 2016") %>%
+  select(GEO_NAME,HR_UID=`GEO_CODE (POR)`,Total=`Dim: Sex (3): Member ID: [1]: Total - Sex`) %>%
+  mutate(Name=gsub(" Health Service Delivery Area","",GEO_NAME)) %>%
+  mutate(Total=as.integer(Total))
+
+
+plot_data <- hr_data %>% 
+  pivot_longer(cols=-one_of(c("Region","Name")), names_to="Period",values_to="Count") %>%
+  left_join(cdp,by="Name") %>%
+  mutate(incidence=Count/Total*100000) %>%
+  filter(Period=="Oct 15 - Oct 22") %>%
+  mutate(stage=pretty_cut(incidence,c(0,5,10,25,50,100,Inf)),ordered=TRUE)
+
+stage_colours <- setNames(RColorBrewer::brewer.pal(plot_data$stage %>% levels %>% length,"YlOrRd"),
+                          plot_data$stag)
+
+ggplot(plot_data,aes(x=reorder(Name,incidence),y=incidence,fill=stage)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  theme_dark() +
+  scale_fill_manual(values=stage_colours,guide=FALSE) +
+  geom_text(aes(label=round(incidence)),hjust=-0.1) +
+  labs(title="7 day incidence of COVID-19 cases per 100k population",
+       x="Health Region",
+       y="7 day incidence per 100k population")
+
+```
+
+```{r}
+
+geos <- get_health_region_geographies_2018() %>%
+  inner_join(plot_data,by="HR_UID") %>%
+  mutate(label=paste0(Name.y,"\n",round(incidence),"/100k"))
+
+geos_van <- geos %>% 
+  sf::st_transform(4326) %>%
+  sf::st_intersection(metro_van_bbox(clipped=FALSE) %>% sf::st_as_sfc() %>% sf::st_buffer(-0.05))
+
+ggplot(metro_van_bbox(clipped=FALSE) %>% sf::st_as_sfc()) +
+  geom_sf(data=geos,aes(fill=stage)) +
+  scale_fill_manual(values=stage_colours,guide=FALSE) +
+  geom_water() +
+  geom_roads() +
+  geom_sf_label(data=geos_van,aes(label=label),alpha=0.8) +
+  coord_bbox(metro_van_bbox(clipped=FALSE)) +
+  labs(title="7 day COVID-19 case incidence per 100k population",
+       x=NULL,y=NULL,
+       fill="7 day incidence\nper 100k population")
+
+# g2 <- ggplot(geos %>% sf::st_transform(lambert_conformal_conic_at(.))) +
+#   geom_sf(aes(fill=stage)) +
+#   scale_fill_manual(values=stage_colours,guide=FALSE) +
+#   geom_water() +
+#   geom_roads() +
+#   #geom_sf_label(aes(label=label),alpha=0.8) +
+#   coord_sf(datum=NA) +
+#   labs(title="7 day COVID-19 case incidence per 100k population",
+#        fill="7 day incidence\nper 100k population")
+
+
+```
+
+
+Timely finer geography data does not just enable the population to understand the exposure risk in their community and adjust their behaviour accordingly, it also enables a more tailored government response. For example, in regions in Germany where the 7-day incidence exceeds 50, higher level restrictions are triggered. Masks become mandatory in all public spaces and children have to wear masks full-time in school. 
+
+## Upshot
+Data sits at the base of our pandemic response. Without timely and accurate data, we can't generate timely and accurate information. Without timely and accurate information we can't mount an effective response. Our data problems are still massive, and they are preventing us from getting timely and accurate information and hinder our response.
+
+Data on its own is not enough, we also need to have a discussion on what our goals should be. We celebrated days with single digit new cases in late spring. We did not worry when case numbers doubled to 20 a day. We did not act when case numbers doubled yet again to 40. When it doubled to 80 a day we strengthened enforcement a little, at 120 a day we imposed restrictions on bars and banquet halls. But when daily cases doubled again to 160 a day we did nothing. There are no clear goals, we are slowly sliding up the ladder of growing cases. Without a clear goal there won't be a clear strategy. 
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-10-22-covid-19-data-in-bc.Rmarkdown) in case others find it useful.
+
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
+
+
+
