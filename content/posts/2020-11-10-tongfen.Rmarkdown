@@ -442,4 +442,19 @@ TongFen is not new, people have been assembling regions before to make them comp
 Tongfen is designed so it is easy to build dataset-specific wrappers to facilitate working with specific datasets.
 Currently tongfen has wrappers to work with Canadian and US census data, with the Canadian version being fairly well-developed. We welcome contributions that wrap other datasets or expand the usability or coverage of tongfen on existing datasets.
 
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-11-10-tongfen.Rmarkdown) in case others find it useful. The examples here are similar to the [vignettes in the tongfen package](https://mountainmath.github.io/tongfen/index.html).
+
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
 
