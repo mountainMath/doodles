@@ -1,0 +1,445 @@
+---
+title: TongFen
+author: Jens von Bergmann
+date: '2020-11-10'
+slug: tongfen
+categories:
+  - tongfen
+  - CensusMapper
+  - cancensus
+tags: []
+description: "Tongfen is now on CRAN, time for a short overview of what tongfen is and how it aids research on longitudinal spatial data on different yet congruent geographies."
+featured: ''
+images: ["https://raw.githubusercontent.com/mountainMath/tongfen/master/images/tongfen-sticker.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width=8,
+	cache=TRUE
+)
+library(tidyverse)
+library(cancensus)
+library(tongfen)
+library(sf)
+library(mountainmathHelpers)
+```
+
+The [tongfen R package](https://mountainmath.github.io/tongfen/index.html) is now [on CRAN](https://cran.r-project.org/web/packages/tongfen/index.html), so it's time for an overview post. Tongfen has changed a bit since it's inception and is now a lot more flexible but slightly more abstract to use.
+
+## What is tongfen?
+Tongfen, 通分 in Chinese, generally denotes the process of bringing two fractions onto the least common denominator. This is akin to the problem of making data on different but congruent geographies comparable by finding a least common geography. We will describe the process in detail later, intuitively imagine this as a puzzle game where two different tilings are to be matched up by joining individual areas in each of the tilings until both match. One way to achieve this is to join all areas in each of the two tilings, so it's always possible to do this. This is analogous to mutiplying the denominators in two fractions to find a common denominator. To be useful, the matching should to be done in a way that minimizes the number of joined individual areas, resulting in as fine a geography as possible, the *least common geography*.
+
+In practice this matching may be done up to a pre-specified tolerance to allow for slight boundary changes that are simply due to improvements of accuracy in delineating geographic regions as is commonly found in e.g. census data.
+
+
+## Why tongfen?
+Tongfen is our answer to the problem of needing to compare data on different yet congruent geographies. The most common setting for this is census data across several censuses, where census geographies change. Another setting is polling district data, where polling districts get adjusted over time. These geography changes typically happen via a sequence of fairly localized combine and split operations to get from one geography to another.
+
+There are essentially three different approaches on how to deal with the problem of harmonizing data on congruent geographies:
+
+### Custom tabulation
+If possible, for example when working with census data, we can request a custom tabulation of the data on the geography we desire. In some cases this isn't possible, for example when working with polling district level voting data. But when possible, this is often the best method to harmonize the data. 
+
+However, in some cases it won't lead to satisfactory results. Disclosure cutoffs are coarser for custom tabulations, which may result in suppressed data when working with small areas. With the recognition that traditional privacy measures like random rounding are insufficient to protect user privacy, and e.g. the US census switching over to differential privacy as the release mechanism, custom tabulations don't just cost time and money, but also eat into the researcher's allotted privacy budget. This makes alternative methods more attractive. 
+
+There have been some efforts to create publicly available custom tabulation that span several censuses, for example one for [Metro Vancouver and Toronto on 2016 dissemination areas back to 1971](https://dataverse.scholarsportal.info/dataset.xhtml?persistentId=doi:10.5683/SP2/QNO5JG) in Canada and the [LTDB-DP project for US census data on 2010 census tracts](https://s4.ad.brown.edu/Projects/Diversity/Researcher/LTDB.htm) using differential privacy.
+
+### Area weighted (dasymetric) interpolations
+These methods try to harmonize the data by computing geographic intersections of the two geometries and estimating values of interest from one geometry to another proportionally to the relative overlap. This is often refined by folding in finer level data, for example block level population counts or by clipping out uninhabited areas. Such an approach was taken e.g. by the [Canadian Longitudinal Census Tract Database](https://onlinelibrary.wiley.com/doi/10.1111/cag.12467) or the US [Neighbourhood Change Database (NCDB/Geolytics)](https://geolytics.com/products/normalized-data/neighborhood-change-database), [LTDB](https://s4.ad.brown.edu/Projects/Diversity/Researcher/Bridging.htm), or [NHGIS](https://www.nhgis.org/about). 
+
+The main advantage of this method is that it is very simple to implement and places no restrictions on the (target) geography to estimate the data on. The tongfen package implements this using the `tongfen_estimate` method, with the option for dasymetric refinements via the `proportional_reaggregate` method.
+
+The main disadvantage of these methods is that they are only estimates and come with [sizeable errors](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5472362/). And the errors are generally correlated with changes in population density or change in other variables that are important to how the geographies are broken down. Additionally, we have not seen a good way to estimate these errors (something we am interested in and might spend some time thinking about in the future). This makes this approach **ill-suited for research**, although that does not seem to stop a lot of academics from doing exactly that. This is particularly true for the NCDB/Geolytics data because the their methods are opaque and [their errors are especially large](https://www.tandfonline.com/doi/full/10.1080/24694452.2016.1187060).
+
+### Tongfen
+If there is some flexibility in the geography on which the harmonized data should be presented and the geographies in question are sufficiently congruent (as is often the case with census geographies or polling districts) then tongfen can provide exact (at the same precision as the original data) counts on a common geography that is (slightly) coarser than the original geographies. 
+
+The advantage over custom tabulations is that it is immediately available and does not cost money or privacy budget. The disadvantage is a loss of geographic granularity, the degree of which is dependent on how congruent the original geographies are. 
+
+The advantage over area weighted interpolation is that the counts are exact and not estimates, and they can thus be used for research purposes. However, some quantities, like medians, can't be aggregated up this way and can only be estimated. The disadvantage is that tongfen requires flexibility on the target geography and only provides useful results when the geographies are sufficiently congruent.
+
+Another advantage of tongfen is that it is not precomputed but carried out live as needed. This makes the process reproducible, auditable, and transparent, and allows the user to fine-tune the process according to their needs.
+
+## How does tongfen work?
+Abstractly tongfen works in three steps:
+1. Build metadata that makes it possible to aggregate variables of interest. For variables that are additive, like population counts, this is simple and no extra information is needed. For other variables, like average income, we also need a count of the "base population" that the average is based on so it can be properly aggregated. The metadata assembles all required variables and information on how they relate so we can properly aggregate the information when needed.
+2. Build a correspondence between the geographies of interest. This is similar to the information provided by e.g. Statistics Canada or the US Census Bureau in their *correspondence files*. Tongfen implements several methods to do this, one that's completely agnostic of external information and just operates on the geometries, another that assumes that geographies with identical UID correspond to one another and only matches the remaining geographies, and lastly one that uses external correspondence data.
+3. Aggregate up geometries according to the correspondence and data according to the correspondence and metadata.
+
+We will showcase a couple of simple examples on how this process works.
+
+### Tongfen using polling district data
+The [tongfen R package](https://mountainmath.github.io/tongfen/index.html) implements several methods to find the least common geography and aggregate up variables. As an example, consider the Canadian federal electoral poll districts from the 2015 and 2019 elections for Vancouver.
+```{r}
+data("vancouver_elections_data_2015",package="tongfen")
+data("vancouver_elections_data_2019",package="tongfen")
+data("vancouver_elections_geos_2015",package="tongfen")
+data("vancouver_elections_geos_2019",package="tongfen")
+```
+
+```{r vote-results, fig.height=5, fig.width=10}
+party_colours <- c(
+  "People's Party"="#4a3389",
+  Conservative="#0C499C",
+  "Bloc Québécois"="#02819E",
+  Liberal="#A50B0B",
+  NDP="#DA3D00",
+  "Green Party"="#2E8724",
+  "Independent"="#676767",
+  Other="yellow"
+)
+
+raw_vote_data <- bind_rows(
+  vancouver_elections_geos_2015 %>% 
+    left_join(vancouver_elections_data_2015 %>%
+                group_by(PD_2015) %>%
+                top_n(1,Votes),by="PD_2015") %>%
+    mutate(Year="2015"),
+  vancouver_elections_geos_2019 %>% 
+    left_join(vancouver_elections_data_2019 %>%
+                group_by(PD_2019) %>%
+                top_n(1,Votes),by="PD_2019") %>%
+    mutate(Year="2019")
+) %>%
+  mutate(Party=case_when(grepl("NDP",Party) ~ "NDP",
+                        Party %in% names(party_colours) ~ Party,
+                        TRUE ~ "Other"))
+
+ggplot(raw_vote_data) +
+  geom_sf(aes(fill=Party),size=0.2,color="black") +
+  facet_wrap("Year") +
+  scale_fill_manual(values=party_colours) +
+  theme(legend.position = "bottom") +
+  coord_sf(datum=NA) +
+  labs(title="Canada federal election winning candidate party by polling district", 
+       caption = "MountainMath, Data: Elections Canada")
+```
+
+To compare these and compute vote shifts at a granular level we need to get the data on a common geography.
+
+```{r tongfen-comparison, fig.height=4, fig.width=10}
+correspondence <- estimate_tongfen_correspondence(
+  data = list(vancouver_elections_geos_2015,vancouver_elections_geos_2019),
+  geo_identifiers = c("PD_2015","PD_2019"),
+  method = "estimate",
+  tolerance = 30) 
+
+vote_data <- correspondence %>% 
+  left_join(vancouver_elections_data_2019 %>% select(PD_2019,Party,Votes_2019=Votes),by="PD_2019") %>%
+  left_join(vancouver_elections_data_2015 %>% select(PD_2015,Party,Votes_2015=Votes),by=c("PD_2015","Party")) %>%
+  group_by(TongfenID,Party) %>% 
+  summarize_at(vars(starts_with("Votes")),sum,na.rm=TRUE) %>%
+  group_by(TongfenID) %>%
+  mutate(Total_2019=sum(Votes_2019,na.rm=TRUE),
+         Total_2015=sum(Votes_2015,na.rm=TRUE)) %>%
+  mutate(Share_2015=Votes_2015/Total_2015,
+         Share_2019=Votes_2019/Total_2019) %>%
+  ungroup() 
+
+base_geo <- vancouver_elections_geos_2019 %>% 
+  left_join(correspondence,by=c("PD_2019")) %>%
+  group_by(TongfenID) %>%
+  summarise(.groups="drop") 
+
+focus_area <- base_geo[base_geo$TongfenID=="59039_51",]
+
+bbox <- focus_area %>% st_buffer(200) %>% st_bbox() %>% st_as_sfc()
+
+compare_geos <- rbind(vancouver_elections_geos_2015 %>% mutate(type="2015") %>% select(type) ,#%>% st_transform(4326),
+      vancouver_elections_geos_2019 %>% mutate(type="2019") %>% select(type) ,#%>% st_transform(4326),
+      base_geo %>% mutate(type="TongFen") %>% select(type)) #%>% st_transform(4326)) %>% 
+
+ridings <- vancouver_elections_geos_2019 %>% 
+  group_by(FED_NUM) %>%
+  summarize(.groups="drop") 
+
+
+ggplot(compare_geos) +
+  facet_wrap("type") +
+  geom_sf(size=0.25) +
+  geom_sf(data=ridings,size=0.75,fill=NA) +
+  geom_sf(data=bbox,color="red",fill=NA,size=1) +
+  coord_sf(datum = NA) +
+  labs(title="Federal electoral poll district boundaries TongFen",caption="MountainMath, Elections Canada")
+```
+
+On the left we show the 2015 boundaries, in the middle the 2019 boundaries and on the right the least common geography based on the former two. This example nicely illustrates the strength and weaknesses of tongfen. On the east side the tongfen process results in a fairly granular tiling, but on the west side the tiling ends up very coarse to the point where it's almost identical to the entire federal election district of Vancouver-Quadra.
+
+To understand how tongfen works in more detail we zoom into the area marked by the red square.
+
+```{r tongfen-cutout, fig.height=4, fig.width=10}
+bb <- st_bbox(bbox)
+ggplot(compare_geos) +
+  facet_wrap("type") +
+  geom_sf(size=0.25) +
+  geom_sf(data=ridings,size=0.75,fill=NA) +
+  geom_sf(data=bbox,color="red",fill=NA,size=1) +
+  coord_sf(datum = NA, xlim=c(bb$xmin,bb$xmax),ylim=c(bb$ymin,bb$ymax)) +
+  labs(title="Federal electoral poll district boundaries TongFen",caption="MountainMath, Elections Canada")
+```
+
+Here we can see our "puzzle game" to find a common tiling at work. Some areas remain unchanged between the years and can simply be adopted without modifications. But other areas don't match and the puzzle game starts how to best join adjacent areas to build a least common tiling.
+
+On close inspection we also notice some insignificant boundary changes where boundaries have been modified over time to better align with features like roads. The tongfen algorithm requires to specify a tolerance up to which boundary changes are consider to be inconsequential. In this particular example the tolerance was set to be 30 metres. This is informed by the observation that polling district boundaries follow the street grid, and a change by less than 30 metres allows for realignments with streets but will detect cases where the boundaries follow a different street.
+
+The end process shows the strength and limitations of tongfen. On the west side, where geographies changed a lot, tongfen results in a tiling that is close to the union of all areas. On the east side tongfen is able to maintain a fine geographies.
+
+One advantage of not pre-computing the matching but doing it live as needed is that we can refine the computations by incorporating local data. To get a finer tiling we can look at Vancouver land use data and cut the electoral polling districts down to only those areas where people actually live. This can help to further weed out inconsequential boundary changes
+
+```{r landuse-mask}
+landuse <- get_metro_vancouver_land_use_data()
+residential_uses <- c("Residential - Mobile Home Park","Institutional","Residential - Single Detached & Duplex",
+                      "Mixed Residential Commercial - Low-rise Apartment","Residential – Rural",
+                      "Residential - Low-rise Apartment", "Residential - Institutional and Non-Market Housing",
+                      "Residential – Townhouse", "Residential - High-rise Apartment",
+                      "Mixed Residential Commercial - High-rise Apartment","Undeveloped and Unclassified","Commercial")
+
+landuse %>% filter(LU_CodeDes %in% residential_uses) %>%
+  filter(Municipali %in% c("City of Vancouver","Electoral Area A - UBC" )) %>%
+  st_union() %>%
+  ggplot() +
+  geom_sf(fill="steelblue",color="steelblue",size=0.1) +
+  geom_sf(data=ridings,size=0.75,fill=NA) +
+  #geom_sf(data=bbox,color="red",fill=NA,size=1) +
+  coord_sf(datum = NA) +
+  labs(title="Vancouver residential land use",caption="MountainMath, Metro Vancouver open Data")
+
+```
+
+Masking the polling district boundaries with the land use area helps us filter out inconsequential boundary changes. 
+
+```{r dasymetric-tongfen, fig.width=10}
+lu_mask <- landuse %>% 
+  filter(LU_CodeDes %in% residential_uses) %>% 
+  st_transform(st_crs(vancouver_elections_geos_2015)) %>%
+  st_union() %>%
+  st_buffer(10)
+
+vancouver_elections_geos_2015_cut <- vancouver_elections_geos_2015 %>%
+  group_by(PD_2015,AP_2015) %>%
+  summarize(.groups="drop") %>%
+  st_intersection(lu_mask) 
+missing_2015 <- setdiff(vancouver_elections_geos_2015$PD_2015,vancouver_elections_geos_2015_cut$PD_2015)
+vancouver_elections_geos_2015_cut <- vancouver_elections_geos_2015_cut %>%
+  rbind(vancouver_elections_geos_2015 %>% filter(PD_2015 %in% missing_2015) %>%
+          select(names(vancouver_elections_geos_2015_cut)))
+vancouver_elections_geos_2019_cut <- vancouver_elections_geos_2019 %>%
+  group_by(PD_2019,AP_2019) %>%
+  summarize(.groups="drop") %>%
+  st_intersection(lu_mask) 
+missing_2019 <- setdiff(vancouver_elections_geos_2019$PD_2019,vancouver_elections_geos_2019_cut$PD_2019)
+vancouver_elections_geos_2019_cut <- vancouver_elections_geos_2019_cut %>%
+  rbind(vancouver_elections_geos_2019 %>% filter(PD_2019 %in% missing_2019) %>%
+          select(names(vancouver_elections_geos_2019_cut)))
+
+correspondence_cut <- estimate_tongfen_correspondence(
+  data = list(vancouver_elections_geos_2015_cut,vancouver_elections_geos_2019_cut),
+  geo_identifiers = c("PD_2015","PD_2019"),
+  method = "estimate",
+  tolerance = 30) 
+
+
+base_geo_cut <- vancouver_elections_geos_2019 %>% 
+  left_join(correspondence_cut,by=c("PD_2019")) %>%
+  group_by(TongfenID) %>%
+  summarise(.groups="drop") 
+
+compare_geos <- rbind(vancouver_elections_geos_2015 %>% mutate(type="2015") %>% select(type) ,#%>% st_transform(4326),
+      vancouver_elections_geos_2019 %>% mutate(type="2019") %>% select(type) ,#%>% st_transform(4326),
+      base_geo_cut %>% mutate(type="TongFen") %>% select(type)) #%>% st_transform(4326)) %>% 
+
+ggplot(compare_geos) +
+  facet_wrap("type") +
+  geom_sf(size=0.25) +
+  geom_sf(data=ridings,size=0.75,fill=NA) +
+  #geom_sf(data=bbox,color="red",fill=NA,size=1) +
+  coord_sf(datum = NA) +
+  labs(title="Federal electoral poll district boundaries TongFen",
+       subtitle="Correspondence after filtering down to residential land use only",
+       caption="Elections Canada")
+```
+
+The TongFen geography is based on the 2019 geographies, with the correspondence built from the geographies that have been intersected with the residential land use. This yields slightly more detail on the west side where geographies had previously combined but the boundary changes were inconsequential where they covered unpopulated areas.
+
+```{r ca-vote-shift, fig.height=8, fig.width=10}
+main_parties <- c("Liberal","Conservative","Green Party","NDP-New Democratic Party")
+
+vote_data_cut <- correspondence_cut %>% 
+  left_join(vancouver_elections_data_2019 %>% select(PD_2019,Party,Votes_2019=Votes),by="PD_2019") %>%
+  left_join(vancouver_elections_data_2015 %>% select(PD_2015,Party,Votes_2015=Votes),by=c("PD_2015","Party")) %>%
+  group_by(TongfenID,Party) %>% 
+  summarize_at(vars(starts_with("Votes")),sum,na.rm=TRUE) %>%
+  group_by(TongfenID) %>%
+  mutate(Total_2019=sum(Votes_2019,na.rm=TRUE),
+         Total_2015=sum(Votes_2015,na.rm=TRUE)) %>%
+  mutate(Share_2015=Votes_2015/Total_2015,
+         Share_2019=Votes_2019/Total_2019) %>%
+  ungroup() 
+
+plot_data <- base_geo_cut %>%
+  left_join(vote_data_cut %>% 
+              filter(Party %in% main_parties) %>%
+              mutate(Party=recode(Party,"NDP-New Democratic Party"="NDP")),
+            by="TongfenID") 
+
+plot_data2 <- vancouver_elections_geos_2019 %>% 
+  group_by(FED_NUM) %>%
+  summarize(.groups="drop") 
+#> `summarise()` ungrouping output (override with `.groups` argument)
+
+plot_data %>% 
+  ggplot(aes(fill=Share_2019-Share_2015)) +
+  #mountainmathHelpers::geom_water() +
+  geom_sf(size=0.01) +
+  geom_sf(data=plot_data2,size=0.5,fill=NA) +
+  geom_water(size=0.5) +
+  scale_fill_gradient2(labels=function(d)scales::percent(d,suffix="pp")) +
+  facet_wrap("Party") +
+  coord_sf(datum = NA) +
+  labs(title="Percentage point change in share of polling station votes 2015-2019",
+       fill="Percentage point\nchange 2015-2019", caption="MountainMath, Elections Canada")
+```
+
+This only considers votes at the polling station and ignores advance and mail-in ballots. There is a [tongfen package vignette](https://mountainmath.github.io/tongfen/articles/polling_districts.html) that also looks into changes in advance voting patterns, a detailed analysis goes beyond the scope of this overview post.
+
+## Canadian census data
+The tongfen functionality can be easily extended to facilitate working with particular data sources. Integration with Canadian census data is most advanced, leveraging our [cancensus R package](https://mountainmath.github.io/cancensus/index.html) that taps into the [CensusMapper API](https://censusmapper.ca/api) and rich metadata for census variables from CensusMapper.
+
+```{r ca-census-education, fig.height=4, fig.width=10}
+meta <- c(bachelor_2006="v_CA06_1256",base_2006="v_CA06_1248",
+  bachelor_2011="v_CA11N_1822",base_2011="v_CA11N_1801",
+  bachelor_2016="v_CA16_5123",base_2016="v_CA16_5096") %>%
+  meta_for_ca_census_vectors()
+
+education_data <- get_tongfen_ca_census(regions=list(CMA="59933"),meta) %>%
+  mutate(share_2006=bachelor_2006/base_2006,
+         share_2011=bachelor_2011/base_2011,
+         share_2016=bachelor_2016/base_2016) %>%
+  mutate(`2006-2011`=share_2011-share_2006,
+         `2011-2016`=share_2016-share_2011,
+         `2006-2016`=share_2016-share_2006)
+
+education_data %>%
+  pivot_longer(starts_with("20")) %>%
+  st_sf() %>%
+  ggplot() +
+  geom_sf(aes(fill=value),size=0.1) +
+  geom_water(size=0.1) +
+  geom_roads() +
+  scale_fill_gradient2(labels=function(d)scales::percent(d,suffix="pp"),
+                       guide = guide_colourbar(barwidth=15)) +
+  facet_wrap("name") +
+  theme(legend.position = "bottom") +
+  coord_bbox(metro_van_bbox("tight")) +
+  labs(title="Percentage point change in share of 25-64 year olds with bachelor degree or higher",
+       fill="Percentage point\nchange", caption="MountainMath, StatCan Census 2006-2016")
+```
+
+
+
+
+## T1FF taxfiler data
+Thanks to a CMHC project CensusMapper now also has census tract level T1FF taxfiler data available. T1FF taxfiler data is an [extremely rich annual dataset](https://doodles.mountainmath.ca/blog/2020/04/23/census-tract-level-t1ff-tax-data/) with detailed demographic and income variables, making it very suited for longitudinal analysis at fine geographies.
+
+We look at the share of people in low income (LICO-AT) in the City of Toronto between 2005 (the first year our CRA tax data has low income counts) and 2018. The first step is to collect the low income variables, a quick check on the [CensusMapper API UI](https://censusmapper.ca/api) reveals that the relevant internal CensusMapper vectors are `v_TX2018_551` for the 2018 percentage of population in low income, with the year string swapped out for earlier years. CensusMapper variable coding is not always consistent through time, but it is for the tax data.
+
+As a first step we construct the necessary metadata needed for tongfen. The percentage itself is not enough information to aggregate up the data, we also need to know the base of the percentage -- population in this case. CensusMapper metadata knows what variable that is and the `meta_for_ca_census_vectors` convenience function takes care of assembling any extra variables we need for tongfen. The metadata specifies the variables that are to be considered, and also specifies rules on how they are to be aggregated.
+
+Here is the metadata just for the variables for the 2018 year.
+
+```{r}
+years=seq(2005,2018)
+lico_vectors <- setNames(paste0("v_TX",years,"_551"),paste0("lico_",years))
+meta  <- meta_for_ca_census_vectors(lico_vectors)
+meta %>% filter(year==2018) %>% knitr::kable()
+```
+
+Armed with the metadata we need to select the region we are interested in, the City of Toronto in this case, and call the `get_tongfen_ca_census` wrapper function that downloads the data, harmonizes the geographies, aggregates up the data and hands back the resulting data on a uniform geography.
+
+```{r}
+toronto <- list_census_regions("CA16") %>% 
+  filter(level=="CSD",name=="Toronto") %>%
+  as_census_region_list()
+
+toronto_lico <- get_tongfen_ca_census(regions=toronto, meta, level="CT",method = "statcan")
+```
+
+```{r toronto-lico-all-years, fig.height=9, fig.width=10}
+toronto_lico %>%
+  pivot_longer(cols=starts_with("lico"), names_pattern = "lico_(\\d+)",
+               names_to = "Year", values_to = "Share") %>%
+  mutate(Share=Share/100) %>%
+  st_sf() %>%
+  ggplot(aes(fill=Share)) +
+  geom_sf(size=0.1) +
+  scale_fill_viridis_c(option = "magma",labels=scales::percent) +
+  facet_wrap("Year") +
+  coord_sf(datum=NA) +
+  labs(title="Share of people in low income",
+       caption="MountainMath, StatCan T1FF data via CMHC")
+```
+
+For this plot of low income shares over the years we would not have to go though the troubles of harmonizing the geographies, we could have just plotted each dataset on it's native geography. This would have resulted in a slightly higher geographic resolution for each of the maps. The key advantage of having the data on a unified geography is that we can now easily look at change over time, for example by mapping the percentage point change between the initial and final years.
+
+```{r toronto-lico, fig.height=8, fig.width=10}
+toronto_lico %>%
+  mutate(Change=(lico_2018-lico_2005)/100) %>%
+  st_sf %>%
+  ggplot(aes(fill=Change)) +
+  geom_sf(size=0.1) +
+  scale_fill_gradient2(labels=scales::percent) +
+  geom_water() +
+  geom_roads() +
+  coord_sf(datum=NA) +
+  labs(title="Change in share of people in low income 2005-2018",
+       fill="Percentage\npoint change",
+       caption="MountainMath, StatCan T1FF data via CMHC")
+```
+
+
+## US census tract level data
+The tongfen package also comes with basic support for US census tract level cross-census comparisons. This piggy-backs off of the [tidycensus package]() to ingest census data. As an example we look at the change in household size in the Bay Area. The first step is to build the metadata, which we do by hand.
+```{r}
+meta <- lapply(c(2000,2010),function(year){
+  meta_for_additive_variables(paste0("dec",year),
+                              c(population="H011001",households="H013001") %>% 
+                                setNames(paste0(names(.),"_",year)))}) %>%
+  bind_rows()
+```
+
+```{r us-census-households, fig.height=8, fig.width=10}
+census_data <- get_tongfen_us_census(regions = list(state="CA"), meta=meta, level="tract") %>%
+  mutate(change=population_2010/households_2010-population_2000/households_2000) %>%
+  mutate(c=pretty_cut(change,c(-Inf,-0.5,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.5,Inf)))
+
+cutout_bbox <- st_bbox(c(st_point(c(-122.6,37.2)),st_point(c(-121.7,37.9))))
+cutout_data <- cutout_bbox %>% st_as_sfc() %>% st_set_crs(4269)
+
+ggplot(census_data) +
+  geom_sf(aes(fill=c), size=0.05) +
+  geom_water(data=cutout_data, size=0.05) +
+  geom_roads(data=cutout_data) +
+  scale_fill_brewer(palette = "RdYlGn",na.value="#444444") +
+  labs(title="Bay area change in average household size 2000-2010", fill=NULL,
+       caption="MountainMath, US Census 2000, 2010") +
+  coord_bbox(cutout_bbox)
+```
+
+The census tracts used here are slightly coarser than the original 2000 and 2010 census tracts, but the resulting data is exact, in the sense in which the 2000 and 2010 census data is exact, and not estimates or noised via differential privacy.
+
+## Upshot
+TongFen is not new, people have been assembling regions before to make them comparable. In particular, Statistics Canada as well as the US Census Bureau provide *correspondence files* that specify how geographic regions relate across censuses.  But we have not seen implementations that automate this process and provide the flexibility to run this on arbitrary geographies in a reproducible and transparent way.
+
+Tongfen is designed so it is easy to build dataset-specific wrappers to facilitate working with specific datasets.
+Currently tongfen has wrappers to work with Canadian and US census data, with the Canadian version being fairly well-developed. We welcome contributions that wrap other datasets or expand the usability or coverage of tongfen on existing datasets.
+
+
