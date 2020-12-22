@@ -8,7 +8,7 @@ categories:
 tags: []
 description: "Testing data in BC shoud be straighforward to interpret, but it's surprisingly tricky."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/test.png"]
+images: ["https://doodles.mountainmath.ca/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/public-private-tests.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -478,7 +478,7 @@ test_data <- read_csv('49.96101594802126, 1910.3773584905662
 
 Scraping the data gives us the opportunity to get a better reading on the number of public and private tests done in BC. This is an inexact science, scraping the data out of images will come with small errors, despite the 11yo's best efforts. And there are no graphs that show the total number of public tests, just the test rates, so we need to divide by the population to untangle this.
 
-```{r}
+```{r public-private-tests}
 ha_colours <- setNames(RColorBrewer::brewer.pal(8,"Dark2"),
                        c("British Columbia","Fraser", "Vancouver Coastal", "Vancouver Island",  "Interior",  "Northern"))
 

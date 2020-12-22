@@ -8,7 +8,7 @@ categories:
 tags: []
 description: "Testing data in BC shoud be straighforward to interpret, but it's surprisingly tricky."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/test.png"]
+images: ["https://doodles.mountainmath.ca/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/public-private-tests.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -99,11 +99,11 @@ The BCCDC only reports on the number of tests and the positivity rate calculated
 
 Scraping the data gives us the opportunity to get a better reading on the number of public and private tests done in BC. This is an inexact science, scraping the data out of images will come with small errors, despite the 11yo's best efforts. And there are no graphs that show the total number of public tests, just the test rates, so we need to divide by the population to untangle this.
 
-<img src="/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/unnamed-chunk-8-1.png" width="768" />
+<img src="/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/public-private-tests-1.png" width="768" />
 
 We see that private testing ramped up over time and now takes up almost 20k tests a week, compared to around 60k tests done via public testing. This allows us to also look at the ratio of private tests out of all tests, which helps us better understand how this impacts the positivity rate of the blended data over time.
 
-<img src="/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/unnamed-chunk-9-1.png" width="768" />
+<img src="/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/unnamed-chunk-8-1.png" width="768" />
 
 BC's overall share of private testing has been between 20% and 30% starting epi week 42, so mid October. Vancouver Coastal's share of private testing has been significantly higher, Vancouver Island, Interior and Northern's share has been significantly lower.
 
@@ -112,7 +112,7 @@ Which brings us to the next step, looking at positivity rates. Private routine t
 
 The Situation Reports have the weekly positivity rates, and there we can read off BC's real positivity rate for public testing. Although the graph they provide is awfully cramped and hard to get a clear idea, but nothing a little ice-cream fuelled scraping can't fix.
 
-<img src="/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/unnamed-chunk-10-1.png" width="768" />
+<img src="/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/unnamed-chunk-9-1.png" width="768" />
 
 
 
@@ -120,7 +120,7 @@ The Situation Reports have the weekly positivity rates, and there we can read of
 
 We can take this down to the Health Region level and compare the real public positivity rate to the one generally reported by the BCCDC on the dashboard. Again, the graph in the Situation Report is not very useful for this, so we scraped and reshaped the data.
 
-<img src="/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/unnamed-chunk-12-1.png" width="768" />
+<img src="/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/unnamed-chunk-11-1.png" width="768" />
 Of note is that the positivity rate of public testing does not always move in sync with the blended positivity rate that includes private testing. Which should make us extra careful when trying to discern trends of the public testing positivity rate that we are principally interested in from trends in the overall blended rate that the BCCDC reports. This graph also answers the [question by Tyler Olson](https://twitter.com/akurjata/status/1339741810025852928?s=20) if any other Health Region hit the (7-day average) 10% positivity mark before Northern did very recently. Just looking at the dashboard data we might be inclined to say that no Health Region got over 10%. But we are of course interested in public testing positivity rate, and that has been above 10% in Fraser for several weeks.
 
 ## Upshot
