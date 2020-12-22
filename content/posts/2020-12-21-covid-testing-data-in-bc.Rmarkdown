@@ -8,7 +8,7 @@ categories:
 tags: []
 description: "Testing data in BC shoud be straighforward to interpret, but it's surprisingly tricky."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/public-private-tests.png"]
+images: ["https://doodles.mountainmath.ca/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/public-private-tests-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
