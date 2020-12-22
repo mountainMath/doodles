@@ -1,0 +1,805 @@
+---
+title: Covid testing data in BC
+author: Jens von Bergmann
+date: '2020-12-21'
+slug: covid-testing-data-in-bc
+categories:
+  - covid-19
+tags: []
+description: "Testing data in BC shoud be straighforward to interpret, but it's surprisingly tricky."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2020-12-21-covid-testing-data-in-bc_files/figure-html/test.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+ 	echo = FALSE,
+ 	message = FALSE,
+ 	warning = FALSE,
+ 	cache = TRUE,
+ 	fig.width = 8
+)
+library(tidyverse)
+library(patchwork)
+library(CanCovidData)
+library(cansim)
+```
+
+
+What do we know about COVID-19 testing in BC? That's a surprisingly tricky question, so I decided to do a quick post on this.
+
+## Why do we test?
+The main use of testing is diagnostic and to break transmission chains. If we suspect a person has COVID-19 that person will go into self-isolation and seek a test. If the test confirms the suspicion, we contact trace the COVID-positive person and ask close contacts to self-isolate to break transmission chains.
+
+As an aside, the timelines of COVID are such that the traditional contact tracing approach described above [captures a maximum of about one third of all onward infections](https://www.thelancet.com/article/S2468-2667(20)30157-2/fulltext)
+and having [researchers call for alternative appropaches to traditional contact tracing like borad asymptomatic testing](https://www.medrxiv.org/content/10.1101/2020.12.15.20248299v1) or employing other approaches like [tracing contacts of contacts to get ahead of transmissions](https://www.dhhs.vic.gov.au/coronavirus-case-and-contact-management-guidelines-health-services-and-general-practitioners-doc).
+
+## Test metrics
+A natural question is how well our testing is doing in supporting the breaking of transmission chains. There are some obvious metrics to measure the effectiveness of our TTI transmission chain, for example keeping track of what share of confirmed cases were already in self-isolation at the time they (likely) became infectious. Unfortunately we aren't reporting on metrics like this, and I strongly suspect we aren't even keeping track of this.
+
+But there are some secondary metrics that we are keeping track of. The number of tests we are doing, as well as the positivity rate, so the share of tests that come back positive. The positivity rate tells us if we are testing broadly enough. If the positivity rate gets too high, which people often peg at above 3%, we likely aren't testing broadly enough to capture all infections and we are starting to miss a lot of cases and the chance the break their transmission chains. In the [words of the BCCDC](https://bccdc.shinyapps.io/covid19_global_epi_app/)
+    
+>    This metric [positivity rate] can be used to understand if a jurisdiction is doing sufficient testing relative to the size of its epidemic to catch enough cases to maintain epidemic control. The higher the test positivity, the greater the likelihood that many cases are being missed and there is widespread community transmission, making it more difficult to limit the spread of the virus.
+
+Generally we try to scale up the number of tests to keep up with the pace of the transmissions, but viral growth is exponential and real world resources generally can't keep up with that growth. Which leads to rising positivity rates as we increasingly focus our testing on the most likely cases.
+
+## How many tests are we doing in BC and what's our positivity rate?
+The answer to this seems simple, the [BCCDC dashboard](https://experience.arcgis.com/experience/a6f23959a8b14bfa989e3cda29297ded) has data on daily tests, testing turn-around time and positivity rates.
+
+```{r}
+test_data <- get_british_columbia_test_data()
+
+tests <- test_data %>% 
+  filter(Metric=="New Tests") %>%
+  filter(`Health Authority`=="BC") %>%
+  filter(Date>=as.Date("2020-03-01")) %>%
+  ggplot(aes(x=Date,y=Count)) +
+  scale_y_continuous(labels=scales::comma) +
+  theme_bw() +
+  geom_bar(stat="identity",fill="steelblue",color="steelblue") +
+  geom_line(data=~(.) %>% mutate(Count=roll::roll_mean(Count,width = 7)), size=1) +
+  labs(x=NULL,y="Daily Tests")
+
+positivity <- test_data %>% 
+  filter(Metric=="Positivity") %>%
+  filter(`Health Authority`=="BC") %>%
+  filter(Date>=as.Date("2020-03-01")) %>%
+  ggplot(aes(x=Date,y=Count/100)) +
+  scale_y_continuous(labels=scales::percent) +
+  theme_bw() +
+  geom_line(size=1) +
+  labs(x=NULL,y="Test Positivity")
+
+tests+positivity +  plot_annotation(
+  title = 'Covid tests conducted in British Columbia',
+  caption = 'BCCDC'
+)
+```
+
+But here is the rub. This data does not mean what one would naively expect it to mean, at least if "we" means the public that's doing the testing to diagnose COVID and break transmission chains. 
+
+To understand what's going on we need to take a step back. There essentially are two distinct ways we are testing in BC, as the [weekly Situation Reports](http://www.bccdc.ca/Health-Info-Site/Documents/COVID_sitrep/Week_50_BC_COVID-19_Situation_Report.pdf) explain:
+
+>    In BC, laboratory-based surveillance captures mostly symptom-based diagnostic testing conducted under the Medical Service Plan (MSP) funding scheme, as well as any non-MSP funded screening tests.
+
+To understand why this matters we keep reading:
+    
+>    Screening tests have a lower likelihood of testing SARS-CoV-2 positive (i.e. percent positivity) than symptom-based diagnostic testing; therefore, including screening specimens will tend to lower the overall percent positivity indicator and the impact of that will be greater when more screening specimens are included.
+
+To put it simply, in BC we have our regular publicly funded diagnostic testing, based on guidelines given by the BCCDC, that aim to break transmission chains. On the other hand we also have privately funded "screening tests", most notably those employed by the film industry that regularly tests people detect COVID cases before they can spread and keep their workplaces, where social distancing is not always possible, safe.
+
+Both types of tests are great, but private testing is orthogonal to our containment effort, which is what the general public and the BCCDC is focused on. After all, the BCCDC is reporting the number of tests and the positivity rate because it "can be used to understand if a jurisdiction is doing sufficient testing relative to the size of its epidemic to catch enough cases to maintain epidemic control". The relevant metrics are the number of public tests and the positivity rate of public tests.
+
+The dashboard however gives and answer to a question nobody asked: "What are the combined number of private and public tests and what is the blended positivity rate". If reported separately, this would give us important insight. How is our public testing performing, and what's the positivity rate of private screening tests -- probably the best metric we (in theory) have right now to understand true prevalence in the population. Blending both together as the dashboard does gives us a hard to interpret blend.
+
+Our PHO got asked about if private tests are included several times, [including on October 15th](https://youtu.be/SIHV0IUlVEI?t=1236), where the PHO explained that they do monitor what positivity rates look like when just using public testing and that those positivity rates "remain low". At the time the overall positivity rate for that week from the Dashboard was around 2%, and the one for just public testing was close to 3%. [On November 27](http://www.bccdc.ca/Health-Info-Site/Documents/COVID_sitrep/BC-COVID-19_Situation_Report_Nov_27_2020.pdf) the BCCDC finally started to report public testing separately in the weekly Situation Reports. The information is only weekly aggregates, number of tests needs to be back-calculated from the testing rate, and the information only available in image form requiring manual scraping to get the data. The BCCDC has on several occasions refused to provide the data underlying their graphs for the (bizarre) stated reason that the inconvenience of the manual scraping is [an essential safeguard of patient privacy](https://twitter.com/sobittersosweet/status/1332482357224370177?s=20).
+
+Confused yet? You aren't the only one, things are about to get worse. Apparently the BCCDC is also confused by their own data.
+
+## BC COVID-19 Epidemiology App
+It's generally a good idea to consume your own data, which the BCCDC did on their new shiny [COVID-19 Epidemiology App](https://bccdc.shinyapps.io/covid19_global_epi_app/). There we can see how BC's testing rate and positivity rate compares to that of other provinces. BCCDC used the testing data from PHAC for this, except for BC. For BC the BCCDC swapped out the PHAC data and spliced in their own data. But not just the data on public testing, but the BCCDC inflated their testing numbers and depressed their positivity rate by adding in private tests. Just for BC. Which defies the whole purpose of making a comparison. 
+
+```{r}
+province_colours <- c(setNames(RColorBrewer::brewer.pal(6,"Dark2"),c("SK","AB","BC","MB","ON","QC")),
+                      setNames(RColorBrewer::brewer.pal(4,"Dark2"),c("NL","NS","PE","NB")))
+
+clean_missing_weekend_data <- function(tl){
+  zeros <- which(tl==0)
+  blocks <- which(!(zeros %in% (zeros+1)))
+  lengths <-lead(blocks)-blocks
+  lengths[length(lengths)]=length(zeros[zeros>=zeros[blocks[length(blocks)]]])
+  for (i in seq(1,length(blocks))){
+    b=zeros[blocks[i]]
+    l=lengths[i]
+    e=b+l
+    if (e>length(tl)) {
+      l=l-1
+      e=e-1
+    }
+    v=tl[e]/(l+1)
+    for (j in seq(0,l)) {
+      tl[b+j]=v
+    }
+  }
+  tl
+}
+
+pop_data <- get_cansim("17-10-0005") %>%
+  filter(REF_DATE==2020,`Age group`=="All ages",Sex=="Both sexes") %>%
+  select(Province=GEO,Population=VALUE)
+
+covid_data <- get_canada_official_provincial_data() %>%
+  mutate(Province=prname, shortProvince=cansim:::short_prov.en[prname]) %>%
+  #filter(shortProvince %in% names(province_colours)) %>%
+  left_join(pop_data,by=c("prname"="Province")) %>%
+  group_by(prname) %>%
+  arrange(desc(Date)) %>%
+  filter(cumsum(Cases)>0,cumsum(numtestedtoday)>0) %>%
+  arrange(Date) %>%
+  mutate(c=roll::roll_mean(clean_missing_weekend_data(Cases),7),
+         t=roll::roll_mean(clean_missing_weekend_data(numtestedtoday),7)) %>%
+  mutate(case_rate=c/Population*1000000,
+         test_rate=t/Population*100000,
+         positivity=c/t) %>%
+  mutate(p=mountainmathHelpers::pretty_cut(positivity,c(-Inf,0.001,0.01,0.02,0.03,0.05,0.1,0.2,Inf),format = scales::percent,ordered_result=TRUE)) %>%
+  filter(!is.na(shortProvince))
+
+positivity_colours <- setNames(c(RColorBrewer::brewer.pal(length(levels(covid_data$p)),"RdBu")%>% rev,"darkgrey"),
+                               c(levels(covid_data$p),"Not available"))
+```
+
+How misleading a comparison does the BCCDC COVID-19 Epidemiology App make. That's easy to see by doing a side-by-side plot using the Dashboard data, which the BCCDC used for BC, vs the PHAC data for BC, which the BCCDC used as comparison for the other provinces.
+
+```{r}
+cases <- get_british_columbia_case_data() %>%
+  count(Date=`Reported Date`,name="Cases") %>%
+  mutate(Population=pop_data %>% filter(Province=="British Columbia") %>% pull(Population)) %>%
+  arrange(Date) %>%
+  mutate(C=roll::roll_mean(Cases,7)) %>%
+  mutate(case_rate=C/Population*1000000)
+bc_comparison <- test_data %>% 
+  filter(`Health Authority`=="BC") %>%
+  filter(Metric %in% c("New Tests","Positivity")) %>%
+  pivot_wider(names_from = Metric, values_from = Count) %>%
+  mutate(positivity=Positivity/100) %>%
+  left_join(cases,by="Date") %>%
+  arrange(Date) %>%
+  mutate(test_rate=roll::roll_mean(`New Tests`,7)/Population*100000) %>%
+  mutate(Source="Dashboard") %>%
+  bind_rows(covid_data %>% 
+              filter(shortProvince=="BC") %>%
+              select(Date,positivity,test_rate,case_rate) %>%
+              mutate(Source="PHAC")) %>%
+    mutate(p=mountainmathHelpers::pretty_cut(positivity,c(-Inf,0.001,0.01,0.02,0.03,0.05,0.1,0.2,Inf),format = scales::percent,ordered_result=TRUE))
+
+bc_comparison %>%
+  filter(Date>=as.Date("2020-03-01")) %>%
+  ggplot(aes(x=Date)) +
+  geom_bar(aes(y=test_rate),stat="identity",fill="lightgrey",color="lightgrey") +
+  geom_line(aes(y=case_rate,color=p,group=1),size=1.5) +
+  theme_minimal() +
+  theme(panel.grid.major.x = element_blank() ,
+        panel.grid.minor = element_blank() ,
+        axis.text.x = element_text(angle=60,hjust=0.5) 
+        ) +
+  scale_x_date(breaks=as.Date(paste0(seq(3,12),"/01/2020"),format="%m/%d/%Y"),labels=function(d)strftime(d,"%b")) +
+  theme(legend.position="bottom")+
+  scale_color_manual(values=positivity_colours) +
+  facet_wrap("Source") +
+  labs(x=NULL,y="New daily cases per 1M pop\nDaily test rate per 100k pop\n(7-day moving average)",
+       color="Test positivity",
+       caption="MountainMath, PHAC")
+```
+
+I am not a fan of this visual, I find it hard to read. So a quick explanation is in order. The grey bar-graph in the background shows the new daily tests (or number of people tested) per 100k population, the line graph shows the number new daily cases per 1M population and the colour of the line graph is given by the test positivity rate.
+
+In the two graphs case numbers are (almost) the same, with the only difference given by BC not reporting this data on weekends (which we smoothed out). But the testing rate and the positivity rate are very different. 
+
+This brings out another issue with the BCCDC COVID-19 Epidemiology App comparison. For BC data is shows number of daily tests, for the other provinces using PHAC data it shows the number of people tested. Similarly, the positivity rate from BC data is number of positive tests by number of tests, whereas the positivity from PHAC data is calculated as number of confirmed cases by number of people tested. It's never a good idea to compare metrics that have different units.
+
+```{r eval=FALSE, include=FALSE}
+bc_comparison %>%
+  filter(Date>=as.Date("2020-03-01")) %>%
+  ggplot(aes(x=Date)) +
+  geom_bar(aes(y=test_rate),stat="identity",fill="lightgrey",color="lightgrey") +
+  geom_line(aes(y=case_rate,color=p,group=1),size=1.5) +
+  theme_minimal() +
+  theme( # remove the vertical grid lines
+           panel.grid.major.x = element_blank() ,
+           panel.grid.minor = element_blank() ,
+           # explicitly set the horizontal lines (or they will disappear too)
+           #panel.grid.major.y = element_line( size=.1, color="black" ),
+           axis.text.x = element_text(angle=60,hjust=0.5) 
+    ) +
+  scale_x_date(breaks=as.Date(paste0(seq(3,12),"/01/2020"),format="%m/%d/%Y"),labels=function(d)strftime(d,"%b")) +
+  theme(legend.position="bottom")+
+  scale_color_manual(values=positivity_colours) +
+  coord_cartesian(ylim=c(0,600)) +
+  facet_wrap("Source") +
+  labs(x=NULL,y="New daily cases per 1M pop\nDaily test rate per 100k pop\n(7-day moving average)",
+       color="Test positivity",
+       caption="MountainMath, PHAC")
+```
+
+For completeness we can quickly plot what the proper comparison with all the provinces looks like.
+
+```{r}
+covid_data %>%
+  filter(shortProvince!="CAN") %>%
+  filter(Date>=as.Date("2020-03-01"),Date<=as.Date("2020-12-21")) %>%
+  mutate(p=factor(as.character(p) %>% replace_na("Not available"),levels=names(positivity_colours))) %>%
+  #mutate(p=factor(ifelse(is.na(p), "Not available", paste(p)), levels = c(levels(p), "Not available"))) %>%
+  mutate(shortProvince=factor(shortProvince,levels=c("BC",setdiff(unique(shortProvince),"BC") %>% sort))) %>%
+ggplot(aes(x=Date)) +
+  geom_bar(aes(y=test_rate),stat="identity",fill="lightgrey",color="lightgrey") +
+  geom_line(aes(y=case_rate,color=p,group=shortProvince),size=1.5) +
+  theme_minimal() +
+  theme( # remove the vertical grid lines
+           panel.grid.major.x = element_blank() ,
+           panel.grid.minor = element_blank() ,
+           # explicitly set the horizontal lines (or they will disappear too)
+           #panel.grid.major.y = element_line( size=.1, color="black" ),
+           axis.text.x = element_text(angle=60,hjust=0.5) 
+    ) +
+  scale_x_date(breaks=as.Date(paste0(seq(3,12),"/01/2020"),format="%m/%d/%Y"),labels=function(d)strftime(d,"%b")) +
+  theme(legend.position="bottom")+
+  scale_color_manual(values=positivity_colours) +
+  facet_wrap("shortProvince") +
+  coord_cartesian(ylim=c(0,600)) +
+  labs(x=NULL,y="New daily people tested per 1M pop\nDaily test rate per 100k pop\n(7-day moving average)",
+       color="Test positivity",
+       caption="MountainMath, PHAC")
+```
+
+Unlike on the BCCDC graph, we now see that BC's testing rate rate compares unfavourably with many provinces. It's hard to directly compare the positivity rate off the graph, but we can just plot it separately.
+
+```{r}
+covid_data %>%
+  filter(shortProvince!="CAN") %>%
+  filter(Date>=as.Date("2020-03-01"),Date<=as.Date("2020-12-18")) %>%
+  mutate(p=factor(as.character(p) %>% replace_na("Not available"),levels=names(positivity_colours))) %>%
+  #mutate(p=factor(ifelse(is.na(p), "Not available", paste(p)), levels = c(levels(p), "Not available"))) %>%
+  mutate(shortProvince=factor(shortProvince,levels=c("BC",setdiff(unique(shortProvince),"BC") %>% sort))) %>%
+ggplot(aes(x=Date)) +
+  geom_line(aes(y=positivity,color=p,group=shortProvince),size=1.5) +
+  theme_minimal() +
+  theme( # remove the vertical grid lines
+           panel.grid.major.x = element_blank() ,
+           panel.grid.minor = element_blank() ,
+           # explicitly set the horizontal lines (or they will disappear too)
+           #panel.grid.major.y = element_line( size=.1, color="black" ),
+           axis.text.x = element_text(angle=60,hjust=0.5) 
+    ) +
+  scale_x_date(breaks=as.Date(paste0(seq(3,12),"/01/2020"),format="%m/%d/%Y"),labels=function(d)strftime(d,"%b")) +
+  theme(legend.position="bottom")+
+  scale_y_continuous(labels=scales::percent) +
+  scale_color_manual(values=positivity_colours) +
+  facet_wrap("shortProvince") +
+  labs(x=NULL,y="Positivity rate",
+       title="Provincial positicity rate",
+       subtitle="(number of confirmed cases by number of people tested)",
+       color="Test positivity",
+       caption="MountainMath, PHAC")
+```
+
+Alberta is in a league of it's own, but BC, MB, QC and SK also have dangerously elevated levels. Nunavut shot up during their recent outbreak, but thankfully seems to be getting things under control again. One should note here that the positivity rate shown here, as estimated from PHAC data, is given by number of cases divided by number of (unique) people tested. 
+
+The BCCDC should fix their graphics to insure their comparisons aren't misleading.
+
+## BC's real number of tests and positivity rate
+As we have seen, one issue that comes with using PHAC data is that PHAC reports on number of people tested, not the number of tests done. In general the number of people tested, and the positivity rate that's calculated via cases by number of people tested are the better metrics, but counting the number of tests, so double-counting people when they got multiple tests, is often easier to do.
+
+The BCCDC only reports on the number of tests and the positivity rate calculated as positive tests by number of total tests, and after a lot of pressure we now have weekly averages in the Situation Reports. Time for my 11yo to scrape out the data -- in exchange for fancy ice cream.
+
+```{r}
+ha_pop <- read_csv(here::here("data/ha_pop.csv"))
+
+test_data <- read_csv('49.96101594802126, 1910.3773584905662		
+48.966922622563494, 1989.2183288409706		
+47.972829297105726, 2159.0296495956873		
+46.97873597164796, 2165.0943396226417		
+45.984642646190196, 1795.1482479784368		
+44.95156526875369, 1595.0134770889488		
+43.97696396928529, 1419.1374663072777		
+42.982870643827525, 1358.490566037736		
+41.988777318369756, 1309.9730458221024		
+40.99468399291199, 1491.913746630728		
+39.981098641464854, 1443.3962264150944		
+38.987005316007085, 1073.4501347708895		
+37.99291199054932, 788.4097035040434		
+36.97932663910218, 697.4393530997304		
+36.00472533963379, 654.9865229110512		
+34.99113998818665, 576.1455525606468		
+33.97755463673952, 497.30458221024264		
+32.98346131128175, 430.5929919137466',col_names=c("Week","Value")) %>%
+  mutate(`Health Authority`="Fraser", Series="All Tests") %>%
+  bind_rows(read_csv('49.98050797401063, 1522.2371967654988
+48.966922622563494, 1576.8194070080863
+47.972829297105726, 1758.7601078167118
+46.99822799763733, 1722.3719676549867
+45.984642646190196, 1407.0080862533694
+44.99054932073243, 1206.8733153638814
+43.97696396928529, 1030.9973045822103
+42.982870643827525, 982.479784366577
+41.988777318369756, 976.4150943396228
+40.97519196692262, 1134.0970350404311
+40.000590667454226, 1225.067385444744
+38.987005316007085, 903.6388140161728
+37.99291199054932, 588.2749326145552
+36.998818665091555, 527.6280323450133
+36.00472533963379, 515.4986522911054
+35.01063201417602, 479.11051212938037
+33.997046662728884, 454.85175202156324
+33.02244536326049, 412.39892183288384',col_names=c("Week","Value")) %>%
+  mutate(`Health Authority`="Fraser",Series="Public Tests")) %>%
+  bind_rows(read_csv('49.98050797401063, 1789.0835579514826
+48.966922622563494, 1813.3423180592993
+47.972829297105726, 1928.5714285714287
+46.97873597164796, 2031.6711590296495
+46.00413467217956, 1898.2479784366578
+44.99054932073243, 1789.0835579514826
+43.95747194329592, 1649.5956873315363
+42.982870643827525, 1601.078167115903
+41.988777318369756, 1607.1428571428573
+40.99468399291199, 1898.2479784366578
+40.000590667454226, 1886.1185983827495
+38.987005316007085, 1540.4312668463613
+37.99291199054932, 1394.878706199461
+36.97932663910218, 1243.2614555256066
+36.00472533963379, 1128.032345013477
+34.99113998818665, 897.5741239892186
+34.01653868871825, 715.6334231805929
+33.002953337271116, 624.6630727762804',col_names=c("Week","Value")) %>%
+  mutate(`Health Authority`="Vancouver Coastal",Series = "All Tests")) %>%
+  bind_rows(read_csv('50, 1109.8382749326147
+48.986414648552866, 1091.6442048517522
+47.9923213230951, 1249.3261455525608
+46.97873597164796, 1231.132075471698
+45.96515062020082, 1115.9029649595686
+44.971057294743055, 1067.3854447439353
+43.97696396928529, 927.8975741239892
+42.96337861783816, 885.44474393531
+41.988777318369756, 988.5444743935311
+40.97519196692262, 1237.1967654986522
+39.981098641464854, 1516.1725067385446
+39.00649734199646, 1212.9380053908358
+37.99291199054932, 861.1859838274934
+36.97932663910218, 788.4097035040434
+35.98523331364442, 745.956873315364
+35.01063201417602, 654.9865229110512
+33.997046662728884, 600.4043126684637
+32.98346131128175, 545.822102425876',col_names=c("Week","Value")) %>%
+  mutate(`Health Authority`="Vancouver Coastal",Series = "Public Tests")) %>%
+  bind_rows(read_csv('49.98050797401063, 812.6684636118598
+48.966922622563494, 946.0916442048517
+47.9923213230951, 1073.4501347708895
+46.99822799763733, 1000.6738544474395
+45.984642646190196, 782.3450134770892
+44.971057294743055, 642.8571428571429
+43.99645599527466, 673.180592991914
+42.982870643827525, 739.8921832884098
+41.988777318369756, 909.7035040431269
+40.99468399291199, 879.3800539083559
+40.000590667454226, 788.4097035040434
+39.02598936798582, 533.6927223719676
+37.99291199054932, 454.85175202156324
+36.95983461311282, 400.26954177897596
+36.00472533963379, 418.46361185983824
+35.01063201417602, 369.9460916442049
+33.997046662728884, 351.75202156334217
+33.002953337271116, 297.16981132075443',col_names=c("Week","Value")) %>%
+  mutate(`Health Authority`="Vancouver Island",Series = "All Tests")) %>%
+  bind_rows(read_csv('50, 733.8274932614556
+48.986414648552866, 867.2506738544475
+47.9923213230951, 1000.6738544474395
+46.97873597164796, 909.7035040431269
+45.984642646190196, 715.6334231805929
+44.99054932073243, 582.210242587601
+43.99645599527466, 606.4690026954179
+42.982870643827525, 667.1159029649598
+41.96928529238039, 842.9919137466309
+40.97519196692262, 806.6037735849056
+39.981098641464854, 721.6981132075473
+38.987005316007085, 527.6280323450133
+37.97341996455995, 436.65768194070097
+36.97932663910218, 394.20485175202157
+35.98523331364442, 394.20485175202157
+35.01063201417602, 351.75202156334217
+33.997046662728884, 345.6873315363882
+33.002953337271116, 285.04043126684655',col_names=c("Week","Value")) %>%
+  mutate(`Health Authority`="Vancouver Island",Series = "Public Tests")) %>%
+  bind_rows(read_csv('49.96101594802126, 909.7035040431269
+48.986414648552866, 1000.6738544474395
+47.972829297105726, 927.8975741239892
+46.97873597164796, 739.8921832884098
+45.984642646190196, 612.533692722372
+44.99054932073243, 600.4043126684637
+43.97696396928529, 588.2749326145552
+42.96337861783816, 564.0161725067387
+41.96928529238039, 624.6630727762804
+40.97519196692262, 800.5390835579515
+39.96160661547549, 806.6037735849056
+38.96751329001772, 691.3746630727762
+37.99291199054932, 503.36927223719704
+37.01831069108092, 297.16981132075443
+35.98523331364442, 388.1401617250676
+34.99113998818665, 315.3638814016176
+33.97755463673952, 388.1401617250676
+33.002953337271116, 376.0107816711593',col_names=c("Week","Value")) %>%
+  mutate(`Health Authority`="Interior",Series = "All Tests")) %>%
+  bind_rows(read_csv('49.9415239220319, 897.5741239892186
+48.966922622563494, 976.4150943396228
+47.972829297105726, 921.832884097035
+46.97873597164796, 715.6334231805929
+45.96515062020082, 594.3396226415093
+44.971057294743055, 582.210242587601
+43.97696396928529, 557.9514824797845
+43.0023626698169, 539.757412398922
+41.988777318369756, 600.4043126684637
+40.97519196692262, 782.3450134770892
+40.000590667454226, 788.4097035040434
+38.987005316007085, 679.2452830188681
+37.99291199054932, 485.1752021563343
+36.97932663910218, 272.9110512129382
+35.98523331364442, 376.0107816711593
+34.97164796219728, 309.2991913746632
+33.97755463673952, 382.07547169811323
+33.002953337271116, 376.0107816711593',col_names=c("Week","Value")) %>%
+  mutate(`Health Authority`="Interior",Series = "Public Tests")) %>%
+  bind_rows(read_csv('49.96101594802126, 885.44474393531
+48.986414648552866, 873.3153638814017
+48.01181334908446, 897.5741239892186
+46.99822799763733, 661.0512129380056
+45.96515062020082, 460.91644204851764
+44.971057294743055, 424.52830188679263
+43.97696396928529, 473.045822102426
+42.982870643827525, 442.7223719676549
+41.96928529238039, 515.4986522911054
+41.01417601890136, 697.4393530997304
+40.000590667454226, 915.7681940700809
+38.987005316007085, 867.2506738544475
+37.99291199054932, 454.85175202156324
+36.97932663910218, 454.85175202156324
+36.00472533963379, 460.91644204851764
+34.99113998818665, 363.88140161725096
+33.97755463673952, 303.2345013477093
+33.002953337271116, 248.65229110512155',col_names=c("Week","Value")) %>%
+  mutate(`Health Authority`="Northern",Series = "All Tests")) %>%
+  bind_rows(filter(.,`Health Authority`=="Northern") %>% mutate(Series = "Public Tests")) %>%
+  mutate(Week=round(Week) %>% as.integer()) %>%
+  left_join(ha_pop %>% select(`Health Authority`,Population=Total),by="Health Authority") %>% 
+  mutate(Tests=Value*Population/100000)
+```
+
+Scraping the data gives us the opportunity to get a better reading on the number of public and private tests done in BC. This is an inexact science, scraping the data out of images will come with small errors, despite the 11yo's best efforts. And there are no graphs that show the total number of public tests, just the test rates, so we need to divide by the population to untangle this.
+
+```{r}
+ha_colours <- setNames(RColorBrewer::brewer.pal(8,"Dark2"),
+                       c("British Columbia","Fraser", "Vancouver Coastal", "Vancouver Island",  "Interior",  "Northern"))
+
+test_data %>%
+  left_join(filter(.,Series=="All Tests") %>% select(`Health Authority`,Week,Total=Tests),
+            by=c("Health Authority","Week")) %>%
+  bind_rows(filter(.,Series=="Public Tests") %>% 
+              mutate(Series="Private Tests",Tests=Total-Tests) %>% 
+              select(`Health Authority`,Week,Series,Tests,Total)) %>%
+  filter(Series %in% c("Private Tests","Public Tests")) %>%
+  ggplot(aes(x=Week,y=Tests,fill=`Health Authority`)) +
+  geom_bar(stat="identity") +
+  theme_bw() +
+  scale_fill_manual(values=ha_colours) +
+  scale_y_continuous(labels=scales::comma) +
+  facet_wrap("Series") +
+  labs(title="Public and private testing in BC",
+       x="Epi Week",
+       y="Number of tests",caption="BCCDC, scraped by special 11yo")
+```
+
+We see that private testing ramped up over time and now takes up almost 20k tests a week, compared to around 60k tests done via public testing. This allows us to also look at the ratio of private tests out of all tests, which helps us better understand how this impacts the positivity rate of the blended data over time.
+
+```{r}
+test_data %>%
+  left_join(filter(.,Series=="All Tests") %>% select(`Health Authority`,Week,Total=Tests),
+            by=c("Health Authority","Week")) %>%
+  bind_rows(filter(.,Series=="Public Tests") %>% 
+              mutate(Series="Private Tests",Tests=Total-Tests) %>% 
+              select(`Health Authority`,Week,Series,Tests,Total)) %>%
+  select(Week,`Health Authority`,Series,Tests) %>%
+  pivot_wider(names_from=Series,values_from=Tests) %>%
+  bind_rows((.) %>% select(-`Health Authority`) %>% group_by(Week) %>% summarize_all(sum) %>% 
+              mutate(`Health Authority`="British Columbia")) %>%
+  mutate(ratio=`Private Tests`/`All Tests`) %>%
+  ggplot(aes(x=Week,y=ratio,colour=`Health Authority`)) +
+  geom_line() +
+  scale_colour_manual(values=ha_colours) +
+  theme_bw() +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Share of BC testing that is private",
+       x="Epi Week",
+       y="Share of tests",caption="BCCDC, scraped by special 11yo")
+
+```
+
+BC's overall share of private testing has been between 20% and 30% starting epi week 42, so mid October. Vancouver Coastal's share of private testing has been significantly higher, Vancouver Island, Interior and Northern's share has been significantly lower.
+
+## Positivity rates
+Which brings us to the next step, looking at positivity rates. Private routine testing has very low positivity rates, they will be roughly at the levels of population prevalence of COVID-19. (Maybe slightly higher because of occasional false positives.) This means that the more private testing we are doing the lower the overall blended positivity rate that the BCCDC still reports on their dashboard will be.
+
+The Situation Reports have the weekly positivity rates, and there we can read off BC's real positivity rate for public testing. Although the graph they provide is awfully cramped and hard to get a clear idea, but nothing a little ice-cream fuelled scraping can't fix.
+
+```{r}
+bc_positivity <- read_csv('49.97067901234568, 0.08421985815602835
+48.97376543209876, 0.08102836879432623
+48.00617283950617, 0.07907801418439715
+46.95061728395061, 0.0854609929078014
+45.983024691358025, 0.08758865248226949
+44.95679012345679, 0.0728723404255319
+43.93055555555556, 0.05319148936170212
+42.96296296296296, 0.039893617021276584
+41.99537037037037, 0.029078014184397163
+40.96913580246913, 0.017730496453900707
+39.97222222222222, 0.015602836879432619
+39.004629629629626, 0.017730496453900707
+37.97839506172839, 0.02872340425531915
+36.95216049382716, 0.030141843971631208
+36.013888888888886, 0.029432624113475178
+34.98765432098766, 0.02464539007092198
+33.96141975308642, 0.025531914893617016
+33.023148148148145, 0.025709219858156024
+31.996913580246915, 0.020390070921985817
+31.029320987654323, 0.01719858156028367
+29.973765432098766, 0.012056737588652486
+29.006172839506174, 0.011702127659574471
+28.009259259259263, 0.010815602836879434
+26.983024691358025, 0.007624113475177316',col_names=c("Week","Value")) %>%
+  mutate(Series="Public",Metric="Positivity") %>%
+  mutate(Week=as.integer(round(Week))) %>%
+  bind_rows(read_csv('49.97067901234568, 0.06578014184397163
+49.00308641975308, 0.06329787234042553
+48.03549382716049, 0.06347517730496452
+46.97993827160494, 0.06595744680851062
+45.9537037037037, 0.06542553191489361
+44.986111111111114, 0.054255319148936165
+44.01851851851852, 0.03847517730496454
+42.992283950617285, 0.028368794326241134
+41.99537037037037, 0.021631205673758855
+40.998456790123456, 0.013652482269503538
+40.001543209876544, 0.013297872340425523
+38.9753086419753, 0.015248226950354604
+37.97839506172839, 0.020921985815602825
+36.89351851851852, 0.022163120567375877
+35.98456790123457, 0.023049645390070914
+34.98765432098766, 0.02056737588652481
+33.96141975308642, 0.022872340425531906
+32.99382716049383, 0.02393617021276595
+31.996913580246915, 0.019148936170212766
+30.97067901234568, 0.01684397163120567
+29.973765432098766, 0.011702127659574471
+29.006172839506174, 0.011347517730496456
+27.97993827160494, 0.010815602836879434
+26.983024691358025, 0.007269503546099301',col_names=c("Week","Value")) %>%
+  mutate(Series="All",Metric="Positivity") %>%
+  mutate(Week=as.integer(round(Week))))
+
+
+ggplot(bc_positivity,aes(x=Week,y=Value,color=Series)) +
+  geom_line(size=1.5) +
+  scale_y_continuous(labels=scales::percent) +
+  expand_limits(y=0.1) +
+  scale_color_manual(values=sanzo::duos$c071) +
+  theme_bw() +
+  labs(title="BC positivity rate",
+       x="Epi Week",y="Positivity rate",
+       colour = "Tests",
+       caption="BCCDC, Scraped by special 11yo")
+
+```
+
+
+
+```{r}
+ha_positivity <-  bind_rows(
+read_csv('50.02050963331262, 11.070652173913045
+49.015537600994406, 10.65217391304348
+48.0105655686762, 10.385869565217392
+47.005593536357985, 11.184782608695654
+45.98011187072716, 12.059782608695654
+44.97513983840895, 10.233695652173914
+43.990677439403356, 8.407608695652176
+42.98570540708515, 6.429347826086957
+41.980733374766935, 4.8315217391304355
+41.01678060907396, 2.891304347826088
+39.97078931013051, 2.282608695652174
+39.00683654443754, 2.5108695652173907
+38.00186451211933, 3.6521739130434785
+36.976382846488505, 3.804347826086957
+35.99192044748291, 4.2228260869565215
+35.00745804847732, 3.461956521739131
+34.00248601615911, 3.728260869565217
+32.977004350528276, 3.6141304347826093
+31.97203231821007, 3.005434782608697
+30.987569919204475, 3.1576086956521756',col_names=c("Week","Value")) %>%
+  mutate(Series="Public",`Health Authority`="Fraser",Metric="Positivity"),
+read_csv('50, 6.8858695652173925
+48.99502796768179, 6.8858695652173925
+48.0105655686762, 6.961956521739131
+47.005593536357985, 7.7608695652173925
+46.00062150403978, 7.608695652173914
+44.97513983840895, 6.353260869565219
+43.990677439403356, 4.375
+42.98570540708515, 2.929347826086957
+41.980733374766935, 2.586956521739131
+40.99627097576135, 2.054347826086957
+39.99129894344313, 1.7119565217391308
+39.00683654443754, 2.2065217391304355
+38.00186451211933, 3.195652173913043
+36.93536357986327, 3.728260869565217
+35.99192044748291, 3.461956521739131
+34.966438781852084, 3.1195652173913047
+33.96146674953387, 2.929347826086957
+32.977004350528276, 2.967391304347826
+31.951522684897455, 2.282608695652174
+30.96706028589186, 1.3695652173913047',col_names=c("Week","Value")) %>%
+  mutate(Series="Public",`Health Authority`="Vancouver Coastal",Metric="Positivity"),
+read_csv('49.97949036668738, 6.8858695652173925
+48.99502796768179, 6.505434782608697
+47.990055935363586, 5.782608695652174
+47.026103169670606, 4.717391304347826
+45.95960223741454, 3.6141304347826093
+44.99564947172156, 3.0815217391304355
+43.97016780609074, 2.130434782608697
+43.00621504039776, 1.9021739130434785
+41.980733374766935, 1.0271739130434785
+40.97576134244873, 0.4565217391304337
+39.9502796768179, 0.38043478260869534
+38.98632691112492, 0.4565217391304337
+38.00186451211933, 0.9891304347826075
+36.976382846488505, 0.49456521739130466
+36.012430080795525, 0.5326086956521738
+34.966438781852084, 0.7608695652173925
+34.00248601615911, 0.608695652173914
+32.977004350528276, 0.6847826086956523
+31.992541951522686, 0.7608695652173925
+31.008079552517092, 0.9510869565217401',col_names=c("Week","Value")) %>%
+  mutate(Series="Public",`Health Authority`="Interior",Metric="Positivity"),
+read_csv('49.97949036668738, 0.9510869565217401
+49.015537600994406, 1.2934782608695663
+47.990055935363586, 1.6358695652173925
+46.96457426973275, 1.5217391304347831
+46.0211311373524, 1.4456521739130448
+44.99564947172156, 0.8369565217391308
+43.97016780609074, 0.4565217391304337
+42.98570540708515, 0.1521739130434785
+42.001243008079555, 0.19021739130434767
+40.99627097576135, 0.1521739130434785
+38.98632691112492, 0.11413043478260754
+37.98135487880671, 0.2663043478260878
+36.976382846488505, 0.2663043478260878
+35.99192044748291, 0.2663043478260878
+34.9869484151647, 0.34239130434782616
+33.98197638284649, 0.38043478260869534
+32.977004350528276, 0.38043478260869534
+31.97203231821007, 0.11413043478260754
+30.987569919204475, 0.07608695652174013',col_names=c("Week","Value")) %>%
+  mutate(Series="Public",`Health Authority`="Vancouver Island",Metric="Positivity"),
+read_csv('49.97949036668738, 10.69021739130435
+49.03604723430702, 10.157608695652176
+47.969546302050965, 7.875000000000002
+47.005593536357985, 8.521739130434785
+45.98011187072716, 5.173913043478262
+44.97513983840895, 3.9565217391304355
+43.97016780609074, 2.7771739130434785
+42.98570540708515, 2.625
+41.980733374766935, 1.2173913043478262
+40.99627097576135, 0.9891304347826075
+39.9502796768179, 0.8369565217391308
+38.98632691112492, 1.5217391304347831
+37.98135487880671, 2.5108695652173907
+36.95587321317589, 2.8152173913043494
+35.9714108141703, 2.358695652173912
+35.02796768178993, 2.7010869565217384
+34.00248601615911, 1.5597826086956523
+32.977004350528276, 1.9402173913043477
+31.97203231821007, 1.5978260869565215
+30.987569919204475, 2.4728260869565233',col_names=c("Week","Value")) %>%
+  mutate(Series="Public",`Health Authority`="Northern",Metric="Positivity"),
+read_csv('49.979400749063664, 8.711956521739129
+49.01123595505618, 8.407608695652172
+47.9812734082397, 8.407608695652172
+46.99250936329588, 8.978260869565217
+46.00374531835206, 9.320652173913043
+44.99438202247191, 7.684782608695651
+43.98501872659176, 6.086956521739131
+42.99625468164794, 4.527173913043477
+41.98689138576779, 3.538043478260869
+40.97752808988764, 2.054347826086957
+39.98876404494382, 1.9402173913043477
+38.97940074906367, 1.9782608695652186
+38.01123595505618, 2.891304347826086
+37.00187265917603, 2.7771739130434785
+35.99250936329588, 3.271739130434783
+35.00374531835206, 2.7391304347826093
+33.99438202247191, 3.3858695652173907
+32.98501872659176, 3.4239130434782616
+31.975655430711612, 2.853260869565217
+30.98689138576779, 3.0815217391304337
+29.97752808988764, 1.5978260869565215',col_names=c("Week","Value")) %>%
+  mutate(Series="All",`Health Authority`="Fraser",Metric="Positivity"),
+read_csv('49.979400749063664, 4.146739130434783
+49.01123595505618, 4.146739130434783
+48.02247191011236, 4.4891304347826075
+47.01310861423221, 4.755434782608695
+45.98314606741573, 4.451086956521738
+44.99438202247191, 3.8423913043478244
+44.00561797752809, 2.358695652173912
+43.01685393258427, 1.6739130434782599
+42.00749063670412, 1.5978260869565215
+40.99812734082397, 1.3315217391304355
+39.98876404494382, 1.3695652173913047
+39, 1.75
+37.99063670411985, 2.1684782608695645
+36.9812734082397, 2.4728260869565215
+36.01310861423221, 2.320652173913043
+34.9625468164794, 2.320652173913043
+33.99438202247191, 2.4347826086956523
+32.96441947565543, 2.625
+31.99625468164794, 2.2065217391304355
+30.945692883895134, 1.2173913043478262
+29.99812734082397, 0.7608695652173925',col_names=c("Week","Value")) %>%
+  mutate(Series="All",`Health Authority`="Vancouver Coastal",Metric="Positivity"),
+read_csv('49.95880149812734, 6.885869565217391
+48.99063670411985, 6.163043478260869
+48.00187265917603, 5.6684782608695645
+46.951310861423224, 4.375
+46.00374531835206, 3.461956521739131
+44.99438202247191, 2.929347826086957',col_names=c("Week","Value")) %>%
+  mutate(Series="All",`Health Authority`="Interior",Metric="Positivity"),
+read_csv('49.93820224719101, 0.9510869565217384
+48.99063670411985, 1.2554347826086971
+47.9812734082397, 1.5978260869565215
+46.97191011235955, 1.4076086956521738
+46.00374531835206, 1.3315217391304355
+44.99438202247191, 0.7228260869565215
+43.98501872659176, 0.38043478260869534
+',col_names=c("Week","Value")) %>%
+  mutate(Series="All",`Health Authority`="Vancouver Island",Metric="Positivity")
+) %>%
+  mutate(Week=as.integer(round(Week))) %>%
+  bind_rows(filter(.,`Health Authority`=="Northern") %>% mutate(Series="All")) %>%
+  group_by(`Health Authority`,Metric) %>%
+  mutate(Value=Value/100) %>%
+  pivot_wider(names_from=Series,values_from=Value) %>%
+  mutate(All=coalesce(All,Public)) %>%
+  filter(Week>=31)
+```
+
+We can take this down to the Health Region level and compare the real public positivity rate to the one generally reported by the BCCDC on the dashboard. Again, the graph in the Situation Report is not very useful for this, so we scraped and reshaped the data.
+
+```{r}
+ha_positivity %>%
+  pivot_longer(c("All","Public")) %>%
+ggplot(aes(x=Week,y=value,color=name)) +
+  geom_line(size=1.5) +
+  theme_bw() +
+  scale_color_manual(values=sanzo::duos$c071) +
+  scale_y_continuous(labels=scales::percent) +
+  facet_wrap("`Health Authority`") +
+  labs(title="Health Authority positivity rate",
+       x="Epi Week",y="Weekly positivity rate",colour="Tests")
+```
+Of note is that the positivity rate of public testing does not always move in sync with the blended positivity rate that includes private testing. Which should make us extra careful when trying to discern trends of the public testing positivity rate that we are principally interested in from trends in the overall blended rate that the BCCDC reports. This graph also answers the [question by Tyler Olson](https://twitter.com/akurjata/status/1339741810025852928?s=20) if any other Health Region hit the (7-day average) 10% positivity mark before Northern did very recently. Just looking at the dashboard data we might be inclined to say that no Health Region got over 10%. But we are of course interested in public testing positivity rate, and that has been above 10% in Fraser for several weeks.
+
+## Upshot
+The upshot of this post is simple: Report relevant metrics. Don't report metrics that are likely going to mislead people because they are convoluted and hard to interpret because they don't address the relevant questions.
+
+When the metrics you report are so confusing that your own team misuses them in very misleading BCCDC graphics, it's maybe time to stop reporting the blended private/public positivity rate altogether and just report the two separately.
+
+Testing matters, and testing data matters. Almost a year into the pandemic, and BC main dashboard and public data download is still reporting largely uninterpretable testing data. The only useful testing data we are getting is weekly aggregates that have to be manually scraped out of images. 
+
+If you are interested in the data, it's embedded [in the code for this post](https://github.com/mountainMath/doodles/blob/master/content/posts/2020-12-21-covid-testing-data-in-bc.Rmarkdown). That was the easiest way to grab it form the image-scraping tool my 11yo used.
+
