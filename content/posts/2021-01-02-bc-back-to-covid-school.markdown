@@ -139,4 +139,4 @@ We could, if the BCCDC would choose to do so, monitor community transmissions at
 
 At the same time we should support remote learning options any family that decides to pull their children out of school because e.g. they have immune-compromised household members.
 
-
+As usual, the code to pull in the data and make the graphs is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-02-bc-back-to-covid-school.Rmarkdown) in case anyone wants to reproduce or adapt them.
