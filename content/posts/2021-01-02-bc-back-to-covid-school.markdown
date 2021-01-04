@@ -116,7 +116,7 @@ For most of it there is no way to verify the information provided in the slide, 
 
 This shows that out of the roughly 695 cases of children below 20 that were linked to a probable transmission case and setting, about 116, or 17%, were identified to be in a school setting. Given that this includes cases of non-school aged children and young adults, and this also does not take into consideration of cases where transmissions were determined to possibly have occurred in multiple settings (labelled by BCCDC as "unnamed setting"), for example a case where the transmission may have occurred within a household or within school, the claim that fewer than 10% of transmissions happened in school seems to imply that almost all teachers were determined to have contracted COVID-19 outside of school and on top of that transmission patterns have shifted or are different in Vancouver Coastal compared to overall BC.
 
-## Modelling update slide 18
+## Modelling update slide 18 
 ![page 18](/images/bc_school_p18.png)
 
 
