@@ -93,11 +93,11 @@ bc_cases_age_date %>%
 
 This failure to protect our seniors is amplified by the high death rate of cases in that age group, and by the fact that many live in Long Term Care homes and are unable to protect themselves and instead have to rely on public health guidance and protocols to protect them. And we failed them miserably.
 
-For families with immune-compromised or otherwise vulnerable household members this means parents have to decide whether to send children back to school on January 4th, without the benefit of better gauging the effect of the holidays. And without even knowing the case counts for the the three previous days, as BC is not reporting cases on weekends or holidays and four days of data will only come in once school is out on Monday afternoon.
+For families with immune-compromised or otherwise vulnerable household members this means parents have to decide whether to send children back to school on January 4th, without the benefit of better gauging the effect of the holidays. And without even knowing the case counts for the three previous days, as BC is not reporting cases on weekends or holidays and four days of data will only come in once school is out on Monday afternoon.
 
 The latest reasoning behind the official BC school guidelines are explained in the [December 23 modelling presentation](https://news.gov.bc.ca/files/COVID19_Monthly_Update_Dec_2020.pdf) starting on page 13, so let's take a closer look.
 
-## Modelling upate slide 14
+## Modelling update slide 14
 
 ![page 14](/images/bc_school_p14.png)
 
@@ -149,7 +149,7 @@ And we only have data back to the last two weeks of October, so we are missing a
 Which leaves us with the last stat that 1 in 100 school age children got tested for COVID-19. While we don't have data, the [Situation Reports](http://www.bccdc.ca/Health-Info-Site/Documents/COVID_sitrep/Week_50_BC_COVID-19_Situation_Report.pdf) has a graph depicting this, and we can scrape out the data, or for our purpose just eyeball it off the graph. It shows an "average weekly testing rate per 100,000" of roughly 1000 for each of the three school age children age groups for Phase 3b, so starting September 13. That's not quite the same thing as saying 1 in 100 school age children got tested per week as some children got tested more than once, for example taking both, a NPS and gargle test. But accounting for that, plus noting that there were 15 weeks in the school year, we get to roughly 1 in 10 children getting tested and not 1 in 100 as claimed in the provincial modelling report. Mystery solved, although this exercise makes it abundantly clear how hard it is to fix provincial incompetency without access to proper data.
 
 
-## Modelling upate slide 15
+## Modelling update slide 15
 ![page 15](/images/bc_school_p15.png)
 
 ```{r}
@@ -262,7 +262,7 @@ bind_rows(sd1 %>%
 
 
 
-## Modelling upate slide 16
+## Modelling update slide 16
 The following slides try to fill in some of the missing context in the previous slide by looking at schools in Vancouver Coastal and Fraser. 
 
 ![page 16](/images/bc_school_p16.png)
@@ -286,7 +286,7 @@ But taking the information at face value it leaves us to guess about 400 out of 
 Overall, this slide raises more questions than it answers. And the rotated tiled square visualization does not help.
 
 
-## Modelling upate slide 17
+## Modelling update slide 17
 ![page 17](/images/bc_school_p17.png)
 This slide has more details on the settings in which cases among students and staff got infected. The first bullet states that they were able to link 89% of all school related case to another case. The second is probably the most alarming, pointing out that one quarter of all school related cases were in staff. So staff are over-represented in school cases, which makes sense given our testing protocol that focuses exclusively on symptomatic cases likely misses about half of student cases.
 
@@ -324,7 +324,7 @@ ggplot(pd,aes(x=fct_rev(`Exposure setting`),y=diff)) +
 
 This shows that out of the roughly `r round(sum(pd$diff))` cases of children below 20 that were linked to a probable transmission case and setting, about `r round(sum(sd$diff))`, or `r scales::percent(sum(sd$diff)/sum(pd$diff))`, were identified to be in a school setting. Given that this includes cases of non-school aged children and young adults, and this also does not take into consideration of cases where transmissions were determined to possibly have occurred in multiple settings (labelled by BCCDC as "unnamed setting"), for example a case where the transmission may have occurred within a household or within school, the claim that fewer than 10% of transmissions happened in school seems to imply that almost all teachers were determined to have contracted COVID-19 outside of school and on top of that transmission patterns have shifted or are different in Vancouver Coastal compared to overall BC.
 
-## Modelling upate slide 18
+## Modelling update slide 18
 ![page 18](/images/bc_school_p18.png)
 ```{r}
 get_enrolment_data <- function(){
