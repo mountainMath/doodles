@@ -1,0 +1,227 @@
+---
+title: Vancouver's pandemic weather
+author: Jens von Bergmann
+date: '2021-01-06'
+slug: vancouver-s-pandemic-weather
+categories:
+  - covid-19
+  - Vancouver
+tags: []
+description: "The weather during the 2020 pandemic, especially the fall and winter, has felt worse than useual. How much of that is just perception and how much is real?"
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2021-01-06-vancouver-s-pandemic-weather_files/figure-html/pandemic-daytime-weather.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+The pandemic changed our lives and behaviours. With physical distancing, various degrees of restrictions and people avoiding the 3Cs: crowded places, close-contact settins, confined and enclosed spaces, people have been focusing on spending time outdoors whenever possible. I certainly pay a lot more attention to the weather than I used to, and Vancouver's fall and winter has felt especially miserable so far.
+
+But has the weather actually been worse or is it just my warped perception? That's an easy question to check. Environment Canada has historical weather data, we we can see how 2020 has compared to the previous years.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE,
+	fig.width = 8
+)
+library(tidyverse)
+library(weathercan)
+library(suncalc)
+```
+
+
+```{r}
+#stations_search(name = "Vancouver",interval="hour") %>% filter(end>=2020)
+d1 <- weather_dl("51442",interval="day",start="2010-01-01")
+d2 <- weather_dl("51442",interval="hour",start="2010-01-01")
+#range(d2$date)
+```
+
+
+First up, did it rain more than other years. My feeling says Yes, but the data begs to differ.
+
+```{r}
+pd <- d1 %>% 
+  mutate(w=strftime(date,"%U")) %>%
+  mutate(y=max(2020,year)) %>%
+  mutate(Date=as.Date(paste0(y,"-",month,"-",day))) %>%
+  group_by(month,year) %>%
+  summarize(across(c("total_precip","total_rain"),sum,na.rm=TRUE),
+            mean_temp = mean(mean_temp,na.rm=TRUE),
+            max_temp = max(max_temp,na.rm=TRUE),
+            min_temp = min(min_temp,na.rm=TRUE),
+            .groups="drop") %>%
+  mutate(Month=strftime(as.Date(paste0("2020-",month,"-01")),"%B")) %>%
+  mutate(Month=factor(Month,levels=strftime(as.Date(paste0("2020-",seq(1,12),"-01")),"%B"))) %>%
+  mutate(y=as.integer(year)) %>%
+  filter(y>=2010,y!=2021) %>%
+  mutate(Year=factor(y,levels=seq(min(y),max(y))))
+
+ggplot(pd,aes(x=Month,y=total_rain,group=Year,fill=Year==2020)) +
+  #geom_bar(stat = "summary", fun.y = "mean",fill="black",alpha=0.5,aes(group=Month)) +
+  geom_boxplot(fill=NA,aes(group=Month),outlier.alpha=0,coef=0,data=~filter(.,Year!=2020)) +
+  geom_bar(stat="identity",position="dodge",alpha=0.9) +
+  theme_bw() +
+  scale_fill_manual(values=sanzo::duos$c007 %>% rev,labels=c("TRUE"="2020","FALSE"="Other years")) +
+  theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1)) +
+  labs(title="Vancouver's pandemic weather in context",
+       x=NULL,y="Total amount of rain (mm)",fill=NULL,
+       caption="MountainMath, Environment Canada (YVR station)")
+```
+
+Rainfall has been mostly average. We started out with a wetter-than-usual January, but that was well before we started to take the pandemic seriously. When the pandemic hit in March and April we were aided by exceptionally dry weather. June was wetter than normal and October gave us a bit of relief, but otherwise the total rainfall was well within the expected range.
+
+How about the temperature?
+
+```{r}
+d1 %>%
+  filter(year!="2021") %>%
+  mutate(Date=as.Date(paste0("2020-",month,"-",day))) %>%
+ggplot(aes(x=Date,y=mean_temp,group=year,color=year==2020)) +
+  #geom_bar(stat = "summary", fun.y = "mean",fill="black",alpha=0.5,aes(group=Month)) +
+  #geom_boxplot(fill=NA,aes(group=Month),outlier.alpha=0,coef=0,data=~filter(.,Year!=2020)) +
+  geom_ribbon(aes(ymin=min_temp,ymax=max_temp,fill=year==2020),color=NA,alpha=0.2,data=~filter(.,year!=2020)) +
+  geom_ribbon(aes(ymin=min_temp,ymax=max_temp,fill=year==2020),color=NA,alpha=0.2,data=~filter(.,year==2020)) +
+  geom_line(data=~filter(.,year!=2020)) +
+  geom_line(data=~filter(.,year==2020)) +
+  theme_bw() +
+  scale_fill_manual(values=sanzo::duos$c007 %>% rev,labels=c("TRUE"="2020","FALSE"="Other years")) +
+  scale_colour_manual(values=sanzo::duos$c007 %>% rev,labels=c("TRUE"="2020","FALSE"="Other years"),
+                      guide=FALSE) +
+  theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1)) +
+  labs(title="Vancouver's pandemic weather in context",
+       x=NULL,y="Temperature range and mean",fill=NULL,
+       caption="MountainMath, Environment Canada (YVR station)")
+
+```
+
+For most of the year temperatures have been fairly average, but the pandemic winter in Vancouver as been comparably mild. It's hard to complain about temperature.
+
+But how about sunshine? Or maybe the problem is less the total amount of precipitation and more that it was drizzling nonstop? It sure feels like it was. To answer that we turn to hourly data and check the weather categorization. Here are the top 10 categories over the past few years.
+
+```{r}
+d2 %>%
+  mutate(weather=na_if(weather,"")) %>%
+  arrange(date) %>%
+  fill(weather) %>%
+  filter(!is.na(weather),weather!="") %>%
+  count(weather) %>%
+  mutate(Share=n/sum(n)) %>%
+  select(Weather=weather,Share) %>%
+  arrange(-Share) %>%
+  top_n(10) %>%
+  mutate(Share=scales::percent(Share)) %>%
+  knitr::kable()
+```
+
+To make sense of the categories we group Mainly Clear and Clear, and classify anything containing the word Rain as Rain. We keep a separate category for Foggy, Drizzle, Snow and also keep a category for Smoke/Haze. We keep Cloudy and Mostly Cloudy as separate categories. Beggars can't be choosers and Mostly Cloudy carries the promise of occasional sun rays, which can make all the difference.
+
+
+```{r}
+wl <- c("Clear","Mostly cloudy","Cloudy","Foggy","Drizzle","Rainy","Smoke/Haze","Snow","Other")
+
+d2 %>%
+  mutate(weather=na_if(weather,"")) %>%
+  arrange(date) %>%
+  fill(weather) %>%
+  filter(!is.na(weather),weather!="") %>%
+  filter(year!="2021") %>%
+  mutate(w=case_when(grepl("Clear",weather,ignore.case = TRUE) ~ "Clear",
+                     grepl("Mostly Cloudy",weather,ignore.case = TRUE) ~ "Mostly cloudy",
+                    grepl("rain|Thunderstorms",weather,ignore.case = TRUE) ~ "Rainy",
+                    grepl("drizzle",weather,ignore.case = TRUE) ~ "Drizzle",
+                    grepl("Smoke|Haze",weather,ignore.case = TRUE) ~ "Smoke/Haze",
+                    grepl("cloud",weather,ignore.case = TRUE) ~ "Cloudy",
+                    grepl("Fog",weather,ignore.case = TRUE) ~ "Foggy",
+                    grepl("Snow|Ice",weather,ignore.case = TRUE) ~ "Snow",
+                    TRUE ~ "Other")) %>%
+  count(month,year,w) %>%
+  group_by(month,year) %>%
+  mutate(share=n/sum(n)) %>%
+  mutate(Month=strftime(as.Date(paste0("2020-",month,"-01")),"%B")) %>%
+  mutate(Month=factor(Month,levels=strftime(as.Date(paste0("2020-",seq(1,12),"-01")),"%B"))) %>%
+  mutate(w=factor(w,levels=wl)) %>%
+  ggplot(aes(x=year,y=share,fill=w)) +
+  geom_bar(stat="identity") +
+  facet_wrap("Month") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=90,vjust=0.5)) +
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_manual(values=c("Clear"="gold","Mostly cloudy"="#FAFAD2","Cloudy"="grey88","Foggy"="grey70",
+                             "Drizzle"="grey55","Rainy"="grey40","Smoke/Haze"="#AB9C73",
+                             "Snow"="#ffe2e6")) +
+  labs(title="Vancouver's pandemic weather in context",
+       x=NULL,y="Share of time with weather",fill="Weather",
+       caption="MountainMath, Environment Canada (YVR station)")
+  
+```
+
+Overall it looks like we can't complain. By Vancouver standards, we had a good amount of clear skies this past year and did not have more rainy times than usual. Yes, there was that smoky period in September. June was more cloudy than usual. But other than that this past year looks pretty good.
+
+But maybe that's because it rained a lot during the daytime this past year, whereas it usually rains at night in Vancouver? Maybe that's reaching for straws, but that's easy enough to check. Let's only count daytime hours, so times between sunset and sunrise.
+
+
+```{r pandemic-daytime-weather}
+sunrise_times <- getSunlightTimes(unique(d2$date),d2$lat[1],d2$lon[1],tz="America/Vancouver") %>%
+  as_tibble() %>%
+  select(date,sunrise,sunset)
+
+d2 %>%
+  mutate(weather=na_if(weather,"")) %>%
+  arrange(date) %>%
+  fill(weather) %>%
+  filter(!is.na(weather),weather!="") %>%
+  filter(year!="2021") %>%
+  left_join(sunrise_times,by="date") %>%
+  filter(time>=sunrise,time<=sunset) %>%
+  mutate(w=case_when(grepl("Clear",weather,ignore.case = TRUE) ~ "Clear",
+                     grepl("Mostly Cloudy",weather,ignore.case = TRUE) ~ "Mostly cloudy",
+                    grepl("rain|Thunderstorms",weather,ignore.case = TRUE) ~ "Rainy",
+                    grepl("drizzle",weather,ignore.case = TRUE) ~ "Drizzle",
+                    grepl("Smoke|Haze",weather,ignore.case = TRUE) ~ "Smoke/Haze",
+                    grepl("cloud",weather,ignore.case = TRUE) ~ "Cloudy",
+                    grepl("Fog",weather,ignore.case = TRUE) ~ "Foggy",
+                    grepl("Snow|Ice",weather,ignore.case = TRUE) ~ "Snow",
+                    TRUE ~ "Other")) %>%
+  count(month,year,w) %>%
+  group_by(month,year) %>%
+  mutate(share=n/sum(n)) %>%
+  mutate(Month=strftime(as.Date(paste0("2020-",month,"-01")),"%B")) %>%
+  mutate(Month=factor(Month,levels=strftime(as.Date(paste0("2020-",seq(1,12),"-01")),"%B"))) %>%
+  mutate(w=factor(w,levels=wl)) %>%
+  ggplot(aes(x=year,y=share,fill=w)) +
+  geom_bar(stat="identity") +
+  facet_wrap("Month") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=90,vjust=0.5)) +
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_manual(values=c("Clear"="gold","Mostly cloudy"="#FAFAD2","Cloudy"="grey88","Foggy"="grey70",
+                             "Drizzle"="grey55","Rainy"="grey40","Smoke/Haze"="#AB9C73",
+                             "Snow"="#ffe2e6")) +
+  labs(title="Vancouver's daytime pandemic weather in context",
+       x=NULL,y="Share of time with weather between sunrise and sunset",fill="Weather",
+       caption="MountainMath, Environment Canada (YVR station)")
+```
+
+And again, there is not that much to complain about in the data. April and August look spectacularly sunny, overall the fall and winter appear to we well within historical patterns.
+
+Looks like a grudgingly have to admit that my gripes with Vancouver pandemic weather is mostly my perception and there is no evidence that we have been hit with particularly poor weather this past year.
+
+As usual, the code for this post [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-02-bc-back-to-covid-school.Rmarkdown) in case anyone wants to reproduce or adapt it to look at other places in Canada (or elsewhere in the world that has similar weather data).
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
