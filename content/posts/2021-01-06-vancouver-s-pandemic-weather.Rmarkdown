@@ -16,7 +16,7 @@ linktitle: ''
 type: "post"
 ---
 
-The pandemic changed our lives and behaviours. With physical distancing, various degrees of restrictions and people avoiding the 3Cs: crowded places, close-contact settins, confined and enclosed spaces, people have been focusing on spending time outdoors whenever possible. I certainly pay a lot more attention to the weather than I used to, and Vancouver's fall and winter has felt especially miserable so far.
+The pandemic changed our lives and behaviours. And our perceptions of things. With physical distancing, various degrees of restrictions and people avoiding the 3Cs: crowded places, close-contact settins, confined and enclosed spaces, people have been focusing on spending time outdoors whenever possible. I certainly pay a lot more attention to the weather than I used to, and Vancouver's fall and winter has felt especially miserable so far.
 
 But has the weather actually been worse or is it just my warped perception? That's an easy question to check. Environment Canada has historical weather data, we we can see how 2020 has compared to the previous years.
 
@@ -55,8 +55,8 @@ pd <- d1 %>%
             max_temp = max(max_temp,na.rm=TRUE),
             min_temp = min(min_temp,na.rm=TRUE),
             .groups="drop") %>%
-  mutate(Month=strftime(as.Date(paste0("2020-",month,"-01")),"%B")) %>%
-  mutate(Month=factor(Month,levels=strftime(as.Date(paste0("2020-",seq(1,12),"-01")),"%B"))) %>%
+  mutate(Month=strftime(as.Date(paste0("2020-",month,"-01")),"%b")) %>%
+  mutate(Month=factor(Month,levels=strftime(as.Date(paste0("2020-",seq(1,12),"-01")),"%b"))) %>%
   mutate(y=as.integer(year)) %>%
   filter(y>=2010,y!=2021) %>%
   mutate(Year=factor(y,levels=seq(min(y),max(y))))
@@ -67,13 +67,13 @@ ggplot(pd,aes(x=Month,y=total_rain,group=Year,fill=Year==2020)) +
   geom_bar(stat="identity",position="dodge",alpha=0.9) +
   theme_bw() +
   scale_fill_manual(values=sanzo::duos$c007 %>% rev,labels=c("TRUE"="2020","FALSE"="Other years")) +
-  theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1)) +
+  #theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1)) +
   labs(title="Vancouver's pandemic weather in context",
        x=NULL,y="Total amount of rain (mm)",fill=NULL,
        caption="MountainMath, Environment Canada (YVR station)")
 ```
 
-Rainfall has been mostly average. We started out with a wetter-than-usual January, but that was well before we started to take the pandemic seriously. When the pandemic hit in March and April we were aided by exceptionally dry weather. June was wetter than normal and October gave us a bit of relief, but otherwise the total rainfall was well within the expected range.
+Rainfall has been mostly average. We started out with a wetter-than-usual January, but that was well before we started to take the pandemic seriously. When the pandemic hit in March and April we were aided by exceptionally dry weather. June was wetter than normal and October gave us a bit of relief, but overall the total rainfall was well within the expected range.
 
 How about the temperature?
 
@@ -89,10 +89,11 @@ ggplot(aes(x=Date,y=mean_temp,group=year,color=year==2020)) +
   geom_line(data=~filter(.,year!=2020)) +
   geom_line(data=~filter(.,year==2020)) +
   theme_bw() +
+  scale_x_date(breaks="month",labels=function(d)strftime(d,"%b")) +
   scale_fill_manual(values=sanzo::duos$c007 %>% rev,labels=c("TRUE"="2020","FALSE"="Other years")) +
   scale_colour_manual(values=sanzo::duos$c007 %>% rev,labels=c("TRUE"="2020","FALSE"="Other years"),
                       guide=FALSE) +
-  theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1)) +
+  #theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1)) +
   labs(title="Vancouver's pandemic weather in context",
        x=NULL,y="Temperature range and mean",fill=NULL,
        caption="MountainMath, Environment Canada (YVR station)")
@@ -209,7 +210,7 @@ d2 %>%
 
 And again, there is not that much to complain about in the data. April and August look spectacularly sunny, overall the fall and winter appear to we well within historical patterns.
 
-Looks like a grudgingly have to admit that my gripes with Vancouver pandemic weather is mostly my perception and there is no evidence that we have been hit with particularly poor weather this past year.
+Looks like I grudgingly have to admit that my gripes with Vancouver pandemic weather is mostly my perception and there is no evidence that we have been hit with particularly poor weather this past year.
 
 As usual, the code for this post [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-02-bc-back-to-covid-school.Rmarkdown) in case anyone wants to reproduce or adapt it to look at other places in Canada (or elsewhere in the world that has similar weather data).
 
