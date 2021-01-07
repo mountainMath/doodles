@@ -7,7 +7,7 @@ categories:
   - covid-19
   - Vancouver
 tags: []
-description: "The weather during the 2020 pandemic, especially the fall and winter, has felt worse than useual. How much of that is just perception and how much is real?"
+description: "The weather during the 2020 pandemic, especially the fall and winter, has felt worse than usual. How much of that is just perception and how much is real?"
 featured: ''
 images: ["https://doodles.mountainmath.ca/posts/2021-01-06-vancouver-s-pandemic-weather_files/figure-html/pandemic-daytime-weather-1.png"]
 featuredalt: ""
@@ -75,13 +75,13 @@ As usual, the code for this post [available on GitHub](https://github.com/mounta
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-01-06 17:06:21 PST"
+## [1] "2021-01-06 18:25:36 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [dde0147] 2021-01-06: pandemic weather tweaks
+## Head:     [51cc423] 2021-01-07: fix twitter/og image
 ```
 
 ```
