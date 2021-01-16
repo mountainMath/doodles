@@ -1,0 +1,390 @@
+---
+title: Capital Gains Income
+author: Jens von Bergmann
+date: '2021-01-15'
+slug: capital-gains-income
+categories:
+  - CANSIM
+  - Vancouver
+  - cancensus
+  - taxes
+tags: []
+description: "Income concetps in Canada generally only include regular income and in particular miss (taxable) capital gains. But capital gains makes up an important income source and we should pay more attention to it."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2021-01-15-capital-gains-income_files/figure-html/avg-cap-gains-map-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE,
+	fig.width = 8
+)
+library(tidyverse)
+library(cancensus)
+library(cansim)
+library(tongfen)
+library(mountainmathHelpers)
+library(patchwork)
+```
+
+We have [previously look at T1FF tax data](https://doodles.mountainmath.ca/blog/2020/04/23/census-tract-level-t1ff-tax-data/) which is an extremely rich annual administrative data source. The [cansim tables](https://www150.statcan.gc.ca/n1/en/surveys/4105) have a range of variables to inform about incomes of individuals, families (sliced by number of children, including zero children), low income statistics, and just statistics about the number of taxfilers and dependants by age.
+
+It's available on cansim for Canada overall, the provinces and CMAs/CAs. That's great, but sometimes it's nice to have finer geographic detail. Especially when trying to understand neighbourhood change, census tract level data on incomes and basic demographics is extremely valuable, and is now [available on CensusMapper for all years 2000 through 2018 at the census tract level](https://doodles.mountainmath.ca/blog/2020/04/23/census-tract-level-t1ff-tax-data/).
+
+When working with data we always need to pay attention to the definitions, and income data is no difference. Income data generally only contains **regular income sources**, and some income data, like for example capital gains income, is excluded. But capital gains income can be quite sizable, so it's a good idea to take a more detailed look at it.
+
+### Capital Gains Income
+Typically people only have sporadic capital gains income, if at all. For that reason it is not included in income statistics, but in aggregate it can have a substantial effect.
+
+```{r}
+# only needed for cutting down to CMAs
+pop_data <- get_cansim("17-10-0135") %>%
+    normalize_cansim_values(factors = TRUE,default_month = 7) %>%
+  filter(Sex=="Both sexes",`Age group`=="All ages") %>%
+  select(Date,GeoUID,GEO,Population=VALUE)
+
+
+cap_gains_data <- get_cansim("11-10-0034") %>%
+  normalize_cansim_values(factors=TRUE,default_month = 7) %>%
+  filter(Date>=as.Date("2000-01-01"))
+
+max_date <- max(cap_gains_data$Date)
+
+inflation_data <- get_cansim_vector("v41690973",start_time = min(cap_gains_data$Date)) %>%
+  normalize_cansim_values() %>%
+  select(Date,CPI=VALUE) %>%
+  mutate(Index=CPI/filter(.,Date==max_date)$CPI)
+
+region_grep_string <- "Vanc|Toron|Calg|Montr|Canada"
+
+plot_data <- cap_gains_data %>% filter(Sex=="Both sexes",
+                           `Income taxes, deductions and benefits` %in% c("Capital gains received","Total income"),
+                           `Individuals and income` %in% c("Dollar amount claimed on income tax form","Number of tax filers and dependants")) %>%
+  mutate(name=paste0(`Income taxes, deductions and benefits`, " - ",`Individuals and income`)) %>%
+  select(GeoUID,GEO,Date,name,value=VALUE) %>%
+  pivot_wider() %>%
+  left_join(pop_data %>% select(GeoUID,name=GEO) %>% unique(), by="GeoUID") %>%
+  left_join(inflation_data,by="Date") %>%
+  mutate(cap_gains=`Capital gains received - Dollar amount claimed on income tax form`/`Total income - Number of tax filers and dependants`/Index,
+         rel_cap_gains=`Capital gains received - Dollar amount claimed on income tax form`/`Total income - Dollar amount claimed on income tax form`) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(grepl("\\(CMA\\)",name) | Name=="Canada") %>%
+  filter(grepl("\\(CMA\\)",name)) %>%
+  ungroup() %>% 
+  mutate(Name = fct_reorder(Name, `Total income - Number of tax filers and dependants`, tail, n = 1, .desc = TRUE))
+
+geos <- plot_data %>% filter(grepl(region_grep_string, Name)) %>% pull(Name) %>% unique %>% as.character()
+
+region_colours <- setNames(sanzo::quads$c341,geos)
+
+ggplot(plot_data, aes(x=Date,y=cap_gains,color=Name,group=Name)) +
+  geom_line(data=~filter(.,!(Name %in% geos)),color="grey",size=0.1) +
+  geom_line(data=~filter(.,Name %in% geos)) +
+  scale_x_date(breaks=cap_gains_data$Date %>% unique,labels = function(d)strftime(d,"%Y")) +
+  scale_y_continuous(labels=scales::dollar) +
+  scale_color_manual(values=region_colours) +
+  theme_bw() +
+  theme(legend.position = "bottom", legend.box = "vertical") +
+  labs(x=NULL,color=NULL,linetype=NULL,
+       title="Average capital gains income per taxfiler and dependant",
+       y=paste0("Constant ",strftime(max_date,"%Y")," dollars"),
+       caption="MountainMath, StatCan Tables 11-10-0034, vector v41690973") 
+
+```
+
+Of note here is that this only includes **taxable capital gains**, tax-free capital gains from e.g. the sale of a principal residence is not captured in this.
+
+There are some interesting movements, traditionally Toronto saw the highest capital gains relieved per taxfiler, but Vancouver overtook Toronto between 2014 and 2015 and the spread increased in the following years, possibly fuelled by Vancouver's large real estate gains and boosted by the [mandatory declaration of principal residence sales starting in the 2016 tax year](https://www.canada.ca/en/revenue-agency/programs/about-canada-revenue-agency-cra/federal-government-budgets/budget-2016-growing-middle-class/reporting-sale-your-principal-residence-individuals.html) which might have increased compliance with taxable capital gains declarations on non-primary residence sales.
+
+Another way to look at the data is to show the percentage of capital gains received out of the total income (plus capital gains received).
+
+```{r}
+ggplot(plot_data,aes(x=Date,y=rel_cap_gains,color=Name,group=Name)) +
+  geom_line(data=~filter(.,!(Name %in% geos)),color="grey",size=0.1) +
+  geom_line(data=~filter(.,Name %in% geos)) +
+  scale_color_manual(values=region_colours) +
+  scale_x_date(breaks=cap_gains_data$Date %>% unique,labels = function(d)strftime(d,"%Y")) +
+  scale_y_continuous(labels=scales::percent) +
+  theme_bw() +
+  expand_limits(y=0) +
+  # geom_vline(xintercept = as.Date("2016-01-01")) +
+  # geom_text(x=as.Date("2016-07-01"),y=3700,label="PR sale reporting\nmandatory",inherit.aes = FALSE,
+  #           size=3,hjust=0) +
+  theme(legend.position = "bottom", legend.box = "vertical") +
+  labs(x=NULL,y=NULL,color=NULL,linetype=NULL,
+       title="Capital gains income out of total income (plus capital gains)",
+       caption="MountainMath, StatCan tables 11-10-0034") 
+
+```
+
+On this metric Vancouver tracked Calgary fairly well until about 2015, when Toronto overtook Calgary and Vancouver made even larger gains. 
+
+Only a minority of taxfilers and dependants has capital gains income.
+
+```{r}
+ggplot(plot_data,aes(x=Date,y=`Capital gains received - Number of tax filers and dependants`/`Total income - Number of tax filers and dependants`,color=Name,group=Name)) +
+  geom_line(data=~filter(.,!(Name %in% geos)),color="grey",size=0.1) +
+  geom_line(data=~filter(.,Name %in% geos)) +
+  scale_color_manual(values=region_colours) +
+  scale_x_date(breaks=cap_gains_data$Date %>% unique,labels = function(d)strftime(d,"%Y")) +
+  scale_y_continuous(labels=scales::percent) +
+  theme_bw() +
+  expand_limits(y=0) +
+  # geom_vline(xintercept = as.Date("2016-01-01")) +
+  # geom_text(x=as.Date("2016-07-01"),y=3700,label="PR sale reporting\nmandatory",inherit.aes = FALSE,
+  #           size=3,hjust=0) +
+  theme(legend.position = "bottom", legend.box = "vertical") +
+  labs(x=NULL,y=NULL,color=NULL,linetype=NULL,
+       title="Share of taxfilers and dependants with capital gains income",
+       caption="MountainMath, StatCan tables 11-10-0034") 
+
+```
+
+These gains aren't uniformly distributed, they skew heavily toward higher income households.
+
+
+```{r}
+cap_gains_data2 <- get_cansim("11-10-0070") %>%
+  normalize_cansim_values(factors = TRUE,default_month = 7)
+```
+
+```{r}
+cap_gains_data2 %>% 
+  filter(Sex=="Both sexes") %>%
+  select(Date,GeoUID,GEO,`Total income group`,Statistics,VALUE) %>%
+  pivot_wider(names_from=Statistics,values_from=VALUE) %>%
+  left_join(pop_data %>% select(GeoUID,name=GEO) %>% unique(), by="GeoUID") %>%
+  left_join(inflation_data,by="Date") %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(grepl("\\(CMA\\)",name)) %>%
+  #filter(grepl("Vanc|Toron|Calg|Montr",GEO)) %>%
+  ggplot(aes(x=Date,y=`Median capital gains`/Index,
+             color=Name,group=Name)) +
+  theme_bw() +
+  geom_line(data=~filter(.,!(Name %in% geos)),color="grey",size=0.1) +
+  geom_line(data=~filter(.,Name %in% geos)) +
+  scale_color_manual(values=region_colours) +
+  scale_x_date(breaks=cap_gains_data$Date %>% unique,labels = function(d)strftime(d,"%Y")) +
+  scale_y_continuous(labels=scales::dollar) +
+  facet_wrap("`Total income group`",scales="free_y") +
+  expand_limits(y=0) +
+  theme(legend.position = "bottom", legend.box = "vertical") +
+  labs(x=NULL,color=NULL,linetype=NULL,
+       y=paste0("Constant ",strftime(max_date,"%Y")," dollars"),
+       title="Median capital gains income among those with non-zero capital gains",
+       caption="MountainMath, StatCan Table 11-10-0070") 
+
+```
+
+Median capital grains income is surprisingly uniform among income groups below $60k and steps up again at incomes over $100. It's remarkable that Vancouver has significantly higher capital gains income than the other large metros in all income groups.
+
+```{r}
+cap_gains_data2 %>% 
+  filter(Sex=="Both sexes",
+         Statistics %in% c("Number","Amount of capital gains")) %>%
+  select(Date,GeoUID,GEO,`Total income group`,Statistics,VALUE) %>%
+  pivot_wider(names_from=Statistics,values_from=VALUE) %>%
+  left_join(pop_data %>% select(GeoUID,name=GEO) %>% unique(), by="GeoUID") %>%
+  left_join(inflation_data,by="Date") %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(grepl("\\(CMA\\)",name)) %>%
+  #filter(grepl("Vanc|Toron|Calg|Montr",GEO)) %>%
+  ggplot(aes(x=Date,y=`Amount of capital gains`/Number/Index,
+             color=Name,group=Name)) +
+  theme_bw() +
+  geom_line(data=~filter(.,!(Name %in% geos)),color="grey",size=0.1) +
+  geom_line(data=~filter(.,Name %in% geos)) +
+  scale_color_manual(values=region_colours) +
+  scale_x_date(breaks=cap_gains_data$Date %>% unique,labels = function(d)strftime(d,"%Y")) +
+  scale_y_continuous(labels=scales::dollar) +
+  facet_wrap("`Total income group`",scales="free_y") +
+  expand_limits(y=0) +
+  theme(legend.position = "bottom", legend.box = "vertical") +
+  labs(x=NULL,color=NULL,linetype=NULL,
+       y=paste0("Constant ",strftime(max_date,"%Y")," dollars"),
+       title="Average capital gains income among those with non-zero capital gains",
+       caption="MountainMath, StatCan Table 11-10-0070") 
+
+```
+
+The distribution of capital gains income is very skewed, average capital gains income is an order of magnitude higher. Interestingly, average capital gains income for people with income under $20k is higher than that for people in the other income groups below $100k. This speaks to the ability for some to structure their income as capital gains and take advantage of their lower tax rates. 
+
+The jump in average capital gains income for those with income over $100k a year is substantial. But this should not be surprising. After all, capital gains income is generally only available to those that have capital to gain from. And, as we have previously explored, [wealth correlates highly with income](https://doodles.mountainmath.ca/blog/2020/02/19/wealth-vs-income/).
+
+It is striking that Vancouver again leads the larger CMAs in all income groups.
+
+To better understand the interplay between regular and capital gains income, we look at the increase in median income if capital gains is included.
+
+```{r}
+cap_gains_data2 %>% 
+  filter(Sex=="Both sexes") %>%
+  select(Date,GeoUID,GEO,`Total income group`,Statistics,VALUE) %>%
+  pivot_wider(names_from=Statistics,values_from=VALUE) %>%
+  left_join(pop_data %>% select(GeoUID,name=GEO) %>% unique(), by="GeoUID") %>%
+  left_join(inflation_data,by="Date") %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  filter(grepl("\\(CMA\\)",name)) %>%
+  #filter(grepl("Vanc|Toron|Calg|Montr",GEO)) %>%
+  ggplot(aes(x=Date,y=(`Median total income including capital gains`-`Median total income`)/Index,
+             color=Name,group=Name)) +
+  theme_bw() +
+  geom_line(data=~filter(.,!(Name %in% geos)),color="grey",size=0.1) +
+  geom_line(data=~filter(.,Name %in% geos)) +
+  scale_color_manual(values=region_colours) +
+  scale_x_date(breaks=cap_gains_data$Date %>% unique,labels = function(d)strftime(d,"%Y")) +
+  scale_y_continuous(labels=scales::dollar) +
+  expand_limits(y=0) +
+  facet_wrap("`Total income group`",scales="free_y") +
+  theme(legend.position = "bottom", legend.box = "vertical") +
+  labs(x=NULL,color=NULL,linetype=NULL,
+       y=paste0("Constant ",strftime(max_date,"%Y")," dollars"),
+       title="Increase in median income ",
+       caption="MountainMath, StatCan Table 11-10-0070") 
+
+```
+
+The increase of median income is quite a bit higher than the median capital gains income, which on first sight may be surprising and might benefit from a quick explanation. This effect is a simple consequence of the mathematics of adding these two differently shaped distributions, the income distribution and the capital gains distribution. As an example, let's focus on the income distribution in the $20,000 to $39,999 bracket and for simplicity assume the income distribution in the bracket is uniform. On the other hand, we have seen that the distribution of capital gains income is anything but uniform, looking at the above graphs for Vancouver we see it has a median of around $2,000 and an average of around $20,000. We can envision that distribution as following an exponential function, with most people making little capital gains income and some making a lot. 
+
+A quick simulation with 10000 people in this tax bracket, fitted to roughly produce the above statistics, can illustrate this nicely.
+
+```{r}
+
+ff <- function(k) 1/k*(exp(k/2)-exp(-k/2))
+fd <- function(a,k,x) a * exp(k*x)
+ffd <- function(x)fd(22,9,x)
+
+set.seed(42)
+d<-tibble(y=runif(10000,20000,40000),
+       z=runif(10000,0,1) %>% ffd) %>%
+  mutate(x=rank(y,ties.method="first")) %>%
+  mutate(w=y+z)
+
+income_theme <- list(
+  theme_bw(),
+  scale_x_continuous(labels=scales::dollar),
+  labs(x=NULL,y="# taxpayers"),
+  theme(legend.position="bottom")
+)
+
+
+mean_data <- tibble(m=c(mean(d$y),median(d$y)),
+                    y=c(450,350),
+                    c=c("Mean","Median")) 
+g1 <- ggplot(d,aes(x=y)) +
+  geom_histogram(bins=20,boundary = 20000) +
+  geom_vline(data=mean_data,aes(color=c,xintercept = m)) +
+  scale_color_manual(values=sanzo::duos$c085,guide=FALSE) +
+  geom_label(data=mean_data,
+             aes(label=scales::dollar(m,accuracy = 100),y=y,color=c,x=m),
+             alpha=0.8,size=3,show.legend =FALSE) +
+  income_theme +
+  labs(title="Income (uniform)")
+
+mean_data <- tibble(m=c(mean(d$z),median(d$z)),
+                    y=c(6000,5000),
+                    c=c("Mean","Median")) 
+g2 <- ggplot(d,aes(x=z)) +
+  geom_histogram(bins=20,boundary = 0) +
+  geom_vline(data=mean_data,aes(color=c,xintercept = m)) +
+  scale_color_manual(values=sanzo::duos$c085,guide=FALSE) +
+  geom_label(data=mean_data,
+             aes(label=scales::dollar(m,accuracy = 100),y=y,color=c,x=m),
+             alpha=0.8,size=3,show.legend =FALSE) +
+  income_theme +
+  expand_limits(x=-10000) +
+  labs(title="Capital gains (exponential)")
+
+mean_data <- tibble(m=c(mean(d$w),median(d$w)),
+                    y=c(3500,2500),
+                    c=c("Mean","Median")) 
+g3<- ggplot(d,aes(x=w)) +
+  geom_histogram(bins=20,boundary = 20000) +
+  geom_vline(data=mean_data,aes(color=c,xintercept = m)) +
+  scale_color_manual(values=sanzo::duos$c085) +
+  geom_label(data=mean_data,
+             aes(label=scales::dollar(m,accuracy = 100),y=y,color=c,x=m),
+             alpha=0.8,size=3,show.legend =FALSE) +
+  income_theme +
+  labs(title="Income with capital gains",color=NULL)
+
+(g1+g2)/g3 + 
+  patchwork::plot_annotation(title="Simulation for shift in median income when including capital gains",
+                                        caption="MountainMath")
+```
+
+These graphs are a good reminder that some income, like capital gains income, is not captured in income concepts like total income or standard census release data that only count regular income source, but these incomes can still play a significant role in the aggregate money that becomes available to taxfilers.
+
+
+
+## Geographic distribution
+We have seen above that (taxable) capital gains income is not distributed uniformly across income groups. And we know [income groups aren't distributed uniformly geographically](https://doodles.mountainmath.ca/blog/2018/10/28/understanding-income-distributions-across-geographies-and-time/). 
+
+
+Therefore it is reasonably to expect that (taxable) capital gains income is not distributed uniformly geographically. Unfortunately capital gains is not a regular census variable, and it is not part of our census tract level T1FF data extract. But the 2011 NHS did report on capital gains income. Which allows to take a look at the geographic distribution of capital gains income in 2010, taking Vancouver as an example. While NHS data is generally sub-optimal as a data source, we have [seen that pure income data, no taking cross-tabs with other census variables, performs quite well](https://doodles.mountainmath.ca/blog/2017/09/29/a-retrospective-look-at-nhs-income-data/), despite some ill-informed claims to the contrary.
+
+```{r}
+cap_gains_census <- get_census("CA11",regions=list(CMA="59933"),
+                               vectors=c(cap_gains_p="v_CA11N_2443",base="v_CA11N_2299",mean="v_CA11N_2344"),
+                               level="CT",geo_format="sf", quiet=TRUE) %>%
+  mutate(total_income=base*mean,
+         total_income_cg=total_income/(1-cap_gains_p/100),
+         cap_gains=total_income_cg*cap_gains_p/100,
+         avg_cap_gains=cap_gains/base)
+
+ggplot(cap_gains_census,aes(fill=cap_gains_p/100)) +
+  geom_sf(size=0.1) +
+  scale_fill_viridis_c(labels=scales::percent) +
+  geom_water() +
+  geom_roads() +
+  coord_bbox(metro_van_bbox("tight")) +
+  labs(title="Capital gains income as share of total income including capital gains",
+       fill="Share",
+       caption="MountainMath, StatCan NHS 2011")
+```
+
+
+```{r avg-cap-gains-map}
+ggplot(cap_gains_census,aes(fill=avg_cap_gains)) +
+  geom_sf(size=0.1) +
+  scale_fill_viridis_c(labels=scales::dollar,option = "magma") +
+  geom_water() +
+  geom_roads() +
+  coord_bbox(metro_van_bbox("tight")) +
+  labs(title="Average capital gains income per income earner",
+       fill="Capital gains\nincome",
+       caption="MountainMath, StatCan NHS 2011")
+
+```
+
+## Upshot
+Capital gains income is a significant source of income that is absent from general income data. And the data we have still misses non-taxable capital gains income, for example capital gains from selling a primary residence.
+
+(Taxable) capital gains income is especially prevalent in higher income groups, likely due to the [strong (yet imperfect) correlation between income and wealth](https://doodles.mountainmath.ca/blog/2020/02/19/wealth-vs-income/). And it also shows strong geographic variation, and also varies strongly over time.
+
+This suggests that analysis based on income may need to pay attention to capital gains income, at least as a cross-check or robustness test. To this end it would be useful to also have census tract level capital gains income. Or even better, start adding income "including (taxable) capital gains" as a standard product in income metrics and census data.
+
+From a policy perspective, capital gains income should get a very close look. Michael Smart recently [made a convincing case for a captial gains tax reform](https://financesofthenation.ca/2021/01/07/its-time/).
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-15-capital-gains-income/) for anyone to reproduce or adapt for their own purposes.
+
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
