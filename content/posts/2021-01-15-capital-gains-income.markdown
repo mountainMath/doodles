@@ -9,7 +9,7 @@ categories:
   - cancensus
   - taxes
 tags: []
-description: "Income concetps in Canada generally only include regular income and in particular miss (taxable) capital gains. But capital gains makes up an important income source and we should pay more attention to it."
+description: "Income concepts in Canada generally only include regular income and in particular miss (taxable) capital gains. But capital gains makes up an important income source and we should pay more attention to it."
 featured: ''
 images: ["https://doodles.mountainmath.ca/posts/2021-01-15-capital-gains-income_files/figure-html/avg-cap-gains-map-1.png"]
 featuredalt: ""
@@ -81,7 +81,7 @@ These graphs are a good reminder that some income, like capital gains income, is
 We have seen above that (taxable) capital gains income is not distributed uniformly across income groups. And we know [income groups aren't distributed uniformly geographically](https://doodles.mountainmath.ca/blog/2018/10/28/understanding-income-distributions-across-geographies-and-time/). 
 
 
-Therefore it is reasonably to expect that (taxable) capital gains income is not distributed uniformly geographically. Unfortunately capital gains is not a regular census variable, and it is not part of our census tract level T1FF data extract. But the 2011 NHS did report on capital gains income. Which allows to take a look at the geographic distribution of capital gains income in 2010, taking Vancouver as an example. While NHS data is generally sub-optimal as a data source, we have [seen that pure income data, no taking cross-tabs with other census variables, performs quite well](https://doodles.mountainmath.ca/blog/2017/09/29/a-retrospective-look-at-nhs-income-data/), despite some ill-informed claims to the contrary.
+Therefore it is reasonable to expect that (taxable) capital gains income is not distributed uniformly geographically. Unfortunately capital gains is not a regular census variable, and it is not part of our census tract level T1FF data extract. But the 2011 NHS did report on capital gains income. Which allows to take a look at the geographic distribution of capital gains income in 2010, taking Vancouver as an example. While NHS data is generally sub-optimal as a data source, we have [seen that pure income data, not taking cross-tabs with other census variables, performs quite well](https://doodles.mountainmath.ca/blog/2017/09/29/a-retrospective-look-at-nhs-income-data/), despite some ill-informed claims to the contrary.
 
 <img src="/posts/2021-01-15-capital-gains-income_files/figure-html/unnamed-chunk-9-1.png" width="768" />
 
@@ -89,13 +89,15 @@ Therefore it is reasonably to expect that (taxable) capital gains income is not 
 <img src="/posts/2021-01-15-capital-gains-income_files/figure-html/avg-cap-gains-map-1.png" width="768" />
 
 ## Upshot
-Capital gains income is a significant source of income that is absent from general income data. And the data we have still misses non-taxable capital gains income, for example capital gains from selling a primary residence.
+Capital gains income is a significant source of income that is absent from general income data. And the capital gains data we have still misses non-taxable capital gains income, for example capital gains from selling a principal residence.
 
-(Taxable) capital gains income is especially prevalent in higher income groups, likely due to the [strong (yet imperfect) correlation between income and wealth](https://doodles.mountainmath.ca/blog/2020/02/19/wealth-vs-income/). And it also shows strong geographic variation, and also varies strongly over time.
+(Taxable) capital gains income is especially prevalent in higher income groups, likely due to the [strong (yet imperfect) correlation between income and wealth](https://doodles.mountainmath.ca/blog/2020/02/19/wealth-vs-income/). And it also shows strong geographic variation, and also varies considerably over time.
 
-This suggests that analysis based on income may need to pay attention to capital gains income, at least as a cross-check or robustness test. To this end it would be useful to also have census tract level capital gains income. Or even better, start adding income "including (taxable) capital gains" as a standard product in income metrics and census data.
+This suggests that analysis based on income may need to pay more attention to capital gains income, at least as a cross-check or robustness test. To this end it would be useful to also have census tract level capital gains income. Or even better, start adding "income including (taxable) capital gains" as a standard product in income metrics in StatCan tabkles and census data.
 
-From a policy perspective, capital gains income should get a very close look. Michael Smart recently [made a convincing case for a captial gains tax reform](https://financesofthenation.ca/2021/01/07/its-time/).
+Moreover, I would like to see a longitudinal analysis to identify to what extent taxpayers manage to structure all or most of their income as capital gains, having regular (although possibly volatile) capital gains income (almost) every year. This may well already exist and I would appreciate pointers.
+
+From a policy perspective, capital gains income should get a very close look. Michael Smart recently [made a convincing case for a capital gains tax reform](https://financesofthenation.ca/2021/01/07/its-time/).
 
 As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-15-capital-gains-income/) for anyone to reproduce or adapt for their own purposes.
 
@@ -103,13 +105,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-01-15 23:10:01 PST"
+## [1] "2021-01-16 14:35:44 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [e3df0e7] 2021-01-07: type, thanks HC!
+## Head:     [fbeea1f] 2021-01-16: cap gains post
 ```
 
 ```
@@ -137,20 +139,21 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## [13] ggplot2_3.3.2             tidyverse_1.3.0          
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] tidyselect_1.1.0   xfun_0.18          sf_0.9-6           haven_2.3.1       
-##  [5] colorspace_2.0-0   vctrs_0.3.5        generics_0.1.0     htmltools_0.5.0   
-##  [9] yaml_2.2.1         blob_1.2.1         rlang_0.4.9        e1071_1.7-4       
-## [13] pillar_1.4.7       glue_1.4.2         withr_2.3.0        DBI_1.1.0         
-## [17] dbplyr_1.4.4       modelr_0.1.8       readxl_1.3.1       lifecycle_0.2.0   
-## [21] munsell_0.5.0      blogdown_0.19      gtable_0.3.0       cellranger_1.1.0  
-## [25] rvest_0.3.6        evaluate_0.14      knitr_1.30         class_7.3-17      
-## [29] fansi_0.4.1        broom_0.7.0        Rcpp_1.0.5         KernSmooth_2.23-17
-## [33] classInt_0.4-3     scales_1.1.1       backports_1.2.0    jsonlite_1.7.2    
-## [37] fs_1.4.1           hms_0.5.3          digest_0.6.27      stringi_1.5.3     
-## [41] bookdown_0.19      grid_4.0.3         cli_2.2.0          tools_4.0.3       
-## [45] magrittr_2.0.1     crayon_1.3.4       pkgconfig_2.0.3    ellipsis_0.3.1    
-## [49] xml2_1.3.2         reprex_0.3.0       lubridate_1.7.9.2  assertthat_0.2.1  
-## [53] rmarkdown_2.5      httr_1.4.2         rstudioapi_0.13    R6_2.5.0          
-## [57] git2r_0.27.1       units_0.6-7        compiler_4.0.3
+##  [1] Rcpp_1.0.5         lubridate_1.7.9.2  class_7.3-17       assertthat_0.2.1  
+##  [5] digest_0.6.27      R6_2.5.0           cellranger_1.1.0   backports_1.2.0   
+##  [9] reprex_0.3.0       evaluate_0.14      e1071_1.7-4        httr_1.4.2        
+## [13] blogdown_0.19      pillar_1.4.7       rlang_0.4.9        readxl_1.3.1      
+## [17] rstudioapi_0.13    blob_1.2.1         rmarkdown_2.5      labeling_0.4.2    
+## [21] munsell_0.5.0      broom_0.7.0        compiler_4.0.3     modelr_0.1.8      
+## [25] xfun_0.18          pkgconfig_2.0.3    htmltools_0.5.0    tidyselect_1.1.0  
+## [29] bookdown_0.19      codetools_0.2-16   fansi_0.4.1        crayon_1.3.4      
+## [33] dbplyr_1.4.4       withr_2.3.0        sf_0.9-6           grid_4.0.3        
+## [37] jsonlite_1.7.2     gtable_0.3.0       lifecycle_0.2.0    DBI_1.1.0         
+## [41] git2r_0.27.1       magrittr_2.0.1     units_0.6-7        scales_1.1.1      
+## [45] KernSmooth_2.23-17 cli_2.2.0          stringi_1.5.3      farver_2.0.3      
+## [49] fs_1.4.1           xml2_1.3.2         ellipsis_0.3.1     generics_0.1.0    
+## [53] vctrs_0.3.5        tools_4.0.3        glue_1.4.2         hms_0.5.3         
+## [57] yaml_2.2.1         colorspace_2.0-0   classInt_0.4-3     rvest_0.3.6       
+## [61] knitr_1.30         haven_2.3.1
 ```
 </details>

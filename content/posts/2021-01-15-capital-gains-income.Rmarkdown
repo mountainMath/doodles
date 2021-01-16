@@ -9,7 +9,7 @@ categories:
   - cancensus
   - taxes
 tags: []
-description: "Income concetps in Canada generally only include regular income and in particular miss (taxable) capital gains. But capital gains makes up an important income source and we should pay more attention to it."
+description: "Income concepts in Canada generally only include regular income and in particular miss (taxable) capital gains. But capital gains makes up an important income source and we should pay more attention to it."
 featured: ''
 images: ["https://doodles.mountainmath.ca/posts/2021-01-15-capital-gains-income_files/figure-html/avg-cap-gains-map-1.png"]
 featuredalt: ""
@@ -246,7 +246,7 @@ cap_gains_data2 %>%
   theme(legend.position = "bottom", legend.box = "vertical") +
   labs(x=NULL,color=NULL,linetype=NULL,
        y=paste0("Constant ",strftime(max_date,"%Y")," dollars"),
-       title="Increase in median income ",
+       title="Increase in median income for those with non-zero capital gains",
        caption="MountainMath, StatCan Table 11-10-0070") 
 
 ```
@@ -328,7 +328,7 @@ These graphs are a good reminder that some income, like capital gains income, is
 We have seen above that (taxable) capital gains income is not distributed uniformly across income groups. And we know [income groups aren't distributed uniformly geographically](https://doodles.mountainmath.ca/blog/2018/10/28/understanding-income-distributions-across-geographies-and-time/). 
 
 
-Therefore it is reasonably to expect that (taxable) capital gains income is not distributed uniformly geographically. Unfortunately capital gains is not a regular census variable, and it is not part of our census tract level T1FF data extract. But the 2011 NHS did report on capital gains income. Which allows to take a look at the geographic distribution of capital gains income in 2010, taking Vancouver as an example. While NHS data is generally sub-optimal as a data source, we have [seen that pure income data, no taking cross-tabs with other census variables, performs quite well](https://doodles.mountainmath.ca/blog/2017/09/29/a-retrospective-look-at-nhs-income-data/), despite some ill-informed claims to the contrary.
+Therefore it is reasonable to expect that (taxable) capital gains income is not distributed uniformly geographically. Unfortunately capital gains is not a regular census variable, and it is not part of our census tract level T1FF data extract. But the 2011 NHS did report on capital gains income. Which allows to take a look at the geographic distribution of capital gains income in 2010, taking Vancouver as an example. While NHS data is generally sub-optimal as a data source, we have [seen that pure income data, not taking cross-tabs with other census variables, performs quite well](https://doodles.mountainmath.ca/blog/2017/09/29/a-retrospective-look-at-nhs-income-data/), despite some ill-informed claims to the contrary.
 
 ```{r}
 cap_gains_census <- get_census("CA11",regions=list(CMA="59933"),
@@ -365,13 +365,15 @@ ggplot(cap_gains_census,aes(fill=avg_cap_gains)) +
 ```
 
 ## Upshot
-Capital gains income is a significant source of income that is absent from general income data. And the data we have still misses non-taxable capital gains income, for example capital gains from selling a primary residence.
+Capital gains income is a significant source of income that is absent from general income data. And the capital gains data we have still misses non-taxable capital gains income, for example capital gains from selling a principal residence.
 
-(Taxable) capital gains income is especially prevalent in higher income groups, likely due to the [strong (yet imperfect) correlation between income and wealth](https://doodles.mountainmath.ca/blog/2020/02/19/wealth-vs-income/). And it also shows strong geographic variation, and also varies strongly over time.
+(Taxable) capital gains income is especially prevalent in higher income groups, likely due to the [strong (yet imperfect) correlation between income and wealth](https://doodles.mountainmath.ca/blog/2020/02/19/wealth-vs-income/). And it also shows strong geographic variation, and also varies considerably over time.
 
-This suggests that analysis based on income may need to pay attention to capital gains income, at least as a cross-check or robustness test. To this end it would be useful to also have census tract level capital gains income. Or even better, start adding income "including (taxable) capital gains" as a standard product in income metrics and census data.
+This suggests that analysis based on income may need to pay more attention to capital gains income, at least as a cross-check or robustness test. To this end it would be useful to also have census tract level capital gains income. Or even better, start adding "income including (taxable) capital gains" as a standard product in income metrics in StatCan tabkles and census data.
 
-From a policy perspective, capital gains income should get a very close look. Michael Smart recently [made a convincing case for a captial gains tax reform](https://financesofthenation.ca/2021/01/07/its-time/).
+Moreover, I would like to see a longitudinal analysis to identify to what extent taxpayers manage to structure all or most of their income as capital gains, having regular (although possibly volatile) capital gains income (almost) every year. This may well already exist and I would appreciate pointers.
+
+From a policy perspective, capital gains income should get a very close look. Michael Smart recently [made a convincing case for a capital gains tax reform](https://financesofthenation.ca/2021/01/07/its-time/).
 
 As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-15-capital-gains-income/) for anyone to reproduce or adapt for their own purposes.
 
