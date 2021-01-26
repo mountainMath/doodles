@@ -1,8 +1,8 @@
 ---
-title: Rethinking the "foreignness" if owners living abroad
+title: Rethinking the "foreignness" of owners living abroad
 author: Jens von Bergmann
 date: '2021-01-25'
-slug: rethinking-the-foreignness-if-owners-living-abroad
+slug: rethinking-the-foreignness-of-owners-living-abroad
 categories:
   - CANSIM
   - Empty Homes
@@ -11,7 +11,7 @@ categories:
 tags: []
 description: "Comparing CHSP and SVT data we try to tease out how foreign our forein owners really are."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2021-01-25-rethinking-the-foreignness-if-owners-living-abroad_files/figure-html/svt_chsp_comparison-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2021-01-25-rethinking-the-foreignness-of-owners-living-abroad_files/figure-html/svt_chsp_comparison-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -21,7 +21,7 @@ type: "post"
 
 
  
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/01/25/rethinking-the-foreignness-if-owners-living-abroad/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/01/26/rethinking-the-foreignness-of-owners-living-abroad/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 
@@ -41,18 +41,18 @@ The matchup between the two definitions of "foreignness" offered by SVT and CHSP
 
 So let's take a peek! But before we get started it's a good idea to get a clearer picture how these two data sources compare. After all, the two definitions are constructed by two different government agencies drawing upon slightly different (but related) data, and using slightly different inclusion criteria. In particular, properties are [excluded from SVT](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/18046#section1) if they're worth less than $150,000 CA, or located on First Nations land (or, peculiarly, in the Village of Lions Bay). Additionally, in 2018 the SVT excluded residential properties without structures on them. As a result, we might expect CHSP to have more properties. But CHSP is based on assessment rolls, generally assessed as of July 1st, where SVT is levied in January for properties owned based on the prior year's assessment (from July 1st). As a result, properties added (e.g. via development) between July and January may show up in the SVT database, but not in CHSP, leaving SVT with more properties. So we can start our analysis by comparing the total number of residential properties for each municipality as listed in the two data sources.
 
-<img src="/posts/2021-01-25-rethinking-the-foreignness-if-owners-living-abroad_files/figure-html/unnamed-chunk-3-1.png" width="768" />
+<img src="/posts/2021-01-25-rethinking-the-foreignness-of-owners-living-abroad_files/figure-html/unnamed-chunk-3-1.png" width="768" />
 
 The graph is done on a log scale so we can more easily compare the view small municipalities like Belcarra and large ones like Vancouver on the same graph. In general, the two data sources agree quite well, but there are some differences. The log scale visually compresses differences, and we can look at the ratio of the estimates from the two sources to get a better picture of the differences.
 
 
-<img src="/posts/2021-01-25-rethinking-the-foreignness-if-owners-living-abroad_files/figure-html/unnamed-chunk-4-1.png" width="768" />
+<img src="/posts/2021-01-25-rethinking-the-foreignness-of-owners-living-abroad_files/figure-html/unnamed-chunk-4-1.png" width="768" />
 
 We get a mix, with some municipalities having more CHSP than SVT properties, and other municipalities the opposite. The variations are never especially large, but large enough that we probably shouldn't treat the two data sources as identical. While the administrative variations in excluded properties and new developments may account for the variations in total properties, we should be careful in interpretation - even moreso given some [revisions in SVT data](https://homefreesociology.com/2021/01/19/two-years-of-bcs-speculation-and-vacancy-tax-data/)  between 2018 and 2019 Technical Reporting. In particular, it seems prudent to avoid deriving new variables by differences counts across datasets, for example subtracting the SVT "Foreign Owner" count from the CHSP properties owned exclusively by "non-resident owners". 
 
 A more robust strategy would be to compute the shares of each of these properties within their respective universes and compare shares.
 
-<img src="/posts/2021-01-25-rethinking-the-foreignness-if-owners-living-abroad_files/figure-html/svt_chsp_comparison-1.png" width="768" />
+<img src="/posts/2021-01-25-rethinking-the-foreignness-of-owners-living-abroad_files/figure-html/svt_chsp_comparison-1.png" width="768" />
 
 This gives us a clear way to assess how these levels of "foreignness" compare. Here we can see that CHSP "Non-resident Owners" is a much larger category than SVT "Foreign Owners." Their shares differ by roughly a factor of 2, generally a little less in 2018, but more (sometimes significantly) in 2019. In other words, it appears that roughly half of BC property owners living outside of Canada are Canadian citizens or Permanent Residents. This may surprise those who've taken CHSP "Non-residency" as a straightforward indicator of "Foreignness." 
 
@@ -60,13 +60,13 @@ Overall, SVT "foreign owned" properties have grown more scarce between 2018 and 
 
 If about half of "Non-resident Owners" aren't showing up as "Foreign Owners," then where are they showing up in SVT data? That's a much trickier question to answer. The SVT data establishes a variety of categories, as demonstrated below.
 
-<img src="/posts/2021-01-25-rethinking-the-foreignness-if-owners-living-abroad_files/figure-html/unnamed-chunk-5-1.png" width="768" />
+<img src="/posts/2021-01-25-rethinking-the-foreignness-of-owners-living-abroad_files/figure-html/unnamed-chunk-5-1.png" width="768" />
 
 Unfortunately, from the documentation we have so far, we don't know whether Canadian citizen and PR property owners abroad get lumped in with "Other Canadians" or end up in "Mixed" or "Other" or even "Satellite Family" categories. Most likely they appear in some combination of these categories, reflecting the complicated assignment of owners to properties. 
 
 Regardless of which categories Canadian citizen and PR property owners abroad get assigned to, we do know that most homes in all categories were deemed to be exempt from the Speculation and Vacancy Tax. Again, far and away most exemptions stem from properties serving as the primary residence for an owner or tenant, though properties can also be exempt for a variety of other reasons. In nearly every municipality, less than one percent of properties paid any Speculation and Vacancy Tax. The standouts differed between years, with Richmond and West Vancouver topping the list of proportionately most taxpaying properties in 2018 (reaching nearly two percent), shifting to Saanich and Belcarra in 2019 (neither of which had enough foreign owners to break the category out). 
 
-<img src="/posts/2021-01-25-rethinking-the-foreignness-if-owners-living-abroad_files/figure-html/unnamed-chunk-6-1.png" width="768" />
+<img src="/posts/2021-01-25-rethinking-the-foreignness-of-owners-living-abroad_files/figure-html/unnamed-chunk-6-1.png" width="768" />
 
 Overall the share of properties paying the SVT has almost universally gone down between 2018 and 2019, which should be expected as owners adjust to the new taxes by selling or renting out their property or making other changes to qualify for one of the exemptions.
 
@@ -80,26 +80,26 @@ So our estimate that about half of BC property owners living abroad are actually
 
 Finally, just to round out our exploration, let's take a look at the CHSP non-resident owner data that also has information on properties that are jointly owned by residents and non-residents. With more careful and detailed breakdowns from the SVT data, we might be able to track how jointly owned "mixed" properties tracked with CHSP "mixed" properties. As it is, we still find a full exploration too tricky.
 
-<img src="/posts/2021-01-25-rethinking-the-foreignness-if-owners-living-abroad_files/figure-html/unnamed-chunk-7-1.png" width="768" />
+<img src="/posts/2021-01-25-rethinking-the-foreignness-of-owners-living-abroad_files/figure-html/unnamed-chunk-7-1.png" width="768" />
 
 The CHSP non-resident participation categories have remained even more stable than the SVT declarations between 2018-2019. That said, both datasets continue to be subject to revisions. In most cases these adjustments have lead to a reduction in the overall shares of foreign owners and non-resident participants.
 
 ## Upshot
 
-Drawing upon both CHSP and SVT data and their differing deinitions of "Foreignness," we combine the two to estimate the size of a new category of interest: Canadians (citizens and PRs) living abroad who still own property in high demand areas of BC. This category appears to account for roughly half of property owners living abroad as estimated by CHSP data for included municipalities. That such a large portion of BC property owners living abroad are likely legally Canadian casts a rather harsh light on the extent to which "foreignness" has played such a strong role in our housing discourse.
+Drawing upon both CHSP and SVT data and their differing definitions of "Foreignness," we combine the two to estimate the size of a new category of interest: Canadians (citizens and PRs) living abroad who still own property in high demand areas of BC. This category appears to account for roughly half of property owners living abroad as estimated by CHSP data for included municipalities. That such a large portion of BC property owners living abroad are likely legally Canadian casts a rather harsh light on the extent to which "foreignness" has played such a strong role in our housing discourse.
 
-As usual, the code for the graphs is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-25-rethinking-the-foreignness-if-owners-living-abroad.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
+As usual, the code for the graphs is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-25-rethinking-the-foreignness-of-owners-living-abroad.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
 
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-01-25 18:58:08 PST"
+## [1] "2021-01-25 19:50:42 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [b11799c] 2021-01-16: teaks in cap gains post
+## Head:     [ffca209] 2021-01-26: foreign owner post
 ```
 
 ```
@@ -126,22 +126,20 @@ As usual, the code for the graphs is [available on GitHub](https://github.com/mo
 ## [11] ggplot2_3.3.2             tidyverse_1.3.0          
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] tidyselect_1.1.0   xfun_0.18          haven_2.3.1        colorspace_2.0-0  
-##  [5] vctrs_0.3.5        generics_0.1.0     htmltools_0.5.0    yaml_2.2.1        
-##  [9] blob_1.2.1         rlang_0.4.9        pillar_1.4.7       glue_1.4.2        
-## [13] withr_2.3.0        DBI_1.1.0          RColorBrewer_1.1-2 dbplyr_1.4.4      
-## [17] modelr_0.1.8       readxl_1.3.1       lifecycle_0.2.0    munsell_0.5.0     
-## [21] blogdown_0.19      gtable_0.3.0       cellranger_1.1.0   sanzo_0.1.0       
-## [25] rvest_0.3.6        codetools_0.2-16   evaluate_0.14      labeling_0.4.2    
-## [29] knitr_1.30         curl_4.3           fansi_0.4.1        broom_0.7.0       
-## [33] Rcpp_1.0.5         scales_1.1.1       backports_1.2.0    jsonlite_1.7.2    
-## [37] farver_2.0.3       fs_1.4.1           hms_0.5.3          digest_0.6.27     
-## [41] stringi_1.5.3      bookdown_0.19      rprojroot_2.0.2    grid_4.0.3        
-## [45] here_0.1           cli_2.2.0          tools_4.0.3        magrittr_2.0.1    
-## [49] crayon_1.3.4       pkgconfig_2.0.3    ellipsis_0.3.1     xml2_1.3.2        
-## [53] reprex_0.3.0       lubridate_1.7.9.2  assertthat_0.2.1   rmarkdown_2.5     
-## [57] httr_1.4.2         rstudioapi_0.13    R6_2.5.0           git2r_0.27.1      
-## [61] compiler_4.0.3
+##  [1] tidyselect_1.1.0  xfun_0.18         haven_2.3.1       colorspace_2.0-0 
+##  [5] vctrs_0.3.5       generics_0.1.0    htmltools_0.5.0   yaml_2.2.1       
+##  [9] blob_1.2.1        rlang_0.4.9       pillar_1.4.7      glue_1.4.2       
+## [13] withr_2.3.0       DBI_1.1.0         dbplyr_1.4.4      modelr_0.1.8     
+## [17] readxl_1.3.1      lifecycle_0.2.0   munsell_0.5.0     blogdown_0.19    
+## [21] gtable_0.3.0      cellranger_1.1.0  rvest_0.3.6       evaluate_0.14    
+## [25] knitr_1.30        fansi_0.4.1       broom_0.7.0       Rcpp_1.0.5       
+## [29] scales_1.1.1      backports_1.2.0   jsonlite_1.7.2    fs_1.4.1         
+## [33] hms_0.5.3         digest_0.6.27     stringi_1.5.3     bookdown_0.19    
+## [37] grid_4.0.3        cli_2.2.0         tools_4.0.3       magrittr_2.0.1   
+## [41] crayon_1.3.4      pkgconfig_2.0.3   ellipsis_0.3.1    xml2_1.3.2       
+## [45] reprex_0.3.0      lubridate_1.7.9.2 assertthat_0.2.1  rmarkdown_2.5    
+## [49] httr_1.4.2        rstudioapi_0.13   R6_2.5.0          git2r_0.27.1     
+## [53] compiler_4.0.3
 ```
 </details>
 

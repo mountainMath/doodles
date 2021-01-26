@@ -1,8 +1,8 @@
 ---
-title: Rethinking the "foreignness" if owners living abroad
+title: Rethinking the "foreignness" of owners living abroad
 author: Jens von Bergmann
 date: '2021-01-25'
-slug: rethinking-the-foreignness-if-owners-living-abroad
+slug: rethinking-the-foreignness-of-owners-living-abroad
 categories:
   - CANSIM
   - Empty Homes
@@ -11,7 +11,7 @@ categories:
 tags: []
 description: "Comparing CHSP and SVT data we try to tease out how foreign our forein owners really are."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2021-01-25-rethinking-the-foreignness-if-owners-living-abroad_files/figure-html/svt_chsp_comparison-1.png"]
+images: ["https://doodles.mountainmath.ca/posts/2021-01-25-rethinking-the-foreignness-of-owners-living-abroad_files/figure-html/svt_chsp_comparison-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -33,7 +33,7 @@ library(cancensus)
 library(cansim)
 ```
  
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/01/25/rethinking-the-foreignness-if-owners-living-abroad/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/01/26/rethinking-the-foreignness-of-owners-living-abroad/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 ```{r}
@@ -343,9 +343,9 @@ The CHSP non-resident participation categories have remained even more stable th
 
 ## Upshot
 
-Drawing upon both CHSP and SVT data and their differing deinitions of "Foreignness," we combine the two to estimate the size of a new category of interest: Canadians (citizens and PRs) living abroad who still own property in high demand areas of BC. This category appears to account for roughly half of property owners living abroad as estimated by CHSP data for included municipalities. That such a large portion of BC property owners living abroad are likely legally Canadian casts a rather harsh light on the extent to which "foreignness" has played such a strong role in our housing discourse.
+Drawing upon both CHSP and SVT data and their differing definitions of "Foreignness," we combine the two to estimate the size of a new category of interest: Canadians (citizens and PRs) living abroad who still own property in high demand areas of BC. This category appears to account for roughly half of property owners living abroad as estimated by CHSP data for included municipalities. That such a large portion of BC property owners living abroad are likely legally Canadian casts a rather harsh light on the extent to which "foreignness" has played such a strong role in our housing discourse.
 
-As usual, the code for the graphs is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-25-rethinking-the-foreignness-if-owners-living-abroad.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
+As usual, the code for the graphs is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-25-rethinking-the-foreignness-of-owners-living-abroad.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
 
 <details><summary>Reproducibility receipt</summary>
 ```{r cache=FALSE}
