@@ -48,7 +48,7 @@ To understand this, consider the following synthetic example of a timeline with 
 
 The first thing we notice is that moving averages lag. 7-day averages lag by 3 days, 14 day averages lag by 7 days. That's ok if we aren't that interested in the most recent trends, but is a problem if recent trends are the focus. 
 
-Sometimes people "solve" this problem by shifting the trend line to the right, as shown in the "right-aligned" example above, which makes the problem of the lag less obvious. But of course this introduces a new problem, non-data oriented viewers will misinterpret the shifted trend line as not having a lag, and the shifted trend line representing the acutal trend. In short, shifting the moving average is quite misleading. This is particularly problematic if the shifted moving average is overlayed over case count data. 
+Sometimes people "solve" this problem by shifting the trend line to the right, as shown in the "right-aligned" example above, which makes the problem of the lag less obvious. But of course this introduces a new problem, non-data oriented viewers will misinterpret the shifted trend line as not having a lag, and the shifted trend line representing the actual trend. In short, shifting the moving average is quite misleading. This is particularly problematic if the shifted moving average is overlayed over case count data. 
 
 Another problem with moving averages is that it's not a good idea to take averages when the data generating process is multiplicative. This has the effect that moving averages systematically under-estimate the trend line during growth periods and over-estimates it during periods of decline. This can be fixed by first taking logs before averaging (and then exponentiating again).
 
@@ -136,7 +136,7 @@ We visualize the effect of the right-censoring on the end of the tail of the dat
 The effect of the right-censoring is clearly visible in the STL trend lines. It also shows up in the moving averages that we added as dashed lines, but it is less pronounced as the moving average lags by three days. We do not adjust for this effect in our [auto-updating STL trend lines for BC](https://github.com/mountainMath/BCCovidSnippets/blob/main/bc_covid_trends.md). However, doing so would be prudent for modelling applications, in particular ones that put extra emphasis on recent trends to derive their forecasts.
 
 
-The same kind of right-censoring happens in a much more severe way when looking at data by symptom onset, as for example [Island Health does](https://www.islandhealth.ca/sites/default/files/covid-19/documents/public-health-covid19-daily-dashboard.pdf). Showing data by symptom onset can be very useful for analysis, but it is a very poor choice for a "dashboard" where people come to look for how things are going. The (weirdly overlapping) bar graph is the only graphical representation of case countson the Island Health dashboard, and this will likely lead quite a few people to believe that cases have come down recently when this is entirely due to right-censoring and the opposite is the case. 
+The same kind of right-censoring happens in a much more severe way when looking at data by symptom onset, as for example [Island Health does](https://www.islandhealth.ca/sites/default/files/covid-19/documents/public-health-covid19-daily-dashboard.pdf). Showing data by symptom onset can be very useful for analysis, but it is a very poor choice for a "dashboard" where people come to look for how things are going. The (weirdly overlapping) bar graph is the only graphical representation of case counts on the Island Health dashboard, and this will likely lead quite a few people to believe that cases have come down recently when this is entirely due to right-censoring and the opposite is the case. 
 
 Right-censoring can be avoided to some extent by adopting the "journalist's case counts" instead of using dashboard case counts. The "journalist's counts" are the case numbers announced in the news briefings. There is no digital data on this, the numbers have to be manually assembled into time lines, and each release contains the cumulative count for that day, including the part (if any) that gets re-distributed over previous days. The resulting timeline trades long-run accuracy for avoiding right-censoring in the short-run. I was hoping that the new BCCDC data system would avoid the right-censoring and both timelines would merge, but unfortunately that does not seem to be the case.
 
@@ -159,13 +159,13 @@ As usual, the code for this post [available on GitHub](https://github.com/mounta
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-01-30 20:58:37 PST"
+## [1] "2021-01-30 21:51:34 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [835aee3] 2021-01-26: fix links in foreign owners post
+## Head:     [73cb8fa] 2021-01-31: covid trend lines
 ```
 
 ```
