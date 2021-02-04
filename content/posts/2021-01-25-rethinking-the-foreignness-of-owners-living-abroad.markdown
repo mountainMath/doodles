@@ -1,6 +1,8 @@
 ---
 title: Rethinking the "foreignness" of owners living abroad
-author: Jens von Bergmann
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
 date: '2021-01-25'
 slug: rethinking-the-foreignness-of-owners-living-abroad
 categories:
@@ -93,13 +95,13 @@ As usual, the code for the graphs is [available on GitHub](https://github.com/mo
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-01-25 19:50:42 PST"
+## [1] "2021-02-03 20:54:36 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [ffca209] 2021-01-26: foreign owner post
+## Head:     [6c670a1] 2021-01-31: typos
 ```
 
 ```
@@ -123,7 +125,7 @@ As usual, the code for the graphs is [available on GitHub](https://github.com/mo
 ##  [5] stringr_1.4.0             dplyr_1.0.3              
 ##  [7] purrr_0.3.4               readr_1.4.0              
 ##  [9] tidyr_1.1.2               tibble_3.0.4             
-## [11] ggplot2_3.3.2             tidyverse_1.3.0          
+## [11] ggplot2_3.3.3             tidyverse_1.3.0          
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] tidyselect_1.1.0  xfun_0.18         haven_2.3.1       colorspace_2.0-0 
@@ -132,7 +134,7 @@ As usual, the code for the graphs is [available on GitHub](https://github.com/mo
 ## [13] withr_2.3.0       DBI_1.1.0         dbplyr_1.4.4      modelr_0.1.8     
 ## [17] readxl_1.3.1      lifecycle_0.2.0   munsell_0.5.0     blogdown_0.19    
 ## [21] gtable_0.3.0      cellranger_1.1.0  rvest_0.3.6       evaluate_0.14    
-## [25] knitr_1.30        fansi_0.4.1       broom_0.7.0       Rcpp_1.0.5       
+## [25] knitr_1.30        fansi_0.4.1       broom_0.7.4       Rcpp_1.0.5       
 ## [29] scales_1.1.1      backports_1.2.0   jsonlite_1.7.2    fs_1.4.1         
 ## [33] hms_0.5.3         digest_0.6.27     stringi_1.5.3     bookdown_0.19    
 ## [37] grid_4.0.3        cli_2.2.0         tools_4.0.3       magrittr_2.0.1   
