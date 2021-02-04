@@ -63,13 +63,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-02-03 21:41:45 PST"
+## [1] "2021-02-03 21:52:03 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [c4b4bf0] 2021-02-04: dot destiny post
+## Head:     [fe23106] 2021-02-04: reduce image size, fix link to nathan's blog
 ```
 
 ```
