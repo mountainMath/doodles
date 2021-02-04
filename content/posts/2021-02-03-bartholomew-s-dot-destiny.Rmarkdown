@@ -1,0 +1,256 @@
+---
+title: Bartholomew's dot destiny
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
+date: '2021-02-03'
+slug: bartholomew-s-dot-destiny
+categories:
+  - density
+  - dotdensity
+  - Vancouver
+  - zoning
+tags: []
+description: "Bartholomew made projections of what a Central Vancouver penninsula (UBC, Musqueam 2, Vancouver, Burnaby, New Westminster) with 1 million people would look like. We no just about hit that number time to compare how his projections stock up."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2021-02-03-bartholomew-s-dot-destiny_files/figure-html/vancouver-dot-2016-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE
+)
+library(tidyverse)
+library(cancensus)
+library(mountainmathHelpers)
+library(dotdensity)
+library(sf)
+```
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/02/04/bartholomew-s-dot-destiny/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+
+```{r include=FALSE}
+map_bbox <- st_read('{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -123.27415466308594,
+              49.182601048138054
+            ],
+            [
+              -122.86628723144531,
+              49.182601048138054
+            ],
+            [
+              -122.86628723144531,
+              49.35151930828741
+            ],
+            [
+              -123.27415466308594,
+              49.35151930828741
+            ],
+            [
+              -123.27415466308594,
+              49.182601048138054
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}') %>% st_bbox()
+```
+How did early planners envision Vancouver's future growth? Fortunately for us, they left a prediction in dot-density map form! Here we compare their prediction to a dot-density map from today. Let's check out how our dot destiny unfolded!
+
+Vancouver grew rapidly from its incorporation in 1886 right up to the great crash of 1913, followed by WWI and a raging influenza epidemic (which we all know [way too much](https://homefreesociology.com/2020/11/25/hendersons-guide-to-pandemic-history/) about now). Growth returned through the 1920s, but an appetite for planning also met with a newly professionalized planning profession during this era. The City of Vancouver, in the process of amalgamating with the surrounding municipalities of Point Grey and South Vancouver, initiated a town planning commission, adopted interim zoning by-laws, and hired American planner Harland Bartholomew to consult. Bartholomew's team kept Vancouver planning in conversation with evolving practice in the USA, where he was a central figure in transforming many municipalities' explicitly race-based zoning (outlawed by courts) into use-based zoning that would have the same effect (see local planner Stephanie Allen's [award-winning](https://www.sfu.ca/urban/news-and-events/recent-news/stephanie-allen.html) [thesis](https://summit.sfu.ca/item/19420) for more). [Bartholomew's report](https://archive.org/details/vancplanincgen00vanc), while not adopted in its entirety, is widely credited as having a profound effect on the shape of the City. Here we want to take a quick peek at his prediction for the City's future.
+
+Looking forward from 1929, Bartholomew both suggested and predicted that Vancouver further amalgamate with nearby Burnaby and New Westminster, consolidating the peninsula. The combined population was about 280,000 at the time (reaching 289,681 residents by the 1931 census). Based on a variety of rudimentary forecasts, Bartholomew predicted that the peninsula containing Vancouver, Burnaby, and New Westminster would reach a population of one million residents by 1960. He even plotted out the expected distribution of this population in a lovely density dot-map on [p. 94](https://archive.org/details/vancplanincgen00vanc/page/94/mode/2up) of [his report](https://archive.org/details/vancplanincgen00vanc).
+
+![](/images/bartholomew_population_original.png)
+```{r message=FALSE, warning=FALSE}
+regions <- list(CSD=c("5915022","5915803","5915025","5915029"),CT=c("9330069.01","9330069.02"))
+census_data <- get_census(dataset='CA16', regions=regions, level='DB')
+
+lu_weights <- c(S110= 1, #"Residential - Single Detached & Duplex"
+                S131=2,# "Residential – Townhouse"
+                S130=4,# "Residential - Low-rise Apartment"
+                S135=8,# "Residential - High-rise Apartment"
+                S410=3,# "Residential - Institutional and Non-Market Housing"
+                S200=0.1,# "Commercial"
+                S230=4,# "Mixed Residential Commercial - Low-rise Apartment"
+                S235=8,# "Mixed Residential Commercial - High-rise Apartment"
+                S400=0.1,# "Institutional"
+                A500=0.1,# "Agriculture"
+                S300=0.1,# "Industrial"
+                R100=0.1,# "Recreation Open Space and Protected Natural Areas"
+                S420=0.1,# "Cemetery"
+                U100=0.1,# "Undeveloped and Unclassified"
+                M300=0.1,# "Industrial – Extractive"
+                S120=0.5,# "Residential – Rural"
+                S100=1,# "Residential - Mobile Home Park"
+                S700=0.1,# "Rail Rapid Transit Other Transportation Utility and Communication"
+                S600=0.1,# "Port Metro Vancouver"
+                R200=0.01,# "Lakes Large Rivers and Other Water"
+                S500=0.01,# "Road Right-of-Way"
+                W400=0.01,# "Protected Watershed"
+                S650=0.01,# "Airport/Airstrip"
+                F100=0.1,# "Harvesting and Research"
+                J000=1)# "Recent Redeveloped / Misclassified")
+
+
+cutout_data_raw <- read_sf("https://mountainmath.s3.ca-central-1.amazonaws.com/mountainmath/metro_van_landuse_db.geojson")
+water <- read_sf("https://mountainmath.s3.ca-central-1.amazonaws.com/mountainmath/metro_van_water_layer.geojson")
+land <- water %>% 
+  st_bbox() %>%
+  st_as_sfc() %>%
+  st_difference(water %>% st_union()) %>%
+  st_sf() 
+
+cutout_data <- cutout_data_raw %>%
+  mutate(weight=lu_weights[LU_Code]) %>%
+  group_by(GeoUID) %>%
+  mutate(weight=ifelse(max(weight)!=0.1 & weight==0.1,0,weight)) %>%
+  ungroup() %>%
+  mutate(weight=weight * as.numeric(st_area(.))) %>%
+  group_by(GeoUID) %>%
+  mutate(weight=weight/sum(weight)) %>%
+  ungroup() %>%
+  filter(weight>0) %>%
+  left_join(census_data %>% select(GeoUID,Population),by="GeoUID") %>%
+  filter(!is.na(Population)) %>%
+  mutate(Population=Population*weight) %>%
+  filter(Population>0) 
+
+
+total_pop <- census_data$Population %>% sum
+
+empty_ids <- cutout_data %>%
+  filter(st_is_empty(.)) %>%
+  pull(GeoUID)
+total_cutout_pop <- cutout_data$Population %>% sum()
+
+stopifnot(total_pop==total_cutout_pop & nrow(empty_ids)==0)
+
+dots <- compute_dots(cutout_data,"Population",scale=50)
+```
+
+As it turned out it would take much longer than Bartholomew forecast to reach the one million mark. Indeed, we've probably reached it only within the last couple of years. As of 2016, Vancouver, Burnaby, and New Westminster remained unamalgamated, and together with UBC/UNA/UEL and Musqueam 2 (also unamalgamated) they totalled some `r scales::comma(total_pop)` residents. We wanted to see what that distribution actually looks like today, using the same sort of dot-matrix map hand-drawn by Bartholomew's team. Of course, we're going to assemble it in R instead of drawing it by hand, allowing anyone to reproduce our work. Here's what it looks like.
+
+
+```{r vancouver-dot-2016, fig.height=9, fig.width=14, dpi=300}
+ggplot(dots) + 
+  geom_sf(data=land %>% 
+            mutate(geometry=geometry+st_sfc(st_point(c(0,-50)),crs=st_crs(land))) %>% 
+            st_set_crs(st_crs(land)),
+          fill=NA,size=0.25) +
+  geom_sf(data=land,fill="#dcddc7",size=0.5) +
+  geom_sf(size=0.1,alpha=0.5) +
+  geom_text(x=-123.23,y=49.31,label="Central Vancouver Peninsula\nVancouver, Burnaby, New Westminster",size=5) +
+  geom_text(x=-123.23,y=49.30,label="Jens von Bergmann & Nathan Lauster",size=3.5) +
+  geom_text(x=-123.25,y=49.19,label="2016 Population\n1 dot = 50 people",size=5) +
+  geom_text(x=-123.25,y=49.182,label="StatCan Census 2016",size=3.5) +
+  theme(plot.background = element_rect(fill="#dcddc7"),
+        panel.background = element_rect(fill="#dcddc7"),
+        panel.border = element_rect(fill=NA,color="black",size=1)) +
+  coord_bbox(map_bbox)
+```
+
+Comparing the two maps, a similar overall pattern emerges that reflects, in no small part, the enduring legacy of [zoning](https://archive.org/details/vancplanincgen00vanc/page/n223/mode/2up) enacted through the planning process itself. The forecast was that Downtown Vancouver and the West End would remain the most dense, reflecting the least restrictive zoning. The surrounding neighbourhoods would offer a middle density, with apartment buildings going up to three stories. Everywhere else would be dominated by relatively low-density (mostly single-family residential). The big picture today is broadly similar to the forecast from ninety years ago. In particular, all that zoning to protect low-density neighbourhoods remains stubbornly in place! But a few key differences in the map stand out.
+
+Downtown, Bartholomew's team forecast a fairly even distribution of high density. The actual distribution is far more variable! We see fewer people than forecast within the Central Business District (CBD) itself, but many more within the high-rise apartment buildings surrounding the CBD. Notably, people also show up along the north side of False Creek, which Bartholomew forecast remaining industrial. Guess he didn't foresee de-industrialization, Expo 86, and Li Ka-shing!
+
+Outside of Downtown Vancouver, some areas became more dense than anticipated, while others became less so, and these patterns are pretty interesting! On the more dense than anticipated side, we see regional town centres emerging as hotspots of density in Burnaby and New Westminster, and being linked together through transit-oriented development accompanying SkyTrain lines. We also see Kerrisdale and Marpole showing up as outposts of density. And then, of course, there's the universities: SFU and UBC and surrounding Endowment Lands. Though large portions of the latter were set aside as Pacific Spirit Park, we see the towers housing an increasing portion of the community, as at Wesbrook Village.
+
+What of where density appears lower than forecast? Select portions of Fairview and Mount Pleasant (as surrounding Jonathan Rogers Park), were re-zoned as industrial land after Bartholomew's plan, and their population correspondingly failed to grow. More intriguingly, Strathcona, Commercial Drive, and Kits Point also appear far less dense than forecast, due in part to downzonings over the years, making building in these locations increasingly restrictive. 
+
+```{r}
+library(rvest)
+get_household_size_data <- function() {
+  extract_table_data <- function(node){
+    h <- node %>% rvest::html_nodes("thead th") %>% rvest::html_text()
+    rows <- node %>% rvest::html_nodes("tbody tr")
+    data <- rows %>% lapply(function(d) {
+      dd <- d %>% 
+        rvest::html_nodes("td,th")
+      if (length(rvest::html_children(dd))==1) dd <- dd %>% rvest::html_children()
+      dd %>%
+        rvest::html_text() %>% 
+        t() %>% 
+        as.data.frame
+    }) %>%
+      bind_rows() %>%
+      setNames(h) 
+    
+    data
+  }
+  
+  xml2::read_html("https://www150.statcan.gc.ca/n1/pub/11-630-x/11-630-x2015008-eng.htm") %>%
+    rvest::html_nodes("table") %>%
+    first() %>%
+    extract_table_data() %>%
+    as_tibble() %>%
+    mutate_all(function(d)as.numeric(gsub(",","",d))) %>%
+    bind_rows(cancensus::get_census("CA16",regions=list(C="01"),
+                                    vectors = c("Average number of people per household"="v_CA16_425")) %>%
+                mutate(Year=2016) %>%
+                select(Year,`Number of households`=Households,`Average number of people per household`))
+}
+
+household_size <- simpleCache(get_household_size_data(),"canada_household_size.Rmd",path=here::here("data")) %>%
+  mutate(hh_size=`Average number of people per household`)
+```
+Of note, other factors also play a role in divergent forecasts. In particular, declines in household size from `r filter(household_size,Year==1931)$hh_size` in Bartholomew's day to `r filter(household_size,Year==2016)$hh_size` in 2016 mean it takes significantly more housing now to contain one million people than when Bartholomew made his projection. This helps explain why the low-density, house-oriented portions of the map look even less dense than forecast by Bartholomew's team.
+
+```{r canada-household-size, fig.width=8}
+household_size %>%
+  mutate(highlight=Year %in% c(1931,2016)) %>%
+ggplot(aes(x=Year,y=`Average number of people per household`,group=1)) +
+  geom_bar(stat="identity",aes(fill=highlight)) +
+  geom_line() +
+  geom_text(data=~filter(.,highlight),aes(label=`Average number of people per household`),
+            nudge_y = 0.3) +
+  scale_fill_manual(values=sanzo::duos$c103,guide=FALSE) +
+  scale_x_continuous(breaks=c(1851,1901,1931,1971,2001,2016)) +
+  theme_bw() +
+  theme(plot.background = element_rect(fill="#dcddc7"),
+        panel.background = element_rect(fill="#dcddc7"),
+        panel.border = element_rect(fill=NA,color="black",size=1)) +
+  labs(title="Household size in Canada",
+       x=NULL,
+       caption="StatCan Census")
+```
+
+
+
+Overall, it's a fun exercise to compare ninety year old forecasts in dot-density form to what we see today. And now is the perfect time to do it given we've finally matched the predicted population size! This is a great example of a [self-fulfilling prophecy](https://doodles.mountainmath.ca/blog/2020/05/25/projections-and-self-fulfilling-prophecies/) where much of the density distribution was enshrined in the zoning. But this exercise should also remind us that we're still building our cities based on planning decisions about urban form coupled with misguided forecasts made by long-dead men operating in a very different - and more discriminatory - era. We can probably do better.
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-02-03-bartholomew-s-dot-destiny.Rmarkdown) if others want to reproduce or adapt this for their own purposes.
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
