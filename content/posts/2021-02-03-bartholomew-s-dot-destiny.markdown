@@ -23,7 +23,7 @@ type: "post"
 
 
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/02/04/bartholomew-s-dot-destiny/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/02/04/bartholomews-dot-destiny/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 
@@ -39,7 +39,7 @@ Looking forward from 1929, Bartholomew both suggested and predicted that Vancouv
 As it turned out it would take much longer than Bartholomew forecast to reach the one million mark. Indeed, we've probably reached it only within the last couple of years. As of 2016, Vancouver, Burnaby, and New Westminster remained unamalgamated, and together with UBC/UNA/UEL and Musqueam 2 (also unamalgamated) they totalled some 952,779 residents. We wanted to see what that distribution actually looks like today, using the same sort of dot-matrix map hand-drawn by Bartholomew's team. Of course, we're going to assemble it in R instead of drawing it by hand, allowing anyone to reproduce our work. Here's what it looks like.
 
 
-<img src="/posts/2021-02-03-bartholomew-s-dot-destiny_files/figure-html/vancouver-dot-2016-1.png" width="4200" />
+<img src="/posts/2021-02-03-bartholomew-s-dot-destiny_files/figure-html/vancouver-dot-2016-1.png" width="2100" />
 
 Comparing the two maps, a similar overall pattern emerges that reflects, in no small part, the enduring legacy of [zoning](https://archive.org/details/vancplanincgen00vanc/page/n223/mode/2up) enacted through the planning process itself. The forecast was that Downtown Vancouver and the West End would remain the most dense, reflecting the least restrictive zoning. The surrounding neighbourhoods would offer a middle density, with apartment buildings going up to three stories. Everywhere else would be dominated by relatively low-density (mostly single-family residential). The big picture today is broadly similar to the forecast from ninety years ago. In particular, all that zoning to protect low-density neighbourhoods remains stubbornly in place! But a few key differences in the map stand out.
 
@@ -63,13 +63,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-02-03 21:21:39 PST"
+## [1] "2021-02-03 21:41:45 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [6c670a1] 2021-01-31: typos
+## Head:     [c4b4bf0] 2021-02-04: dot destiny post
 ```
 
 ```

@@ -35,7 +35,7 @@ library(dotdensity)
 library(sf)
 ```
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/02/04/bartholomew-s-dot-destiny/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/02/04/bartholomews-dot-destiny/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 ```{r include=FALSE}
@@ -153,7 +153,7 @@ dots <- compute_dots(cutout_data,"Population",scale=50)
 As it turned out it would take much longer than Bartholomew forecast to reach the one million mark. Indeed, we've probably reached it only within the last couple of years. As of 2016, Vancouver, Burnaby, and New Westminster remained unamalgamated, and together with UBC/UNA/UEL and Musqueam 2 (also unamalgamated) they totalled some `r scales::comma(total_pop)` residents. We wanted to see what that distribution actually looks like today, using the same sort of dot-matrix map hand-drawn by Bartholomew's team. Of course, we're going to assemble it in R instead of drawing it by hand, allowing anyone to reproduce our work. Here's what it looks like.
 
 
-```{r vancouver-dot-2016, fig.height=9, fig.width=14, dpi=300}
+```{r vancouver-dot-2016, fig.height=9, fig.width=14, dpi=150}
 ggplot(dots) + 
   geom_sf(data=land %>% 
             mutate(geometry=geometry+st_sfc(st_point(c(0,-50)),crs=st_crs(land))) %>% 
