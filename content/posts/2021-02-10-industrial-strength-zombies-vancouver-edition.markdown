@@ -142,3 +142,61 @@ Overall, there is no evidence to support the zombie narrative that Vancouver onc
 
 As usual, the code for this post is [availabe on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-02-10-industrial-strength-zombies-vancouver-edition.Rmarkdown) for anyone to reproduce and adaped. That data we used for this post is a custom tabulation that we have [made use of before](https://doodles.mountainmath.ca/blog/2019/06/15/census-custom-timelines/) on [several occasions](https://doodles.mountainmath.ca/blog/2019/10/29/commuter-growth/) that only covers the Vancouver and Toronto CMAs. Interested analysts can tweak the code to break out their own municipalities and industries.
 
+<details><summary>Reproducibility receipt</summary>
+
+```
+## [1] "2021-02-10 23:06:11 PST"
+```
+
+```
+## Local:    master /Users/jens/Google Drive/R/mountaindoodles
+## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
+## Head:     [fe38119] 2021-02-11: industrial zombies post
+```
+
+```
+## R version 4.0.3 (2020-10-10)
+## Platform: x86_64-apple-darwin17.0 (64-bit)
+## Running under: macOS Big Sur 10.16
+## 
+## Matrix products: default
+## BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
+## LAPACK: /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRlapack.dylib
+## 
+## locale:
+## [1] en_CA.UTF-8/en_CA.UTF-8/en_CA.UTF-8/C/en_CA.UTF-8/en_CA.UTF-8
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+##  [1] mountainmathHelpers_0.1.2 forcats_0.5.0            
+##  [3] stringr_1.4.0             dplyr_1.0.4              
+##  [5] purrr_0.3.4               readr_1.4.0              
+##  [7] tidyr_1.1.2               tibble_3.0.4             
+##  [9] ggplot2_3.3.3             tidyverse_1.3.0          
+## [11] cancensus_0.4.2          
+## 
+## loaded via a namespace (and not attached):
+##  [1] fs_1.4.1           sf_0.9-7           lubridate_1.7.9.2  RColorBrewer_1.1-2
+##  [5] httr_1.4.2         rmapzen_0.4.2      tools_4.0.3        backports_1.2.0   
+##  [9] R6_2.5.0           KernSmooth_2.23-17 rgeos_0.5-3        DBI_1.1.0         
+## [13] lazyeval_0.2.2     colorspace_2.0-0   withr_2.3.0        sp_1.4-4          
+## [17] tidyselect_1.1.0   curl_4.3           compiler_4.0.3     git2r_0.27.1      
+## [21] cli_2.2.0          rvest_0.3.6        geojsonsf_2.0.0    xml2_1.3.2        
+## [25] labeling_0.4.2     bookdown_0.19      scales_1.1.1       classInt_0.4-3    
+## [29] digest_0.6.27      foreign_0.8-80     rmarkdown_2.5      pkgconfig_2.0.3   
+## [33] htmltools_0.5.0    dbplyr_1.4.4       rlang_0.4.9        readxl_1.3.1      
+## [37] rstudioapi_0.13    httpcode_0.3.0     farver_2.0.3       generics_0.1.0    
+## [41] jsonlite_1.7.2     magrittr_2.0.1     Rcpp_1.0.5         munsell_0.5.0     
+## [45] fansi_0.4.1        lifecycle_0.2.0    stringi_1.5.3      yaml_2.2.1        
+## [49] jqr_1.1.0          grid_4.0.3         maptools_1.0-2     blob_1.2.1        
+## [53] crayon_1.3.4       geojsonio_0.9.2    lattice_0.20-41    haven_2.3.1       
+## [57] geojson_0.3.2      hms_0.5.3          knitr_1.30         pillar_1.4.7      
+## [61] crul_0.9.0         reprex_0.3.0       glue_1.4.2         evaluate_0.14     
+## [65] blogdown_0.19      V8_3.2.0           modelr_0.1.8       vctrs_0.3.5       
+## [69] cellranger_1.1.0   gtable_0.3.0       assertthat_0.2.1   xfun_0.18         
+## [73] broom_0.7.4        e1071_1.7-4        class_7.3-17       units_0.6-7       
+## [77] ellipsis_0.3.1
+```
+</details>

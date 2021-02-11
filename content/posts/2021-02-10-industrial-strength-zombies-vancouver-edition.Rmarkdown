@@ -389,3 +389,15 @@ Overall, there is no evidence to support the zombie narrative that Vancouver onc
 
 As usual, the code for this post is [availabe on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-02-10-industrial-strength-zombies-vancouver-edition.Rmarkdown) for anyone to reproduce and adaped. That data we used for this post is a custom tabulation that we have [made use of before](https://doodles.mountainmath.ca/blog/2019/06/15/census-custom-timelines/) on [several occasions](https://doodles.mountainmath.ca/blog/2019/10/29/commuter-growth/) that only covers the Vancouver and Toronto CMAs. Interested analysts can tweak the code to break out their own municipalities and industries.
 
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
