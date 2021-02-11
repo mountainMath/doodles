@@ -1,6 +1,8 @@
 ---
 title: 'Industrial Strength Zombies: Vancouver Edition'
-author: Jens von Bergmann
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
 date: '2021-02-10'
 slug: industrial-strength-zombies-vancouver-edition
 categories:
@@ -145,13 +147,13 @@ As usual, the code for this post is [availabe on GitHub](https://github.com/moun
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-02-10 23:06:11 PST"
+## [1] "2021-02-11 08:47:31 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [fe38119] 2021-02-11: industrial zombies post
+## Head:     [7492ed9] 2021-02-11: reprucability reciept.
 ```
 
 ```
@@ -182,7 +184,7 @@ As usual, the code for this post is [availabe on GitHub](https://github.com/moun
 ##  [5] httr_1.4.2         rmapzen_0.4.2      tools_4.0.3        backports_1.2.0   
 ##  [9] R6_2.5.0           KernSmooth_2.23-17 rgeos_0.5-3        DBI_1.1.0         
 ## [13] lazyeval_0.2.2     colorspace_2.0-0   withr_2.3.0        sp_1.4-4          
-## [17] tidyselect_1.1.0   curl_4.3           compiler_4.0.3     git2r_0.27.1      
+## [17] tidyselect_1.1.0   git2r_0.27.1       curl_4.3           compiler_4.0.3    
 ## [21] cli_2.2.0          rvest_0.3.6        geojsonsf_2.0.0    xml2_1.3.2        
 ## [25] labeling_0.4.2     bookdown_0.19      scales_1.1.1       classInt_0.4-3    
 ## [29] digest_0.6.27      foreign_0.8-80     rmarkdown_2.5      pkgconfig_2.0.3   
@@ -193,10 +195,10 @@ As usual, the code for this post is [availabe on GitHub](https://github.com/moun
 ## [49] jqr_1.1.0          grid_4.0.3         maptools_1.0-2     blob_1.2.1        
 ## [53] crayon_1.3.4       geojsonio_0.9.2    lattice_0.20-41    haven_2.3.1       
 ## [57] geojson_0.3.2      hms_0.5.3          knitr_1.30         pillar_1.4.7      
-## [61] crul_0.9.0         reprex_0.3.0       glue_1.4.2         evaluate_0.14     
-## [65] blogdown_0.19      V8_3.2.0           modelr_0.1.8       vctrs_0.3.5       
-## [69] cellranger_1.1.0   gtable_0.3.0       assertthat_0.2.1   xfun_0.18         
-## [73] broom_0.7.4        e1071_1.7-4        class_7.3-17       units_0.6-7       
-## [77] ellipsis_0.3.1
+## [61] codetools_0.2-16   crul_0.9.0         reprex_0.3.0       glue_1.4.2        
+## [65] evaluate_0.14      blogdown_0.19      V8_3.2.0           modelr_0.1.8      
+## [69] vctrs_0.3.5        cellranger_1.1.0   gtable_0.3.0       assertthat_0.2.1  
+## [73] xfun_0.18          broom_0.7.4        e1071_1.7-4        class_7.3-17      
+## [77] units_0.6-7        ellipsis_0.3.1
 ```
 </details>
