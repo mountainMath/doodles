@@ -386,7 +386,7 @@ At the same time we should support remote learning options any family that decid
 
 As usual, the code to pull in the data and make the graphs is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-02-bc-back-to-covid-school.Rmarkdown) in case anyone wants to reproduce or adapt them.
 
-## Addendum
+## Addendum (Feb 17, 2021)
 We were made aware that [Réka Gustafson wrote a response to our blog post](/data/Briefing%20Note%20-Response%20to%20PHSA%20board%20regarding%20blog%20on%20schools.pdf), embedded below for convenience. We will not go into too much detail, but briefly address two main points.
 
 Gustafason's response further highlighted how the BCCDC slides weren't the result of a coherent analysis on the situation in schools, but a mishmash of incoherent points, made with data from constantly shifting time frames and other ad-hoc slices of the data. To illustrate: the response to point 1 slide 14 claimed that the data on slide 14 being correct, but each data point was constructed from a different time window. Why anyone would slice data this way, let alone present that to the public, is byond our understanding.
