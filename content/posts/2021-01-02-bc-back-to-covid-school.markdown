@@ -141,3 +141,20 @@ We could, if the BCCDC would choose to do so, monitor community transmissions at
 At the same time we should support remote learning options any family that decides to pull their children out of school because e.g. they have immune-compromised household members.
 
 As usual, the code to pull in the data and make the graphs is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-02-bc-back-to-covid-school.Rmarkdown) in case anyone wants to reproduce or adapt them.
+
+## Addendum
+We were made aware that [Réka Gustafson wrote a response to our blog post](/data/Briefing%20Note%20-Response%20to%20PHSA%20board%20regarding%20blog%20on%20schools.pdf), embedded below for convenience. We will not go into too much detail, but briefly address two main points.
+
+Gustafason's response further highlighted how the BCCDC slides weren't the result of a coherent analysis on the situation in schools, but a mishmash of incoherent points, made with data from constantly shifting time frames and other ad-hoc slices of the data. To illustrate: the response to point 1 slide 14 claimed that the data on slide 14 being correct, but each data point was constructed from a different time window. Why anyone would slice data this way, let alone present that to the public, is byond our understanding.
+
+Similarly, the response to point 4 slide 17 reiterated the point that VCH school transmission data are very different from overall BC data, highlighting the piecemeil approach taken. 
+
+We are noting that Gustafson's insistence in their confident statements about transmissions in BC schools are hard to justify simply because that a large fraction of children with COVID-19 remain asymptomatic, many of whom will be missed by BC's testing protocol. Gustafson's statements are based on confirmed cases and determined likely transmission routes, the latter of which is necessarily biased by public health priors. Statements like "for the vast majority of these [...] further transmission does not occur in the school" fail to reflect the large uncertainties inherent in the underlying data.
+
+As a takeaway Gustafson writes that
+>    Going forward, presentations will be reviewed to ensure dates and details are added either directly to the slides, or to an appended document, to minimize the likelihood of misinterpretation.
+
+Reviewing slides before presentation and providing more in-depth description of the methods are critical for transparent and effective communication. But the main problem isn't that slides were missing details, it's that there was no coherent analysis of COVID-19 in schools underlying this presentation in the first place. If there was a coherent analysis there would be no need for this confusing mix of metrics scattered across the slides.
+
+<iframe src="/data/Briefing%20Note%20-Response%20to%20PHSA%20board%20regarding%20blog%20on%20schools.pdf" width="100%" height="600px"/>
+
