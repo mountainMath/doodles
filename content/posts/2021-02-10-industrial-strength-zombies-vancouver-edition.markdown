@@ -152,13 +152,13 @@ An earlier version of this post had a problem with graphs for multiple categorie
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-02-21 17:07:30 PST"
+## [1] "2021-02-22 09:03:23 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [cdb8484] 2021-02-22: fix in industrial zombies post that did not stack bars properly
+## Head:     [69a0e31] 2021-02-22: exponential covid post
 ```
 
 ```
@@ -190,14 +190,14 @@ An earlier version of this post had a problem with graphs for multiple categorie
 ##  [9] blob_1.2.1        rlang_0.4.9       pillar_1.4.7      glue_1.4.2       
 ## [13] withr_2.3.0       DBI_1.1.0         dbplyr_1.4.4      modelr_0.1.8     
 ## [17] readxl_1.3.1      lifecycle_0.2.0   munsell_0.5.0     blogdown_0.19    
-## [21] gtable_0.3.0      cellranger_1.1.0  rvest_0.3.6       evaluate_0.14    
-## [25] knitr_1.30        fansi_0.4.1       broom_0.7.4       Rcpp_1.0.5       
-## [29] scales_1.1.1      backports_1.2.0   jsonlite_1.7.2    fs_1.4.1         
-## [33] hms_0.5.3         digest_0.6.27     stringi_1.5.3     bookdown_0.19    
-## [37] grid_4.0.3        cli_2.2.0         tools_4.0.3       magrittr_2.0.1   
-## [41] crayon_1.3.4      pkgconfig_2.0.3   ellipsis_0.3.1    xml2_1.3.2       
-## [45] reprex_0.3.0      lubridate_1.7.9.2 assertthat_0.2.1  rmarkdown_2.5    
-## [49] httr_1.4.2        rstudioapi_0.13   R6_2.5.0          git2r_0.27.1     
-## [53] compiler_4.0.3
+## [21] gtable_0.3.0      cellranger_1.1.0  rvest_0.3.6       codetools_0.2-16 
+## [25] evaluate_0.14     labeling_0.4.2    knitr_1.30        fansi_0.4.1      
+## [29] broom_0.7.4       Rcpp_1.0.5        scales_1.1.1      backports_1.2.0  
+## [33] jsonlite_1.7.2    farver_2.0.3      fs_1.4.1          hms_0.5.3        
+## [37] digest_0.6.27     stringi_1.5.3     bookdown_0.19     grid_4.0.3       
+## [41] cli_2.2.0         tools_4.0.3       magrittr_2.0.1    crayon_1.3.4     
+## [45] pkgconfig_2.0.3   ellipsis_0.3.1    xml2_1.3.2        reprex_0.3.0     
+## [49] lubridate_1.7.9.2 assertthat_0.2.1  rmarkdown_2.5     httr_1.4.2       
+## [53] rstudioapi_0.13   R6_2.5.0          git2r_0.27.1      compiler_4.0.3
 ```
 </details>

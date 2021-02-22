@@ -204,9 +204,10 @@ What about the rest of the Real Estate Industry? All those realtors and property
 ```{r}
 plot_data <- data %>% 
   top_regions() %>% 
-  filter(grepl("Real es",Category)) %>%
+  filter(grepl("Real es",Category,ignore.case = TRUE)) %>%
   group_by(`Region Name`,Year) %>%
-  summarise(share=sum(share))
+  summarise(share=sum(share)) %>%
+  filter(Year>=1986)
 
 ggplot(plot_data,aes(x=`Region Name`,y=share,fill=Year)) +
   geom_bar(stat="identity",position="dodge") +
