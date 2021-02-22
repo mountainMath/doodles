@@ -121,7 +121,7 @@ So if most of us are neither selling logs nor selling real estate, then what are
 
 Woof! Back in 1971, manufacturing really had a claim in the region, accounting for more than one in five jobs in Surrey. It used to beat the Construction industry! But it's declined precipitously - by roughly two-thirds - enabling the Construction industry to pull ahead. Hello North American de-industrialization!
 
-So we don't mostly sell real estate, we never mostly sold logs, and we don't manufacture very much. What do we do? A big answer is Retail. Retail alone is generally larger than Finance, Real Estate and Construction combined as well as Manufacturing. And it's pretty evenly distributed across municipalities (even if it increasingly pays too little to get a place in West Vancouver).
+So we don't mostly sell real estate, we never mostly sold logs, and we don't manufacture very much. What do we do? A big answer is Retail. Retail alone is nearly as large as Finance, Real Estate and Construction combined and surpasses Manufacturing. And it's pretty evenly distributed across municipalities (even if it increasingly pays too little to get a place in West Vancouver).
 
 <img src="/posts/2021-02-10-industrial-strength-zombies-vancouver-edition_files/figure-html/unnamed-chunk-14-1.png" width="1200" />
 
@@ -152,13 +152,13 @@ An earlier version of this post had a problem with graphs for multiple categorie
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-02-21 16:38:56 PST"
+## [1] "2021-02-21 17:07:30 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [dcd00fb] 2021-02-18: Add date to addendum
+## Head:     [cdb8484] 2021-02-22: fix in industrial zombies post that did not stack bars properly
 ```
 
 ```
