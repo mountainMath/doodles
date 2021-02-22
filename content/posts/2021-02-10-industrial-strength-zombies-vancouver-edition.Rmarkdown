@@ -157,7 +157,7 @@ data %>%
   top_regions() %>%
   mutate(NAICS=str_extract(Category,"^\\d+|^\\d+-\\d+")) %>%
   mutate(name=gsub("^\\d+ ","",Category) %>% gsub("^\\d+-\\d+ ","",.)) %>%
-  left_join(filter(.,Year=="2016") %>% select(NAICS,Name=name),by="NAICS") %>%
+  left_join(filter(.,Year=="2016") %>% select(NAICS,Name=name) %>% unique,by="NAICS") %>%
   filter(Year %in% seq(2001,2016,5)) %>% 
   ggplot(aes(x=Year,y=share,fill=Name)) +
   geom_bar(stat="identity") +
@@ -187,7 +187,9 @@ year_graph_theme <- list(
 ```{r}
 data %>% 
   top_regions() %>% 
-  filter(grepl("Construction",Category)) %>%
+  filter(grepl("Construction",Category))  %>%
+  group_by(`Region Name`,Year) %>%
+  summarise(share=sum(share)) %>%
   ggplot(aes(x=`Region Name`,y=share,fill=Year)) +
   geom_bar(stat="identity",position="dodge") +
   year_graph_theme +
@@ -202,7 +204,9 @@ What about the rest of the Real Estate Industry? All those realtors and property
 ```{r}
 plot_data <- data %>% 
   top_regions() %>% 
-  filter(grepl("Real es",Category))
+  filter(grepl("Real es",Category)) %>%
+  group_by(`Region Name`,Year) %>%
+  summarise(share=sum(share))
 
 ggplot(plot_data,aes(x=`Region Name`,y=share,fill=Year)) +
   geom_bar(stat="identity",position="dodge") +
@@ -220,7 +224,9 @@ What about Finance? This is often grouped in with Real Estate, but extends more 
 plot_data <- data %>% 
   top_regions() %>% 
   filter(as.integer(Year)>=1986) %>%
-  filter(grepl("Finance",Category))
+  filter(grepl("Finance",Category)) %>%
+  group_by(`Region Name`,Year) %>%
+  summarise(share=sum(share))
 
 ggplot(plot_data,aes(x=`Region Name`,y=share,fill=Year)) +
   geom_bar(stat="identity",position="dodge") +
@@ -236,7 +242,9 @@ We can combine Finance back with Real Estate and Construction to get perhaps the
 ```{r}
 plot_data <- data %>% 
   top_regions() %>% 
-  filter(grepl("Finance|Real Estate|Constru",Category,ignore.case = TRUE))
+  filter(grepl("Finance|Real Estate|Constru",Category,ignore.case = TRUE)) %>%
+  group_by(`Region Name`,Year) %>%
+  summarise(share=sum(share))
 
 ggplot(plot_data,aes(x=`Region Name`,y=share,fill=Year)) +
   geom_bar(stat="identity",position="dodge") +
@@ -245,14 +253,17 @@ ggplot(plot_data,aes(x=`Region Name`,y=share,fill=Year)) +
        caption="MountainMath, StatCan Census 1971-2016")
 ```
 
-Overall, we get the sense that even this widest possible categorization of the Real Estate related sector generally provides for no more than 5% to 10% of our municipal jobs. Excepting for Maple Ridge, where so many construction workers appear to have moved, the Real Estate sector has generally declined as a source of work since the 1970s and early 80s.
+Overall, we get the sense that even this widest possible categorization of the Real Estate related sector generally provides around 15% of our municipal jobs. Fewer in the City of Vancouver and more in West Vancouver. Vancouver and Surrey show a fairly stable share of jobs in these sectors, Maple Ridge and West Vancouver show an increasing trend. The reason for the variation is diverse, Surrey and Maple Ridge have more construction workers, West Vancouver is heavier in Finance.
 
 Just to send the zombie home, let's put this on a map. Here's the full geographic distribution of Real Estate and Construction as a proportion of the labour force in each municipality. We start the map in 1986, where the quote above begins (and where many critics trace Vancouver's turn toward real estate as arising after Expo 86). So let's see how is started and how it's going.
 
 ```{r re_construction_map, fig.height= 4}
 geo_data <- get_census("CA16",regions=list(CMA="59933"),level="CSD", geo_format = 'sf') %>%
-  left_join(data %>% filter(Year %in% c("1986","2016"),grepl("Constr|Real est",Category,ignore.case = TRUE)) %>%
-              group_by(GeoUID,Year) %>% summarize(share=sum(share)))
+  left_join(data %>% 
+              filter(Year %in% c("1986","2016"),grepl("Constr|Real est",Category,ignore.case = TRUE)) %>%
+              group_by(GeoUID,Year) %>% 
+              summarize(share=sum(share)),
+            by = "GeoUID")
 
 geo_data %>%
   mutate(share=ifelse(grepl("IRI",name),NA_real_,share)) %>%
@@ -279,7 +290,9 @@ As it turns out, logging and forestry have been a very small part of Vancouver's
 ```{r}
 plot_data <- data %>% 
   top_regions() %>% 
-  filter(grepl("Logging|Forest",Category))
+  filter(grepl("Logging|Forest",Category))  %>%
+  group_by(`Region Name`,Year) %>%
+  summarise(share=sum(share))
 
 ggplot(plot_data,aes(x=`Region Name`,y=share,fill=Year)) +
   geom_bar(stat="identity",position="dodge") +
@@ -293,7 +306,9 @@ But maybe we're still extracting! What about mining? Mining makes up a similarly
 ```{r}
 plot_data <- data %>% 
   top_regions() %>% 
-  filter(grepl("Mining",Category))
+  filter(grepl("Mining",Category))  %>%
+  group_by(`Region Name`,Year) %>%
+  summarise(share=sum(share))
 
 ggplot(plot_data,aes(x=`Region Name`,y=share,fill=Year)) +
   geom_bar(stat="identity",position="dodge") +
@@ -310,7 +325,9 @@ We can combine the above two industries with agriculture to get a fairly consist
 ```{r}
 plot_data <- data %>% 
   top_regions() %>% 
-  filter(grepl("Logging|Mining|Forestry|Agri",Category,ignore.case = TRUE))
+  filter(grepl("Logging|Mining|Forestry|Agri",Category,ignore.case = TRUE)) %>%
+  group_by(`Region Name`,Year) %>%
+  summarise(share=sum(share))
 
 ggplot(plot_data,aes(x=`Region Name`,y=share,fill=Year)) +
   geom_bar(stat="identity",position="dodge") +
@@ -325,7 +342,9 @@ So if most of us are neither selling logs nor selling real estate, then what are
 ```{r}
 plot_data <- data %>% 
   top_regions() %>% 
-  filter(grepl("Manu",Category))
+  filter(grepl("Manu",Category)) %>%
+  group_by(`Region Name`,Year) %>%
+  summarise(share=sum(share))
 
 ggplot(plot_data,aes(x=`Region Name`,y=share,fill=Year)) +
   geom_bar(stat="identity",position="dodge") +
@@ -341,7 +360,9 @@ So we don't mostly sell real estate, we never mostly sold logs, and we don't man
 ```{r}
 plot_data <- data %>% 
   top_regions() %>% 
-  filter(grepl("Retail",Category))
+  filter(grepl("Retail",Category)) %>%
+  group_by(`Region Name`,Year) %>%
+  summarise(share=sum(share))
 
 ggplot(plot_data,aes(x=`Region Name`,y=share,fill=Year)) +
   geom_bar(stat="identity",position="dodge") +
@@ -355,7 +376,9 @@ What else do we do? We take care of people! Let's have a look at Health Care and
 ```{r}
 plot_data <- data %>% 
   top_regions() %>% 
-  filter(grepl("Health",Category))
+  filter(grepl("Health",Category)) %>%
+  group_by(`Region Name`,Year) %>%
+  summarise(share=sum(share))
 
 ggplot(plot_data,aes(x=`Region Name`,y=share,fill=Year)) +
   geom_bar(stat="identity",position="dodge") +
@@ -374,7 +397,9 @@ Finally, and perhaps trickiest to define, let’s briefly touch on the “Creati
 plot_data <- data %>% 
   top_regions() %>% 
   filter(Year %in% seq(2001,2016,5)) %>%
-  filter(grepl("Education|Technical|Infornmation|Arts",Category,ignore.case = TRUE))
+  filter(grepl("Education|Technical|Infornmation|Arts",Category,ignore.case = TRUE)) %>%
+  group_by(`Region Name`,Year) %>%
+  summarise(share=sum(share))
 
 ggplot(plot_data,aes(x=`Region Name`,y=share,fill=Year)) +
   geom_bar(stat="identity",position="dodge") +
@@ -385,10 +410,15 @@ ggplot(plot_data,aes(x=`Region Name`,y=share,fill=Year)) +
 
 Kind of! We can see a definite rise in the City of Vancouver itself, as well as in its largest suburb of Surrey. For Maple Ridge and West Vancouver, the historical patterns are less clear, but we get a real sense of geographic sorting. West Vancouver, in particular, seems to be a place that many of our "creative class" aspire to live. At least the ones that make money. 
 
+We note that in the City of Vancouver and in West Vancouver the creative class on it's own clearly outperforms our widest possible categorization of the Real Estate related sector, whereas the situation is reversed in Surrey and Maple Ridge.
+
 Overall, there is no evidence to support the zombie narrative that Vancouver once sold logs and now we sell real estate. Instead, we get the sense that Vancouver has a relatively diverse economy. It's solidly backed by the supportive role in retail and services that the metropolis plays for the province as a whole. But its growth is arguably also supported by a rising "creative class" replacing older manufacturing jobs. Our industrial strength diversity leaves the region in a pretty good economic position. But adding a few more construction workers would really help with our housing shortage!
 
 
 As usual, the code for this post is [availabe on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-02-10-industrial-strength-zombies-vancouver-edition.Rmarkdown) for anyone to reproduce and adaped. That data we used for this post is a custom tabulation that we have [made use of before](https://doodles.mountainmath.ca/blog/2019/06/15/census-custom-timelines/) on [several occasions](https://doodles.mountainmath.ca/blog/2019/10/29/commuter-growth/) that only covers the Vancouver and Toronto CMAs. Interested analysts can tweak the code to break out their own municipalities and industries.
+
+## Note 
+An earlier version of this post had a problem with graphs for multiple categories not stacking properly which has been fixed now. The [previous version can be accessed in the GitHub version control](https://github.com/mountainMath/doodles/blob/312808c09abc17caa679350ebcc807ad09a7ed90/content/posts/2021-02-10-industrial-strength-zombies-vancouver-edition.Rmarkdown).
 
 <details><summary>Reproducibility receipt</summary>
 ```{r cache=FALSE}

@@ -89,7 +89,7 @@ We can combine Finance back with Real Estate and Construction to get perhaps the
 
 <img src="/posts/2021-02-10-industrial-strength-zombies-vancouver-edition_files/figure-html/unnamed-chunk-9-1.png" width="1200" />
 
-Overall, we get the sense that even this widest possible categorization of the Real Estate related sector generally provides for no more than 5% to 10% of our municipal jobs. Excepting for Maple Ridge, where so many construction workers appear to have moved, the Real Estate sector has generally declined as a source of work since the 1970s and early 80s.
+Overall, we get the sense that even this widest possible categorization of the Real Estate related sector generally provides around 15% of our municipal jobs. Fewer in the City of Vancouver and more in West Vancouver. Vancouver and Surrey show a fairly stable share of jobs in these sectors, Maple Ridge and West Vancouver show an increasing trend. The reason for the variation is diverse, Surrey and Maple Ridge have more construction workers, West Vancouver is heavier in Finance.
 
 Just to send the zombie home, let's put this on a map. Here's the full geographic distribution of Real Estate and Construction as a proportion of the labour force in each municipality. We start the map in 1986, where the quote above begins (and where many critics trace Vancouver's turn toward real estate as arising after Expo 86). So let's see how is started and how it's going.
 
@@ -139,21 +139,26 @@ Finally, and perhaps trickiest to define, let’s briefly touch on the “Creati
 
 Kind of! We can see a definite rise in the City of Vancouver itself, as well as in its largest suburb of Surrey. For Maple Ridge and West Vancouver, the historical patterns are less clear, but we get a real sense of geographic sorting. West Vancouver, in particular, seems to be a place that many of our "creative class" aspire to live. At least the ones that make money. 
 
+We note that in the City of Vancouver and in West Vancouver the creative class on it's own clearly outperforms our widest possible categorization of the Real Estate related sector, whereas the situation is reversed in Surrey and Maple Ridge.
+
 Overall, there is no evidence to support the zombie narrative that Vancouver once sold logs and now we sell real estate. Instead, we get the sense that Vancouver has a relatively diverse economy. It's solidly backed by the supportive role in retail and services that the metropolis plays for the province as a whole. But its growth is arguably also supported by a rising "creative class" replacing older manufacturing jobs. Our industrial strength diversity leaves the region in a pretty good economic position. But adding a few more construction workers would really help with our housing shortage!
 
 
 As usual, the code for this post is [availabe on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-02-10-industrial-strength-zombies-vancouver-edition.Rmarkdown) for anyone to reproduce and adaped. That data we used for this post is a custom tabulation that we have [made use of before](https://doodles.mountainmath.ca/blog/2019/06/15/census-custom-timelines/) on [several occasions](https://doodles.mountainmath.ca/blog/2019/10/29/commuter-growth/) that only covers the Vancouver and Toronto CMAs. Interested analysts can tweak the code to break out their own municipalities and industries.
 
+## Note 
+An earlier version of this post had a problem with graphs for multiple categories not stacking properly which has been fixed now. The [previous version can be accessed in the GitHub version control](https://github.com/mountainMath/doodles/blob/312808c09abc17caa679350ebcc807ad09a7ed90/content/posts/2021-02-10-industrial-strength-zombies-vancouver-edition.Rmarkdown).
+
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-02-11 08:47:31 PST"
+## [1] "2021-02-21 16:38:56 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [7492ed9] 2021-02-11: reprucability reciept.
+## Head:     [dcd00fb] 2021-02-18: Add date to addendum
 ```
 
 ```
@@ -180,25 +185,19 @@ As usual, the code for this post is [availabe on GitHub](https://github.com/moun
 ## [11] cancensus_0.4.2          
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] fs_1.4.1           sf_0.9-7           lubridate_1.7.9.2  RColorBrewer_1.1-2
-##  [5] httr_1.4.2         rmapzen_0.4.2      tools_4.0.3        backports_1.2.0   
-##  [9] R6_2.5.0           KernSmooth_2.23-17 rgeos_0.5-3        DBI_1.1.0         
-## [13] lazyeval_0.2.2     colorspace_2.0-0   withr_2.3.0        sp_1.4-4          
-## [17] tidyselect_1.1.0   git2r_0.27.1       curl_4.3           compiler_4.0.3    
-## [21] cli_2.2.0          rvest_0.3.6        geojsonsf_2.0.0    xml2_1.3.2        
-## [25] labeling_0.4.2     bookdown_0.19      scales_1.1.1       classInt_0.4-3    
-## [29] digest_0.6.27      foreign_0.8-80     rmarkdown_2.5      pkgconfig_2.0.3   
-## [33] htmltools_0.5.0    dbplyr_1.4.4       rlang_0.4.9        readxl_1.3.1      
-## [37] rstudioapi_0.13    httpcode_0.3.0     farver_2.0.3       generics_0.1.0    
-## [41] jsonlite_1.7.2     magrittr_2.0.1     Rcpp_1.0.5         munsell_0.5.0     
-## [45] fansi_0.4.1        lifecycle_0.2.0    stringi_1.5.3      yaml_2.2.1        
-## [49] jqr_1.1.0          grid_4.0.3         maptools_1.0-2     blob_1.2.1        
-## [53] crayon_1.3.4       geojsonio_0.9.2    lattice_0.20-41    haven_2.3.1       
-## [57] geojson_0.3.2      hms_0.5.3          knitr_1.30         pillar_1.4.7      
-## [61] codetools_0.2-16   crul_0.9.0         reprex_0.3.0       glue_1.4.2        
-## [65] evaluate_0.14      blogdown_0.19      V8_3.2.0           modelr_0.1.8      
-## [69] vctrs_0.3.5        cellranger_1.1.0   gtable_0.3.0       assertthat_0.2.1  
-## [73] xfun_0.18          broom_0.7.4        e1071_1.7-4        class_7.3-17      
-## [77] units_0.6-7        ellipsis_0.3.1
+##  [1] tidyselect_1.1.0  xfun_0.18         haven_2.3.1       colorspace_2.0-0 
+##  [5] vctrs_0.3.5       generics_0.1.0    htmltools_0.5.0   yaml_2.2.1       
+##  [9] blob_1.2.1        rlang_0.4.9       pillar_1.4.7      glue_1.4.2       
+## [13] withr_2.3.0       DBI_1.1.0         dbplyr_1.4.4      modelr_0.1.8     
+## [17] readxl_1.3.1      lifecycle_0.2.0   munsell_0.5.0     blogdown_0.19    
+## [21] gtable_0.3.0      cellranger_1.1.0  rvest_0.3.6       evaluate_0.14    
+## [25] knitr_1.30        fansi_0.4.1       broom_0.7.4       Rcpp_1.0.5       
+## [29] scales_1.1.1      backports_1.2.0   jsonlite_1.7.2    fs_1.4.1         
+## [33] hms_0.5.3         digest_0.6.27     stringi_1.5.3     bookdown_0.19    
+## [37] grid_4.0.3        cli_2.2.0         tools_4.0.3       magrittr_2.0.1   
+## [41] crayon_1.3.4      pkgconfig_2.0.3   ellipsis_0.3.1    xml2_1.3.2       
+## [45] reprex_0.3.0      lubridate_1.7.9.2 assertthat_0.2.1  rmarkdown_2.5    
+## [49] httr_1.4.2        rstudioapi_0.13   R6_2.5.0          git2r_0.27.1     
+## [53] compiler_4.0.3
 ```
 </details>
