@@ -1,0 +1,389 @@
+---
+title: Data variants
+author: Jens von Bergmann
+date: '2021-03-04'
+slug: data-variants
+categories:
+  - covid-19
+tags: []
+description: "We don't have data on variants of concern in BC, so let's take a look at different variants of building proxies."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2021-03-04-data-variants_files/figure-html/variant_facets-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 150,
+	fig.width = 8,
+	fig.height = 6,
+	cache = TRUE
+)
+library(tidyverse)
+library(CanCovidData)
+library(broom)
+library(lubridate)
+
+extract_stl_trend_m <- function(c){
+  #print(length(c))
+  cc <- c %>%
+    log() %>%
+    ts(frequency = 7,start = as.numeric(format(Sys.Date(), "%j"))) %>% 
+    stl(s.window=14,t.window=14) 
+   
+    as_tibble(cc$time.series)$trend %>% exp()
+}
+```
+
+Variants of concern are named such because they are concerning. The ones we worry about are B.1.1.7 (the variant first documented in UK), B.1.351 (the variant first documented in South Africa), and P.1 (the variant first documented in Brazil).
+
+Currently, B.1.1.7 is probably the most concerning in BC because we know it is significantly more infectious, with a daily growth rate average of around 10%. This means that in our current BC environment, [where we have been seeing a decline by about 0.7% a day](https://doodles.mountainmath.ca/blog/2021/02/21/on-covid-and-exponential-growth/) since our tougher restrictions enacted in November, B.1.1.7 would grow at about 9.3% a day. As a comparison, we have seen roughly 5% daily growth between July 1 through mid November, with a brief period of lower growth around September.
+
+The other two variants are concerning because they show some ability to escape immunity. This will have less of an impact short-term, but could cause problems down the road.
+
+If B.1.1.7 becomes established in BC, it will grow at almost twice the rate as regular COVID-19 did this past fall. It will lead to chaos very quickly as several modelling approaches have tried to highlight.
+
+### What should we do?
+
+1. First we should try to prevent B.1.1.7 from being introduced. We must tighten up the quarantine rules so that we don't get local transmissions. The first B.1.1.7 case recorded in BC transmitted to (at least) two other people. And with every week BC reported more local transmissions. 
+2. If keeping B.1.1.7 out fails and we have local transmissions, we should prevent B.1.1.7 from becoming established. We want to aggressively play whack-a-mole whenever we see local transmissions and stomp it out. This is hard. If it wasn't we would have done that with regular COVID-19 too. Fraser Health is now testing asymptomatic contacts to get ahead of transmissions and get to their contacts more quickly, and is also casting a wider net for contacts. It is not clear how other Health Authorities are dealing with VOC.
+3. If keeping B.1.1.7 from becoming established fails, we should act quickly to prevent it from growing. As we have seen over and over again, it's much easier to slow or revert growth when the numbers are small. Exponential growth is unforgiving, especially when it is much faster than what we have seen in fall. If we wait until B.1.1.7 starts to visibly push up overall cases, numbers will surge, contact tracing will collapse, driving up growth even further. [Caroline Colijn has a great post to demonstrate the benefits of acting early](https://www.sfu.ca/magpie/blog/variant-simple-proactive.html).
+
+## Data on variants
+So how are we doing right now? That's hard to say, we don't have useful data. Which is quite surprising given how concerning everyone agrees the variants of concern are. By "useful" I mean data with dates and denominators. How many variants were found when, and how many samples were screened/tested for them? Also, it would be good to know which specific variants were found and if they were locally acquired or not.
+
+Unfortunately BC does not make this data public. But there is some data on VOC that is available. Let's review what we have and run through the variants of data we can use to make guesses at the missing data on variants.
+
+### Point-prevalence study
+The point-prevalence study aimed to look at all COVID-positive samples between January 30 and February 5 and determine how many of them were VOC and which ones they were. For the process, the samples were first screened with a second PCR to look for the N501Y mutation common to the variants, and then sequence all those flagged for the mutation to determine which variant they were.
+
+The BC PHO announced that the point-prevalence study found three variants, two B.1.1.7 and one B.1.351 out of 3099 cases, which is a very low rate. She explained that 30 cases screened positive for N501Y, but only three were confirmed to be one of the variants by whole genome sequencing. This looks like great data, we have dates and denominators. The problem is that the results, 3/3099 VOC, is implausibly low given other data we have as I have argued elsewhere [using schoole exposures](https://twitter.com/vb_jens/status/1364258473282727939?s=20) and [overall reported variants](https://twitter.com/vb_jens/status/1364709224203227138?s=20). And only 3 out of 30 N501Y cases being variants of concern is also suspiciously low, screening should be quite good at picking out the variants.
+
+The point-prevalence study should have been the comprehensive baseline for data on variants, but as much as it pains me to say this, unfortunately there are too many big questions to take her reported results at face value.
+
+### Situation reports
+The weekly situation reports list cumulative variant of concern case counts by variant and acquisition, and they give a broad window of episode weeks in which they fall. We can look at week over week changes in the cumulative counts, but there is likely a lot of backfilling of older data happening and it's unlikely the difference in cases can be attributed to the last reporting week. Moreover, we don't know how many cases were screened for variants. We have fuzzy denominators and dates. At best. Let's take a look.
+
+```{r}
+variants <- tibble(week=c(3,4,5,6,7),
+                   B.1.1.7=c(14,25,40,80,157),
+                   `B.1.1.7 travel`=c(11,14,18,19,20),
+                   B.1.315=c(4,15,19,20,23),
+                   `B.1.315 travel`=c(0,1,2,2,3)
+                   ) %>%
+  mutate(`B.1.1.7 local`=B.1.1.7-`B.1.1.7 travel`,
+         `B.1.315 local`=B.1.315-`B.1.315 travel`)
+
+variants %>%
+  pivot_longer(matches("local|travel")) %>%
+  ggplot(aes(x=week,y=value,fill=name)) +
+  geom_bar(stat="identity") +
+  scale_fill_brewer(palette = "Paired") +
+  labs(title="Variants of concern in BC",
+       y="Cumulative number of reported cases",
+       x="Episode week",
+       fill="Variant/acquisition",
+       caption="MountainMath, Data: BCCDC Situation Reports")
+
+```
+
+We see a clear increase in cumulative variants of concern being reported in the weekly reports, with the newest one covering cases with onset date up to week 7 (Feb 14-20). We don't have denominators since we don't really know if the cases added to the cumulative total were from the previous week or from earlier. And we don't know what fraction of cases got screened and sequenced.
+
+But not all variants are created equal. To see this we facet the graph by variants and acquisition, and allow the y-axis to scale independently for each graph so we can better see each individual one.
+
+```{r variant_facets}
+variants %>%
+  pivot_longer(matches("local|travel")) %>%
+  mutate(acquisition=str_extract(name,"local|travel") %>% map(last) %>% unlist) %>%
+  mutate(type=gsub(" local| travel","",name)) %>%
+  ggplot(aes(x=week,y=value,fill=name)) +
+  geom_bar(stat="identity") +
+  facet_grid(acquisition ~ type,scales="free") +
+  facet_wrap("name",scales="free_y") +
+  scale_fill_brewer(palette = "Paired",guide=FALSE) +
+  labs(title="Variants of concern in BC",
+       y="Cumulative number of reported cases",
+       x="Episode week",
+       fill="Variant/acquisition",
+       caption="MountainMath, Data: BCCDC Situation Reports")
+```
+
+What we see is a neat exponential growth pattern for locally acquired B.1.1.7 cases. Let's pull that out and fit an exponential to it.
+
+```{r}
+model = lm(`B.1.1.7 local_log` ~ week,data=variants %>% mutate(`B.1.1.7 local_log`=log(`B.1.1.7 local`)))
+
+daily <- exp(model$coefficients[["week"]])^{1/7}-1
+
+variants %>%
+  ggplot(aes(x=week,y=`B.1.1.7 local`)) +
+  geom_point() +
+  geom_smooth(method="lm",se=FALSE) +
+  scale_y_continuous(trans="log",breaks=c(2,4,8,16,32,64,128)) +
+  labs(title="Cumulative locally aquired B.1.1.7 cases in BC",
+       y="Cumulative number of reported cases (log scale)",
+       subtitle=paste0("Fitted weekly exponential growth rate ",round(model$coefficients[["week"]],2)),
+       x="Episode week",
+       caption="MountainMath, Data: BCCDC Situation Reports")
+```
+
+We case almost doubled every week, that translates to a daily growth rate of `r scales::percent(daily,accuracy=1)`, which is higher than what we would expect. Growth rates tend to be higher at the start of variants taking off, just like they are at the start of any outbreak simply because "at the start of taking off" is conditional on the event "taking off", so it is not implausible. However, understanding how the data got derived the growth rate is likely being pushed up by right-censoring getting better, so the backlog of old cases slowly clearing up, and the fraction of case samples increasing with time. We can't pin down dates for these cases, and we don't know the sample size. All this approach yields is some rough estimates.
+
+### School exposures
+School exposures notices have dates, and at least in Fraser Health exposure notices get updated when they involve a variant of concern. That means we have dates and denominators, and we can look at the share of school exposures each weak that involved a variant of concern.
+
+BC does not give out good data on school exposures, the list on the Health Authority websites are incomplete at the beginning period, and the information for exposures get updated when a new letter comes in and a different exposure at the same school is still active, making it hard to count exposure events without going through website scrapes.
+
+Fortunately, the excellent [BC School Covid Tracker](https://bcschoolcovidtracker.knack.com/bc-school-covid-tracker#home/) meticulously collects and verifies exposure data and makes it available on their site. They provide a tremendous service that fills a data hole left by the province.
+
+```{r}
+extract_table_data <- function(node){
+    h <- node %>% rvest::html_nodes("thead th") %>% rvest::html_text()
+  rows <- node %>% rvest::html_nodes("tbody tr")
+  data <- rows %>% lapply(function(d) d %>% 
+                            rvest::html_nodes("td") %>% 
+                            rvest::html_text() %>% 
+                            t() %>% 
+                            as.data.frame) %>%
+    bind_rows() %>%
+    setNames(h)
+  
+  data
+}
+
+get_data_for_page <- function(p=1){
+  url = "https://us-east-1-renderer-read.knack.com/v1/scenes/scene_1/views/view_3/records?callback=jQuery17201415845315599671_1606757085608&format=both&rows_per_page=100&sort_field=field_16&sort_order=desc&_=1606757085628"
+  url <- paste0(url,"&page=",p)
+  
+  d <- httr::GET(url,httr::set_cookies( "connect.sid"="s%3A51R3S-8YTv08QV_IejVfqJsW1RxnUdln.WuHEEIrAF6niDEAB3MWgjvWA%2FkzArewbBDZ%2FppCUdVY"),
+                 httr::accept("text/javascript, application/javascript, application/ecmascript, application/x-ecmascript, */*; q=0.01"),
+                 httr::add_headers("X-Knack-Application-Id"= "5faae3b10442ac00165da195",
+                                   "Accept-Encoding"="gzip, deflate, br",
+                                   "X-Knack-REST-API-Key"= "renderer",
+                                   "x-knack-new-builder"= "true"))
+  
+  c <- httr::content(d,"text") %>%
+    gsub("^.*\\(\\{","{",.) %>%
+    gsub("\\}\\);$","}",.) %>%
+    jsonlite::fromJSON()
+  
+  data <- c$records %>% as_tibble()
+  
+  #print(paste0("Got data for page ",c$current_page," of ",c$total_pages))
+
+  
+  attr(data,"total_pages") <- c$total_pages
+  data 
+}
+
+clean_data <- function(d){
+  tibble(Date=as.Date(d$field_16,format="%m/%d/%Y"),
+           Name=d$field_13_raw %>% lapply(function(f)f$identifier) %>% as.character,
+           `Health Authority`=d$field_26_raw %>% lapply(function(f)f$identifier) %>% as.character,
+           Verification=d$field_14_raw %>% lapply(function(f)f$identifier) %>% as.character,
+           `Exposure dates`=d$field_15,
+           `Exposure count`=d$field_25,
+         Status =d$field_30) %>%
+      bind_cols(d$field_19_raw %>% as_tibble) %>%
+    mutate(E=str_extract(`Exposure count`,"Exposure \\d+|Secondary \\d+") %>% 
+             unlist() %>% 
+             gsub("Exposure |Secondary ","",.) %>% 
+             as.integer()) %>%
+    mutate_at(c("latitude","longitude"),as.numeric)
+}
+
+get_all_data <- function(){
+  p=1
+  raw_data <- get_data_for_page(p)
+  data <- clean_data(raw_data)
+  while (attr(raw_data,"total_pages")>p) {
+    p <- p + 1
+    raw_data <- get_data_for_page(p)
+    data <- bind_rows(data, clean_data(raw_data))
+  }
+  data
+}
+
+ha_colours <- setNames(c(sanzo::trios$c157,sanzo::trios$c149),
+                       c("Fraser","Rest of BC","Vancouver Coastal" , "Vancouver Island", "Interior", "Northern"))
+
+data <- get_all_data() 
+```
+
+
+```{r}
+concern_data <- data %>%
+  mutate(`Health Authority`=recode(`Health Authority`,"Fraser Health Authority"="Fraser")) %>%
+  mutate(VOC=grepl("concern|variant",`Exposure count`,ignore.case = TRUE)) %>%
+  mutate(Week=ceiling_date(Date,"week")) %>%
+  filter(VOC) 
+```
+
+We look at the share of school exposures involving variants of concern for each week, where we split the week between Monday and Tuesday as exposure notifications coming out on Monday usually relate to exposures in the preceding week.
+
+```{r}
+plot_data <- data %>%
+  mutate(`Health Authority`=recode(`Health Authority`,
+                                   "Fraser Health Authority"="Fraser",
+                                   "Interior Health Authority"="Interior",
+                                   "Vancouver Coastal Health"="Vancouver Coastal",
+                                    "Vancouver Island Health Authority"="Vancouver Island",
+                                   "Northern Health"="Northern")) %>%
+  mutate(VOC=grepl("concern|variant",`Exposure count`,ignore.case = TRUE)) %>%
+  mutate(Week=ceiling_date(Date,"week",week_start=2)-1) %>%
+  count(Week,VOC,`Health Authority`) %>%
+  complete(Week,VOC,`Health Authority`,fill=list(n=0)) %>%
+  group_by(Week,`Health Authority`) %>%
+  mutate(share=n/sum(n)) %>%
+  #filter(Week >= min(filter(.,VOC)$Week)) %>%
+  filter(VOC) %>%
+  filter(Week >= min(filter(.,VOC,n>0)$Week)) %>%
+  ungroup %>%
+  mutate(week=factor(strftime(Week,"%b %d"),levels=sort(unique(Week)) %>% strftime(.,"%b %d")),
+         w=strftime(Week-2,format = "%U") %>% as.integer) 
+
+ggplot(plot_data,aes(x=week,y=share,fill=`Health Authority`)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_manual(values=ha_colours) +
+  labs(title="School exposures involving variants of concern",
+       x="Initial exposure letter in week ending",
+       y="Share of exposures involving variant of concern",
+       caption="MountainMath, Data: BC School Covid Tracker")
+  
+```
+
+Fraser Health Authority is the only one reporting exposures involving variants of concern, either because these are concentrated in Fraser or because other Health Authorities choose not to update exposure notifications when they learn that they involve a variant of concern.
+
+The last week for which we have complete data is the one ending March 1st, the next week only has two days of data at this point and exposure notification often get updated only a couple of days later because it takes time to screen for variants. 
+
+
+```{r eval=FALSE, include=FALSE}
+plot_data <- data %>%
+  mutate(`Health Authority`=recode(`Health Authority`,
+                                   "Fraser Health Authority"="Fraser",
+                                   "Interior Health Authority"="Interior",
+                                   "Vancouver Coastal Health"="Vancouver Coastal",
+                                    "Vancouver Island Health Authority"="Vancouver Island",
+                                   "Northern Health"="Northern")) %>%
+  mutate(VOC=grepl("concern|variant",`Exposure count`,ignore.case = TRUE)) %>%
+  mutate(Week=ceiling_date(Date,"week",week_start=2)-1) %>%
+  count(Date,VOC,`Health Authority`) %>%
+  complete(Date,VOC,`Health Authority`,fill=list(n=0)) %>%
+  group_by(Date,`Health Authority`) %>%
+  mutate(total=sum(n),share=n/sum(n)) %>%
+  filter(!is.null(`Health Authority`),`Health Authority`!="NULL") %>%
+  #filter(Week >= min(filter(.,VOC)$Week)) %>%
+  filter(VOC) %>%
+  filter(Date >= min(filter(.,VOC,n>0)$Date)) %>%
+  ungroup 
+
+ggplot(plot_data,aes(x=Date,y=share,fill=`Health Authority`)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_manual(values=ha_colours) +
+  labs(title="School exposures involving variants of concern",
+       x="Initial exposure letter in week ending",
+       y="Share of exposures involving variant of concern",
+       caption="MountainMath, Data: BC School Covid Tracker")
+```
+
+### Estimates from data
+We have observed before that the entrance of the new variants, in particular B.1.1.7, means that [we need to treat COVID-19 as two separate pandemics, regular COVID-19 and B.1.1.7](https://doodles.mountainmath.ca/blog/2021/02/21/on-covid-and-exponential-growth/). With B.1.1.7 having a daily growth rate of about 10% higher than regular COVID-19. This gives us an opportunity to estimate B.1.1.7 directly from the data, assuming that the only thing that changed recently is the introduction of variants and all other control measures stay about the same. In BC the growth rate has been [fairly constant at -0.7% a day since the end of November](https://doodles.mountainmath.ca/blog/2021/02/21/on-covid-and-exponential-growth/), and we can fit a double exponential model to the curve with difference in growth rate fixed at 10% a day or 9.5% continuous growth.
+
+```{r}
+all_data <- get_british_columbia_case_data() %>%
+  count(Date=`Reported Date`,name="Cases") %>%
+  filter(Date>=as.Date("2020-03-01")) %>%
+  mutate(Trend=extract_stl_trend_m(Cases))
+```
+
+```{r}
+case_data <- all_data %>%
+  filter(Date>=as.Date("2020-11-24")) %>%
+  mutate(day=difftime(Date,min(Date),unit="day") %>% as.numeric())
+
+advantage <- 0.095
+nlsfit=nls(Cases ~ a*exp(r*day)+b*exp((r+advantage)*day),case_data,start=list(a=600,b=0.001,r=-0.04))
+nlsfit_free=nls(Cases ~ a*exp(r*day)+4*exp(-(r2)*filter(case_data,Date==as.Date("2021-02-02"))$day)*exp((r2)*day),case_data,start=list(a=600,r=-0.04,r2=0.06))
+
+#summary(nlsfit)
+```
+
+```{r}
+params <- tidy(nlsfit)
+a <- params %>% filter(term=="a") %>% pull(estimate)
+b <- params %>% filter(term=="b") %>% pull(estimate)
+r <- params %>% filter(term=="r") %>% pull(estimate)
+text <- paste0("Cases ~ ",round(a)," * exp(",round(r,3),"*t) + ",round(b,2),"* exp(",round(r,3),"+",advantage,")*t)")
+#text_f <- Cases ~ params[1,2] * exp(params[3,2]*t) + params[2,2]*exp((params[3,2]+advantage)*t)
+
+naive_seed <- 3
+
+case_prediction <- tibble(day=seq(0,140)) %>%
+  mutate(Cases=predict(nlsfit,newdata = .)) %>%
+  mutate(Date=min(case_data$Date)+day) %>%
+  mutate(New=b*exp((r+advantage)*day)) %>%
+  mutate(Old=a*exp((r)*day)) %>%
+  mutate(Naive=naive_seed*exp(-(r+advantage)*filter(case_data,Date==as.Date("2021-02-02"))$day)*exp((r+advantage)*day),
+         Naive2=naive_seed*exp(-(r+0.095)*filter(case_data,Date==as.Date("2021-02-02"))$day)*exp((r+0.095)*day))
+
+diagnostics <- case_prediction %>% 
+  filter(Date>=as.Date("2021-01-30"),
+         Date<=as.Date("2021-02-05")) %>%
+  summarise_if(is.numeric,sum)
+```
+
+This is a bit dangerous as such a fit will over-emphasize recent changes in cases. Which may have been caused by other events (e.g. a [trivia night](https://www.cbc.ca/news/canada/british-columbia/bc-pub-night-300-cases-covid-19-1.5930516)). But let's give it a try. At the same time, we can also run a naive model that assumes `r english::words(naive_seed)` B.1.1.7 cases on February 2nd, which comes out to `r round(diagnostics$Naive)` cases in the point-prevalence week. That roughly jives with what we would expect from using exposure letters or B.1.1.7 case counts for week 5, the point-prevalence week.
+
+```{r}
+plot_data <- all_data %>%
+  mutate(type="Data trend") %>%
+  bind_rows(case_prediction %>% 
+              mutate(Manual=Naive+Old,Fitted=New+Old,`Naive 10%`=Naive2+Old,`Regular Covid`=Old) %>%
+              pivot_longer(c("Regular Covid","Fitted","Manual"),names_to = "type",values_to = "Trend")) 
+ggplot(plot_data,aes(x=Date,y=Cases)) +
+  geom_point(data=all_data,size=0.25,shape=21) +
+  geom_line(aes(y=Trend,color=type)) +
+  expand_limits(y=0) +
+  scale_y_continuous(labels=scales::comma) +
+  scale_colour_manual(values=sanzo::quads$c252) +
+  scale_x_date(breaks="month",label=function(d)strftime(d,"%b")) +
+  labs(title="Naive double exponential model fit",
+       x=NULL,
+       y="Daily cases",
+       colour=NULL,
+       caption="MountainMath, Data: BCCDC") +
+  coord_cartesian(ylim=c(0,1500))
+```
+
+We note that the double exponential model picks up the recent increase in cases and interprets it as being caused by B.1.1.7. And it predicts this rise to accelerate. This is likely not where we are actually headed, it would imply we had `r round(diagnostics$New)` B.1.1.7 during the point-prevalence week, which is too high given all the data points we have.
+
+The "Manual" line is a more realistic scenario, but it is conditional on the assumption of `r round(diagnostics$Naive)` B.1.1.7 in week 5 and that our attempts to prevent B.1.1.7 from becoming established failed. The starting value of `r english::words(naive_seed)` daily cases on February 2nd is too low to assume simple exponential growth from them on, B.1.1.7 is likely still in it's stochastic phase and may easily be delayed or accelerated by a week or two. So it's hard to predict when exactly B.1.1.7 will take off, but once we are over 10 or 20 daily cases the growth will become very predictable.
+
+## Upshot
+If these projections look scary, then that's because they are. We now have some older people vaccinated, so that will reduce the death toll. But Long COVID will continue, and as cases shoot up [contact tracing will break down and case growth will accelerate further](https://bccovid-19group.ca/post/the-tipping-point-of-contact-tracing/).
+
+That's why variants of concern are *concerning*. And that's why it's important to monitor them closely, and that means have proper data. Which we still don't have for BC. Ontario has now been sharing daily updates with variant screening results, which gives a minimal delay update on the share of variants. Which now make up [over 20% of cases in Ontario](https://files.ontario.ca/moh-covid-19-report-en-2021-03-03.pdf). Using proxies can get a rough idea and the ballpark, but we need actual data to understand where we are at and make decisions on how to react.
+
+As usual, the code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-03-04-data-variants.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
