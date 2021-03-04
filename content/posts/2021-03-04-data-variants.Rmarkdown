@@ -75,11 +75,11 @@ The weekly situation reports list cumulative variant of concern case counts by v
 variants <- tibble(week=c(3,4,5,6,7),
                    B.1.1.7=c(14,25,40,80,157),
                    `B.1.1.7 travel`=c(11,14,18,19,20),
-                   B.1.315=c(4,15,19,20,23),
-                   `B.1.315 travel`=c(0,1,2,2,3)
+                   B.1.351=c(4,15,19,20,23),
+                   `B.1.351 travel`=c(0,1,2,2,3)
                    ) %>%
   mutate(`B.1.1.7 local`=B.1.1.7-`B.1.1.7 travel`,
-         `B.1.315 local`=B.1.315-`B.1.315 travel`)
+         `B.1.351 local`=B.1.351-`B.1.351 travel`)
 
 variants %>%
   pivot_longer(matches("local|travel")) %>%
@@ -111,7 +111,7 @@ variants %>%
   labs(title="Variants of concern in BC",
        y="Cumulative number of reported cases",
        x="Episode week",
-       fill="Variant/acquisition",
+       fill="Variant/acquisition", 
        caption="MountainMath, Data: BCCDC Situation Reports")
 ```
 
@@ -124,7 +124,7 @@ daily <- exp(model$coefficients[["week"]])^{1/7}-1
 
 variants %>%
   ggplot(aes(x=week,y=`B.1.1.7 local`)) +
-  geom_point() +
+  geom_point() + 
   geom_smooth(method="lm",se=FALSE) +
   scale_y_continuous(trans="log",breaks=c(2,4,8,16,32,64,128)) +
   labs(title="Cumulative locally aquired B.1.1.7 cases in BC",

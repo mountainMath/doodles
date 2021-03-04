@@ -111,13 +111,13 @@ As usual, the code is [available on GitHub](https://github.com/mountainMath/dood
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-03-04 08:34:17 PST"
+## [1] "2021-03-04 09:56:40 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [39bcf45] 2021-02-22: add missing 1991 for real estate industry
+## Head:     [882992a] 2021-03-04: data variants
 ```
 
 ```
@@ -141,20 +141,22 @@ As usual, the code is [available on GitHub](https://github.com/mountainMath/dood
 ##  [9] tidyr_1.1.2        tibble_3.0.4       ggplot2_3.3.3      tidyverse_1.3.0   
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] tidyselect_1.1.0   xfun_0.18          sf_0.9-7           haven_2.3.1       
-##  [5] colorspace_2.0-0   vctrs_0.3.5        generics_0.1.0     htmltools_0.5.0   
-##  [9] yaml_2.2.1         blob_1.2.1         rlang_0.4.9        e1071_1.7-4       
-## [13] pillar_1.4.7       glue_1.4.2         withr_2.3.0        DBI_1.1.0         
-## [17] english_1.2-5      dbplyr_1.4.4       modelr_0.1.8       readxl_1.3.1      
-## [21] lifecycle_0.2.0    munsell_0.5.0      blogdown_0.19      gtable_0.3.0      
-## [25] cellranger_1.1.0   rvest_0.3.6        codetools_0.2-16   evaluate_0.14     
-## [29] knitr_1.30         class_7.3-17       fansi_0.4.1        Rcpp_1.0.5        
-## [33] KernSmooth_2.23-17 classInt_0.4-3     scales_1.1.1       backports_1.2.0   
-## [37] cansim_0.3.5       jsonlite_1.7.2     fs_1.4.1           hms_0.5.3         
-## [41] digest_0.6.27      stringi_1.5.3      bookdown_0.19      grid_4.0.3        
-## [45] cli_2.2.0          tools_4.0.3        magrittr_2.0.1     crayon_1.3.4      
-## [49] pkgconfig_2.0.3    ellipsis_0.3.1     xml2_1.3.2         reprex_0.3.0      
-## [53] assertthat_0.2.1   rmarkdown_2.5      httr_1.4.2         rstudioapi_0.13   
-## [57] R6_2.5.0           git2r_0.27.1       units_0.7-0        compiler_4.0.3
+##  [1] Rcpp_1.0.5         lattice_0.20-41    class_7.3-17       assertthat_0.2.1  
+##  [5] digest_0.6.27      R6_2.5.0           cellranger_1.1.0   backports_1.2.0   
+##  [9] reprex_0.3.0       evaluate_0.14      e1071_1.7-4        httr_1.4.2        
+## [13] blogdown_0.19      pillar_1.4.7       rlang_0.4.9        english_1.2-5     
+## [17] readxl_1.3.1       rstudioapi_0.13    blob_1.2.1         Matrix_1.2-18     
+## [21] rmarkdown_2.5      splines_4.0.3      labeling_0.4.2     munsell_0.5.0     
+## [25] compiler_4.0.3     modelr_0.1.8       xfun_0.18          pkgconfig_2.0.3   
+## [29] mgcv_1.8-33        htmltools_0.5.0    tidyselect_1.1.0   bookdown_0.19     
+## [33] codetools_0.2-16   fansi_0.4.1        crayon_1.3.4       dbplyr_1.4.4      
+## [37] withr_2.3.0        sf_0.9-7           grid_4.0.3         nlme_3.1-149      
+## [41] jsonlite_1.7.2     cansim_0.3.5       gtable_0.3.0       lifecycle_0.2.0   
+## [45] DBI_1.1.0          git2r_0.27.1       magrittr_2.0.1     units_0.7-0       
+## [49] scales_1.1.1       KernSmooth_2.23-17 cli_2.2.0          stringi_1.5.3     
+## [53] farver_2.0.3       fs_1.4.1           xml2_1.3.2         ellipsis_0.3.1    
+## [57] generics_0.1.0     vctrs_0.3.5        RColorBrewer_1.1-2 tools_4.0.3       
+## [61] glue_1.4.2         hms_0.5.3          yaml_2.2.1         colorspace_2.0-0  
+## [65] classInt_0.4-3     rvest_0.3.6        knitr_1.30         haven_2.3.1
 ```
 </details>
