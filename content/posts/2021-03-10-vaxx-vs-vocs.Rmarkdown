@@ -1,0 +1,645 @@
+---
+title: Vaxx vs VOCs
+author: Jens von Bergmann
+date: '2021-03-10'
+slug: vaxx-vs-vocs
+categories:
+  - covid-19
+tags: []
+description: "Vaccines are here to rescue us, but variants of concern threaten to spoil it. What to expect in BC over the next two months as vaccines and variants of concern battle for dominance."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2021-03-10-vaxx-vs-vocs_files/figure-html/vaxx-vs-vocs-projection-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 150,
+	fig.width = 8,
+	fig.height = 6,
+	cache = TRUE
+)
+library(tidyverse)
+library(deSolve)
+library(broom)
+library(mountainmathHelpers)
+
+extract_table_data <- function(node){
+    h <- node %>% rvest::html_nodes("thead th") %>% rvest::html_text()
+  rows <- node %>% rvest::html_nodes("tbody tr")
+  data <- rows %>% lapply(function(d) d %>% 
+                            rvest::html_nodes("td") %>% 
+                            rvest::html_text() %>% 
+                            t() %>% 
+                            as.data.frame) %>%
+    bind_rows() %>%
+    setNames(h)
+  
+  data
+}
+```
+
+```{r}
+url <- "https://www.canada.ca/en/public-health/services/diseases/2019-novel-coronavirus-infection/prevention-risks/covid-19-vaccine-treatment/vaccine-rollout.html"
+
+tables <- xml2::read_html(url) %>% rvest::html_nodes("table")
+
+data_list <- tables %>% lapply(extract_table_data)
+
+schedule <- bind_rows(
+  data_list[[2]] %>% mutate(type="BioNTech"),
+  data_list[[3]] %>% mutate(type="Moderna"),
+  data_list[[4]] %>% mutate(type="AstraZeneca") %>%
+    rename(`Distribution location`=`Distribution     location`) %>%
+    mutate(`Distribution location`=gsub(" +"," ",`Distribution location`))
+) %>%
+  pivot_longer(-one_of("Distribution location","type")) %>%
+  mutate(week=as.Date(paste0(strsplit(name,"-") %>% map(last) %>% unlist," 2021"),format=c("%d %b %Y"))) %>%
+  mutate(value=as.numeric(gsub(",","",value))) %>%
+  filter(week>=as.Date("2021-03-01"))
+
+```
+
+
+At this stage in the pandemic there is good news and bad news. The good news is that vaccines are ramping up. And change in dosing schedule means more people are getting some level of protection earlier. The bad news is that variants of concern, or VOCs, are on the rise in BC. We have a decent intuition how each one of these changes our pandemic, but unclear how they interact. Thus, it's time for some modelling. We will keep the model as simple as possible, yet complex enough to capture the interaction between VOCs and vaccinations.
+
+Before we can do modelling we have to assemble the main ingredients.
+
+## Vaccinations
+We need to understand how many vaccine doses we are getting at what point in time. The three vaccines we are getting in BC are about equally effective, we will assume a 90% efficacy in blocking transmissions starting two weeks after getting the first dose. We still don't have good data on the transmission blocking ability of vaccinations, but early reports are encouraging and we go with the optimistic estimate for this post. And we will assume that we are fairly efficient in getting the vaccines into people's arms, on average within one week of delivery.
+
+PHAC has a [rough vaccination delivery schedule](https://www.canada.ca/en/public-health/services/diseases/2019-novel-coronavirus-infection/prevention-risks/covid-19-vaccine-treatment/vaccine-rollout.html) that we can scrape. 
+
+```{r}
+schedule %>% filter(`Distribution location`=="British Columbia") %>% 
+  ggplot(aes(x=week,y=value,fill=type)) + 
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Expected vaccine doses",y="Number of doses",
+       x=NULL, fill="Vaccine",
+       caption="MountainMath, Data: PHAC")
+```
+We are interested in the vaccine we are getting now, so we start counting the patch of BioNTech vaccines we got in March. Cumulatively that's about 1 million doses.
+
+
+```{r}
+schedule %>% 
+  filter(`Distribution location`=="British Columbia") %>%
+  filter(week>=as.Date("2021-03-01")) %>%
+  mutate(value=coalesce(value,0)) %>%
+  group_by(type) %>% 
+  arrange(week) %>%
+  mutate(cum=cumsum(value)) %>%
+  ggplot(aes(x=week,y=cum,fill=type)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::comma) +
+  facet_wrap("`Distribution location`") +
+  scale_x_date(breaks="week",date_labels = "%d %b") +
+  labs(title="Expected cumulative vaccine doses",y="Number of doses",
+       x=NULL, fill="Vaccine",
+       caption="MountainMath, Data: PHAC")
+```
+
+That gives us the data we need to estimate roughly how many people we will vaccinate and how much immunity this will yield. In our simple model we will not distinguish people for whom the vaccine did not grant immunity from people that have not gotten the vaccine. It's not that hard to do, but it does not make a difference to the model since we aren't looking at outcomes like hospitalizations and deaths where partial immunity still matters. And we aren't modelling long enough timeframes where it would matter that we can't pinpoint ahead of time from whom the vaccines will be less effective.
+
+## Variants of concern
+Here the problem starts: unlike Ontario, BC [still does not release useful data on variants of concern](https://doodles.mountainmath.ca/blog/2021/03/04/data-variants/). That means that the share of cases that are variants of concern right now can only be guessed at. Just last week our PHO said that she believes variants of concern hover around 1%, which we find highly questionable. That may have been the state of things in early February, from the data we do see, we believe a better guess would be about 10% at this point in time. But it may well be only 5% or already 15%. The continued refusal to release daily N501Y screening results to allow painting a decent picture of VOC development in BC is frustrating.
+
+The other part we need to understand is the growth rate advantage that variants of concern have. Studies based on UK data have pegged B.1.1.7, the main variant in circulation in BC, to be about 1.5 times more infectious than regular COVID-19. That was based on PCR SGTF as a proxy for B.1.1.7. It's a pretty decent proxy. Although there is some noise that probably should be dealt with when estimating the growth rate advantage. (Dean Karlen has a cool approach to deal with this, which got me interested in running these kind of estimates.)
+
+```{r}
+epiweekToDate<-function(year,weekno,firstday="Sunday"){
+  if(!(firstday=="Sunday"|| firstday=="Monday")){
+    print("Wrong firstday!")
+    break
+  }
+  if(year<0 || weekno<0){
+    print("Wrong Input!")
+    break
+  }
+
+  jan4=strptime(paste(year,1,4,sep="-"),format="%Y-%m-%d")
+  wday=jan4$wday
+  wday[wday==0]=7
+  wdaystart=ifelse(firstday=="Sunday",7,1)
+  if(wday== wdaystart) weekstart=jan4
+  if(wday!= wdaystart) weekstart=jan4-(wday-ifelse(firstday=="Sunday",0,1))*86400
+
+  jan4_2=strptime(paste(year+1,1,4,sep="-"),format="%Y-%m-%d")
+
+  wday_2=jan4_2$wday
+  wday_2[wday_2==0]=7
+  wdaystart_2=ifelse(firstday=="Sunday",7,1)
+  if(wday_2== wdaystart_2) weekstart_2=jan4_2
+  if(wday_2!= wdaystart_2) weekstart_2=jan4_2-(wday_2-ifelse(firstday=="Sunday",0,1))*86400
+
+  if(weekno>((weekstart_2-weekstart)/7)){
+    print(paste("There are only ",(weekstart_2-weekstart)/7," weeks in ",year,"!",sep=""))
+    break
+  }
+
+  d0=weekstart+(weekno-1)*7*86400
+  d1=weekstart+(weekno-1)*7*86400+6*86400
+
+  return(list("d0"=strptime(d0,format="%Y-%m-%d"),"d1"=strptime(d1,format="%Y-%m-%d")))
+}
+dk_data <- read_delim('"Week";"Region";"yes";"total";"percent"
+"2020-W47";"Whole Denmark";0;1693;0
+"2020-W48";"Whole Denmark";3;1775;0,2
+"2020-W49";"Whole Denmark";5;2399;0,2
+"2020-W50";"Whole Denmark";13;2981;0,4
+"2020-W51";"Whole Denmark";35;4164;0,8
+"2020-W52";"Whole Denmark";64;3608;1,8
+"2020-W53";"Whole Denmark";80;3915;2
+"2021-W01";"Whole Denmark";154;4158;3,7
+"2021-W02";"Whole Denmark";299;4229;7,1
+"2021-W03";"Whole Denmark";470;3685;12,8
+"2021-W04";"Whole Denmark";518;2659;19,5
+"2021-W05";"Whole Denmark";663;2234;29,7
+"2021-W06";"Whole Denmark";922;1958;47,1
+"2021-W07";"Whole Denmark";1583;2405;65,8
+"2021-W08";"Whole Denmark";1944;2540;76,5
+"2021-W09";"Whole Denmark";643;791;81,3
+"2020-W47";"Hovedstaden";0;669;0
+"2020-W48";"Hovedstaden";3;794;0,4
+"2020-W49";"Hovedstaden";2;1340;0,1
+"2020-W50";"Hovedstaden";5;1520;0,3
+"2020-W51";"Hovedstaden";12;1988;0,6
+"2020-W52";"Hovedstaden";18;1749;1
+"2020-W53";"Hovedstaden";18;1786;1
+"2021-W01";"Hovedstaden";47;1780;2,6
+"2021-W02";"Hovedstaden";123;1982;6,2
+"2021-W03";"Hovedstaden";202;1562;12,9
+"2021-W04";"Hovedstaden";240;1199;20
+"2021-W05";"Hovedstaden";296;923;32,1
+"2021-W06";"Hovedstaden";351;755;46,5
+"2021-W07";"Hovedstaden";564;886;63,7
+"2021-W08";"Hovedstaden";943;1116;84,5
+"2021-W09";"Hovedstaden";266;311;85,5
+"2020-W47";"Midtjylland";0;334;0
+"2020-W48";"Midtjylland";0;412;0
+"2020-W49";"Midtjylland";0;423;0
+"2020-W50";"Midtjylland";0;471;0
+"2020-W51";"Midtjylland";0;708;0
+"2020-W52";"Midtjylland";8;529;1,5
+"2020-W53";"Midtjylland";22;750;2,9
+"2021-W01";"Midtjylland";30;874;3,4
+"2021-W02";"Midtjylland";28;531;5,3
+"2021-W03";"Midtjylland";54;494;10,9
+"2021-W04";"Midtjylland";45;308;14,6
+"2021-W05";"Midtjylland";83;345;24,1
+"2021-W06";"Midtjylland";181;319;56,7
+"2021-W07";"Midtjylland";215;337;63,8
+"2021-W08";"Midtjylland";179;252;71
+"2021-W09";"Midtjylland";83;119;69,7
+"2020-W47";"Nordjylland";0;247;0
+"2020-W48";"Nordjylland";0;170;0
+"2020-W49";"Nordjylland";3;64;4,7
+"2020-W50";"Nordjylland";7;105;6,7
+"2020-W51";"Nordjylland";12;349;3,4
+"2020-W52";"Nordjylland";18;363;5
+"2020-W53";"Nordjylland";7;271;2,6
+"2021-W01";"Nordjylland";5;245;2
+"2021-W02";"Nordjylland";5;414;1,2
+"2021-W03";"Nordjylland";24;362;6,6
+"2021-W04";"Nordjylland";25;214;11,7
+"2021-W05";"Nordjylland";17;204;8,3
+"2021-W06";"Nordjylland";18;190;9,5
+"2021-W07";"Nordjylland";18;114;15,8
+"2021-W08";"Nordjylland";44;122;36,1
+"2021-W09";"Nordjylland";17;33;51,5
+"2020-W47";"Other";0;9;0
+"2020-W48";"Other";0;13;0
+"2020-W49";"Other";0;21;0
+"2020-W50";"Other";0;17;0
+"2020-W51";"Other";1;25;4
+"2020-W52";"Other";0;25;0
+"2020-W53";"Other";0;48;0
+"2021-W01";"Other";1;24;4,2
+"2021-W02";"Other";3;33;9,1
+"2021-W03";"Other";9;33;27,3
+"2021-W04";"Other";11;38;28,9
+"2021-W05";"Other";3;9;33,3
+"2021-W06";"Other";3;10;30
+"2021-W07";"Other";6;15;40
+"2021-W08";"Other";19;26;73,1
+"2021-W09";"Other";8;10;80
+"2020-W47";"SjÃ¦lland";0;154;0
+"2020-W48";"SjÃ¦lland";0;173;0
+"2020-W49";"SjÃ¦lland";0;312;0
+"2020-W50";"SjÃ¦lland";0;293;0
+"2020-W51";"SjÃ¦lland";3;470;0,6
+"2020-W52";"SjÃ¦lland";11;374;2,9
+"2020-W53";"SjÃ¦lland";7;504;1,4
+"2021-W01";"SjÃ¦lland";37;644;5,7
+"2021-W02";"SjÃ¦lland";75;664;11,3
+"2021-W03";"SjÃ¦lland";81;629;12,9
+"2021-W04";"SjÃ¦lland";104;476;21,8
+"2021-W05";"SjÃ¦lland";138;331;41,7
+"2021-W06";"SjÃ¦lland";163;309;52,8
+"2021-W07";"SjÃ¦lland";190;313;60,7
+"2021-W08";"SjÃ¦lland";248;404;61,4
+"2021-W09";"SjÃ¦lland";91;111;82
+"2020-W47";"Syddanmark";0;280;0
+"2020-W48";"Syddanmark";0;213;0
+"2020-W49";"Syddanmark";0;239;0
+"2020-W50";"Syddanmark";1;575;0,2
+"2020-W51";"Syddanmark";7;624;1,1
+"2020-W52";"Syddanmark";9;568;1,6
+"2020-W53";"Syddanmark";26;556;4,7
+"2021-W01";"Syddanmark";34;591;5,8
+"2021-W02";"Syddanmark";65;605;10,7
+"2021-W03";"Syddanmark";100;605;16,5
+"2021-W04";"Syddanmark";93;424;21,9
+"2021-W05";"Syddanmark";126;422;29,9
+"2021-W06";"Syddanmark";206;375;54,9
+"2021-W07";"Syddanmark";590;740;79,7
+"2021-W08";"Syddanmark";511;620;82,4
+"2021-W09";"Syddanmark";178;207;86',
+delim=";") %>%
+  mutate(Region=recode(Region,"SjÃ¦lland"="Sjælland")) %>%
+  mutate(Year=substr(Week,1,4) %>% as.integer,
+         week=substr(Week,7,8) %>% as.integer) %>%
+  mutate(Date=MMWRweek::MMWRweek2Date(Year,week)) %>%
+  mutate(percent=as.numeric(gsub(",",".",percent))) %>%
+  select(Week,Date,Region,yes,total,percent) %>%
+  mutate(ratio=yes/(total-yes)) %>%
+  mutate(log_ratio=log(ratio+0.00001)) %>%
+  mutate(day=difftime(Date,min(Date),units="day") %>% as.integer)
+```
+
+```{r}
+dk_estimates <- dk_data %>%
+  filter(ratio>0,
+         Date>as.Date("2020-12-01"),
+         Region!="Nordjylland" | Date>=as.Date("2021-01-15"),
+         Region!="Other" | Date>=as.Date("2021-01-01")) %>%
+  group_by(Region) %>%
+  group_map(~(lm(log_ratio ~ Date, data=.) %>% 
+                tidy() %>% 
+                mutate(Region=unique(.y$Region),
+                       total=sum(.x$total)))) %>%
+  bind_rows()
+
+# dk_estimates %>%
+#   filter(term=="Date") %>%
+#   mutate(s1=paste0(round(estimate,3)," ±",round(std.error,3)),
+#          ) %>% #w=paste0(round(fp,3)," ±",round(fp_err,3))) %>%
+#   select(Region,s1,total)
+```
+
+Denmark does a lot of whole genome sequencing and is probably the cleanest data to look at the B.1.1.7 growth rate advantage. To estimate the growth rate advantage we note that over short time periods where behaviour and the susceptible population is relatively constant, the number of cases $C_0(t)$ and $C_v(t)$ for regular and variant cases is well approximated by
+$$
+C_0(t) = C_0 e^{r_0t}, \qquad C_v(t) = C_v e^{(r_a+r_0)t},
+$$
+where $C_0$ and $C_v$ are the number of regular and variant COVID-19 cases at time 0, $r_0$ is the base growth rate for regular COVID-19 and $r_a$ is the growth rate advantage of the B.1.1.7 variant. Taking the ratio of variant to non-variant cases
+
+$$
+\kappa = \frac{C_v(t)}{C_0(t)} = \frac{C_v}{C_0} e^{r_at}, \qquad\qquad \log(\kappa) = \hat c + r_a\cdot t
+$$
+we see that the growth rate advantage is simply the slope of the log of the ratios over time. That's easy to estimate from the data.
+
+
+```{r}
+add_prediced_linear <- function(d,...){
+  dd <- d %>% filter(!is.na(log_ratio))
+  m.lm<-lm(log_ratio ~ Date, data=dd,...)
+  d %>%
+    left_join(tibble(p=predict(m.lm,new_data=dd$Date),Date=dd$Date),by="Date")
+}
+
+dk_ga <- dk_estimates %>%
+  filter(Region=="Whole Denmark",
+         term=="Date") %>%
+  mutate(s1=paste0(round(estimate,3)," ±",round(std.error,3))) %>%
+  pull(s1)
+
+dk_data %>%
+  filter(Region=="Whole Denmark") %>%
+  filter(ratio>0.0,
+         Date>as.Date("2020-12-01"),
+         Region!="Nordjylland" | Date>=as.Date("2021-01-15"),
+         Region!="Other" | Date>=as.Date("2021-01-01")) %>%
+  group_by(Region) %>%
+  group_modify(~add_prediced_linear(.)) %>%
+  bind_rows() %>%
+  ggplot(aes(x=Date,y=ratio)) +
+  geom_point(aes(size=total)) +
+  scale_y_continuous(trans="log",breaks=0.0125 * 2^seq(0,9)) +
+  scale_x_date(breaks="week",date_labels = "%b %d") +
+  geom_line(aes(y=exp(p)),color="brown") +
+  labs(title="Denmark B.1.1.7 growth rate advantage",
+       subtitle = paste0("fitted exponential growth rate advantage ",dk_ga),
+       y="Ratio of B.1.1.7 cases to non-B.1.1.7 cases (log scale)",
+       x=NULL, size="Number of\nsequenced\nsamples",
+       caption="MountainMath, Data: Danish Covid-19 Genome Consortium")
+```
+
+The fit is really tight, in Denmark B.1.1.7 has been consistently growing at a rate of `r dk_ga` faster than regular COVID-19. Will the same be true in BC? We don't know for sure, but we can look at the N501Y proxy data from Ontario for some clues on how B.1.1.7 behaves in Canada. N501Y is not the same as B.1.1.7, but should still be a cleaner proxy than SGTF. Let's take a look.
+
+
+
+```{r}
+#report_data <- tabulizer::extract_tables("https://www.publichealthontario.ca/-/media/documents/ncov/epi/covid-19-daily-epi-summary-report.pdf?la=en",method="stream",pages=c(31,32,33))
+
+canada_sheet <- simpleCache(googlesheets4::sheets_get("https://docs.google.com/spreadsheets/d/1ZRcpDA0tn6ToxXcY9mNjr4feQJ_B3jQuHfLetOspSlA/edit#gid=0"),"ontario_n501y_data",here::here("data"))
+
+ontario_data <- googlesheets4::read_sheet(canada_sheet,"Ontario") %>%
+  mutate(Date=as.Date(Date)) %>%
+  mutate(ratio=N501Y/(Total-N501Y)) %>%
+  mutate(log_ratio=log(ratio)) 
+  
+ontario_estimates <- ontario_data %>%
+  group_map(~(lm(log_ratio ~ Date, data=.) %>% tidy())) %>%
+  bind_rows()
+
+on_ga <- ontario_estimates %>%
+  filter(term=="Date") %>%
+  mutate(s1=paste0(round(estimate,3)," ±",round(std.error,3))) %>%
+  pull(s1)
+
+lb <- c(0.05,0.1,0.2,0.4,0.8)
+mb <- seq(2,length(lb)) %>%
+  lapply(function(i){
+    s=lb[i-1]
+    e=lb[i]
+    seq(s,e,s/4)
+  }) %>%
+  unlist() %>%
+  unique()
+
+ogra <- ontario_data %>%
+  group_modify(~add_prediced_linear(.)) %>%
+  bind_rows() %>%
+  ggplot(aes(x=Date,y=ratio)) +
+  geom_point(aes(size=Total)) +
+  geom_line(aes(y=exp(p)),color="brown") +
+  scale_y_continuous(trans="log",breaks=lb,
+                     minor_breaks = mb) +
+  scale_x_date(breaks="2 days",date_labels="%b %d") +
+  labs(title="Ontario N501Y (mostly B.1.1.7) growth rate advantage",
+       subtitle = paste0("fitted exponential growth rate advantage ",on_ga),
+       y="Ratio of N501Y cases to non-N501Y cases (log scale)",
+       x=NULL, size="Number of\nscreened\nsamples",
+       caption="MountainMath, Data: Ontario Daily Epidemiologic Summary")
+ogra
+```
+
+It's definitely more messy, Ontario does less screening than Denmark does whole genome sequencing. But the overall relationship comes out remarkably similar. We will be assuming a transmission advantage of 0.084 for this post. (There are some technical details here that we are glossing over, but they are minor.)
+
+For this post we are not interested in the question of more severe outcomes of variants of concern since we only look at case counts. Moreover, we will ignore the question of immune escape of variants because we don't have good data on this. But these are serious concerns that more rigorous modelling needs to include.
+
+## SIR Model with Vaccination
+For this we have to put in slightly more work than in previous posts where we ran a simple exponential model to account for vaccination. Instead of typing out the equations we just show the code for the standard SIR model that we have extended to include vaccinations and also keep track of cumulative infections from which we can recover daily case counts.
+
+```{r echo=TRUE}
+model.vaxx <- function(times,yinit,vaccination_rate,paramters){
+  SIR_model <- function(time,yinit,paramters){
+    with(as.list(c(yinit,paramters)), {
+      vr <- vaccination_rate(time)
+      
+      dSusceptible <- -beta*Infected*Susceptible - vr
+      dCumulativeInfected  <- beta*Infected*Susceptible 
+      dInfected  <- beta*Infected*Susceptible - gamma*Infected
+      dRecovered <- gamma*Infected
+      dVaccinated <- vr
+      
+      return(list(c(dSusceptible, dInfected, dCumulativeInfected, dRecovered,dVaccinated)))}) 
+  }
+
+ode(func = SIR_model,times = times,y = yinit,parms = paramters) %>%
+      as_tibble() %>%
+      mutate_all(as.numeric)
+}
+```
+
+Keen eyes will notice that we did not set up separate compartments for variant and regular COVID-19. Instead we will run this as two separate simulations, the difference is that in this setup we allow people in theory to be infected by both, regular COVID-19 and a variant. But that's going to be very rare and won't affect the outcomes much as most immunity comes from vaccinations and not from infections. We feel that keeping the model simple is worth the tradeoff. (And we are lazy.)
+
+```{r}
+extract_stl_trend_m <- function(c){
+  #print(length(c))
+  cc <- c %>%
+    log() %>%
+    ts(frequency = 7,start = as.numeric(format(Sys.Date(), "%j"))) %>% 
+    stl(s.window=14,t.window=14) 
+   
+    as_tibble(cc$time.series)$trend %>% exp()
+}
+bc_cases <- CanCovidData::get_british_columbia_case_data() %>%
+  count(Date=`Reported Date`,name="Cases") %>%
+  filter(Date>=as.Date("2020-03-01")) %>%
+  mutate(Trend=extract_stl_trend_m(Cases)) %>%
+  mutate(type="Combined")
+
+start_date <- as.Date("2021-03-09") # max(bc_cases$Date)
+
+
+Population <- 5000000
+
+vaccination_schedule <- schedule %>% 
+  filter(`Distribution location`=="British Columbia") %>%
+  filter(week>=as.Date("2021-03-01")) %>%
+  mutate(value=coalesce(value,0)) %>%
+  group_by(type) %>%
+  arrange(week) %>%
+  mutate(cum=cumsum(value)) %>%
+  mutate(time=difftime(week,start_date,units = "day") %>% as.integer + 14) %>%
+  group_by(time) %>%
+  summarise(rate=sum(value)/Population/7)
+  
+times <- seq(from = 0, to = 60, by = 1)
+initial_cases = filter(bc_cases,Date==start_date)$Trend/Population
+initial_susceptible <- 0.94
+gamma <- 1/6
+base_beta <- 1.03*gamma/initial_susceptible
+voc_advantage <- 0.084/0.94
+
+vaccine_model_data <- function(vaccination_rate,voc_advantage,base_beta,initial_voc_share) {
+  model_result   <- model.vaxx(times,
+                               yinit=c(Susceptible=initial_susceptible, 
+                                       Infected=(1-initial_voc_share)*initial_cases/
+                                         ((base_beta)*initial_susceptible), 
+                                       CumulativeInfected=initial_cases*(1-initial_voc_share),
+                                       Recovered=0.02,Vaccinated=0.03),
+                               vaccination_rate = vaccination_rate,
+                               paramters=c(beta = base_beta, gamma = gamma))
+  model_result_voc   <- model.vaxx(times,
+                                   yinit=c(Susceptible=initial_susceptible, 
+                                       Infected=initial_voc_share*initial_cases/
+                                         ((voc_advantage+base_beta)*initial_susceptible), 
+                                           CumulativeInfected=initial_cases*initial_voc_share,
+                                           Recovered=0.02,Vaccinated=0.03),
+                                   vaccination_rate = vaccination_rate,
+                                   paramters=c(beta = voc_advantage+base_beta, gamma = gamma))
+  
+  bind_rows(model_result %>% mutate(type="Non-VOC"),
+            model_result_voc %>% mutate(type="VOC")) %>%
+    mutate(type=factor(type,levels=c("VOC","Non-VOC"))) %>%
+    group_by(type) %>%
+    arrange(time) %>%
+    mutate(Cases=CumulativeInfected-lag(CumulativeInfected))%>%
+    mutate(Cases=coalesce(Cases,CumulativeInfected)) %>%
+    pivot_longer(-one_of("time","type")) %>%
+    mutate(value=value*Population) %>%
+    mutate(Date=start_date+time) 
+}
+
+variant_colours <- c("Combined"="steelblue",setNames(sanzo::duos$c071,c("VOC","Non-VOC")))
+vaccine_graph <- function(data){
+   data %>%
+    filter(name=="Cases") %>%
+    ggplot(aes(x = Date, y = value, fill=type)) +
+    geom_area() +
+    theme_bw() +
+    theme(legend.position = "bottom") +
+    scale_fill_manual(values=variant_colours) +
+    scale_y_continuous(labels=scales::comma) +
+    labs(title="BC double SIR with vaccination simulation",
+         fill=NULL,y="Daily cases",x=NULL,
+         caption="MountainMath")
+}
+```
+
+
+```{r eval=FALSE, include=FALSE}
+gamma <- 1/4
+base_beta <- 1.05*gamma/0.94
+plot_data1 <- bind_rows(
+  vaccine_model_data(approxfun(vaccination_schedule %>% mutate(rate=rate*0.9),method="linear",rule=2),
+              voc_advantage=voc_advantage,base_beta= base_beta,initial_voc_share=0.1) %>%
+    mutate(vaxx="PHAC vaccination schedule",
+           init="10% initial VOC, 1/4 clearance rate"),
+  vaccine_model_data(function(t)0.02/30,
+              voc_advantage=voc_advantage,base_beta= base_beta,initial_voc_share=0.1) %>%
+    mutate(vaxx="Vaccinating 2% of population per month",
+           init="10% initial VOC, 1/4 clearance rate"))
+gamma <- 1/6
+base_beta <- 1.02*gamma/0.94
+plot_data2 <- bind_rows(
+  vaccine_model_data(approxfun(vaccination_schedule %>% mutate(rate=rate*0.9),method="linear",rule=2),
+              voc_advantage=voc_advantage,base_beta= base_beta,initial_voc_share=0.1) %>%
+    mutate(vaxx="PHAC vaccination schedule",
+           init="10% initial VOC, 1/6 clearance rate"),
+  vaccine_model_data(function(t)0.02/30,
+              voc_advantage=voc_advantage,base_beta= base_beta,initial_voc_share=0.1) %>%
+    mutate(vaxx="Vaccinating 2% of population per month",
+           init="10% initial VOC, 1/6 clearance rate"))
+
+bind_rows(plot_data1,plot_data2) %>%
+  filter(name=="Cases") %>%
+  vaccine_graph() +
+  facet_grid(init ~vaxx)
+```
+
+To start let's look at the effect of our ramped-up vaccination schedule compared to continuing vaccinating only about 2% of the population per month as we have been doing up to now. For now, let's forget about variants and pretend they did not exist.
+
+
+```{r}
+plot_data <- bind_rows(
+  vaccine_model_data(approxfun(vaccination_schedule %>% mutate(rate=rate*0.9),method="linear",rule=2),
+              voc_advantage=voc_advantage,base_beta= base_beta,initial_voc_share=0) %>%
+    mutate(vaxx="PHAC vaccination schedule",
+           init="No VOC"),
+  vaccine_model_data(function(t)0.02/30,
+              voc_advantage=voc_advantage,base_beta= base_beta,initial_voc_share=0) %>%
+    mutate(vaxx="Vaccinating 2% of population per month",
+           init="No VOC"))
+plot_data %>%
+  #filter(type!="VOC") %>%
+  vaccine_graph() +
+  facet_grid(vaxx ~ .) + 
+  geom_area(data=filter(bc_cases,Date>=as.Date("2020-07-01")),
+            aes(x=Date,y=Trend,fill=type),inherit.aes = FALSE) +
+  labs(title="BC SIR with vaccination simulation")
+```
+
+The vaccination effect is clearly visible. There are several assumptions baked into this. One is our initial growth rate, which we set to a very mild increase in cases. The other is how we vaccinate. We know that our age-based vaccination schedule [won't be as good at reducing transmissions as other ways to vaccinate](https://www.medrxiv.org/content/10.1101/2021.02.23.21252309v1), including vaccinating randomly. This means that the effect of the vaccinations on cases won't be quite as pronounced as in the above graph. But it will still be strong.
+
+Let's see what happens when we add VOC into the mix. Especially for B.1.1.7 we got really good data on the transmissibility advantage as outlined above. In BC we don't really know what share of current cases are variants, but 10% is probably a decent guess.
+
+```{r}
+plot_data <- bind_rows(
+  vaccine_model_data(approxfun(vaccination_schedule %>% mutate(rate=rate*0.9),method="linear",rule=2),
+              voc_advantage=voc_advantage,base_beta= base_beta,initial_voc_share=0.1) %>%
+    mutate(vaxx="PHAC vaccination schedule",
+           init="10% initial VOC"),
+  vaccine_model_data(function(t)0.02/30,
+              voc_advantage=voc_advantage,base_beta= base_beta,initial_voc_share=0.1) %>%
+    mutate(vaxx="Vaccinating 2% of population per month",
+           init="10% initial VOC"))
+plot_data %>%
+  vaccine_graph() +
+  geom_area(data=filter(bc_cases,Date>=as.Date("2020-07-01")),
+            aes(x=Date,y=Trend,fill=type),inherit.aes = FALSE)+
+  facet_grid(init ~vaxx)
+```
+
+That gives an idea of how bad that added transmissibility really is, and how much the accelerated vaccine schedule is helping. (Although this is likely over-estimating the vaccine effect a bit.) And it also shows that even with the current vaccine schedule, variants of concern are very ... concerning. Let's focus in on our vaccination schedule to get a better image.
+
+```{r vaxx-vs-vocs-projection}
+plot_data %>%
+  filter(grepl("PHAC",vaxx)) %>%
+  vaccine_graph() +
+  geom_area(data=filter(bc_cases,Date>=as.Date("2020-07-01")),
+            aes(x=Date,y=Trend,fill=type),inherit.aes = FALSE)+
+  facet_grid(init ~vaxx)
+```
+
+Focusing vaccinations on older populations helps keep mortality low in face of higher case counts. But this does not address problems like Long COVID-19. And additionally, we have now [good evidence that B.1.1.7 has higher morbitity and mortality](https://www.bmj.com/content/372/bmj.n579) than regular COVID-19, which may well outweigh the reduction in mortality achieved through our vaccines. (Someone should model that!)
+
+But what about the assumption that we currently have 10% variants of concern? Since BC does not release timely counts with dates and denominators, we are adding graphs for 5% or 15% 
+
+
+```{r}
+plot_data <- bind_rows(
+  vaccine_model_data(approxfun(vaccination_schedule %>% mutate(rate=rate*0.9),method="linear",rule=2),
+              voc_advantage=voc_advantage,base_beta= base_beta,initial_voc_share=0.05) %>%
+    mutate(vaxx="PHAC vaccination schedule",
+           init="5% initial VOC"),
+  vaccine_model_data(approxfun(vaccination_schedule %>% mutate(rate=rate*0.9),method="linear",rule=2),
+              voc_advantage=voc_advantage,base_beta= base_beta,initial_voc_share=0.1) %>%
+    mutate(vaxx="PHAC vaccination schedule",
+           init="10% initial VOC"),
+  vaccine_model_data(approxfun(vaccination_schedule %>% mutate(rate=rate*0.9),method="linear",rule=2),
+              voc_advantage=voc_advantage,base_beta= base_beta,initial_voc_share=0.15) %>%
+    mutate(vaxx="PHAC vaccination schedule",
+           init="15% initial VOC")
+  ) %>%
+  mutate(init=factor(init,levels=c("5% initial VOC","10% initial VOC","15% initial VOC")))
+
+plot_data %>%
+  filter(grepl("PHAC",vaxx)) %>%
+  vaccine_graph() +
+  geom_area(data=filter(bc_cases,Date>=as.Date("2020-07-01")),
+            aes(x=Date,y=Trend,fill=type),inherit.aes = FALSE)+
+  facet_grid(init ~vaxx)
+```
+
+The change in the VOC portion is large, the change in non-VOC cases is largely irrelevant. It shows how important it is to get a decent read on how many variant cases we have right now. That range of assumptions is too large to robustly base policy on.
+
+This is a good time to remind readers that these are projections, and they show what will likely happen if there are no changes in regulations or behaviour. If we open up more, cases will likely rise faster. If we add restrictions, case growth will slow down.
+
+Some people have expressed hopes that warmer weather will bring down case counts. Unfortunately there is little evidence that this will happen to an appreciable degree. And our experience last fall [has shown that case growth was quite uniform between July and early November, with the exception of a short period of lower growth around September](https://doodles.mountainmath.ca/blog/2021/02/21/on-covid-and-exponential-growth/).
+
+
+As usual, the code is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-03-10-vaxx-vs-vocs.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
