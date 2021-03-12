@@ -118,7 +118,7 @@ That gives an idea of how bad that added transmissibility really is, and how muc
 
 <img src="/posts/2021-03-10-vaxx-vs-vocs_files/figure-html/vaxx-vs-vocs-projection-1.png" width="1200" />
 
-Focusing vaccinations on older populations helps keep mortality low in face of higher case counts. But this does not address problems like Long COVID-19. And additionally, we have now [good evidence that B.1.1.7 has higher morbitity and mortality](https://www.bmj.com/content/372/bmj.n579) than regular COVID-19, which may well outweigh the reduction in mortality achieved through our vaccines. (Someone should model that!)
+Focusing vaccinations on older populations helps keep mortality low in face of higher case counts. But this does not address problems like Long COVID-19. And additionally, we have now [good evidence that B.1.1.7 has higher morbidity and mortality](https://www.bmj.com/content/372/bmj.n579) than regular COVID-19, which may well outweigh the reduction in mortality achieved through our vaccines. (Someone should model that!)
 
 But what about the assumption that we currently have 10% variants of concern? Since BC does not release timely counts with dates and denominators, we are adding graphs for 5% or 15% 
 
@@ -137,13 +137,13 @@ As usual, the code is [available on GitHub](https://github.com/mountainMath/dood
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-03-10 21:22:38 PST"
+## [1] "2021-03-12 10:08:11 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [42d7dd5] 2021-03-04: B.1.351 vs B.1.315 type, thanks Eric!
+## Head:     [363726f] 2021-03-11: vaxx-vs-vocs
 ```
 
 ```
@@ -175,14 +175,13 @@ As usual, the code is [available on GitHub](https://github.com/mountainMath/dood
 ##  [9] blob_1.2.1        rlang_0.4.9       pillar_1.4.7      glue_1.4.2       
 ## [13] withr_2.3.0       DBI_1.1.0         dbplyr_1.4.4      modelr_0.1.8     
 ## [17] readxl_1.3.1      lifecycle_0.2.0   munsell_0.5.0     blogdown_0.19    
-## [21] gtable_0.3.0      cellranger_1.1.0  rvest_0.3.6       codetools_0.2-16 
-## [25] evaluate_0.14     labeling_0.4.2    knitr_1.30        fansi_0.4.1      
-## [29] Rcpp_1.0.5        scales_1.1.1      backports_1.2.0   jsonlite_1.7.2   
-## [33] farver_2.0.3      fs_1.4.1          hms_0.5.3         digest_0.6.27    
-## [37] stringi_1.5.3     bookdown_0.19     grid_4.0.3        cli_2.2.0        
-## [41] tools_4.0.3       magrittr_2.0.1    crayon_1.3.4      pkgconfig_2.0.3  
-## [45] ellipsis_0.3.1    xml2_1.3.2        reprex_0.3.0      lubridate_1.7.9.2
-## [49] assertthat_0.2.1  rmarkdown_2.7     httr_1.4.2        rstudioapi_0.13  
-## [53] R6_2.5.0          git2r_0.27.1      compiler_4.0.3
+## [21] gtable_0.3.0      cellranger_1.1.0  rvest_0.3.6       evaluate_0.14    
+## [25] knitr_1.30        fansi_0.4.1       Rcpp_1.0.5        scales_1.1.1     
+## [29] backports_1.2.0   jsonlite_1.7.2    fs_1.4.1          hms_0.5.3        
+## [33] digest_0.6.27     stringi_1.5.3     bookdown_0.19     grid_4.0.3       
+## [37] cli_2.2.0         tools_4.0.3       magrittr_2.0.1    crayon_1.3.4     
+## [41] pkgconfig_2.0.3   ellipsis_0.3.1    xml2_1.3.2        reprex_0.3.0     
+## [45] lubridate_1.7.9.2 assertthat_0.2.1  rmarkdown_2.7     httr_1.4.2       
+## [49] rstudioapi_0.13   R6_2.5.0          git2r_0.27.1      compiler_4.0.3
 ```
 </details>

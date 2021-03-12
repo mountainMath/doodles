@@ -592,7 +592,7 @@ plot_data %>%
   facet_grid(init ~vaxx)
 ```
 
-Focusing vaccinations on older populations helps keep mortality low in face of higher case counts. But this does not address problems like Long COVID-19. And additionally, we have now [good evidence that B.1.1.7 has higher morbitity and mortality](https://www.bmj.com/content/372/bmj.n579) than regular COVID-19, which may well outweigh the reduction in mortality achieved through our vaccines. (Someone should model that!)
+Focusing vaccinations on older populations helps keep mortality low in face of higher case counts. But this does not address problems like Long COVID-19. And additionally, we have now [good evidence that B.1.1.7 has higher morbidity and mortality](https://www.bmj.com/content/372/bmj.n579) than regular COVID-19, which may well outweigh the reduction in mortality achieved through our vaccines. (Someone should model that!)
 
 But what about the assumption that we currently have 10% variants of concern? Since BC does not release timely counts with dates and denominators, we are adding graphs for 5% or 15% 
 
