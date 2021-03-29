@@ -1,6 +1,8 @@
 ---
 title: 'Forced Out in Canada: New Data from CHS'
-author: Jens von Bergmann
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
 date: '2021-03-29'
 slug: forced-out-in-canada-new-data-from-chs
 categories:
