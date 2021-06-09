@@ -26,7 +26,7 @@ type: "post"
 
 
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/06/09/basement-confidential-vancouver-s-informal-housing-stock/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/06/09/basement-confidential-vancouvers-informal-housing-stock/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 # Informal housing
@@ -128,13 +128,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-06-08 22:45:45 PDT"
+## [1] "2021-06-09 07:49:05 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [1ea44fb] 2021-03-29: authors
+## Head:     [dc391e1] 2021-06-09: manually fix links
 ```
 
 ```
