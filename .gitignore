@@ -12,3 +12,15 @@
 Thumbs.db
 index_cache/
 index_cache/*
+/blogdown/
+/blogdown/*
+/data_cache/
+/data_cache/*
+/r-reticulate/
+/r-reticulate/*
+/java
+/data/frequent_densities.geojson
+/data/frequent_stops.geojson
+/data/transit_network.geojson
+/data/cov_bilding_lines/
+/data/cov_bilding_lines/*
