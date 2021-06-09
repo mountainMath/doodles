@@ -6,9 +6,7 @@ categories:
   - zoning
   - Vancouver
 slug: zoned-capacity
-author: Jens von Bergmann
 tags: []
-draft: true
 description: 'The myths of zoning.'
 featured: 'zoning_van_pdf.png'
 images: ["https://doodles.mountainmath.ca/images/zoning_van_pdf.png"]

@@ -7,7 +7,6 @@ categories:
   - bikes
   - Mapzen
 slug: how-to-make-a-bike-map
-author: Jens von Bergmann
 tags: []
 description: "Modern Web Mapping Technology Meets Bikes"
 featured: 'bike-map.png'

@@ -7,7 +7,6 @@ categories:
   - Mapzen
   - bikes
 slug: routing
-author: Jens von Bergmann
 tags: []
 description: "Tweaking bike routing"
 featured: 'bike-routes2.png'

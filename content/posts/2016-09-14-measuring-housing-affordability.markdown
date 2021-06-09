@@ -5,7 +5,6 @@ date: 2016-09-14
 categories:
   - Vancouver
 slug: measuring-housing-affordability
-author: Jens von Bergmann
 tags: []
 description: 'Affordable for whom?'
 featured: 'sfh_price_2015.png'

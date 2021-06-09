@@ -5,7 +5,6 @@ date: 2016-08-31
 categories:
   - Vancouver
 slug: incomes
-author: Jens von Bergmann
 tags: []
 description: 'Progressing past medians.'
 featured: ''

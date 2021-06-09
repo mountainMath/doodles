@@ -6,7 +6,6 @@ categories:
   - OSM
   - bikes
 slug: bike-data
-author: Jens von Bergmann
 tags: []
 description: "The bike data I want"
 featured: 'bike-routes2.png'

@@ -114,7 +114,7 @@ unsafe = true
     wordpress       = ""
     tumblr          = ""
     xing            = ""
-    linkedin        = ""
+    linkedin        = "vb-jens"
     slideshare      = ""
     stackoverflow   = ""
     reddit          = ""
@@ -126,9 +126,14 @@ unsafe = true
     twitter         = "vb_jens"
     email           = "jens@mountainmath.ca"
 
-ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
+ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$", "\\.knit\\.md$", "\\.utf8\\.md$]
 
 [permalinks]
     post = "/blog/:year/:month/:day/:slug/"
     posts = "/blog/:year/:month/:day/:slug/"
     blog = "/blog/:year/:month/:day/:slug/"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true

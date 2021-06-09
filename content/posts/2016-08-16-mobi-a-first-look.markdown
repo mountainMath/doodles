@@ -7,7 +7,6 @@ categories:
   - Mapzen
   - bikes
 slug: mobi-a-first-look
-author: Jens von Bergmann
 tags: []
 description: 'Scraping Mobi data.'
 featured: 'mobi_main.png'

@@ -1,7 +1,8 @@
 ---
 title: More on Teardowns
-author: Jens von Bergmann and <a href="https://sala.ubc.ca/people/faculty/joe-dahmen">Joe
-  Dahmen</a>
+authors: 
+  - Jens von Bergmann
+  - <a href="https://sala.ubc.ca/people/faculty/joe-dahmen">Joe Dahmen</a>
 date: 2017-02-21
 categories:
   - Vancouver
@@ -9,7 +10,6 @@ categories:
   - Assessment Data
   - zoning
 slug: more-on-teardowns
-author: Jens von Bergmann
 tags: []
 description: 'Some more details behind our data story on teardowns.'
 featured: 'teardowns_animated.gif'

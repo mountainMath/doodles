@@ -7,7 +7,6 @@ categories:
   - taxes
   - density
 slug: density-in-vancouver
-author: Jens von Bergmann
 tags: []
 description: "Investigating taxes and land use"
 featured: 'tax_density.jpg'

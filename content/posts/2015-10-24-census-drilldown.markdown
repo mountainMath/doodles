@@ -1,11 +1,12 @@
 ---
 title: Census Drilldown
-author: Jens von Bergmann and Alejandro Cervantes
+authors: 
+  - Jens von Bergmann
+  - Alejandro Cervantes
 date: 2015-10-24
 categories:
   - CensusMapper
 slug: census-drilldown
-author: Jens von Bergmann
 tags: []
 description: "Drilling into census regions"
 featured: 'wheel.png'

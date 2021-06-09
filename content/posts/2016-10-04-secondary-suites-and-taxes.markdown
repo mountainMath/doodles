@@ -6,7 +6,6 @@ categories:
   - Vancouver
   - taxes
 slug: secondary-suites-and-taxes
-author: Jens von Bergmann
 tags: []
 description: 'The tax implications of RS zoning.'
 featured: 'secondary_suites.png'

@@ -8,7 +8,6 @@ categories:
   - teardowns
   - geeky
 slug: redevelopment
-author: Jens von Bergmann
 tags: []
 description: "Digging into teardowns"
 featured: 'teardowns.png'

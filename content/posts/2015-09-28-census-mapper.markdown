@@ -1,11 +1,12 @@
 ---
 title: Census Mapper
-author: Jens von Bergmann and Alejandro Cervantes
+authors: 
+  - Jens von Bergmann
+  - Alejandro Cervantes
 date: 2015-09-28
 categories:
   - CensusMapper
 slug: census-mapper
-author: Jens von Bergmann
 tags: []
 description: "Making StatCan open data more accessible"
 featured: 'map-tools.jpg'

@@ -3,5 +3,10 @@
 .RData
 .Ruserdata
 .Rprofile
-public/
-public/*
+/public/
+/public/*
+/resources/
+/resources/*
+.DS_Store
+.DS_Store?
+Thumbs.db

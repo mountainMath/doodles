@@ -6,7 +6,6 @@ categories:
   - Vancouver
   - Assessment Data
 slug: vancouver-assessment-data
-author: Jens von Bergmann
 tags: []
 description: "Mapping Vancouver Assessment Data"
 featured: 'land_value.jpg'

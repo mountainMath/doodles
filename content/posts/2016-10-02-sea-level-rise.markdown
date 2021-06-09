@@ -5,7 +5,6 @@ date: 2016-10-02
 categories:
   - Mapzen
 slug: sea-level-rise
-author: Jens von Bergmann
 tags: []
 draft: true
 description: 'Playing with elevation data.'

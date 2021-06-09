@@ -5,7 +5,6 @@ date: 2016-10-21
 categories:
   - CensusMapper
 slug: trick-or-treat-2016
-author: Jens von Bergmann
 tags: []
 description: 'Halloween Mapping Fun.'
 images: ["https://doodles.mountainmath.ca/images/tot_density.png"]

@@ -7,7 +7,6 @@ categories:
   - bikes
   - Mapzen
 slug: my-global-bike-map
-author: Jens von Bergmann
 tags: []
 description: 'The beauty of building things with global datasets.'
 featured: 'vancouver_bike.png'

@@ -6,7 +6,6 @@ categories:
   - Vancouver
   - bikes
 slug: bike-paths
-author: Jens von Bergmann
 tags: []
 description: "Naked bike maps"
 featured: 'naked_bike_map.png'

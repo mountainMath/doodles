@@ -7,7 +7,6 @@ categories:
   - Mapzen
   - bikes
 slug: mobi-running-stats
-author: Jens von Bergmann
 tags: []
 description: 'Bike share stats for all.'
 featured: 'mobi_main2.png'

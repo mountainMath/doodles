@@ -7,7 +7,6 @@ categories:
   - Assessment Data
   - teardowns
 slug: vancouver-teardown-map
-author: Jens von Bergmann
 tags: []
 description: "Playing with Assessment Data"
 featured: 'map_of_teardowns.png'

@@ -6,7 +6,6 @@ categories:
   - Vancouver
   - Assessment Data
 slug: updated-vancouver-assessment-data
-author: Jens von Bergmann
 tags: []
 description: "VanRE Madness Continues"
 featured: 'relative_land.jpg'
