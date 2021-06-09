@@ -233,7 +233,7 @@ bind_rows(suite_licences,suite_licences2 %>% mutate(folderyear=str_pad(folderyea
   #facet_wrap("businesstype") +
   scale_y_continuous(labels=scales::comma) +
   geom_bar(stat="identity",fill="deeppink3") +
-  labs(title="Licenced secondary suites in the City of Vancouver",
+  labs(title="Licensed secondary suites in the City of Vancouver",
        x=NULL,y="Number of licensed suites",
        caption="City of Vancouver Open Data")
 ```
