@@ -54,7 +54,7 @@ Estimating the size of the informal housing market tends to be difficult precise
 
 The Canadian Census has attempted to classify single family homes with secondary suites as two "duplex" units, the main unit and the secondary suite. In cases where the census determined there might be more than one suite the homes have been classified as "apartment, fewer than 5 storeys." But it's not always easy for Census workers to find suites or determine if or when they've been re-absorbed into the main dwelling. Nor is there a clear mechanism for residents filling out Census forms to make corrections. We can see how the Census has struggled to identify informal dwelling units by [observing the shift from "single-detached" dwellings to "duplex" units over time](https://doodles.mountainmath.ca/blog/2020/01/27/mythical-oversupply/).
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/duplex-timeline-1.png" width="1200" />
+<img src="https://doodles.mountainmath.ca/posts/2021-06-08-basement-confidential-vancouver-s-informal-housing-stock/index_files/figure-html/duplex-timeline-1.png" width="1200" />
 
 The majority of the observed growth in duplex units is due to re-classification of existing units as the census got better at identifying secondary suites, initiated by the change in census methods between the 2001 and 2006 censuses and again between 2011 and 2016. Half these units were generally understood to be the main units in suited houses, the other half are the secondary suites. The census does not give us a straight-forward way to distinguish between the two. We note that a high share of duplex units register as "unoccupied" in the census, and we strongly suspect that many of these are secondary suites that have been re-absorbed into the main unit.
 
@@ -63,7 +63,7 @@ Understanding homes with more than one secondary suite through the census is har
 
 To better understand who lives in these units we can again turn to census data, focusing in on duplexes (SFH with a single suite). This is only looking at the occupied units, and within these the units "occupied by usual residents". Splitting these units by tenure and age of the primary household maintainer, we notice that the maintainers of owner-occupied units skew older while those of rental units, likely mostly our secondary suites, skew younger.
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/duplex-age-1.png" width="1200" />
+<img src="https://doodles.mountainmath.ca/posts/2021-06-08-basement-confidential-vancouver-s-informal-housing-stock/index_files/figure-html/duplex-age-1.png" width="1200" />
 
 We also notice a curious pattern in that there are more owner-occupied units than total number of SFH of this type. Given that suites in the City of Vancouver cannot be stratified (and hence easily divided into separately owned properties), we might expect a more even division of owner-occupied to rental suites. We might even expect more rentals, to the extent that some houses are split into suites where both are rented out by landlords who live elsewhere. To find the opposite - that owner-occupied units dominate - can be interpreted multiple ways, speaking in part to the ambiguity of secondary suites. 
 
@@ -78,27 +78,27 @@ Points 1, 2, and 5 only impact the renter/owner share, but can't explain why the
 
 We can examine the household types that occupy these units directly within the Census.
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/duplex-hh_type-1.png" width="1200" />
+<img src="https://doodles.mountainmath.ca/posts/2021-06-08-basement-confidential-vancouver-s-informal-housing-stock/index_files/figure-html/duplex-hh_type-1.png" width="1200" />
 
 We notice the elevated portion of non-census family households in secondary suites, which are either one-person households or roommate households. The ["Complex census family households"](https://doodles.mountainmath.ca/blog/2017/12/01/what-s-a-household/) are comprised of multi-generational households as well as households of census families with additional people living in the household. The prevalence of these on the ownership side probably speaks to suited homes being used by multi-generational households.
 
 
 For comparison purposes, here is the same breakdown for single-detached homes, so those SFH where the census did not identify a secondary suite. This form still has a sizable portion of "complex" households, but at a lower share than what we see in suites SFH.
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/sfh-hh_type-1.png" width="1200" />
+<img src="https://doodles.mountainmath.ca/posts/2021-06-08-basement-confidential-vancouver-s-informal-housing-stock/index_files/figure-html/sfh-hh_type-1.png" width="1200" />
 
 
 ## The formal portion of secondary suite housing
 To understand the formal portion of the secondary suite stock we can turn to City of Vancouver secondary suite rental permits. There is a broad spectrum here between permitted units and those that have no hope of complying to building code because of e.g. ceilings that are too low. Some units may be easily permittable, but have not obtained a permit for other unspecified reasons, including simple ignorance. While the City of Vancouver has a [relatively straight-forward webpage](https://vancouver.ca/doing-business/long-term-rental-business-licence.aspx) describing the permitting process, the necessity of obtaining a permit isn't widely advertised, and some of the categories remain ambiguous. Have a look at the [permit application form](https://vancouver.ca/files/cov/long-term-rental-property-application.pdf).
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/suite-permits-1.png" width="1200" />
+<img src="https://doodles.mountainmath.ca/posts/2021-06-08-basement-confidential-vancouver-s-informal-housing-stock/index_files/figure-html/suite-permits-1.png" width="1200" />
 
 Here we'll stick with secondary suite licenses, which is where landlords are supposed to go to formalize their rental suites. Looking at the number of permits over time we note that the city has been successful in gradually bringing more secondary suites into the formal housing sector. But comparing to the Census it appears the overall share of suites with a permit is still quite low at around 10% of all rented suites.
 
 ## New suites
 Suites in newly constructed housing will be up to building code, so there won't be any barriers to integrating them into the formal building stock. But how many new houses have suites? And how many suites get lost to teardowns. The latter question is hard to answer with publicly available data (and still difficult with non-open data sources like BC Assessment roll data and MLS data). But the answer to the former question, how many new homes have suites, can be obtained from building permit data.  We have [looked into this question a couple of years ago](https://doodles.mountainmath.ca/blog/2018/02/22/building-permits/), this is a good opportunity for an update with newer data.
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/building-permits-1.png" width="1200" />
+<img src="https://doodles.mountainmath.ca/posts/2021-06-08-basement-confidential-vancouver-s-informal-housing-stock/index_files/figure-html/building-permits-1.png" width="1200" />
 
 The addition/alterations data reflects the makeup of the SFH stock being formally altered and pulling a building permit for the work. Here we see that the majority of these homes do not have a suite, but the overall mixture of suited to non-suited homes roughly matches our expectation of the overall building stock. It is not clear how representative homes that take out a building permit for modifications might be. Owners of properties with existing code violations that might be expensive to fix may choose to forego a building permit as to avoid a building inspector visiting the house (and any casual investigation will reveal a lot of informal alterations in Vancouver).
 
@@ -108,7 +108,7 @@ Overall it would appear that new buildings tend to come with suites more often t
 
 Before wrapping up, let's quickly look at how the formalized addition of a suite relates to the building value of permitted houses constructed. 
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/building-permit-values-1.png" width="1200" />
+<img src="https://doodles.mountainmath.ca/posts/2021-06-08-basement-confidential-vancouver-s-informal-housing-stock/index_files/figure-html/building-permit-values-1.png" width="1200" />
 
 Though the mismatch is diminishing, it's clear that SFH without suites tend to have more expensive building values, and are likely in more expensive parts of town.
 This is something that we have generally seen in the distribution of suites, they tend to cluster on the East Side of Vancouver, with houses on the West Side remaining more exclusive and exclusionary.
