@@ -16,7 +16,7 @@ categories:
 tags: []
 description: "Basement suites are the Schrödinger's cat of dwelling units, they span the space betweem formal and informal housing, viewed by some as the problem of, and by others as the solution to Vancouver's housing woes."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2021-06-08-basement-confidential-vancouver-s-informal-housing-stock/index_files/figure-html/suite-permits-1.png"]
+images: ["https://doodles.mountainmath.ca/blog/2021/06/08/basement-confidential-vancouver-s-informal-housing-stock/index_files/figure-html/suite-permits-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -128,13 +128,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-06-09 07:53:48 PDT"
+## [1] "2021-06-09 09:40:22 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [2d2c4c7] 2021-06-09: fix link to nathan's post
+## Head:     [16d344d] 2021-06-09: clean up config.toml
 ```
 
 ```
