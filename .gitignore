@@ -10,3 +10,5 @@
 .DS_Store
 .DS_Store?
 Thumbs.db
+index_cache/
+index_cache/*

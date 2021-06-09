@@ -32,9 +32,9 @@ type: "post"
 # Informal housing
 While housing is highly regulated via zoning bylaws, building code, and fire code, in situations of housing scarcity we often get informal housing that exists outside of - or only partially covered by - the existing regulatory framework. We often associate slums or shantytowns with the term *informal housing*, but it also applies to more organized settlements like Kowloon Walled City, or, in the context of subterranean Vancouver, [a good portion of our secondary suite stock](https://onlinelibrary.wiley.com/doi/10.1111/cag.12410).
 
-Secondary suites in Vancouver span the spectrum between formal and informal housing. While secondary suites have long been a part of Vancouver's housing market, they only acquired a route to formal legalization across most of the City in 2004. However, to become fully formalized secondary suites still have to clear a number of regulatory hurdles, ranging from minimum dwelling size to minimum ceiling height and other building code and fire standards. Then, after paying a [small fee](https://vancouver.ca/doing-business/long-term-rental-business-licence.aspx), they can receive a city permit as a secondary suite rental unit. The vast majority of secondary suites still remain part of the un-permitted informal housing sector.
+Secondary suites in Vancouver span the spectrum between formal and informal housing. While secondary suites have long been a part of Vancouver's housing market, they only acquired a route to formal legalization across most of the City in 2004. However, to become fully formalized secondary suites still have to clear a number of regulatory hurdles, ranging from minimum dwelling size to minimum ceiling height and other building code and fire standards. Then, after paying a [small fee](https://vancouver.ca/doing-business/long-term-rental-business-licence.aspx), they can receive a city licence as a secondary suite rental unit. The vast majority of secondary suites still remain part of the un-licensed (and largely un-permitted) informal housing sector.
 
-Even permitted secondary suites lack some of the regulatory tools that applies to other forms of housing. For example, neither the City of Vancouver Empty Homes Tax, nor the provincial Speculation and Vacancy Tax apply to suites. The flexibility of suites, which in most cases maintain an internal doorway to the main unit, mean they can easily be re-absorbed into the main dwelling unit. This weakens how the Residential Tenancy Act can be applied to tenancies in secondary suites, for instance by leaving landlords ready access to the "own use" rationale for eviction.
+Even permitted and licensed secondary suites lack some of the regulatory tools that applies to other forms of housing. For example, neither the City of Vancouver Empty Homes Tax, nor the provincial Speculation and Vacancy Tax apply to suites. The flexibility of suites, which in most cases maintain an internal doorway to the main unit, mean they can easily be re-absorbed into the main dwelling unit. This weakens how the Residential Tenancy Act can be applied to tenancies in secondary suites, for instance by leaving landlords ready access to the "own use" rationale for eviction.
 
 In general the informal market of secondary suites is mutually beneficial to owners, who can draw on additional rental income, and to tenants, who can access housing that is generally more affordable than what is available in the formal housing sector. The benefits don't accrue evenly though, and the interests of homeowning artisanal landlords and secondary suite tenants do not always align, [as evidenced by landlords looking for ways to circumvent the residential tenancy act by e.g. using suites as short-term rentals](https://www.theglobeandmail.com/real-estate/in-high-cost-vancouver-the-trick-is-getting-strangers-to-pay-the-rent/article15676047/).
 
@@ -89,11 +89,11 @@ For comparison purposes, here is the same breakdown for single-detached homes, s
 
 
 ## The formal portion of secondary suite housing
-To understand the formal portion of the secondary suite stock we can turn to City of Vancouver secondary suite rental permits. There is a broad spectrum here between permitted units and those that have no hope of complying to building code because of e.g. ceilings that are too low. Some units may be easily permittable, but have not obtained a permit for other unspecified reasons, including simple ignorance. While the City of Vancouver has a [relatively straight-forward webpage](https://vancouver.ca/doing-business/long-term-rental-business-licence.aspx) describing the permitting process, the necessity of obtaining a permit isn't widely advertised, and some of the categories remain ambiguous. Have a look at the [permit application form](https://vancouver.ca/files/cov/long-term-rental-property-application.pdf).
+To understand the formal portion of the secondary suite stock we can turn to City of Vancouver secondary suite rental licensing. There is a broad spectrum here between licensed units and those that have no hope of complying to building code because of e.g. ceilings that are too low. Some units may be easily license-able, but have not obtained a license for other unspecified reasons, including simple ignorance. While the City of Vancouver has a [relatively straight-forward webpage](https://vancouver.ca/doing-business/long-term-rental-business-licence.aspx) ddescribing the licensing process, the necessity of obtaining a license isn’t widely advertised, and some of the categories remain ambiguous. Have a look at the  [license application form](https://vancouver.ca/files/cov/long-term-rental-property-application.pdf).
 
 <img src="{{< blogdown/postref >}}index_files/figure-html/suite-permits-1.png" width="1200" />
 
-Here we'll stick with secondary suite licenses, which is where landlords are supposed to go to formalize their rental suites. Looking at the number of permits over time we note that the city has been successful in gradually bringing more secondary suites into the formal housing sector. But comparing to the Census it appears the overall share of suites with a permit is still quite low at around 10% of all rented suites.
+Here we'll stick with secondary suite licenses, which is where landlords are supposed to go to formalize their rental suites. Looking at the number of licenses over time we note that the city has been successful in gradually bringing more secondary suites into the formal housing sector. But comparing to the Census it appears the overall share of formalized licensed suites is still quite low at around 10% of all rented suites.
 
 ## New suites
 Suites in newly constructed housing will be up to building code, so there won't be any barriers to integrating them into the formal building stock. But how many new houses have suites? And how many suites get lost to teardowns. The latter question is hard to answer with publicly available data (and still difficult with non-open data sources like BC Assessment roll data and MLS data). But the answer to the former question, how many new homes have suites, can be obtained from building permit data.  We have [looked into this question a couple of years ago](https://doodles.mountainmath.ca/blog/2018/02/22/building-permits/), this is a good opportunity for an update with newer data.
@@ -128,13 +128,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-06-09 09:40:22 PDT"
+## [1] "2021-06-09 11:54:37 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [16d344d] 2021-06-09: clean up config.toml
+## Head:     [6712e00] 2021-06-09: fix og image
 ```
 
 ```
