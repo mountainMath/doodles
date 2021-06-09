@@ -126,7 +126,7 @@ unsafe = true
     twitter         = "vb_jens"
     email           = "jens@mountainmath.ca"
 
-ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$", "\\.knit\\.md$", "\\.utf8\\.md$]
+ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$", "\\.knit\\.md$", "\\.utf8\\.md$"]
 
 [permalinks]
     post = "/blog/:year/:month/:day/:slug/"
