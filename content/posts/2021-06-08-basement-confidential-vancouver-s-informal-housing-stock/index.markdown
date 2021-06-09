@@ -16,7 +16,7 @@ categories:
 tags: []
 description: "Basement suites are the Schrödinger's cat of dwelling units, they span the space betweem formal and informal housing, viewed by some as the problem of, and by others as the solution to Vancouver's housing woes."
 featured: ''
-images: ["https://doodles.mountainmath.ca/blog/2021/06/08/basement-confidential-vancouver-s-informal-housing-stock/index_files/figure-html/suite-permits-1.png"]
+images: ["https://doodles.mountainmath.ca/blog/2021/06/08/basement-confidential-vancouver-s-informal-housing-stock/index_files/figure-html/suite-licenses-1.png"] 
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -91,7 +91,7 @@ For comparison purposes, here is the same breakdown for single-detached homes, s
 ## The formal portion of secondary suite housing
 To understand the formal portion of the secondary suite stock we can turn to City of Vancouver secondary suite rental licensing. There is a broad spectrum here between licensed units and those that have no hope of complying to building code because of e.g. ceilings that are too low. Some units may be easily license-able, but have not obtained a license for other unspecified reasons, including simple ignorance. While the City of Vancouver has a [relatively straight-forward webpage](https://vancouver.ca/doing-business/long-term-rental-business-licence.aspx) ddescribing the licensing process, the necessity of obtaining a license isn’t widely advertised, and some of the categories remain ambiguous. Have a look at the  [license application form](https://vancouver.ca/files/cov/long-term-rental-property-application.pdf).
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/suite-permits-1.png" width="1200" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/suite-licenses-1.png" width="1200" />
 
 Here we'll stick with secondary suite licenses, which is where landlords are supposed to go to formalize their rental suites. Looking at the number of licenses over time we note that the city has been successful in gradually bringing more secondary suites into the formal housing sector. But comparing to the Census it appears the overall share of formalized licensed suites is still quite low at around 10% of all rented suites.
 
@@ -128,13 +128,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-06-09 11:54:37 PDT"
+## [1] "2021-06-09 12:14:43 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [6712e00] 2021-06-09: fix og image
+## Head:     [ce9730f] 2021-06-09: update gitignore
 ```
 
 ```
