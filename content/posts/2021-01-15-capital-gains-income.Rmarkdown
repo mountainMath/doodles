@@ -375,7 +375,7 @@ Moreover, I would like to see a longitudinal analysis to identify to what extent
 
 From a policy perspective, capital gains income should get a very close look. Michael Smart recently [made a convincing case for a capital gains tax reform](https://financesofthenation.ca/2021/01/07/its-time/).
 
-As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-15-capital-gains-income/) for anyone to reproduce or adapt for their own purposes.
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-15-capital-gains-income.Rmarkdown) for anyone to reproduce or adapt for their own purposes. 
 
 
 <details><summary>Reproducibility receipt</summary>

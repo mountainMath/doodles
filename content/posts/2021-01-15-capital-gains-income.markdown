@@ -99,29 +99,29 @@ Moreover, I would like to see a longitudinal analysis to identify to what extent
 
 From a policy perspective, capital gains income should get a very close look. Michael Smart recently [made a convincing case for a capital gains tax reform](https://financesofthenation.ca/2021/01/07/its-time/).
 
-As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-15-capital-gains-income/) for anyone to reproduce or adapt for their own purposes.
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-01-15-capital-gains-income.Rmarkdown) for anyone to reproduce or adapt for their own purposes. 
 
 
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-01-16 14:35:44 PST"
+## [1] "2021-07-14 10:54:49 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [fbeea1f] 2021-01-16: cap gains post
+## Head:     [f96b9e6] 2021-06-09: upate image text
 ```
 
 ```
-## R version 4.0.3 (2020-10-10)
+## R version 4.1.0 (2021-05-18)
 ## Platform: x86_64-apple-darwin17.0 (64-bit)
 ## Running under: macOS Big Sur 10.16
 ## 
 ## Matrix products: default
-## BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
-## LAPACK: /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRlapack.dylib
+## BLAS:   /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRblas.dylib
+## LAPACK: /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRlapack.dylib
 ## 
 ## locale:
 ## [1] en_CA.UTF-8/en_CA.UTF-8/en_CA.UTF-8/C/en_CA.UTF-8/en_CA.UTF-8
@@ -130,30 +130,30 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] patchwork_1.1.0.9000      mountainmathHelpers_0.1.2
-##  [3] tongfen_0.3.1             cansim_0.3.5             
-##  [5] cancensus_0.4.0           forcats_0.5.0            
-##  [7] stringr_1.4.0             dplyr_1.0.2              
+##  [1] patchwork_1.1.1           mountainmathHelpers_0.1.2
+##  [3] tongfen_0.3.3             cansim_0.3.9             
+##  [5] cancensus_0.4.3           forcats_0.5.1            
+##  [7] stringr_1.4.0             dplyr_1.0.7              
 ##  [9] purrr_0.3.4               readr_1.4.0              
-## [11] tidyr_1.1.2               tibble_3.0.4             
-## [13] ggplot2_3.3.2             tidyverse_1.3.0          
+## [11] tidyr_1.1.3               tibble_3.1.2             
+## [13] ggplot2_3.3.3             tidyverse_1.3.1          
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] Rcpp_1.0.5         lubridate_1.7.9.2  class_7.3-17       assertthat_0.2.1  
-##  [5] digest_0.6.27      R6_2.5.0           cellranger_1.1.0   backports_1.2.0   
-##  [9] reprex_0.3.0       evaluate_0.14      e1071_1.7-4        httr_1.4.2        
-## [13] blogdown_0.19      pillar_1.4.7       rlang_0.4.9        readxl_1.3.1      
-## [17] rstudioapi_0.13    blob_1.2.1         rmarkdown_2.5      labeling_0.4.2    
-## [21] munsell_0.5.0      broom_0.7.0        compiler_4.0.3     modelr_0.1.8      
-## [25] xfun_0.18          pkgconfig_2.0.3    htmltools_0.5.0    tidyselect_1.1.0  
-## [29] bookdown_0.19      codetools_0.2-16   fansi_0.4.1        crayon_1.3.4      
-## [33] dbplyr_1.4.4       withr_2.3.0        sf_0.9-6           grid_4.0.3        
-## [37] jsonlite_1.7.2     gtable_0.3.0       lifecycle_0.2.0    DBI_1.1.0         
-## [41] git2r_0.27.1       magrittr_2.0.1     units_0.6-7        scales_1.1.1      
-## [45] KernSmooth_2.23-17 cli_2.2.0          stringi_1.5.3      farver_2.0.3      
-## [49] fs_1.4.1           xml2_1.3.2         ellipsis_0.3.1     generics_0.1.0    
-## [53] vctrs_0.3.5        tools_4.0.3        glue_1.4.2         hms_0.5.3         
-## [57] yaml_2.2.1         colorspace_2.0-0   classInt_0.4-3     rvest_0.3.6       
-## [61] knitr_1.30         haven_2.3.1
+##  [1] Rcpp_1.0.6         lubridate_1.7.10   class_7.3-19       assertthat_0.2.1  
+##  [5] digest_0.6.27      utf8_1.2.1         R6_2.5.0           cellranger_1.1.0  
+##  [9] backports_1.2.1    reprex_2.0.0       evaluate_0.14      e1071_1.7-7       
+## [13] httr_1.4.2         blogdown_1.3       pillar_1.6.1       rlang_0.4.11      
+## [17] readxl_1.3.1       rstudioapi_0.13    jquerylib_0.1.4    rmarkdown_2.8     
+## [21] munsell_0.5.0      proxy_0.4-26       broom_0.7.6        compiler_4.1.0    
+## [25] modelr_0.1.8       xfun_0.23          pkgconfig_2.0.3    htmltools_0.5.1.1 
+## [29] tidyselect_1.1.1   bookdown_0.22      fansi_0.5.0        crayon_1.4.1      
+## [33] dbplyr_2.1.1       withr_2.4.2        sf_1.0-0           grid_4.1.0        
+## [37] jsonlite_1.7.2     gtable_0.3.0       lifecycle_1.0.0    DBI_1.1.1         
+## [41] git2r_0.28.0       magrittr_2.0.1     units_0.7-2        scales_1.1.1      
+## [45] KernSmooth_2.23-20 cli_2.5.0          stringi_1.6.2      fs_1.5.0          
+## [49] xml2_1.3.2         bslib_0.2.5.1      ellipsis_0.3.2     generics_0.1.0    
+## [53] vctrs_0.3.8        tools_4.1.0        glue_1.4.2         hms_1.1.0         
+## [57] yaml_2.2.1         colorspace_2.0-1   classInt_0.4-3     rvest_1.0.0       
+## [61] knitr_1.33         haven_2.4.1        sass_0.4.0
 ```
 </details>
