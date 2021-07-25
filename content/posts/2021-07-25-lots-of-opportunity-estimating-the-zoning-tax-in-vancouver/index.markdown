@@ -15,7 +15,7 @@ categories:
 tags: []
 description: "Zoning bylaws restrict the size and frontage of lots, preventing lots from getting subdivided. The opportunity cost of freezing City of Vancouver land use in RS zoned areas in amber is enormous, it amounts to around $40 billion from preventing 2:1 lots splits, and an additional $100 billion from preventing further subdivision beyond that."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2021-07-25-lots-of-opportunity-estimating-the-zoning-tax-in-vancouver/index_files/zoning-tax-2-1-1.png"]
+images: ["https://doodles.mountainmath.ca/blog/2021/07/25/lots-of-opportunity-estimating-the-zoning-tax-in-vancouver/index_files/figure-html/zoning-tax-2-1-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -227,13 +227,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-07-25 12:57:36 PDT"
+## [1] "2021-07-25 13:11:18 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [7f011b6] 2021-07-14: cap gains link to code and fix typo in empty homes tax expectation post, thanks Natalie
+## Head:     [27a2489] 2021-07-25: zoning tax
 ```
 
 ```
