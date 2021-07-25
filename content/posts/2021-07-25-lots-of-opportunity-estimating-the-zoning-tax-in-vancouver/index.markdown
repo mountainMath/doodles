@@ -30,7 +30,7 @@ type: "post"
 
 
 ## TLDR
-We estimate the land value lost by lot subdivision restrictions in the RS (single-family) zoned lands of Vancouver. These restrictions, also known as the *zoning tax*, subsidize hoarding of land for the wealthy at the cost of those who wouldn't mind sharing. We conservatively estimate the overall cost of preventing splitting of lots at $42 billion, or an average of 37% of existing lot land value. Alternative formulations enabling deeper subdivisions raise our zoning tax estimates to $145 billion. We provide examples of what subdivision could look like, tally up non-conforming lots by zone, and discuss some of the implications.
+We estimate the land value lost by lot subdivision restrictions in the RS (single-family) zoned lands of Vancouver. These restrictions, also known as the *zoning tax*, subsidize hoarding of land for the wealthy at the cost of those who wouldn't mind sharing. We conservatively estimate the overall cost of preventing splitting of lots at $43 billion, or an average of 37% of existing lot land value. Alternative formulations enabling deeper subdivisions raise our zoning tax estimates to $146 billion. We provide examples of what subdivision could look like, tally up non-conforming lots by zone, and discuss some of the implications.
 
 The zoning tax is real, and it is enormous. The exact amount of the zoning tax is hard to pin down because we are so far away from the equilibrium of where people would stop subdividing land or air parcels if they were allowed to do so.
 
@@ -227,13 +227,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-07-25 13:11:18 PDT"
+## [1] "2021-07-25 13:30:03 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [27a2489] 2021-07-25: zoning tax
+## Head:     [77951fa] 2021-07-25: fix og image url
 ```
 
 ```
