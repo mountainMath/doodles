@@ -1,0 +1,897 @@
+---
+title: 'Lots of Opportunity: Estimating the Zoning Tax in Vancouver'
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
+date: '2021-07-25'
+slug: lots-of-opportunity-estimating-the-zoning-tax-in-vancouver
+categories:
+  - affordability
+  - Assessment Data
+  - density
+  - land use
+  - Vancouver
+  - zoning
+tags: []
+description: "Zoning bylaws restrict the size and frontage of lots, preventing lots from getting subdivided. The opportunity cost of freezing City of Vancouver land use in RS zoned areas in amber is enormous, it amounts to around $40 billion from preventing 2:1 lots splits, and an additional $100 billion from preventing further subdivision beyond that."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2021-07-25-lots-of-opportunity-estimating-the-zoning-tax-in-vancouver/index_files/zoning-tax-2-1-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post" 
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	#dpi = 150,
+	fig.width = 8,
+	fig.height = 6,
+	cache = TRUE
+)
+library(tidyverse)
+library(VancouvR)
+library(sf)
+library(mapdeck)
+library(mountainmathHelpers)
+
+format_bn <- function(d,...)scales::dollar(d,scale = 10^-9,suffix="bn",largest_with_cents=10)
+format_M <- function(d)scales::dollar(as.numeric(d),scale=10^-6,suffix="M",largest_with_cents=10)
+format_flex <- function(d){
+  if (d>10^9)
+    scales::dollar(as.numeric(d),scale=10^-9,suffix="bn",largest_with_cents=10)
+  else if  (d>10^6) 
+    scales::dollar(as.numeric(d),scale=10^-6,suffix="M",largest_with_cents=10)
+  else if  (d>10^3) 
+    scales::dollar(as.numeric(d),scale=10^-3,suffix="k",largest_with_cents=10)
+  else 
+    scales::dollar(d,largest_with_cents=10)
+}
+```
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/07/25/lots-of-opportunity-estimating-the-zoning-tax-in-vancouver/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+```{r}
+# this takes time to run the first time.
+tax_parcels <- simpleCache(get_cov_data("property-parcel-polygons",format="geojson") %>%
+                             st_transform(lambert_conformal_conic_at(.)) %>%
+                             group_by(tax_coord) %>%
+                             summarise(),
+                           "/cov_tax_parcels.Rda",
+                           path=here::here("data"))
+
+east_of_elliot <- function(data){
+  pt <- st_point(c(-123.05685013532639,49.20644094543546)) %>% 
+    st_sfc(crs=4236) %>% 
+    st_transform(st_crs(data))
+  data %>% st_centroid() %>% st_coordinates() %>% as_tibble() %>% pull(X) > st_coordinates(pt)[1,1]
+}
+
+assessments <- get_cov_data("property-tax-report",where="tax_assessment_year = '2021'")
+# parks <- get_cov_data("parks",format="geojson") %>%
+#   st_transform(st_crs(tax_parcels))
+# parks_p <- get_cov_data("parks-polygon-representation",format="geojson") %>%
+#   st_transform(st_crs(tax_parcels))
+land_use <- get_metro_vancouver_land_use_data() %>%
+  filter(Jurisdicti=="City of Vancouver",
+         Descriptio %in% c("Residential - Single Detached",
+                           "Residential - Rural",
+                           "Residential - Townhouse",
+                           "Undeveloped and Unclassified")) %>%
+  st_transform(st_crs(tax_parcels)) %>%
+  st_buffer(-1)
+
+all_parks <- read_sf("https://s3.ca-central-1.amazonaws.com/mountainmath/cmhc/cov_parks_schools.geojson") %>%
+  st_transform(st_crs(tax_parcels)) %>%
+  st_filter(st_bbox(tax_parcels) %>% st_as_sfc())
+schools <- get_cov_data("schools",format="geojson") %>%
+  st_transform(st_crs(tax_parcels))
+
+
+
+subdivision_areas <- get_cov_data("subdivision-category-areas",format="geojson") %>%
+  st_transform(st_crs(tax_parcels))
+
+# blocks <- get_cov_data("block-outlines",format="geojson")  %>%
+#   st_transform(st_crs(tax_parcels)) %>%
+#   mutate(bn=row_number())
+
+rs_assessments <- assessments %>%
+  filter(grepl("^RS",zoning_district)) %>%
+  group_by(land_coordinate) %>%
+  mutate(n=n())
+rs_assessments <- rs_assessments %>%
+  filter(n==1) %>%
+  bind_rows(rs_assessments %>%
+              filter(n>1,legal_type!="STRATA") %>% # remove strata properties
+              group_by(land_coordinate) %>%
+              summarise(across(c("year_built","zoning_district","pid","legal_type"),
+                               function(d)first(na.omit(d))),
+                        across(c("current_improvement_value","current_land_value"),sum,na.rm=TRUE),
+                        .groups="drop")) %>%
+  ungroup()
+
+
+data <- tax_parcels %>%
+  right_join(rs_assessments,by=c("tax_coord"="land_coordinate")) %>%
+  st_filter(land_use) %>%
+  st_join(all_parks %>% select() %>% mutate(park=1) %>% st_buffer(-10)) %>%
+  st_join(schools %>% select() %>% mutate(school=1)) %>%
+  mutate(remove=coalesce(park,school) %>% coalesce(0))
+
+ft_to_m <- 0.3048
+sf_to_sm <- ft_to_m*ft_to_m
+
+subdivision_table <- 
+  bind_rows(tibble(category=c(str_to_upper(letters[1:7]),NA),
+                   zoning_district=c("RS-1"),
+                   min_frontage=c(30,40,50,60,75,100,150,NA),
+                   min_area=c(3000,3600,5000,5400,6750,12000,18000,NA)),
+            tibble(category=NA,
+                   zoning_district=c("RS-1A"),
+                   min_frontage=c(40),
+                   min_area=c(4800)),
+            tibble(category=NA,
+                   zoning_district=c("RS-1B.1"),
+                   min_frontage=c(30),
+                   min_area=c(3600)),
+            tibble(category=NA,
+                   zoning_district=c("RS-1B.2"),
+                   min_frontage=c(40),
+                   min_area=c(6000)),
+            tibble(category=NA,
+                   zoning_district=c("RS-2"),
+                   min_frontage=c(40),
+                   min_area=c(4800)),
+            tibble(category=str_to_upper(letters[4:6]),
+                   zoning_district=c("RS-3"),
+                   min_frontage=c(60,75,100),
+                   min_area=c(5400,6750,12000)),
+            tibble(category=str_to_upper(letters[4:6]),
+                   zoning_district=c("RS-3A"),
+                   min_frontage=c(60,75,100),
+                   min_area=c(5400,6750,12000)),
+            tibble(category=NA,
+                   zoning_district=c("RS-4"),
+                   min_frontage=c(30),
+                   min_area=c(3000)),
+            tibble(category=c(str_to_upper(letters[1:6]),NA),
+                   zoning_district=c("RS-5"),
+                   min_frontage=c(30,40,50,60,75,100,NA),
+                  min_area=c(3000,3600,5000,5400,6750,12000,NA)),
+            tibble(category=c("A",str_to_upper(letters[3:6]),NA),
+                   zoning_district=c("RS-6"),
+                    min_frontage=c(30,50,60,75,NA,NA),
+                   min_area=c(3000,5000,5400,6750,NA,NA)),
+            tibble(category=NA,
+                   min_frontage=c(40),
+                   zoning_district=c("RS-7"),
+                   min_area=c(4800)),
+            )%>%
+  mutate(min_area_sf=min_area,min_frontage_ft=min_frontage) %>%
+  mutate(min_area=min_area*sf_to_sm,
+         min_frontage=min_frontage*ft_to_m)
+
+subdivision_table_conditional <- 
+  bind_rows(tibble(category=c(str_to_upper(letters[1:7]),NA),
+                   zoning_district=c("RS-1"),
+                   min_frontage=c(30,40,50,60,75,100,150,NA),
+                   min_area=c(3000,3600,5000,5400,6750,12000,18000,NA)),
+            tibble(category=NA,
+                   zoning_district=c("RS-1A"),
+                   min_frontage=c(30),
+                   min_area=c(3000)),
+            tibble(category=NA,
+                   zoning_district=c("RS-1B.1"),
+                   min_frontage=c(30),
+                   min_area=c(3600)),
+            tibble(category=NA,
+                   zoning_district=c("RS-1B.2"),
+                   min_frontage=c(30),
+                   min_area=c(3600)),
+            tibble(category=NA,
+                   zoning_district=c("RS-2"),
+                   min_frontage=c(30),
+                   min_area=c(3000)),
+            tibble(category=str_to_upper(letters[4:6]),
+                   zoning_district=c("RS-3"),
+                   min_frontage=c(60,75,100),
+                   min_area=c(5400,6750,12000)),
+            tibble(category=str_to_upper(letters[4:6]),
+                   zoning_district=c("RS-3A"),
+                   min_frontage=c(60,75,100),
+                   min_area=c(5400,6750,12000)),
+            tibble(category=NA,
+                   zoning_district=c("RS-4"),
+                   min_frontage=c(30),
+                   min_area=c(3000)),
+            tibble(category=c(str_to_upper(letters[1:6]),NA),
+                   zoning_district=c("RS-5"),
+                   min_frontage=c(30,40,50,60,75,100,NA),
+                  min_area=c(3000,3600,5000,5400,6750,12000,NA)),
+            tibble(category=c("A",str_to_upper(letters[3:6]),NA),
+                   zoning_district=c("RS-6"),
+                    min_frontage=c(30,50,60,75,NA,NA),
+                   min_area=c(3000,5000,5400,6750,NA,NA)),
+            tibble(category=NA,
+                   min_frontage=c(30),
+                   zoning_district=c("RS-7"),
+                   min_area=c(3000)),
+            )%>%
+  mutate(min_area_sf=min_area,min_frontage_ft=min_frontage) %>%
+  mutate(min_area=min_area*sf_to_sm,
+         min_frontage=min_frontage*ft_to_m)
+
+rs_parcels <- data %>%
+  mutate(area=st_area(.) %>% unclass %>% as.numeric) %>%
+  mutate(rlv=current_land_value/area) %>%
+  filter(grepl("^RS",zoning_district), remove==0,area<13000)
+
+rs_centroids <- rs_parcels %>%
+  st_point_on_surface() %>%
+  #st_join(blocks) %>%
+  st_join(subdivision_areas)
+
+get_rs_frontages <- function(rs_parcels){
+  frontages <- get_cov_data("property-cadastral-boundaries",
+                  where="type='PROPERTY LINE'",
+                  format="geojson") %>%
+    st_transform(st_crs(tax_parcels)) %>%
+    #filter(!is.na(dimensions)) %>%
+    mutate(frontage=sf::st_length(.) %>% unclass %>% as.numeric) 
+  
+  st_join(
+    frontages %>% 
+      mutate(priority=!is.na(dimensions)) %>%
+      select(frontage,priority),
+    rs_parcels %>%
+      select(tax_coord) %>%
+      st_buffer(1),
+    largest = TRUE) %>%
+    st_drop_geometry() %>%
+    filter(!is.na(tax_coord)) %>%
+    group_by(tax_coord) %>%
+    arrange(priority,frontage) %>%
+    slice_tail(n=1)
+}
+
+rs_frontages <-  simpleCache(get_rs_frontages(rs_parcels),"rs_frontages",path=here::here("data"))
+
+rs_parcels <- rs_parcels %>% 
+  left_join(rs_frontages, by="tax_coord") %>%
+  left_join(rs_centroids %>% 
+              st_drop_geometry() %>% 
+              select(tax_coord,category),
+            by="tax_coord") %>%
+  mutate(eoe=east_of_elliot(.)) %>%
+  mutate(zoning_district=case_when(zoning_district != "RS-1B" ~ zoning_district,
+                                   eoe ~"RS-1B.1",
+                                   TRUE ~ "RS-1B.2")) %>%
+  left_join(subdivision_table,by=c("zoning_district","category")) %>%
+  left_join(subdivision_table_conditional %>%
+              rename_at(vars(matches("min")),function(d)paste0("conditional_",d)),
+            by=c("zoning_district","category"))
+```
+
+## TLDR
+We estimate the land value lost by lot subdivision restrictions in the RS (single-family) zoned lands of Vancouver. These restrictions, also known as the *zoning tax*, subsidize hoarding of land for the wealthy at the cost of those who wouldn't mind sharing. We conservatively estimate the overall cost of preventing splitting of lots at $42 billion, or an average of 37% of existing lot land value. Alternative formulations enabling deeper subdivisions raise our zoning tax estimates to $145 billion. We provide examples of what subdivision could look like, tally up non-conforming lots by zone, and discuss some of the implications.
+
+The zoning tax is real, and it is enormous. The exact amount of the zoning tax is hard to pin down because we are so far away from the equilibrium of where people would stop subdividing land or air parcels if they were allowed to do so.
+
+## Lots of Potential
+
+How much land do you have to buy in order to buy a house? 
+
+Theoretically this could vary a great deal, running from tiny lots (hosting tiny houses) up to large estates. Historically the latter (often farms) were surveyed; subdivided, and sold off into the smaller lots around most urban areas, setting in place the landscape we see today. Prior to zoning, increments of the 66 foot-long chains of surveyors tended to set lot sizes (one chain by ten chains makes an acre), but these could be further subdivided and sold off by land owners (half a chain by two chains remains a pretty normal lot size in Vancouver). Zoning regulations, and specifically subdivision regulations, imposed firm limits on how small lots were allowed to go, generally setting minimum parcel sizes and frontages. This prevented land from being further subdivided, or split up into smaller lots. It also kept out poorer folks from more exclusive neighbourhoods (in many cases as [advertised](https://searcharchives.vancouver.ca/westmount-park-subdivision-superb-side-2)).
+
+In effect zoning forces some people to buy more land than they might otherwise want, making their housing more expensive, but also making the neighbourhood more exclusive. At the same time, and because you can't really do much with it, zoning depresses the price of land ($ per square foot) on large indivisible lots relative to smaller lots. In other words, we make it difficult for two less rich households to compete with one very rich household for the same plot of land. Accordingly we subsidize the lifestyles and exclusiveness of landed wealth and we pay for it by reducing opportunities for everyone less wealthy.
+
+Just how much is this subsidy costing us?
+
+Most estimates of the size of the subsidy come from the field of Economics, where it's understood slightly differently: as a tax. Following [Glaeser & Gyourko (2002)](https://www.nber.org/system/files/working_papers/w8835/w8835.pdf), it's often referred to as a *zoning tax*. Economists (correctly) tend to see this tax as lowering general welfare in cities. But it's also a tax placed upon potential transactions between prospective buyers who don't need all the land on offer and current land owners, who would be able to sell their land for more if it were subdividable. A [new NBER working paper by Joseph Gyourko and Jacob Krimmel](https://www.nber.org/papers/w28993) tries to quantify the *zoning tax*, that is the loss in affordability due to restrictive zoning, in single-family zoned areas across multiple US metros. Below we attempt to quantify the same figure, which we can also understand as a subsidy for the lifestyles of the very rich, for Vancouver.
+
+Why is this called a *zoning tax*? The basic idea is that as land gets more expensive people tend to use land more intensively. This can happen in several ways, via subdivision of land, subdivision of air parcels (stratification), and sharing of existing land. Zoning restricts all of these. Restrictions on minimum lot size, minimum lot frontage, as well as minimum setbacks renders subdivision of land at some point unfeasible. Restrictions on height, FSR, number of units and stratas restricts subdivision of air parcels or stratification. Definitions of family and restrictions of number of unrelated people per household in zoning bylaws restricts sharing of land and the homes on them.
+
+It's possible, of course, that these restrictions don't matter much. If they only operate to replicate what people want and can afford to buy anyway (maybe everyone's a wealthy gardener!), then they may produce little in the way of a tax or subsidy. Put differently, if these restrictions just curb some rare outliers there is not much aggregate economic and social loss associated with such regulation. But when the regulations become hard constraints limiting the trade-offs most people might be happy to make they can incur enormous economic (and social) losses. The *zoning tax* (a.k.a. *landed wealth subsidy*) offers one estimate of the selective losses and gains on offer.
+
+## Binding constraints
+How can we tell if the zoning restrictions in Vancouver are hard constraints limiting what people would do otherwise? There are a number of ways. The size of new houses in Vancouver RS ("single family") zoning gives one view into this. Here is a graph of the GFA (gross floor area, the total floor space used for living) and the FSR (the ratio of GFA to lot size) for City of Vancouver single family homes by year built.
+
+```{r fsr-gfa}
+get_fsr_gfa_data <- function(){
+  r <- httr::GET("https://mountainmath.ca/data/size_by_year.json")
+  fsr_gfa_data <- httr::content(r,type="application/json")
+  
+  encode_data <- function(d){
+    tibble(Year=as.integer(d$x),q1=d$quartiles[[1]],q2=d$quartiles[[2]],q3=d$quartiles[[3]],
+           w1=d$whiskers[[1]],w2=d$whiskers[[2]],Value=d$number)
+  }
+  
+  fsr <- fsr_gfa_data[[1]]$data %>% lapply(encode_data) %>% bind_rows
+  gfa <- fsr_gfa_data[[2]]$data %>% lapply(encode_data) %>% bind_rows
+  
+  bind_rows(gfa %>% mutate(Type="GFA"),fsr %>% mutate(Type="FSR")) %>%
+    mutate(Type=factor(Type,levels=c("FSR","GFA")))
+}
+
+mountainmathHelpers::simpleCache(get_fsr_gfa_data(),"fsr_gfa_data") %>%
+  mutate(Date=as.Date(paste0(Year,"-01-01"))) %>%
+  ggplot(aes(x=Date,fill=Type)) +
+  geom_errorbar(aes(ymin=w1,ymax=w2),linetype="dashed",size=0.25) +
+  geom_crossbar(aes(ymax=q3,ymin=q1, y=q2),size=0.1) +
+  scale_fill_manual(values=c("GFA"="darkgreen","FSR"="steelblue"),guide=FALSE) +
+  scale_y_continuous(limits=c(0,NA),labels=function(d)ifelse(d<100,d,scales::comma(d,suffix="sf"))) +
+  scale_x_date(breaks=seq(1900,2020,10) %>% paste0("-01-01") %>% as.Date, date_labels ="%Y") +
+  facet_wrap("Type",ncol=1,scales="free_y") +
+  theme_light() +
+  labs(title="City of Vancouver SFH by building age",x=NULL,y=NULL,caption="Teardown index")
+```
+
+This list is somewhat biased in that it does not show the distributions of GFA and FSR for all homes built in a give year, but only for those that are still standing. This biases the floor area of older homes upwards, as smaller homes are more likely to have been torn down and replaced. GFA measures the size of the house, FSR is what is restricted by zoning regulation. Initially the FSR ceiling was set at 0.6 FSR, but this was fairly recently extended to 0.75 as visible in the data. There were also numerous changes of what does or does not count toward FSR.
+
+Initially the GFA followed a fairly narrow band, we built homes to fit families and needs were similar. This led to a broad span in FSR as lot size varied. We notice how starting in the 1960 the size of homes increased, and by the mid 1970s the range of FSR narrowed considerably, approaching the legal limit. What changed is that the land economics incentivized people to maximize floor space, the FSR range narrowed and the GFA range widened, depending on lot size. The FSR constraints, and with it land sharing constraints, became binding and the zoning became dysfunctional.
+
+## Zoning tax
+In this post we want to explore the zoning tax as different evidence of a hard constraint, in this case the constraint on sharing land by sub-dividing. Gyourko and Krimmel look at the extensive and intensive margin values of land, which is to say they compare the average land value per square foot of large and small lots near one another. They argue that these two should be the same in an unregulated market. In other words, if the intensive margin is higher than the extensive margin, a landowner could subdivide and sell off some land, or buyers could team up and split the land. But [zoning](https://vancouver.ca/home-property-development/zoning-and-land-use-policies-document-library.aspx) and [subdivision](https://vancouver.ca/your-government/subdivision-bylaw-5208.aspx) bylaws prevent these moves.
+
+There are of course other things aside from zoning that may prevent subdivision. If land is already parcelled and built out like Vancouver one can't always just sell off a few extra square feet so that someone else can build a house on it. But pretty much any Vancouver lot could easily be subdivided into two or more parcels and built on individually. A quick [look at Tokyo](https://www.google.com/maps/place/Tokyo,+Japan/@35.5811282,139.6738449,159m/data=!3m1!1e3!4m5!3m4!1s0x605d1b87f02e57e7:0x2e01618b22571b89!8m2!3d35.6761919!4d139.6503106) shows how zero setback single family homes can be built on very small parcels and result in a varied, refreshingly quirky, and dense urban form. Essentially, this is the "zoning tax" we are after. The difference in land value that would result from allowing lots in Vancouver to subdivide into two (or more) parcels.
+
+## How to measure the zoning tax?
+To determine the zoning tax we have to estimate land values of parcels of different sizes. And use that to estimate the extensive and intensive margins. We can use this to estimate the zoning tax. We can then take the result and validate it by checking in on some non-conforming lots that pre-date or have otherwise been enabled to elide zoning laws.
+
+To facilitate estimating land values we will take a shortcut by piggy-backing off of BC Assessment land value estimates. That's quite problematic as we may well just pick up artifacts in the BC Assessment algorithm, so it requires some validation to make sure that we don't produce nonsense. But if the zoning tax is large, then we should be able to easily detect it using any half-way decent land value estimation mechanism, including the one employed by BC Assessment.
+
+To start off let's take a look at the subject of our study: RS lots in the City of Vancouver. To clean things up a little we removed parcels that are parks, schools or other non-single family land use. We colour the parcels by their minimum lot size mandated by zoning, lots can't be subdivided if one of the resulting parts falls below this limit.
+
+```{r rs-parcels}
+rs_parcels %>%
+  mutate(min_area_sf=factor(min_area_sf)) %>%
+  ggplot(aes(fill=min_area_sf)) +
+  geom_sf(size=0) +
+  geom_water() +
+  geom_roads() +
+  scale_fill_viridis_d(na.value="darkgrey",
+                       labels=function(d)scales::comma(as.numeric(as.character(d)),suffix=" sf")) +
+  coord_sf(datum=NA) +
+  labs(title="City of Vancouver RS (single family) lots",
+       fill="Minimum lot size",
+       caption="Data: CoV Open Data")
+```
+
+Apart from minimum lot area, minimum frontage is another way we limit subdivisions, and often this constraint is stronger than the minimum area. In practice it does not matter that much though; most parcels can't be subdivided because that would violate both of these zoning constraints.
+
+Next we need to estimate the extensive and intensive margins of land. To do this we take a group of roughly comparable lots with different lot sizes and compare their land values. For our pool of "roughly comparable" lots we will take a string of adjacent lots along one side of a block and remove corner lots (proxied as lots with only one neighbour). To "compare" land values in relation to lot size we regress log land value on log area, so effectively we estimate
+$$
+LV = c\cdot A^\beta,
+$$
+where $LV$ is the land value, $A$ is the lot area, $c$ is a constant depending on the group of parcels, and $\beta$ is the scaling exponent that describes the relationship. The choice of using log land value and log area is informed by general considerations of how people value things, we will have to check in the data how well it fits these model assumptions.
+
+```{r}
+full_neighbours <- st_intersects(rs_parcels %>% st_buffer(1),rs_parcels)
+
+links<-as.data.frame(full_neighbours) %>%
+  as_tibble() %>%
+  group_by(row.id) %>%
+  mutate(neighbour_count=n()) %>%
+  ungroup()
+
+g<-igraph::graph_from_edgelist(as.matrix(links[,1:2] ),directed=FALSE)
+
+c<-igraph::components(g)
+
+groups <- tibble(id=unique(links$row.id)) %>%
+  mutate(cluster=c$membership) %>%
+  group_by(cluster) %>%
+  mutate(size=n()) %>%
+  ungroup()
+
+linked_parcles <- rs_parcels %>%
+  mutate(cluster=groups$cluster,
+         size=groups$size,
+         neighbour_count=links %>% select(row.id,neighbour_count) %>% unique %>% pull(neighbour_count)) %>%
+  left_join(tibble(cluster=unique(groups$cluster)) %>% 
+              mutate(colour=sample.int(20, nrow(.),replace=TRUE)),
+            by="cluster") %>%
+  mutate(colour=ifelse(neighbour_count<=2,NA,colour))
+```
+
+```{r comparable-lots}
+linked_parcles %>%
+  st_transform(4326) %>%
+  ggplot(aes(fill=factor(colour))) +
+  geom_sf(size=0) +
+  scale_fill_discrete(guide=FALSE,na.value="darkgrey") +
+  geom_water() +
+  geom_roads() +
+  coord_sf(datum=NA,xlim=c(-123.15,-123.12),ylim=c(49.22,49.24))+
+  labs(title='Groups of "comparable" RS lots',
+       caption="Data: CoV Open Data")
+```
+
+We see (randomly coloured) groups of "comparable" lots, with corner lots (in dark grey) removed. Removing corner lots not only removes issues around small general price differences between corner vs interior lots, it also deals with issues when the corner lot is on a busy arterial and the price difference can be substantial.
+
+This grouping is not perfect, but it is easy to do and does a good enough job for making our comparisons.
+
+```{r}
+min_cl_size <-8
+min_area_factor <- 1.25
+parcel_group_data <- linked_parcles %>%
+  filter(!is.na(rlv),area>100,rlv>0,neighbour_count>2) %>%
+  mutate(lrlv=log(rlv),
+         llv=log(current_land_value),
+         larea=log(area))  %>% 
+  group_by(cluster) %>%
+  filter(n()>=min_cl_size) %>%
+  filter(max(area)/min(area)>min_area_factor) %>%
+  #filter(max(area)<2000) %>%
+  #filter(area<5*min(area)) %>%
+  ungroup() %>%
+  mutate(cl=factor(cluster))
+```
+
+Next we take a look at how land values and areas relate in some of our comparison groups. We will select groups that have at least `r min_cl_size` parcels after throwing out corner lots, and ask there to be a variation in lot size of at least a factor of `r min_area_factor` within the group so that estimates are more robust and not just picking up noise generated by parcels of almost equal size, leaving us with the following `r scales::comma(length(unique(parcel_group_data$cluster)))` clusters across the city.
+
+```{r analysis-lots}
+parcel_group_data %>%
+  ggplot(aes(fill=factor(colour))) +
+  geom_sf(size=0) +
+  scale_fill_discrete(guide=FALSE,na.value="darkgrey") +
+  geom_water() +
+  geom_roads() +
+  coord_sf(datum=NA)+
+  labs(title='Groups of "comparable" RS lots matching selection criteria',
+       caption="Data: CoV Open Data")
+```
+
+```{r eval=FALSE, include=FALSE}
+library(mapdeck)
+mapdeck(token = getOption("mapbox_token"), style = mapdeck_style('dark')) %>%
+  add_sf(data = parcel_group_data %>% st_transform(4236), 
+              tooltip = "cluster",
+              fill_opacity=200,
+         palette="rainbow",
+              fill_colour="colour",
+              layer = "my_layer")
+```
+
+
+To understand how the land values relate to lot areas within these groups we take a random sample of 32 such groups and fit our model to each group.
+
+```{r analysis-test}
+set.seed(123)
+parcel_group_data %>%
+  st_drop_geometry() %>%
+  filter(cluster %in% sample(unique(cluster),32)) %>%
+  ggplot(aes(x=area,y=current_land_value,colour=cl)) +
+  #facet_wrap(~cluster)+
+  geom_point(shape=21) +
+  scale_colour_discrete(guide=FALSE) +
+  geom_smooth(formula=y~(x),se=FALSE,method="lm") +
+  scale_x_continuous(trans="log",breaks=c(100,200,400,800,1600)) +
+  scale_y_continuous(trans="log",breaks=c(500000,1000000,2000000,4000000),
+                     labels=scales::dollar) +
+  labs(title="Land value vs lot area within comparison groups",
+       x="Lot area (log scale)", y="Land value (log scale)",
+       caption="Data: CoV Open Data")
+```
+
+The fits aren't perfect, but generally pretty good. Some groups have their lot areas cluster at the extreme values, others have them distributed throughout. The slopes of these lines, the exponent $\beta$ in our model, are generally quite similar, which is encouraging. This indicates that our model seems to make sense and fits the data reasonably well. The big caveat here is that this may well just be recovering assumptions baked into the BC Assessment model that estimates the land values in the first place, we will have to validate this against actual transaction prices further down in this post.
+
+```{r}
+#fit.naive<-glm(llv~larea,data=parcel_group_data)
+#fit.naive2<-glm(llv~larea+cl,data=parcel_group_data)
+fit.mixed<-lme4::lmer(llv~ larea + (1|cl), data=parcel_group_data)
+#summary(fit.mixed)
+coeffs <- coefficients(fit.mixed)$cl %>% as_tibble()
+c <- coeffs %>% pull(larea) %>% unique
+tax=2^(1-c)-1
+ci<-confint(fit.mixed) %>%
+  as.data.frame() %>%
+  mutate(var=rownames(.)) %>%
+  as_tibble() %>%
+  filter(var=="larea")
+cil=ci$`2.5 %`
+cih=ci$`97.5 %`
+```
+
+We fit a random intercept model that estimates a fixed slope and we allow to intercept to vary across comparable groups, acknowledging that land values differ broadly across different regions of the city, as well as between arterial and residential lots, or lots abutting parks. This gives us a slope (or exponent in our original model) of `r round(c,3)` with confidence interval [`r round(cil,4)`,`r round(cih,4)`].
+
+```{r model-result}
+ic <- coeffs$`(Intercept)` %>% quantile(seq(0.1,0.9,0.1))
+tibble(area=seq(75,2000,25)) %>%
+             mutate(larea=log(area),
+                    id=1) %>%
+  left_join(tibble(intercept=ic,id=1),by="id") %>%
+  mutate(llv=intercept+larea*c) %>%
+  mutate(lv=exp(llv)) %>%
+  ggplot(aes(x=area,y=lv,group=intercept))+
+  geom_line() +
+  geom_vline(xintercept = c(200,400),linetype="dashed") +
+  scale_y_continuous(labels=scales::dollar) +
+  labs(title="Fitted land values vs lot size for range of locations in City of Vancouver",
+       x="Lota area (m^2)",y="Land value")
+```
+
+The part of the plot that we are most interested in is toward the lower left. The median Vancouver RS lot size is `r round(rs_parcels$area %>% median)`m^2, what's the opportunity cost of preventing this lot from getting subdivided? That's easy to check. This is asking what value we lose by preventing a lot from getting split into two. It's most easily expressed as a share of current land value.
+\begin{eqnarray}
+OC(A) &=& \frac{2\cdot LV(A/2)-LV(A)}{LV(A)}
+&=& 2^{1-\beta}-1
+\end{eqnarray}
+```{r}
+zoning_tax_share <- 2^{1-c}-1
+plot_data <- linked_parcles %>%
+  mutate(area_non_conforming = area-min_area < -1,
+         frontage_non_conforming = frontage-min_frontage < -0.1,
+         area_non_conforming_conditional = area-conditional_min_area < -1,
+         frontage_non_conforming_conditional = frontage-conditional_min_frontage < -0.1) %>%
+  mutate(non_conformning=area_non_conforming|frontage_non_conforming) %>%
+  mutate(non_conformning_conditional=area_non_conforming_conditional|frontage_non_conforming_conditional) %>%
+  mutate(could_subdivide=(area >= 2*min_area) & (frontage >= 2*min_frontage)) %>%
+  mutate(could_subdivide_conditional=(area >= 2*conditional_min_area) & (frontage >= 2*conditional_min_frontage)) %>%
+  mutate(Status=case_when(non_conformning_conditional~"Non-conforming",
+                          non_conformning~"Conditionally-conforming",
+                          could_subdivide~"Subdividable",
+                          could_subdivide_conditional~"Conditionally subdividable",
+                          TRUE~"Right-sized")) %>%
+  mutate(ExtendedStatus=case_when(Status %in% c("Right-sized","Subdividable",
+                                                "Conditionally subdividable",
+                                                "Conditionally-conforming") ~ Status,
+                                  area_non_conforming_conditional & frontage_non_conforming_conditional ~ "Non-conforming (both)",
+                                  area_non_conforming_conditional  ~ "Non-conforming (area)",
+                                  frontage_non_conforming_conditional ~ "Non-conforming (frontage)",
+                                  TRUE~"Other")) %>%
+  mutate(zoning_tax=zoning_tax_share*current_land_value)
+
+total_values <- rs_parcels %>% 
+  st_drop_geometry() %>%
+  summarize(land=sum(current_land_value),
+            building=sum(current_improvement_value)) %>%
+  mutate(total=land+building)
+```
+
+which comes out at `r scales::percent(zoning_tax_share)`. In other words, the zoning tax that's preventing RS lots from getting subdivided in half stands at `r scales::percent(zoning_tax_share)` of current land value. Aggregated over all residential RS lots in the City of Vancouver the zoning tax comes out at `r format_flex(zoning_tax_share*total_values$land)`.
+
+```{r zoning-tax-2-1}
+plot_data %>%
+  mutate(zt=pretty_cut(zoning_tax,
+                       breaks=c(-Inf,400000,500000,750000,1000000,1500000,2000000,5000000,Inf),
+                       format = format_M)) %>%
+  mutate(zt=pretty_cut(zoning_tax,
+                       breaks=c(-Inf,400000,500000,750000,1000000,1500000,
+                                2000000,5000000,10000000,20000000,Inf),
+                       format = format_M)) %>%
+ggplot(aes(fill=zt)) +
+  geom_sf(size=0) +
+  geom_water() +
+  geom_roads() +
+  coord_sf(datum=NA) +
+  scale_fill_viridis_d(option="magma") +
+  labs(title="City of Vancouver Zoning Tax vs allowing 1:2 lot splits",
+       fill="Zoning Tax",
+       caption="Data: CoV Open Data")
+```
+
+
+
+However, some parcels are already below the current minimum area requirements, so maybe we should exclude those from the zoning tax calculation and assume they are already sufficiently subdivided.
+```{r}
+tight_tax <- plot_data%>%
+  st_drop_geometry()%>%
+  filter(!grepl("Non-conforming",Status)) %>%
+  summarize(zoning_tax=sum(zoning_tax,na.rm=TRUE))
+```
+Excluding those currently non-conforming lots, but keeping the conditionally conforming, the zoning tax estimate gets reduced to `r format_flex(tight_tax)`.
+
+
+
+
+## What would subdivision look like?
+In Vancouver we have several examples of homes on lots well below the minimum lot size. Examples that show what exactly subdividing a typical Vancouver lot would look like, and what the effects would be. 
+
+To start off, let's look at a group of properties in the north-east of the city close to the PNE on the south side of Dundas Street between Slocan and Kaslo.
+
+```{r comparable-example}
+seed_pids <- c("015-385-027","015-385-035")
+ps <- parcel_group_data %>% filter(pid %in% seed_pids)
+seed_cls <- ps %>% pull(cluster)
+pg <- parcel_group_data %>% 
+  filter(cluster %in% seed_cls) 
+mask <- pg %>% 
+  st_buffer(200) 
+
+linked_parcles %>%
+  mutate(highlight=case_when(pid %in% seed_pids ~ "sold",
+                             (cluster %in% seed_cls) & (neighbour_count>2) ~ "near",
+                             TRUE ~ "other")) %>%
+  st_filter(st_buffer(mask,100)) %>%
+  ggplot() +
+  geom_sf(aes(fill=highlight),size=0.5) +
+  scale_fill_manual(guide=FALSE,na.value="darkgrey",
+                    values=c('sold'='brown','near'='steelblue','other'='darkgrey')) +
+  geom_water(data=mask) +
+  geom_roads(data=mask) +
+  coord_bbox(st_bbox(mask))+
+  labs(title='Example group of "comparable" properties',
+       caption="Data: CoV Open Data")
+```
+
+
+The coloured properties are the "comparables" in our cluster, two of the properties are 24 foot wide, half the 48 foot width of all the others. The lots are zoned RS-1(A), so while the 48 foot wide lots are wider than the minimum frontage of 30 foot required by the zoning bylaw, they can't be subdivided into two 24 foot lots. At `r scales::comma(24*122)` square feet the narrow lots are also just shy of the `r scales::comma(subdivision_table %>% filter(zoning_district=="RS-1",category=="A") %>% pull(min_area_sf))` square foot minimum area limit.
+
+The two properties in red sold recently, the larger one in October 2019 for $1.55M, the smaller one in September 2020 for $1.28M. The assessed land values pegged at July 2020 are $1.45M and $1.01M, respectively, with both having building values estimated around $150k. Eyeballing streetview photos this seems reasonable, although an exact attribution is difficult to make without an in-depth assessment. Which highlights a major shortcoming of our methods, but this should not prevent us from getting the ballpark estimate right.
+
+
+[<img src="/images/015-385-027.png" style="width:48%;">](https://www.bcassessment.ca/Property/Info/QTAwMDAwMlFLVA==)
+[<img src="/images/015-385-035.png" style="width:48%;">](https://www.bcassessment.ca/Property/Info/QTAwMDAwMlFLWA==)
+
+
+```{r}
+pvals <- ps %>% 
+  st_drop_geometry() %>% 
+  select(current_land_value,pid) %>% 
+  pivot_wider(names_from=pid,values_from = current_land_value)
+tax<-2*pvals$`015-385-035`/pvals$`015-385-027`-1
+```
+
+If we take the land value estimates at face value, the larger lot valued at `r format_flex(pvals[,'015-385-027'])` could turn into two lots valued at `r format_flex(pvals[,'015-385-035'])` if we allowed it to be subdivided, totalling `r format_flex(pvals[,'015-385-035']*2)`. This amounts to a `r scales::percent(tax,accuracy=1)` increase in land value. This is consistent with our overall estimate of a zoning tax share of `r scales::percent(zoning_tax_share)` of existing value for preventing lots from being subdivided.
+
+```{r}
+mcgill_pids <- c("028-985-630", "028-985-648", "015-717-577")
+mcgill_properties <- plot_data %>% filter(pid %in% mcgill_pids)
+mcgill_cluster <- plot_data %>% 
+  filter(cluster %in% (mcgill_properties$cluster %>% unique)) %>%
+  mutate(rezoned=pid %in% mcgill_pids)
+
+mcgill_tax_records <- search_cov_datasets("property-tax")$dataset_id %>%
+  lapply(function(ds)get_cov_data(ds,where="street_name = 'MCGILL ST' AND to_civic_number like '35*'") %>%
+           mutate_at(c("previous_improvement_value","previous_land_value"),as.integer)) %>%
+  bind_rows()
+
+rs1a <- filter(subdivision_table,zoning_district=="RS-1",category=="A")
+rs1c <- filter(subdivision_table,zoning_district=="RS-1",category=="C")
+```
+
+Another [interesting example is (former) 3582 McGill Street which got rezoned from RS-1 category C to RS-1 caregory A in 2012](https://bylaws.vancouver.ca/consolidated/10492.PDF), reducing it's minimum frontage requirements from `r scales::comma(pull(rs1c,min_frontage_ft))` to `r scales::comma(pull(rs1a,min_frontage_ft))` feet and minimum lot size from `r scales::comma(pull(rs1c,min_area_sf))` to `r scales::comma(pull(rs1a,min_area_sf))` square feet. The original property had a frontage of `r round(sum(mcgill_properties$frontage)/ft_to_m)` feet and an area of `r round(sum(mcgill_properties$area)/sf_to_sm)` square feet, each of which provided a binding constraint preventing subdivision before the rezoning, but both allow for subdivision after rezoning to category A.
+
+The process of reclassifying from one subdivision schedule to another involves staff time for outreach to neighbours, tallying of their positions (for and against), and detailing of relevant policies and precedents. Then it comes before City Council, who make their final decision with a [recommendation report from planning staff](https://council.vancouver.ca/20120516/documents/ptec3.pdf). Since no neighbours were opposed (only 3 of 25 nearby neighbours asked to comment responded at all), the McGill reclassification was successful. This allowed the original property to get subdivided into two separate ones of roughly equal size, 3586 and 3592 McGill Street. We can watch this redevelopment in the building values for the site with PID 015-717-577 getting split into properties 028-985-630 and 028-985-648.
+
+```{r mcgill-subdivision}
+mcgill_tax_records %>% 
+  filter(!is.na(tax_assessment_year),pid %in% mcgill_pids) %>%
+  pivot_longer(c("current_improvement_value","current_land_value")) %>%
+  ggplot(aes(x=tax_assessment_year,y=value,fill=pid)) + 
+  geom_bar(stat="identity",position="dodge") +
+  scale_y_continuous(labels=scales::dollar) +
+  scale_fill_manual(values=sanzo::trios$c205 %>% rev) +
+  facet_wrap(~name,scales="free_y",ncol=1,
+             labeller = as_labeller(c(current_improvement_value="Building value",
+                                      current_land_value="Land value"))) +
+  labs(x="Tax assessment year",y="Assessed value",fill="Property ID",
+       title="Lot 678 McGill street rezoning",
+       caption="Data: CoV Open Data")
+```
+
+We notice how the assessed values of each subdivision is initially lower than the original combined land value, but the sum of the assessed values of the subdivided lots is larger than the original one. This is what we would expect, if there wasn't a value gain by splitting the lots, the developer would not have split them. Here we should remember that we are not actually observing land values directly, but using BC Assessment estimates. 
+
+
+
+```{r eval=FALSE, include=FALSE}
+mcgill_tax_records <- search_cov_datasets("property-tax")$dataset_id %>%
+  lapply(function(ds)get_cov_data(ds,where="street_name = 'MCGILL ST' AND to_civic_number like '35*'") %>%
+           mutate_at(c("previous_improvement_value","previous_land_value"),as.integer)) %>%
+  bind_rows() 
+
+mcgill_tax_records %>%
+  #filter(pid %in% c("015-717-577",mcgill_cluster %>%filter(neighbour_count>2) %>% pull(pid))) %>%
+  ggplot(aes(x=tax_assessment_year,y=current_land_value)) +
+  geom_bar(stat="identity") +
+  facet_wrap(~pid)+
+  scale_y_continuous(labels=scales::dollar) +
+  labs(x="Tax assessment year",y="Assessed land value",fill="Lot",
+       title="35 block of McGill street",
+       caption="Data: CoV Open Data")
+```
+
+
+
+
+## Non-conforming lots
+```{r}
+non_conforming_stats <- plot_data%>% 
+  st_drop_geometry() %>% count(ExtendedStatus) %>%
+  mutate(share=n/sum(n))
+
+all_non_conforming <- non_conforming_stats %>%
+  filter(grepl("Non-conforming",ExtendedStatus)) %>%
+  summarize_if(is.numeric,sum)
+
+rs7_non_conforming_stats <- plot_data%>% 
+  filter(zoning_district=="RS-7") %>%
+  st_drop_geometry() %>% count(ExtendedStatus) %>%
+  mutate(share=n/sum(n))
+
+rs7_non_conforming <- rs7_non_conforming_stats %>%
+  filter(grepl("Non-conforming",ExtendedStatus)) %>%
+  summarize_if(is.numeric,sum)
+
+non_conforming_by_zone <- plot_data %>% 
+  st_drop_geometry() %>% 
+  mutate(zone=ifelse(is.na(category),zoning_district,paste0(zoning_district,"(",category,")"))) %>%
+  count(ExtendedStatus,zoning_district,zone)  %>% 
+  group_by(zone) %>%
+  mutate(share=n/sum(n)) 
+```
+
+Just how many lots in Vancouver are already non-conforming? That's a tricky question, especially when it comes to frontage, as the city dataset on that is messy and it's somewhat ambiguous how to count frontage for corner lots. To make it even trickier, Vancouver has two kinds of conforming. There is **outright** conforming with subdivision classification in zoning. There there is **conditional** conforming, dependent upon the approval of the director of planning (or appointed officer) on a case-by-case basis. As it turns out, four combinations of zoning district and subdivision category have area and frontage limits that can be lowered somewhat, **conditional** on approval from the planning department.
+
+Overall we estimate there are `r scales::comma(all_non_conforming$n)` lots, or `r scales::percent(all_non_conforming$share)` of all lots that don't conform to either area (`r scales::comma(filter(non_conforming_stats,ExtendedStatus=="Non-conforming (area)")$n)`) or frontage (`r scales::comma(filter(non_conforming_stats,ExtendedStatus=="Non-conforming (frontage)")$n)`) or both (`r scales::comma(filter(non_conforming_stats,ExtendedStatus=="Non-conforming (both)")$n)`) requirements, even granting each lot conditional approval of lowered limits if applicable. 
+
+Additionally, there are `r scales::comma(filter(non_conforming_stats,ExtendedStatus=="Conditionally-conforming")$n)` properties that don't conform with the *outright* requirements but satisfy the *conditional* ones. We can break this down by zoning and subdivision category.
+
+```{r non-conforming-overview}
+non_conforming_by_zone %>%
+  filter(grepl("Non-conforming|Conditionally-conforming",ExtendedStatus)) %>%
+  group_by(zone) %>%
+  mutate(s=sum(share)) %>%
+  mutate(ExtendedStatus=factor(ExtendedStatus,levels=c("Conditionally-conforming",
+                                                       "Non-conforming (area)",
+                                                       "Non-conforming (frontage)",
+                                                       "Non-conforming (both)"))) %>%
+ggplot(aes(x=reorder(zone,s),y=share,fill=ExtendedStatus)) +
+  geom_bar(stat="identity") +
+  coord_flip()+
+  #scale_fill_manual(values=sanzo::quads$c252) +
+  scale_fill_brewer(palette = "Dark2") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Non-conforming properties by zone",
+       y="Share of non-conforming properties in given zone",
+       x=NULL,fill="Reason",caption="Data: CoV Open Data")
+
+```
+
+
+Things are particularly awkward in RS-7, RS-1A and RS-2, where the *outright* minimum frontage requirements are 40 foot and the minimum area requirement is 4,800 square feet, but the director of planning may *conditionally* lower them down to 30 foot frontage and 3,000 square feet. The result is that the majority of properties in each of these zones only complies with the *conditional* requirements, begging the question why the City of Vancouver insists on this kind of case-by-case zoning in these areas. 
+
+Non-conforming lots can be found all over the City of Vancouver, but conditionally-conforming lots cluster in the four zoning and subdivision areas that have conditional subdivision zoning.
+
+```{r non-conforming-map}
+rs_non_conforming <- plot_data %>%
+  filter(grepl("Non-conforming|Conditionally-conforming",ExtendedStatus)) %>%
+  mutate(non_conforming_reason = case_when(grepl("both",ExtendedStatus)~ "Both",
+                                            grepl("area",ExtendedStatus) ~ "Area",
+                                            grepl("frontage",ExtendedStatus) ~ "Frontage",
+                                            grepl("Conditionally",ExtendedStatus) ~ "Conditional",
+                                            TRUE ~ "Conforming")) %>%
+  mutate(non_conforming_reason=factor(non_conforming_reason,levels=c("Conditional","Area","Frontage","Both")))
+
+
+ggplot(rs_non_conforming) +
+  geom_sf(size=0,aes(fill=non_conforming_reason)) +
+  geom_water() +
+  geom_roads(transform = function(d)filter(d,kind %in% c("highway","major_road"))) +
+  coord_sf(datum=NA) +
+  scale_fill_brewer(palette = "Dark2") +
+  theme(legend.position = "bottom") +
+  labs(title="Non-conforming lots in the City of Vancouver",caption="Data: CoV Open Data",fill="Reason")
+```
+```{r eval=FALSE}
+mapdeck(token = getOption("mapbox_token"), style = mapdeck_style('dark')) %>%
+  add_sf(data = rs_non_conforming %>% 
+           st_transform(4326) %>%
+           mutate(address=paste0(to_civic_number," ",street_name)) %>%
+           mutate(address=ifelse(is.na(from_civic_number),address,
+                                       paste0(to_civic_number,"-",address))) %>%
+           mutate(info=paste0("Tax coord: ",tax_coord,"<br>",
+                              "Pid: ",pid,"<br>",
+                              "Address: ",address,"<br>",
+                              "Zoning: ",zoning_district,
+                              "<br>" ,"Category: ",category,"<br>",
+                              "Area: ",round(area/sf_to_sm)," <--> ", round(min_area_sf),"<br>",
+                              "Frontage: ",round(frontage/ft_to_m,1)," <--> ",round(min_frontage_ft,1))) %>%
+           select(non_conforming_reason,info), 
+              tooltip = "info",
+              fill_opacity=200,
+         palette = "heat",
+         legend=TRUE,
+              fill_colour="non_conforming_reason",
+              layer = "my_layer")
+```
+
+
+## Repeated subdivisions
+```{r}
+min_new_frontage <-15
+min_new_depth <- 55
+min_new_area <- min_new_frontage*min_new_depth
+```
+
+So far we have looked at allowing each lot to subdivide once, but we could go further and ask what would happen if we allowed our standard 33 foot by 122 foot lot to be split into four 16 by 60 foot lots, halving the frontage and upgrading the alleyways to allow independent homes. This would require us to rethink how we deal with some aspects of how we organize services like power cables, sewer lines, size of our fire trucks and garbage pickup. But these are hardly insurmountable challenges and many parts of the world have figured out how to deal with them. To deal with edge cases in this scenario we will set the minimum frontage at `r min_new_frontage`' and the minimum depth at `r min_new_depth`', or a minimum lot size of `r min_new_area` square feet.
+
+```{r}
+max_subdivision <- plot_data %>%
+  mutate(frontage_multiple = floor(frontage/(min_new_frontage*ft_to_m)),
+         area_multiple= floor(area/(min_new_area*sf_to_sm))) %>%
+  mutate(subdivisions = pmin(2*frontage_multiple,area_multiple) %>%
+           pmax(1,.)) %>%
+  mutate(zoning_tax=current_land_value *(subdivisions^(1-c)-1),
+         lot_cost=current_land_value *(subdivisions^(-c)))
+
+max_zoning_tax <- max_subdivision$zoning_tax %>% sum()
+
+subdivision_counts <- max_subdivision %>%
+  st_drop_geometry() %>%
+  mutate(lot_area=area/subdivisions) %>%
+  select(lot_cost,lot_area,subdivisions) %>%
+  uncount(subdivisions) 
+
+lot_costs <- quantile(subdivision_counts$lot_cost,seq(0.05,0.95,0.1))
+```
+
+Comparing our current zoning to one that allows for this "quadruple subdivision" on standard lots yields a zoning tax of `r format_flex(max_zoning_tax)`, substantially more than our initial estimate. Despite this massive overall lift in land values, individual lots are estimated to be priced between `r format_flex(lot_costs[1])` and `r format_flex(lot_costs[length(lot_costs)])` at the 5th and 95th percentile.
+
+```{r  repeated-zoning-tax-lot-prices}
+ggplot(subdivision_counts, aes(x=lot_cost)) +
+  geom_histogram(binwidth = 100000,fill="steelblue",colour="black") +
+  scale_x_continuous(labels=format_M) +
+  scale_y_continuous(labels=scales::comma,breaks=seq(0,100000,10000)) +
+  coord_cartesian(xlim=c(0,2000000)) +
+  labs(title="City of Vancouver 'quadruple subdivision' lot prices",
+       x="Price per lot",y="Number of lots")
+```
+
+This kind of subdivision has the potential, if fully realized, to have a sizable number of lots around $500k, while currently the entry price for a buildable lot in the City of Vancouver sits around $1M.
+
+
+```{r  repeated-zoning-tax-map}
+max_subdivision %>%
+  mutate(zt=pretty_cut(zoning_tax,
+                       breaks=c(-Inf,400000,500000,750000,1000000,1500000,
+                                2000000,5000000,10000000,20000000,Inf),
+                       format = format_M)) %>%
+ggplot(aes(fill=zt)) +
+  geom_sf(size=0) +
+  geom_water() +
+  geom_roads() +
+  coord_sf(datum=NA) +
+  scale_fill_viridis_d(option="magma") +
+  labs(title="City of Vancouver Zoning Tax vs allowing 16' x 55' lots",
+       fill="Zoning Tax",
+       caption="Data: CoV Open Data")
+```
+
+## Broad and Narrow Rezoning
+Our zoning tax estimates are based on comparing the land value of relatively scarce small lots (generally not allowed) with larger lots (generally mandated). If restrictions on subdivision were lifted, these two prices would move toward one another (per square foot) as small lots became more common and larger lots more scarce, eventually erasing the differential. As such, estimates of the zoning tax would eventually move toward zero if constraints on subdivision were lifted all across the City. On the other hand, if constraints were selectively lifted in one place, then another (as occurs with spot zoning), we'd expect to see price differentials remain.
+
+Put slightly differently, the zoning tax estimates are based on the current situation and are based on the premise of making small changes. Yet lifting restrictions on subdivisions across the city is everything but a small change. It has the potential to dramatically alter the availability of small lots, which in turn could lower prices for small lots and change the zoning tax calculus. The effect on the prices of larger lots is more complex, but this would lower the overall zoning tax estimate. At the same time it would increase affordability making the lifting of restrictions a win-win situation, with a trade-off between the total zoning tax unlocked and affordability.
+
+In practice, subdivision would be a gradual process even if allowed all across the city. Depending on the value of the structure on a given lot, subdivision will not be economically feasible as it generally requires demolition (or equally expensive, relocation) of the existing structure. And while [Vancouver has a lot of single family structures that are at the end of their economic life span](https://mountainmath.ca/teardowns), turnover is usually conditional on a property transaction. In summary, one would expect the transition to smaller lots to be gradual, even if the ability to subdivide is likely to accelerate trends in sales and redevelopment.
+
+## Subdivision versus Stratification 
+Subdivision of parcels is not the only way to unlock the zoning tax. Subdivision of air parcels, a.k.a. stratification (condos), is an alternative to subdivision of land that is similarly suited to unlock the zoning tax. We did not explicitly model air parcel subdivision mostly to keep things simple, but one should expect similar effects. On top of this, stratification makes it easier to subdivide even further, when lot sizes become so small that fee-simple structures become less feasible. One could even go further and consider assemblies in order to achieve buildings with more efficient (and accessible) layouts.
+
+In practice we might want to allow all of these, subdivision of land as well as subdivision of air space of single lots as well as assemblies. Tokyo shows how larger buildings can nicely co-exist with zero-setback single detached homes and result in a delightfully varied streetscape.
+
+At the same time, we likely want to change our rules on setbacks and FSR. The examples of [16 foot wide lots](https://www.google.com/maps/@49.2628963,-123.2080346,3a,30y,7.15h,92.74t/data=!3m6!1e1!3m4!1sJPF9OxbAu5K5WD2JcZcuog!2e0!7i16384!8i8192) that we have show that current rules can still result in viable homes on half-sized regular lots, but at the latest when we subdivide further to also allow front/back subdivisions on top of that we need to increase FSR and make dramatic changes to front and back yard in order to achieve functional homes. The same is true if we allow stratified 4-plexes on regular lots with all family-sized units. If this happens, land values may increase further, rendering our zoning tax figure of `r format_flex(max_zoning_tax)` an under-estimate.
+
+
+## Upshot
+The exact amount of the zoning tax is hard to pin down because we are so far away from the equilibrium of where people would stop subdividing land or air parcels if they were allowed to do so. But it is clear that the zoning tax is real, and it is enormous. At the lot level the zoning tax materializes as a subsidy for hoarding of land paid for by lost opportunities for those willing to share land via smaller lots or stratification. Collectively the zoning tax quantifies (a portion of) the problems with City of Vancouver land use policies, pushing up housing prices and forcing people into long commutes.
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-07-25-lots-of-opportunity-estimating-the-zoning-tax-in-vancouver/index.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>

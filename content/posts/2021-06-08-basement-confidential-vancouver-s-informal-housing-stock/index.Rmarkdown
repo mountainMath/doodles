@@ -17,7 +17,7 @@ tags: []
 description: "Basement suites are the Schrödinger's cat of dwelling units, they span the space betweem formal and informal housing, viewed by some as the problem of, and by others as the solution to Vancouver's housing woes."
 featured: ''
 images: ["https://doodles.mountainmath.ca/blog/2021/06/08/basement-confidential-vancouver-s-informal-housing-stock/index_files/figure-html/suite-licenses-1.png"] 
-featuredalt: ""
+featuredalt: "" 
 featuredpath: ""
 linktitle: ''
 type: "post"
@@ -300,7 +300,7 @@ b. allow people to make some of these trade-offs in the formal housing market.
 
 On the other hand, there is a large portion of suites that won't ever become part of the formal housing market because they still won't be permittable after reasonable modifications of the building code (and don't forget the fire code!). These suites exist because of a profound lack of alternatives, and policy should aim to build enough abundant rental options so that these units become unnecessary, as with similar strategies to replace [Single-Room Occupancy](https://vancouver.ca/files/cov/sro-revitalization-action-plan.pdf) with more livable, supportive, and affordable forms of housing. In the context of Metro Vancouver, this will likely be a long-term strategy. The housing shortage is too large to envision fully formalizing or replacing our informal housing stock anytime soon.
 
-As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-06-08-basement-confidential-vancouver-s-informal-housing-stock.Rmarkdown).
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-06-08-basement-confidential-vancouver-s-informal-housing-stock/index.Rmarkdown).
 
 <details><summary>Reproducibility receipt</summary>
 ```{r cache=FALSE}

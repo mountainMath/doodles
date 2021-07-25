@@ -17,7 +17,7 @@ tags: []
 description: "Basement suites are the Schrödinger's cat of dwelling units, they span the space betweem formal and informal housing, viewed by some as the problem of, and by others as the solution to Vancouver's housing woes."
 featured: ''
 images: ["https://doodles.mountainmath.ca/blog/2021/06/08/basement-confidential-vancouver-s-informal-housing-stock/index_files/figure-html/suite-licenses-1.png"] 
-featuredalt: ""
+featuredalt: "" 
 featuredpath: ""
 linktitle: ''
 type: "post"
@@ -123,18 +123,18 @@ b. allow people to make some of these trade-offs in the formal housing market.
 
 On the other hand, there is a large portion of suites that won't ever become part of the formal housing market because they still won't be permittable after reasonable modifications of the building code (and don't forget the fire code!). These suites exist because of a profound lack of alternatives, and policy should aim to build enough abundant rental options so that these units become unnecessary, as with similar strategies to replace [Single-Room Occupancy](https://vancouver.ca/files/cov/sro-revitalization-action-plan.pdf) with more livable, supportive, and affordable forms of housing. In the context of Metro Vancouver, this will likely be a long-term strategy. The housing shortage is too large to envision fully formalizing or replacing our informal housing stock anytime soon.
 
-As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-06-08-basement-confidential-vancouver-s-informal-housing-stock.Rmarkdown).
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-06-08-basement-confidential-vancouver-s-informal-housing-stock/index.Rmarkdown).
 
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-06-09 13:11:01 PDT"
+## [1] "2021-07-25 12:55:16 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [97d5eb0] 2021-06-09: fix twitter image
+## Head:     [7f011b6] 2021-07-14: cap gains link to code and fix typo in empty homes tax expectation post, thanks Natalie
 ```
 
 ```
@@ -153,29 +153,28 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] statcanXtabs_0.1.0 cancensus_0.4.3    VancouvR_0.1.3     forcats_0.5.1     
-##  [5] stringr_1.4.0      dplyr_1.0.6        purrr_0.3.4        readr_1.4.0       
+##  [1] statcanXtabs_0.1.1 cancensus_0.4.3    VancouvR_0.1.6     forcats_0.5.1     
+##  [5] stringr_1.4.0      dplyr_1.0.7        purrr_0.3.4        readr_1.4.0       
 ##  [9] tidyr_1.1.3        tibble_3.1.2       ggplot2_3.3.3      tidyverse_1.3.1   
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] httr_1.4.2         sass_0.4.0         jsonlite_1.7.2     modelr_0.1.8      
-##  [5] bslib_0.2.5.1      assertthat_0.2.1   triebeard_0.3.0    urltools_1.7.3    
-##  [9] highr_0.9          cellranger_1.1.0   yaml_2.2.1         pillar_1.6.1      
-## [13] backports_1.2.1    glue_1.4.2         digest_0.6.27      rvest_1.0.0       
-## [17] colorspace_2.0-1   htmltools_0.5.1.1  pkgconfig_2.0.3    broom_0.7.6       
-## [21] haven_2.4.1        bookdown_0.22      scales_1.1.1       git2r_0.28.0      
-## [25] proxy_0.4-25       generics_0.1.0     farver_2.1.0       ellipsis_0.3.2    
-## [29] withr_2.4.2        cli_2.5.0          magrittr_2.0.1     crayon_1.4.1      
-## [33] readxl_1.3.1       evaluate_0.14      fs_1.5.0           fansi_0.5.0       
-## [37] xml2_1.3.2         class_7.3-19       blogdown_1.3       tools_4.1.0       
-## [41] hms_1.1.0          lifecycle_1.0.0    munsell_0.5.0      reprex_2.0.0      
-## [45] compiler_4.1.0     jquerylib_0.1.4    e1071_1.7-7        rlang_0.4.11      
-## [49] classInt_0.4-3     units_0.7-1        grid_4.1.0         rstudioapi_0.13   
-## [53] labeling_0.4.2     rmarkdown_2.8      gtable_0.3.0       codetools_0.2-18  
-## [57] DBI_1.1.1          curl_4.3.1         R6_2.5.0           lubridate_1.7.10  
-## [61] knitr_1.33         utf8_1.2.1         KernSmooth_2.23-20 stringi_1.6.2     
-## [65] Rcpp_1.0.6         vctrs_0.3.8        sf_0.9-8           dbplyr_2.1.1      
-## [69] tidyselect_1.1.1   xfun_0.23
+##  [1] Rcpp_1.0.7         lubridate_1.7.10   class_7.3-19       assertthat_0.2.1  
+##  [5] digest_0.6.27      utf8_1.2.1         R6_2.5.0           cellranger_1.1.0  
+##  [9] backports_1.2.1    reprex_2.0.0       evaluate_0.14      e1071_1.7-7       
+## [13] httr_1.4.2         blogdown_1.4       pillar_1.6.1       rlang_0.4.11      
+## [17] readxl_1.3.1       rstudioapi_0.13    jquerylib_0.1.4    rmarkdown_2.8     
+## [21] urltools_1.7.3     triebeard_0.3.0    munsell_0.5.0      proxy_0.4-26      
+## [25] broom_0.7.6        compiler_4.1.0     modelr_0.1.8       xfun_0.24         
+## [29] pkgconfig_2.0.3    htmltools_0.5.1.1  tidyselect_1.1.1   bookdown_0.22     
+## [33] fansi_0.5.0        crayon_1.4.1       dbplyr_2.1.1       withr_2.4.2       
+## [37] sf_1.0-0           grid_4.1.0         jsonlite_1.7.2     gtable_0.3.0      
+## [41] lifecycle_1.0.0    DBI_1.1.1          git2r_0.28.0       magrittr_2.0.1    
+## [45] units_0.7-2        scales_1.1.1       KernSmooth_2.23-20 cli_3.0.1         
+## [49] stringi_1.7.3      fs_1.5.0           xml2_1.3.2         bslib_0.2.5.1     
+## [53] ellipsis_0.3.2     generics_0.1.0     vctrs_0.3.8        tools_4.1.0       
+## [57] glue_1.4.2         hms_1.1.0          yaml_2.2.1         colorspace_2.0-1  
+## [61] classInt_0.4-3     rvest_1.0.0        knitr_1.33         haven_2.4.1       
+## [65] sass_0.4.0
 ```
 </details>
 

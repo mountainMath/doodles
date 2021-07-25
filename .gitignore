@@ -24,3 +24,5 @@ index_cache/*
 /data/transit_network.geojson
 /data/cov_bilding_lines/
 /data/cov_bilding_lines/*
+/data/cov_tax_parcels.Rda
+/data/rs_frontages
