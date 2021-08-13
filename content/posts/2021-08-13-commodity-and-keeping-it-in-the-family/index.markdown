@@ -9,7 +9,7 @@ categories:
   - CANSIM
   - CensusMapper
 tags: []
-description: ""
+description: "A look at non-market transfers of market properties."
 featured: ''
 images: ["https://doodles.mountainmath.ca/blog/2021/08/13/commodity-and-keeping-it-in-the-family/index_files/figure-html/transactions-by-sale-type-1.png"]
 featuredalt: ""
@@ -92,13 +92,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-08-13 09:51:05 PDT"
+## [1] "2021-08-13 10:34:16 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [437c59f] 2021-07-25: update TL;DR to make estimates consistent.
+## Head:     [1f587fe] 2021-08-13: commodification and keeping it in the family
 ```
 
 ```
@@ -122,24 +122,20 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ##  [9] tibble_3.1.2    ggplot2_3.3.3   tidyverse_1.3.1
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] Rcpp_1.0.7        lubridate_1.7.10  assertthat_0.2.1  digest_0.6.27    
-##  [5] utf8_1.2.1        R6_2.5.0          cellranger_1.1.0  backports_1.2.1  
-##  [9] reprex_2.0.0      RSQLite_2.2.7     evaluate_0.14     highr_0.9        
-## [13] httr_1.4.2        blogdown_1.4      pillar_1.6.1      rlang_0.4.11     
-## [17] curl_4.3.2        readxl_1.3.1      rstudioapi_0.13   jquerylib_0.1.4  
-## [21] blob_1.2.1        sanzo_0.1.0       rmarkdown_2.8     labeling_0.4.2   
-## [25] bit_4.0.4         munsell_0.5.0     broom_0.7.6       compiler_4.1.0   
-## [29] modelr_0.1.8      xfun_0.24         pkgconfig_2.0.3   htmltools_0.5.1.1
-## [33] tidyselect_1.1.1  bookdown_0.22     codetools_0.2-18  fansi_0.5.0      
-## [37] crayon_1.4.1      dbplyr_2.1.1      withr_2.4.2       grid_4.1.0       
-## [41] jsonlite_1.7.2    gtable_0.3.0      lifecycle_1.0.0   DBI_1.1.1        
-## [45] git2r_0.28.0      magrittr_2.0.1    scales_1.1.1      cachem_1.0.5     
-## [49] cli_3.0.1         stringi_1.7.3     farver_2.1.0      fs_1.5.0         
-## [53] xml2_1.3.2        bslib_0.2.5.1     ellipsis_0.3.2    generics_0.1.0   
-## [57] vctrs_0.3.8       tools_4.1.0       bit64_4.0.5       glue_1.4.2       
-## [61] hms_1.1.0         fastmap_1.1.0     yaml_2.2.1        colorspace_2.0-1 
-## [65] rvest_1.0.0       memoise_2.0.0     knitr_1.33        haven_2.4.1      
-## [69] sass_0.4.0
+##  [1] tidyselect_1.1.1  xfun_0.24         bslib_0.2.5.1     haven_2.4.1      
+##  [5] colorspace_2.0-1  vctrs_0.3.8       generics_0.1.0    htmltools_0.5.1.1
+##  [9] yaml_2.2.1        utf8_1.2.1        rlang_0.4.11      jquerylib_0.1.4  
+## [13] pillar_1.6.1      withr_2.4.2       glue_1.4.2        DBI_1.1.1        
+## [17] dbplyr_2.1.1      modelr_0.1.8      readxl_1.3.1      lifecycle_1.0.0  
+## [21] munsell_0.5.0     blogdown_1.4      gtable_0.3.0      cellranger_1.1.0 
+## [25] rvest_1.0.0       evaluate_0.14     knitr_1.33        fansi_0.5.0      
+## [29] broom_0.7.6       Rcpp_1.0.7        backports_1.2.1   scales_1.1.1     
+## [33] jsonlite_1.7.2    fs_1.5.0          hms_1.1.0         digest_0.6.27    
+## [37] stringi_1.7.3     bookdown_0.22     grid_4.1.0        cli_3.0.1        
+## [41] tools_4.1.0       magrittr_2.0.1    sass_0.4.0        crayon_1.4.1     
+## [45] pkgconfig_2.0.3   ellipsis_0.3.2    xml2_1.3.2        reprex_2.0.0     
+## [49] lubridate_1.7.10  rstudioapi_0.13   assertthat_0.2.1  rmarkdown_2.8    
+## [53] httr_1.4.2        R6_2.5.0          git2r_0.28.0      compiler_4.1.0
 ```
 </details>
 
