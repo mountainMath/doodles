@@ -109,7 +109,7 @@ data %>%
 Depending upon geography, and taking 2018 as a representative year, we can estimate that somewhere between 5%-10% of residential properties change hands in any given year (with Nova Scotia on the low end, Kelowna on the high end). The data also distinguish between market transactions and non-market transactions, and we can even estimate the proportion of transactions taking place outside of an open market context by structure type and a variety of geographies. 
 
 
-```{r sale-type-by-type-of-dwelling}
+```{r sale-type-by-type-of-dwelling, fig.height=7}
 sd_data<- data %>% 
   filter(GeoUID%in% geo_uids) %>%
   mutate(Name=factor(names_lookup[GeoUID],levels=as.character(names_lookup))) %>%
@@ -119,16 +119,16 @@ sd_data<- data %>%
   select(Name,val_norm) %>%
   arrange(val_norm) 
 
-data %>% 
+data %>%
   filter(GeoUID%in% geo_uids) %>%
   mutate(Name=factor(names_lookup[GeoUID],levels=as.character(names_lookup))) %>%
   filter(`Sale type`=="Non-market sale") %>%
   filter(Estimates=="Sale type, percentage") %>%
-  filter(grepl("1\\.",`Hierarchy for Property characteristics`)) %>%
+  filter(grepl("^1\\.|^1$",`Hierarchy for Property characteristics`)) %>%
   ggplot(aes(x=Name,y=val_norm)) +
   geom_bar(stat="identity",fill="steelblue") +
-  scale_y_continuous(labels=scales::percent) +
-  facet_wrap(~`Property characteristics`) +
+  scale_y_continuous(labels=function(d)scales::percent(d,accuracy=1)) +
+  facet_wrap(~`Property characteristics`,ncol=3) +
   coord_flip() +
   labs(title="Share of non-market (non-arm’s length) property transactions",
        subtitle="(distressed sales, foreclosures, trade and forfeitures, redemptions,\nsales of part interest, and special interest sales)",
@@ -144,13 +144,13 @@ As per StatCan ([footnote 5](https://www150.statcan.gc.ca/t1/tbl1/en/cv.action?p
 
 How many of these transactions are simple inheritances? We don't know, but we can break down transaction type by age of building to perhaps take a peek. 
 
-```{r sale-type-by-period-of-construction}
-data %>% 
+```{r sale-type-by-period-of-construction, fig.height=8}
+data %>%
   filter(GeoUID%in% geo_uids) %>%
   mutate(Name=factor(names_lookup[GeoUID],levels=as.character(names_lookup))) %>%
   filter(`Sale type`=="Non-market sale") %>%
   filter(Estimates=="Sale type, percentage") %>%
-  filter(grepl("10\\.",`Hierarchy for Property characteristics`)) %>%
+  filter(grepl("^10\\.|^10$",`Hierarchy for Property characteristics`)) %>%
   mutate(`Property characteristics`=fct_recode(`Property characteristics`,
                                                "Vacant land"=
                                                  "Period of construction not applicable (vacant land)")) %>%
@@ -158,8 +158,8 @@ data %>%
                                            levels=c(setdiff(levels(.data$`Property characteristics`),"Vacant land"),"Vacant land"))) %>%
   ggplot(aes(x=Name,y=val_norm)) +
   geom_bar(stat="identity",fill="steelblue") +
-  scale_y_continuous(labels=scales::percent) +
-  facet_wrap(~`Property characteristics`) +
+  scale_y_continuous(labels=function(d)scales::percent(d,accuracy=1)) +
+  facet_wrap(~`Property characteristics`,ncol=3) +
   coord_flip() +
   labs(title="Share of non-market (non-arm’s length) property transactions",
        subtitle="(distressed sales, foreclosures, trade and forfeitures, redemptions,\nsales of part interest, and special interest sales)",
