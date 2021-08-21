@@ -1,0 +1,466 @@
+---
+title: Satellites, Sprawl, and City Six-Packs
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
+date: '2021-08-21'
+slug: satellites-sprawl-and-city-six-packs
+categories:
+  - land use
+tags: []
+description: "Fun with global satellite-derived land use time series."
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2021/08/21/satellites-sprawl-and-city-six-packs/index_files/figure-html/international-cities-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post" 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	#dpi = 150,
+	fig.width = 8,
+	fig.height = 5,
+	cache = TRUE 
+)
+library(tidyverse)
+#remotes::install_github("mountainmath/cityDensities)
+library(cityDensities)
+library(patchwork)
+library(sf)
+```
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/08/21/satellites-sprawl-and-city-six-packs/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+
+```{r}
+s<-get_GHS_30_built_data() 
+
+get_ghs_shares <- function(sv,ds=5){
+  ghs_names <- c("BU_2014","BU_2000","BU_1990","BU_1975")
+  d<- stars::st_as_stars(sv,downsample=ds)
+  v=d$GHS_BUILT_LDSMT_GLOBE_R2018A_3857_30_V2_0.vrt%>% as.vector() %>% na.omit()
+  ghs_built_counts <- ghs_names %>%
+    lapply(function(n)sum(v==n)) %>%
+    setNames(ghs_names)
+
+  total=ghs_built_counts %>% as_tibble() %>%
+    pivot_longer(everything()) %>%
+    mutate(total=sum(value)) %>%
+    mutate(share=value/sum(value)) 
+}
+
+make_map <- function(sv,ds=5,show_shares = FALSE){
+  ghs_names <- c("BU_2014","BU_2000","BU_1990","BU_1975")
+  ghs_built_names <- c("Water","NoData","Land",ghs_names)
+  ghs_built_labels <- setNames(c("Water","No Data","Undeveloped","2000 to 2014","1990 to 2000",
+                                 "1975 to 1990","Before 1975"),ghs_built_names)
+
+  ghs_built_colours <- setNames(c("white","white","darkgray",RColorBrewer::brewer.pal(5,"PuRd")[seq(5,2)]),
+                                ghs_built_names)
+
+  if (show_shares) {
+    total <- get_ghs_shares(sv,ds) %>%
+      mutate(label=paste0(ghs_built_labels[name],": ",scales::percent(share,accuracy = 1)))
+    ghs_built_labels <- setNames(total$label,total$name)
+  } 
+  
+  ggplot() +
+    stars::geom_stars(data=sv,downsample=ds) +
+    #coord_fixed() +
+    scale_fill_manual(values=ghs_built_colours,
+                      labels=ghs_built_labels[ghs_names],
+                      breaks=factor(ghs_names),
+                      drop = FALSE) +
+    theme_bw() +
+    theme(legend.position = "bottom") +
+    coord_sf(datum=NA) +
+    labs(#title="Build up area by epoch",
+         #caption="MountainMath, Data: GHS_BUILT_30",
+         x=NULL,y=NULL,fill=NULL)
+}
+
+
+make_city_map <- function(city_name,s,buffer=30,ds=5,show_shares = FALSE){
+  if (is.character(city_name)) {
+    city <- get_city_buffer(city_name,buffer)
+  } else if ('sf' %in% class(city_name)){
+    c <- sf::st_coordinates(city_name) %>% as_tibble()
+    proj4string <- paste0("+proj=lcc +lat_1=",c$Y-1," +lat_2=",c$Y+1," +lat_0=",c$Y,
+                          " +lon_0=",c$X," +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+    city <- city_name %>%
+      sf::st_transform(proj4string) %>%
+      sf::st_buffer(buffer*1000) %>%
+      sf::st_transform(4236)
+    city_name <- city_name$name
+  } else {
+    c <-as_tibble(city_name$coords) %>% mutate(name=c("X","Y")) %>% pivot_wider()
+    proj4string <- paste0("+proj=lcc +lat_1=",c$Y-1," +lat_2=",c$Y+1," +lat_0=",c$Y,
+                          " +lon_0=",c$X," +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+
+    city <- sf::st_point(city_name$coords) %>%
+      sf::st_sfc(crs=4236) %>%
+      sf::st_transform(proj4string) %>%
+      sf::st_buffer(buffer*1000) %>%
+      sf::st_transform(4236)
+    city_name <- city_name$name
+  }
+  sv <- s[city %>% sf::st_transform(sf::st_crs(s))]
+  
+  if (!is.null(names(city_name))) city_name <- names(city_name)
+  
+  make_map(sv,ds,show_shares) +
+  geom_blank(data=tibble(name=paste0(city_name," (",buffer,"km radius)"))) +
+  facet_wrap(~name)
+}
+
+
+
+ghs_names <- c("BU_2014","BU_2000","BU_1990","BU_1975")
+ghs_built_names <- c("Water","NoData","Land",ghs_names)
+ghs_built_labels <- setNames(c("Water","No Data","Undeveloped","2000 to 2014","1990 to 2000",
+                               "1975 to 1990","Before 1975"),ghs_built_names)
+
+ghs_built_colours <- setNames(c("white","white","darkgray",RColorBrewer::brewer.pal(5,"PuRd")[seq(5,2)]),
+                              ghs_built_names)
+
+```
+
+We’re getting better and more accessible datasets for exploring land use change all the time. We have played with the [Global Human Settlement Layer (GHSL) data](https://ghsl.jrc.ec.europa.eu/datasets.php#inline-nav-ghs_bu2019) in the past, where we looked at the [population data on a 250m grid to compare how different city's population distribute spatially](https://doodles.mountainmath.ca/blog/2019/03/17/city-density-patterns/), as well as the [1975, 1990, 2000, 2015 time series to see how it changed over time](https://doodles.mountainmath.ca/blog/2019/03/27/density-timelines/). These GHSL population datasets take a variety of input data to build, one part is census or other population-based datasets, the other is the built-out area derived from satellite data that is used to estimate population data at the fine 250m grid. 
+
+The emergence of fairly high quality global datasets is quite remarkable, and the ability to go back in time by having these estimates at several points in time back to the mid-70s is amazing.
+
+The city density post was just a first excursion into this data, there is a lot more than can be learned from it. The next logical step - inspired in part by a recent [Washington Post piece](https://www.washingtonpost.com/nation/interactive/2021/land-development-urban-growth-maps/) - is to more closely examine the [built-out area timelines](https://ghsl.jrc.ec.europa.eu/ghs_bu2019.php) that went into making the global population density dataset, and give that data a light workout to better assess it's strengths and limitations. The dataset comes at an extremely fine 30m resolution, where the extent of the built-out area was estimated off of Landsat satellite data at 1975, 1990, 2000, and 2014. 
+
+
+
+So let’s do it! To get started we take a look at the built-out area of Canadian metropolitan areas. Here we look at a circular area around the centres of the regions, 40km radius for the larger areas and 25km for the smaller ones, and colour them depending of by when they were built out.
+
+```{r canada-cities, fig.height=8, fig.width=10}
+city_list <- c("Toronto"=40,"Montreal"=40,"Vancouver"=40,"Ottawa"=25,"Calgary"=25,"Edmonton"=25) 
+
+city_maps <- seq(1,length(city_list)) %>%
+  lapply(function(i){
+    make_city_map(names(city_list)[i],s,city_list[[i]],2)
+  })
+
+((city_maps[[1]] + city_maps[[2]] + city_maps[[3]]) /
+    (city_maps[[4]] + city_maps[[5]] + city_maps[[6]]) & 
+    theme(legend.position = "bottom")) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title="Built-out area of Canadian metropolitan areas by epoch",
+                  caption="MountainMath, Data: GHSL Built 30")
+```
+All cities have a light pink centre and have been sprawling outward, but at quite different rates. More recent build-out seems scant in Vancouver, but quite prominent in Calgary and Edmonton. We can directly quantify how much of the current built-up area has been built out across each of the epochs.
+
+
+```{r canada-cities-bar}
+plot_data <- seq(1,length(city_list)) %>%
+  lapply(function(i){
+    n<-names(city_list)[i]
+    geo<-get_city_buffer(n,city_list[[i]])
+    get_ghs_shares(s[geo %>% sf::st_transform(sf::st_crs(s))],1) %>%
+      mutate(city=paste0(n," (",city_list[[i]],"km)"))
+  })  %>%
+  bind_rows() 
+
+ggplot(plot_data,aes(x=city,y=share,fill=name)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_fill_manual(values=ghs_built_colours,labels=ghs_built_labels) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(x=NULL,y="Share of built up area",fill=NULL,
+       title="Built-out area of Canadian metropolitan areas by epoch",
+                  caption="MountainMath, Data: GHSL Built 30")
+```
+
+
+Here we get confirmation that Vancouver has remained the most contained since 1975 (right around the time BC put the Agricultural Land Reserve into place), followed by Toronto (with its more recently established Green Belt). By contrast, Calgary and Edmonton have sprawled outward, more than doubling their built footprint since 1975.
+
+
+An additional glory of the data is its international coverage.
+
+```{r international-cities, fig.height=8, fig.width=10}
+city_list <- c("New York"=70,"London"=40,"Shanghai"=60,"Mexico City"=40,"Lagos"=50,"Buenos Aires"=50)
+
+city_maps <- seq(1,length(city_list)) %>%
+  lapply(function(i){
+    make_city_map(names(city_list)[i],s,city_list[[i]],2)
+  }) 
+
+((city_maps[[1]] + city_maps[[2]] + city_maps[[3]]) /
+    (city_maps[[4]] + city_maps[[5]] + city_maps[[6]]) & 
+    theme(legend.position = "bottom")) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title="Built-out area of international metropolitan areas by epoch",
+                  caption="MountainMath, Data: GHSL Built 30")
+```
+
+We can pull data from just about anywhere! Here get a glimpse of how old Metropoles of the 19th and 20th Centuries, like London and New York, compare to some of the faster growing megacities in the 21st Century.
+
+```{r international-cities-bar}
+plot_data <- seq(1,length(city_list)) %>%
+  lapply(function(i){
+    n<-names(city_list)[i]
+    geo<-get_city_buffer(n,city_list[[i]])
+    get_ghs_shares(s[geo %>% sf::st_transform(sf::st_crs(s))],1) %>%
+      mutate(city=paste0(n," (",city_list[[i]],"km)"))
+  })  %>%
+  bind_rows() 
+
+ggplot(plot_data,aes(x=city,y=share,fill=name)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_fill_manual(values=ghs_built_colours,labels=ghs_built_labels) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(x=NULL,y="Share of built up area",fill=NULL,
+       title="Built-out area of international metropolitan areas by epoch",
+                  caption="MountainMath, Data: GHSL Built 30")
+```
+
+More of Shanghai appears to have been built out between 2000 and 2015 than existed in 1975!
+
+## Mystery city came
+We can also play fun "Guess the City" games… Here's the Canadian version.
+
+```{r canda-mystery, fig.height=8, fig.width=10}
+city_list8 <- c("Halifax"=12,"Saskatoon"=15,"Quebec"=15,"Winnipeg"=15,"Victoria"=15,"Hamilton"=15)
+
+city_maps8 <- seq(1,length(city_list8)) %>%
+  lapply(function(i){
+    make_city_map(setNames(names(city_list8)[i],paste0("Mystery City ",i)),s,city_list8[[i]],2)
+  })
+
+((city_maps8[[1]] + city_maps8[[2]] + city_maps8[[3]]) /
+    (city_maps8[[4]] + city_maps8[[5]] + city_maps8[[6]]) & 
+    theme(legend.position = "bottom")) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title="CANADIAN CITIES Built-out area by epoch",
+                  caption="MountainMath, Data: GHSL Built 30")
+```
+
+### The Euro version.
+
+```{r euro-mystery, fig.height=8, fig.width=10}
+city_list5 <- c("Berlin"=20,"Athens"=25,"Lisbon"=30,"Stockholm"=20,"Saint Petersburg"=20,"Venice"=20)
+
+city_maps5 <- seq(1,length(city_list5)) %>%
+  lapply(function(i){
+    make_city_map(setNames(names(city_list5)[i],paste0("Mystery City ",i)),s,city_list5[[i]],2)
+  })
+
+((city_maps5[[1]] + city_maps5[[2]] + city_maps5[[3]]) /
+    (city_maps5[[4]] + city_maps5[[5]] + city_maps5[[6]]) & 
+    theme(legend.position = "bottom")) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title="EUROPEAN CITIES Built-out area by epoch",
+                  caption="MountainMath, Data: GHSL Built 30")
+```
+
+### USA. USA. USA.
+
+```{r usa-mystery, fig.height=8, fig.width=10}
+city_list6 <- c("Chicago"=70,"Covina"=80,"Scranton"=30,"El Paso"=35,"Washington"=70,"Phoenix"=70)
+
+city_maps6 <- seq(1,length(city_list6)) %>%
+  lapply(function(i){
+    make_city_map(setNames(names(city_list6)[i],paste0("Mystery City ",i)),s,city_list6[[i]],2)
+  })
+
+((city_maps6[[1]] + city_maps6[[2]] + city_maps6[[3]]) /
+    (city_maps6[[4]] + city_maps6[[5]] + city_maps6[[6]]) & 
+    theme(legend.position = "bottom")) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title="USA CITIES Built-out area by epoch",
+                  caption="MountainMath, Data: GHSL Built 30")
+```
+
+### Asia
+
+```{r asia-mystery, fig.height=8, fig.width=10}
+city_list2 <- c("Tokyo"=50,"Manila"=30,"Beijing"=50,"Karachi"=25,"Mumbai"=30,"Hanoi"=20)
+
+city_maps2 <- seq(1,length(city_list2)) %>%
+  lapply(function(i){
+    make_city_map(setNames(names(city_list2)[i],paste0("Mystery City ",i)),s,city_list2[[i]],2)
+  })
+
+((city_maps2[[1]] + city_maps2[[2]] + city_maps2[[3]]) /
+    (city_maps2[[4]] + city_maps2[[5]] + city_maps2[[6]]) & 
+    theme(legend.position = "bottom")) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title="EAST AND SOUTH ASIA CITIES Built-out area by epoch",
+                  caption="MountainMath, Data: GHSL Built 30")
+```
+
+### Africa and Western Asia
+
+```{r africa-mystery, fig.height=8, fig.width=10}
+city_list9 <- c("Cairo"=50,"Cape Town"=20,"Istanbul"=35,"Jerusalem"=20,"Baghdad"=30,"Gaborone"=15)
+
+city_maps9 <- seq(1,length(city_list9)) %>%
+  lapply(function(i){
+    make_city_map(setNames(names(city_list9)[i],paste0("Mystery City ",i)),s,city_list9[[i]],2)
+  })
+
+((city_maps9[[1]] + city_maps9[[2]] + city_maps9[[3]]) /
+    (city_maps9[[4]] + city_maps9[[5]] + city_maps9[[6]]) & 
+    theme(legend.position = "bottom")) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title="AFRICA AND WEST ASIA CITIES Built-out area by epoch",
+                  caption="MountainMath, Data: GHSL Built 30")
+```
+
+### Oceania, Latin America, & the Caribbean
+
+
+```{r oceania-mystery, fig.height=8, fig.width=10}
+city_list4 <- c("Auckland"=20, "Port-au-Prince"=15, "Brasilia"=30, "Montevideo"=20, "Rio de Janeiro"=40, "Panama"=20)
+
+city_maps4 <- seq(1,length(city_list4)) %>%
+  lapply(function(i){
+    make_city_map(setNames(names(city_list4)[i],paste0("Mystery City ",i)),s,city_list4[[i]],2)
+  })
+
+((city_maps4[[1]] + city_maps4[[2]] + city_maps4[[3]]) /
+    (city_maps4[[4]] + city_maps4[[5]] + city_maps4[[6]]) & 
+    theme(legend.position = "bottom")) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title="OCEANIA, LATIN AMERICA, & CARIBBEAN CITIES Built-out area by epoch",
+                  caption="MountainMath, Data: GHSL Built 30")
+```
+
+
+### Boss level mystery
+We challenge you to our Difficult level.
+
+```{r boss-level-mystery, fig.height=8, fig.width=10}
+city_list3 <- c("Cairo"=50,"Cape Town"=20,"Istanbul"=35,"Jerusalem"=20,"Baghdad"=30,"Gaborone"=15)
+
+city_maps3 <- seq(1,length(city_list3)) %>%
+  lapply(function(i){
+    make_city_map(setNames(names(city_list3)[i],paste0("Mystery City ",i)),s,city_list3[[i]],2)
+  })
+
+((city_maps3[[1]] + city_maps3[[2]] + city_maps3[[3]]) /
+    (city_maps3[[4]] + city_maps3[[5]] + city_maps3[[6]]) & 
+    theme(legend.position = "bottom")) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title="DIFFICULT LEVEL Built-out area by epoch",
+                  caption="MountainMath, Data: GHSL Built 30")
+```
+
+
+
+Aside from having some fun, it’s also worth doing some checking to see how well the Landsat data works! We notice that a few of the cities we've looked at appear to have some of their built environment misclassified in terms of when it was built out. There are lots of potential sources of error, including, for instance, resolutions and image quality from 1975 satellites and how things like tree coverage and foliage might influence attempts to categorize land as built upon. 
+
+We’ll zoom in on two places we know relatively well, and have played with before: [Vancouver and Minneapolis](https://homefreesociology.com/2021/06/22/the-other-down-under-grows-up-new-zealands-new-urban-development-policy/). 
+
+```{r vancouver-sprawl}
+geo <- cancensus::get_census("CA16",regions=list(CSD="5915022"),geo_format="sf")
+
+make_map(s[geo %>% sf::st_transform(sf::st_crs(s))],ds=1,show_shares = TRUE) +
+  geom_blank(data=tibble(name="Vancouver")) +
+  facet_wrap(~name)
+```
+
+Here we've really zoomed in on the City of Vancouver. Overall it looks pretty good, which is to say Landsat estimations of built-out areas mostly fits with our expectations. But there are some weird bits, like wealthy and leafy parts of Shaughnessy, far west Point Grey, and the Southlands, that all look like they were recently developed. This might be explained by tree cover changes associated with redevelopment (and new mansion construction) in these areas. We can also see the recent construction of Champlain Heights in the SE corner of Vancouver, but this fits our priors insofar as the area famously remained undeveloped until the 1970s. 
+
+When we turn to Minneapolis what look like much larger misclassifications. Large parts of the central area of the city (e.g. Uptown near Lake Calhoun) are classified as being built up between 1975 and 1990. 
+
+```{r minneapolis-sprawl}
+make_city_map("Minneapolis",s,5,1,show_shares = TRUE)
+```
+
+But experience, confirmed by a cross-check at a [building age map of Minneapolis](https://www.waldrn.com/apps/mspbuildingmap/index.html) shows that almost all homes in these areas were built before 1970. In fact some pockets showing as solidly built up between 1975 and 1990 have homes almost exclusively built before 1910.
+
+There are several possibly explanations for this misclassification. There is literature showing how difficult it is to train a classifier to deliver consistent results globally. A possible problem could have been dense tree cover that got thinned over the years, resulting in areas initially getting classified as undeveloped to later be classified as built-up, without much changes to what was on the ground. This could also happen because of better spatial resolution of Landsat satellites used for later years. That said, Minnesota was the worst example we found when browsing through various cities. (It's addictive, we highly encourage grabbing the code and spending a couple of hours pointing it to different cities around the globe.)
+
+
+## Boomtown
+We can find sprawl in well-established cities like Calgary and Edmonton, but the phenomenon becomes even more prominent when we look at cities that were quite small in 1975 and have experienced rapid growth since. The smaller boomtowns are where we can still watch how land gets eaten up for building more homes. Squamish provides a good example. Looking down from the top of the Chief it is hard not to notice the new development happening at the fringes, while the city centre seems to consist of more surface parking than buildings.
+
+```{r squamish-sprawl}
+make_city_map(list(name="Squamish",coords=c(-123.1491,49.7240)),s,7,1,show_shares = TRUE)
+```
+
+```{r nmanaimo-sprawl}
+make_city_map("Nanaimo",s,12,1,show_shares = TRUE)
+```
+
+
+```{r kamloops-sprawl}
+make_city_map("Kamloops",s,8,1,show_shares = TRUE)
+```
+
+
+```{r lethbridge-sprawl}
+make_city_map("Lethbridge",s,8,1,show_shares = TRUE)
+```
+
+
+```{r ft-st-john-sprawl}
+make_city_map("Fort Saint John",s,7,1,show_shares = TRUE)
+```
+
+## More City Six-Packs
+
+Pulling down satellite data to look at patterns of historical urban sprawl is entirely too much fun. But we're going to keep doing it. And while there are still some bugs to be worked out in terms of ground-truthing the satellite data, it mostly seems to provide a good approximation of the big picture for land use change. We'll keep thinking through ways of understanding how different cities are growing, and returning to the real trade-offs in terms of reducing the footprint of growth. 
+
+While we are at it, here are some more cities. (we can't stop. send help!) For those that can't wait to try out even more cities, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-08-21-satellites-sprawl-and-city-six-packs/index.Rmarkdown) for anyone to reproduce, adapt, or run their favourite cities.
+
+```{r more-cities1, fig.height=8, fig.width=10}
+city_list4 <- c("Haifa"=20,"Amsterdam"=25,"Zurich"=20,"Baku"=30,"Quanzhou"=35,"Casablanca"=20)
+
+city_maps4 <- seq(1,length(city_list4)) %>%
+  lapply(function(i){
+    make_city_map(names(city_list4)[i],s,city_list4[[i]],2)
+  })
+
+((city_maps4[[1]] + city_maps4[[2]] + city_maps4[[3]]) /
+    (city_maps4[[4]] + city_maps4[[5]] + city_maps4[[6]]) & 
+    theme(legend.position = "bottom")) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title="More City Six-Packs, built-out area by epoch",
+                  caption="MountainMath, Data: GHSL Built 30")
+```
+
+
+
+
+
+```{r more-cities2, fig.height=8, fig.width=10}
+city_list5 <- c("Sevastopol'"=10,"Lima"=50,"Abu Dhabi"=20,"Izmir"=25,"Melbourne"=35,"Maputo"=20)
+
+city_maps5 <- seq(1,length(city_list5)) %>%
+  lapply(function(i){
+    make_city_map(names(city_list5)[i],s,city_list5[[i]],2)
+  })
+
+((city_maps5[[1]] + city_maps5[[2]] + city_maps5[[3]]) /
+    (city_maps5[[4]] + city_maps5[[5]] + city_maps5[[6]]) & 
+    theme(legend.position = "bottom")) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title="More City Six-Packs, built-out area by epoch",
+                  caption="MountainMath, Data: GHSL Built 30")
+```
+
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
