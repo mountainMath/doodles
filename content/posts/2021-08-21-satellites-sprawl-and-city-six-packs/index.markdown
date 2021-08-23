@@ -81,12 +81,6 @@ We can also play fun "Guess the City" games… Here's the Canadian version.
 <img src="{{< blogdown/postref >}}index_files/figure-html/oceania-mystery-1.png" width="960" />
 
 
-### Boss level mystery
-We challenge you to our Difficult level.
-
-<img src="{{< blogdown/postref >}}index_files/figure-html/boss-level-mystery-1.png" width="960" />
-
-
 
 Aside from having some fun, it’s also worth doing some checking to see how well the Landsat data works! We notice that a few of the cities we've looked at appear to have some of their built environment misclassified in terms of when it was built out. There are lots of potential sources of error, including, for instance, resolutions and image quality from 1975 satellites and how things like tree coverage and foliage might influence attempts to categorize land as built upon. 
 
@@ -139,13 +133,13 @@ While we are at it, here are some more cities. (we can't stop. send help!) For t
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-08-21 15:50:27 PDT"
+## [1] "2021-08-22 18:40:16 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [cbd17f6] 2021-08-14: tweaks to images
+## Head:     [8ab33a5] 2021-08-21: city 6-packs
 ```
 
 ```

@@ -337,26 +337,6 @@ city_maps4 <- seq(1,length(city_list4)) %>%
 ```
 
 
-### Boss level mystery
-We challenge you to our Difficult level.
-
-```{r boss-level-mystery, fig.height=8, fig.width=10}
-city_list3 <- c("Cairo"=50,"Cape Town"=20,"Istanbul"=35,"Jerusalem"=20,"Baghdad"=30,"Gaborone"=15)
-
-city_maps3 <- seq(1,length(city_list3)) %>%
-  lapply(function(i){
-    make_city_map(setNames(names(city_list3)[i],paste0("Mystery City ",i)),s,city_list3[[i]],2)
-  })
-
-((city_maps3[[1]] + city_maps3[[2]] + city_maps3[[3]]) /
-    (city_maps3[[4]] + city_maps3[[5]] + city_maps3[[6]]) & 
-    theme(legend.position = "bottom")) + 
-  plot_layout(guides = "collect") +
-  plot_annotation(title="DIFFICULT LEVEL Built-out area by epoch",
-                  caption="MountainMath, Data: GHSL Built 30")
-```
-
-
 
 Aside from having some fun, it’s also worth doing some checking to see how well the Landsat data works! We notice that a few of the cities we've looked at appear to have some of their built environment misclassified in terms of when it was built out. There are lots of potential sources of error, including, for instance, resolutions and image quality from 1975 satellites and how things like tree coverage and foliage might influence attempts to categorize land as built upon. 
 
