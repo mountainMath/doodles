@@ -6,7 +6,7 @@ slug: thoughts-on-vaccine-effectivess-estimates
 categories:
   - covid-19
 tags: []
-description: "Fun with global satellite-derived land use time series."
+description: "We now have some data on vaccination status of COVID cases and hospitalizations in BC. It's not really enough for robust vaccine effectivness estimates, but given the public interest let's see how far we can get."
 featured: ''
 images: ["https://doodles.mountainmath.ca/blog/2021/08/30/thoughts-on-vaccine-effectivess-estimates/index_files/figure-html/vax-effectiveness-1.png"]
 featuredalt: ""
@@ -175,13 +175,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-08-30 23:30:49 PDT"
+## [1] "2021-08-30 23:42:41 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [9df60ab] 2021-08-23: remove extraneous boss level mystery cities
+## Head:     [77c6e88] 2021-08-31: vaccine effectiveness
 ```
 
 ```
@@ -223,22 +223,23 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## [29] askpass_1.1               pkgconfig_2.0.3          
 ## [31] htmltools_0.5.1.1         openssl_1.4.4            
 ## [33] tidyselect_1.1.1          bookdown_0.22            
-## [35] fansi_0.5.0               crayon_1.4.1             
-## [37] tzdb_0.1.2                dbplyr_2.1.1             
-## [39] withr_2.4.2               rappdirs_0.3.3           
-## [41] grid_4.1.0                jsonlite_1.7.2           
-## [43] gtable_0.3.0              lifecycle_1.0.0          
-## [45] DBI_1.1.1                 git2r_0.28.0             
-## [47] magrittr_2.0.1            scales_1.1.1             
-## [49] cli_3.0.1                 stringi_1.7.3            
-## [51] farver_2.1.0              fs_1.5.0                 
-## [53] xml2_1.3.2                bslib_0.2.5.1            
-## [55] ellipsis_0.3.2            generics_0.1.0           
-## [57] vctrs_0.3.8               mountainmathHelpers_0.1.3
-## [59] tools_4.1.0               glue_1.4.2               
-## [61] hms_1.1.0                 yaml_2.2.1               
-## [63] colorspace_2.0-1          gargle_1.2.0             
-## [65] rvest_1.0.1               knitr_1.33               
-## [67] haven_2.4.1               sass_0.4.0
+## [35] codetools_0.2-18          fansi_0.5.0              
+## [37] crayon_1.4.1              tzdb_0.1.2               
+## [39] dbplyr_2.1.1              withr_2.4.2              
+## [41] rappdirs_0.3.3            grid_4.1.0               
+## [43] jsonlite_1.7.2            gtable_0.3.0             
+## [45] lifecycle_1.0.0           DBI_1.1.1                
+## [47] git2r_0.28.0              magrittr_2.0.1           
+## [49] scales_1.1.1              cli_3.0.1                
+## [51] stringi_1.7.3             farver_2.1.0             
+## [53] fs_1.5.0                  xml2_1.3.2               
+## [55] bslib_0.2.5.1             ellipsis_0.3.2           
+## [57] generics_0.1.0            vctrs_0.3.8              
+## [59] mountainmathHelpers_0.1.3 tools_4.1.0              
+## [61] glue_1.4.2                hms_1.1.0                
+## [63] yaml_2.2.1                colorspace_2.0-1         
+## [65] gargle_1.2.0              rvest_1.0.1              
+## [67] knitr_1.33                haven_2.4.1              
+## [69] sass_0.4.0
 ```
 </details>

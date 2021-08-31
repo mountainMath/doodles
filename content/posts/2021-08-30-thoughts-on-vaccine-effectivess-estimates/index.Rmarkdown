@@ -6,7 +6,7 @@ slug: thoughts-on-vaccine-effectivess-estimates
 categories:
   - covid-19
 tags: []
-description: "Fun with global satellite-derived land use time series."
+description: "We now have some data on vaccination status of COVID cases and hospitalizations in BC. It's not really enough for robust vaccine effectivness estimates, but given the public interest let's see how far we can get."
 featured: ''
 images: ["https://doodles.mountainmath.ca/blog/2021/08/30/thoughts-on-vaccine-effectivess-estimates/index_files/figure-html/vax-effectiveness-1.png"]
 featuredalt: ""
@@ -20,7 +20,8 @@ type: "post"
 knitr::opts_chunk$set(
 	echo = FALSE,
 	message = FALSE,
-	warning = FALSE
+	warning = FALSE,
+	cache = TRUE 
 )
 library(tidyverse)
 library(cansim)
