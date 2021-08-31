@@ -54,7 +54,7 @@ We could do this by benchmarking vaccine effectiveness against one variant again
 
 To do this it's best to take it slowly and specify a causal model. Inter-jurisdictional differences in how vaccines are rolled out, and how case and hospitalization data is collected, mean it's best to be clear about the (assumed) underlying causal model and how it relates to local peculiarities.
 
-![](images/vaccine_effectiveness_dag.png)
+![](index_files/figure-html/vaccine_effectiveness_dag.png)
 
 This model acknowledges the effect of the vaccine rollout in BC, where vaccination status isn't assigned randomly but is strongly influenced by age due to the mostly age-based rollout. At the same time the vaccine rollout is impacted by socio-economic status (SES) in several ways, directly by prioritizing certain groups like medical staff but also to some extent essential workers, and indirectly through vaccine hesitancy and ability to access vaccines correlating with various SES variables. 
 
@@ -66,7 +66,7 @@ We similarly expect age and SES to affect risk of infection, of becoming symptom
 
 In BC (and in most other places) we don't observe infection, and we can't estimate the effect of vaccination status on risk of infection. This also means we can only observe the total effect of vaccination of becoming symptomatic and can't estimate the direct or indirect effects as mediated through infection. We will remove this step from the graph.
 
-![](images/vaccine_effectiveness_dag2.png)
+![](index_files/figure-html/vaccine_effectiveness_dag2.png) 
 
 In BC age is an observed variable, and we (in principle) know the vaccination status, case status and hospitalization status by age. Unfortunately, SES is unobserved in BC. Early on BC decided not to collect SES variables relating to COVID cases, hospitalizations or vaccinations, despite PHAC explicitly asking this data be collected. In principle some of the effect of SES on the vaccination rollout may be knowable if BC kept track of who received a vaccination via the age-based rollout and who through medical staff or essential work or other SES-based mechanisms. But this information, if it exists, is not public.
 
@@ -74,7 +74,7 @@ This means that if we believe that either the impact of SES on hospitalization r
 
 Due to the unobserved nature of SES variables in BC we will assume the following causal model as a first step, and later try to estimate hypothetical impacts of the unobserved SES variables. 
 
-![](images/vaccine_effectiveness_dag3.png)
+![](index_files/figure-html/vaccine_effectiveness_dag3.png)
 
 We will refer to this as the **naive model**.
 
@@ -175,13 +175,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-08-30 23:42:41 PDT"
+## [1] "2021-08-30 23:53:14 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [77c6e88] 2021-08-31: vaccine effectiveness
+## Head:     [a9f37b3] 2021-08-31: description text
 ```
 
 ```
@@ -206,40 +206,20 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## [10] ggplot2_3.3.5       tidyverse_1.3.1    
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] Rcpp_1.0.7                lubridate_1.7.10         
-##  [3] assertthat_0.2.1          digest_0.6.27            
-##  [5] utf8_1.2.2                R6_2.5.1                 
-##  [7] cellranger_1.1.0          backports_1.2.1          
-##  [9] reprex_2.0.0              evaluate_0.14            
-## [11] highr_0.9                 httr_1.4.2               
-## [13] blogdown_1.4              pillar_1.6.2             
-## [15] rlang_0.4.11              curl_4.3.2               
-## [17] readxl_1.3.1              rstudioapi_0.13          
-## [19] jquerylib_0.1.4           sanzo_0.1.0              
-## [21] rmarkdown_2.8             labeling_0.4.2           
-## [23] googledrive_2.0.0         munsell_0.5.0            
-## [25] broom_0.7.6               compiler_4.1.0           
-## [27] modelr_0.1.8              xfun_0.24                
-## [29] askpass_1.1               pkgconfig_2.0.3          
-## [31] htmltools_0.5.1.1         openssl_1.4.4            
-## [33] tidyselect_1.1.1          bookdown_0.22            
-## [35] codetools_0.2-18          fansi_0.5.0              
-## [37] crayon_1.4.1              tzdb_0.1.2               
-## [39] dbplyr_2.1.1              withr_2.4.2              
-## [41] rappdirs_0.3.3            grid_4.1.0               
-## [43] jsonlite_1.7.2            gtable_0.3.0             
-## [45] lifecycle_1.0.0           DBI_1.1.1                
-## [47] git2r_0.28.0              magrittr_2.0.1           
-## [49] scales_1.1.1              cli_3.0.1                
-## [51] stringi_1.7.3             farver_2.1.0             
-## [53] fs_1.5.0                  xml2_1.3.2               
-## [55] bslib_0.2.5.1             ellipsis_0.3.2           
-## [57] generics_0.1.0            vctrs_0.3.8              
-## [59] mountainmathHelpers_0.1.3 tools_4.1.0              
-## [61] glue_1.4.2                hms_1.1.0                
-## [63] yaml_2.2.1                colorspace_2.0-1         
-## [65] gargle_1.2.0              rvest_1.0.1              
-## [67] knitr_1.33                haven_2.4.1              
-## [69] sass_0.4.0
+##  [1] Rcpp_1.0.7        lubridate_1.7.10  assertthat_0.2.1  digest_0.6.27    
+##  [5] utf8_1.2.2        R6_2.5.1          cellranger_1.1.0  backports_1.2.1  
+##  [9] reprex_2.0.0      evaluate_0.14     httr_1.4.2        blogdown_1.4     
+## [13] pillar_1.6.2      rlang_0.4.11      readxl_1.3.1      rstudioapi_0.13  
+## [17] jquerylib_0.1.4   sanzo_0.1.0       rmarkdown_2.8     googledrive_2.0.0
+## [21] munsell_0.5.0     broom_0.7.6       compiler_4.1.0    modelr_0.1.8     
+## [25] xfun_0.24         pkgconfig_2.0.3   htmltools_0.5.1.1 tidyselect_1.1.1 
+## [29] bookdown_0.22     fansi_0.5.0       crayon_1.4.1      tzdb_0.1.2       
+## [33] dbplyr_2.1.1      withr_2.4.2       grid_4.1.0        jsonlite_1.7.2   
+## [37] gtable_0.3.0      lifecycle_1.0.0   DBI_1.1.1         git2r_0.28.0     
+## [41] magrittr_2.0.1    scales_1.1.1      cli_3.0.1         stringi_1.7.3    
+## [45] fs_1.5.0          xml2_1.3.2        bslib_0.2.5.1     ellipsis_0.3.2   
+## [49] generics_0.1.0    vctrs_0.3.8       tools_4.1.0       glue_1.4.2       
+## [53] hms_1.1.0         yaml_2.2.1        colorspace_2.0-1  gargle_1.2.0     
+## [57] rvest_1.0.1       knitr_1.33        haven_2.4.1       sass_0.4.0
 ```
 </details>
