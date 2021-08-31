@@ -69,21 +69,31 @@ First we need to clear up some terminology. Generally we are interested in the *
 $$
 VE_i = 1-\frac{P(Y=1|do(V=v_i))}{P(Y=1|do(V=v_0))},\qquad v_i\in\{v_1,v_2\}.
 $$
+A similar and more intuitive measure is the factor by which vaccinations offer protection from symptomatic covid or hosptializations
+$$
+PF_i=\frac{1}{1-VE_i}=\frac{P(Y=1|do(V=v_0))}{P(Y=1|do(V=v_i))},\qquad v_i\in\{v_1,v_2\}.
+$$
+We will generally present results in terms of the **protective factor** $PF$ instead of $VE$.
 
 In contrast, **vaccine effectiveness** is a much more vague concept. [Generally it is defined as follows:](https://www.who.int/news-room/feature-stories/detail/vaccine-efficacy-effectiveness-and-protection)
 
 >   Vaccine effectiveness is a measure of how well vaccines work in the real world.
 
-Unpacking this, vaccine effectiveness includes "side effects" of getting vaccinated like risk compensation, that can reduce or otherwise alter the benefits of vaccines, as well as problems with vaccine administration that is generally not as well controlled as in trial data and deviations from the vaccine administration protocol, or outright mistakes during vaccine administration, can lead to reduced benefits of vaccines in the real world. Moreover, the sample of participants in vaccine trials may not reflect the risk profile of the general population of interest.
+Unpacking this, vaccine effectiveness includes "side effects" of getting vaccinated like risk compensation, that can reduce or otherwise alter the benefits of vaccines, as well as problems with vaccine administration, can lead to reduced benefits of vaccines in the real world. Moreover, the sample of participants in vaccine trials may not reflect the risk profile of the general population of interest.
 
 In theory, vaccine effectiveness is also a causal concept that aims to quantify by how much vaccines reduce risk in real world scenarios where vaccine administration is imperfect and allowing for confounding by side effects like risk compensation. In practice in the medical literature vaccine effectiveness estimates are often treated as statistical rather than causal estimates.
 
-In general the logistics of proper vaccine refrigeration and administration is fairly well solved, so we don't expect large effects because of that. And risk compensation is part of the point, vaccines enable us to go back to normal and engage in more risky behaviour. If not accounted for, this will taint vaccine effectiveness estimates, but once a very high portion of the population is vaccinated we don't care about this any more as 'risk compensation' this was part of the goal. So why do we bother with vaccine effectiveness estimates at all, other than concerns about the trail sample under-representing important subgroups of the population?.
+In general the logistics of proper vaccine refrigeration and administration is fairly well solved, so we don't expect large effects because of that. 
+
+Risk compensation can seriously confound vaccine effectiveness estimates as vaccinated people may engage in more risky behaviour, partially negating the protectice effects of vaccines against infection. After all, risk compensation is part of the point, vaccines enable us to go back to normal and engage in more risky behaviour.
+
+So why do we bother with vaccine effectiveness estimates at all, other than concerns about the trail sample under-representing important subgroups of the population?.
+
 
 ## Variants of concern
 Variants of concern complicate our initial vaccine efficacy estimates. What we are interested in now is how vaccines behave against the variants currently under circulation, instead of the variants the vaccines were tested on in randomized controlled trials that by now don't play much of a role in transmissions any more. Vaccine effectiveness studies can help fill that gap to understand how effective vaccines are against new variants.
 
-We could do this by benchmarking vaccine effectiveness against one variant against the known vaccine effectiveness of another variant, assuming quasi-random assignments of variants in exposure events. We don't have publicly available data on variants of, cases and vaccination status in BC, so we can't do this. Another way is to make assumptions about factors influencing vaccinations, cases, and hospitalizations, and try and utilize the tools of causal inference to estimate vaccine effectiveness that way.
+We could do this by benchmarking vaccine effectiveness for one variant against the known vaccine effectiveness of another variant, assuming quasi-random assignments of variants in exposure events. We don't have publicly available data on variants, cases and vaccination status in BC, so we can't do this. Another way is to make assumptions about factors influencing vaccinations, cases, and hospitalizations, and try and utilize the tools of causal inference to estimate vaccine effectiveness that way.
 
 To do this it's best to take it slowly and specify a causal model. Inter-jurisdictional differences in how vaccines are rolled out, and how case and hospitalization data is collected, mean it's best to be clear about the (assumed) underlying causal model and how it relates to local peculiarities.
 
@@ -124,7 +134,7 @@ Let's get to work using BC data. As mentioned up top, BC does not make the requi
 
 There are several issues beyond just imprecisions when scraping data out of graphs, for example consecutive Data Reports have the vaccination rate of 80+ year olds drop from one week to the next, which is nonsensical and speaks to BC's fundamental and ongoing data challenges.
 
-Further, we only have access to aggregate data and thus are constrained in the timing of our input data. For hospitalizations we are using data from the August 19 data report that are pegged to admissions between July 17 and August 17. We use the age-based vaccination status from the July 26th data report that reflects the vaccination status as of July 22. We are unsure of the vaccination status of cases and hospitalizations presented by the BCCDC add a two week lag between the last vaccine or not. We use case data from the same report, ignoring the lag between cases and hospitalizations that we generally observe. Moreover, cases have been rising during the given timeframe, which may further skew the analysis.
+Further, we only have access to aggregate data and thus are constrained in the timing of our input data. For hospitalizations we are using data from the August 19 data report that are pegged to admissions between July 17 and August 17. We use the age-based vaccination status from the July 26th data report that reflects the vaccination status as of July 22. The Data Report suggests that vaccination status is reported as 3 weeks post first dose or two weeks post second dose, so that rougly lines up with the vaccination data we use. We use case data from the same report, ignoring the lag between cases and hospitalizations that we generally observe. Moreover, cases have been rising during the given timeframe, which may further skew the analysis.
 
 These data challenges make it difficult to have confidence in the subsequent estimates. We will continue to carry them out regardless, mostly just to demonstrate the adjustments that are needed to interpret the BCCDC vaccination data if one were able to access proper and accurate data. We remove the age group 0-11 year olds because the BCCDC vaccination data graph shows zero children in this age group being vaccinated, which is directly contradicted by experience (my 11yo is fully vaccinated) as well as PHAC vaccination data as the BC eligibility cutoff is based on birth year (2009) instead of age. This means that our estimates are for effectiveness of 12+ years olds only, which is not a big restriction.
 
@@ -422,7 +432,7 @@ After seeing how large the effect of adjusting for age is in our vaccine effecti
 
 Unlike age, the impacts of SES are hard to sign, their single causal pathways in our first DAG up top should be viewed as the combined effect of a collection of mechanisms, many of which come in with opposite signs. However, we should not assume that these effects cancel out.
 
-For example, looking at the difference in first vs second dose effectiveness against "cases" in 80+ year olds we notice a significant increase in risk ratio, so a decrease in vaccine effectiveness. This seems implausible and points to the population of 80+ year olds with only differing significantly from the those with two doses. We don't see the same difference in hospitalizations, which might be explained by the population of 80+ year olds with two doses, which includes people in long term care, being more likely to get tested.
+For example, looking at the difference in first vs second dose effectiveness against "cases" in 80+ year olds we notice a significant increase in risk ratio, so a decrease in vaccine effectiveness. This seems implausible and points to the population of 80+ year olds with only one dose differing significantly from the those with two doses. We don't see the same difference in hospitalizations, which might be explained by the population of 80+ year olds with two doses, which includes people in long term care, being more likely to get tested.
 
 Estimating the uncertainty due to unobserved SES variables requires adding in simulated SES effects, but this is beyond the scope of this post.
 
