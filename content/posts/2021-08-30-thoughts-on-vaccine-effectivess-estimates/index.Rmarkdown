@@ -1,0 +1,518 @@
+---
+title: Thoughts on vaccine effectivess estimates
+author: Jens von Bergmann
+date: '2021-08-30'
+slug: thoughts-on-vaccine-effectivess-estimates
+categories:
+  - covid-19
+tags: []
+description: "Fun with global satellite-derived land use time series."
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2021/08/30/thoughts-on-vaccine-effectivess-estimates/index_files/figure-html/vax-effectiveness-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post" 
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+library(tidyverse)
+library(cansim)
+library(googlesheets4)
+ss <- "1vzTFxW6iDeUgyJo90miEfDd6_hrIFPmOE0EuG4nS3wc"
+
+vaccination_levels <- c("Unvaccinated","1st dose","2nd dose")
+vaccination_colours <- setNames(c("darkgrey",sanzo::duos$c047%>%rev),vaccination_levels)
+```
+
+
+
+```{r include=FALSE}
+case_data <- googlesheets4::read_sheet(ss,"Cases") %>%
+  mutate(type=factor(type,levels=vaccination_levels))
+hospitalization_data <- googlesheets4::read_sheet(ss,"Hospitalizations") %>%
+  mutate(type=factor(type,levels=vaccination_levels))
+population_data <- vaxx_data <- googlesheets4::read_sheet(ss,"Population")
+vaccine_data <- googlesheets4::read_sheet(ss,"Vaccinations") %>%
+  left_join(population_data,by="Age") %>%
+  mutate(Value=Share*Population) %>%
+  mutate(type=factor(type,levels=vaccination_levels))
+
+totals <- googlesheets4::read_sheet(ss,"Totals")  %>%
+  pivot_longer(-type,names_to="metric",values_to = "Total")
+
+totals_2week<-tibble(type=c("Unvaccinated","1st dose","2nd dose"),
+                     Cases=c(3255,477,833),
+                     Hospitalizations=c(172,14,31),
+                     Vaccinations=c(732602,362390,3541731)) %>%
+  pivot_longer(-type,names_to="metric")
+```
+
+BC now shares data on the vaccination status of cases and hospitalizations in their weekly Data Reports. This is progress, although calling it "data" is reaching. What is shared is graphs that need manual scraping to be turned into (approximate) data.
+
+The numbers themselves aren't particularly meaningful. Vaccines aren't 100% effective in preventing symptomatic COVID (approximated by "cases" in BC) or hospitalizations. This means that as more people get vaccinated, there will be more cases and hospitalizations among the vaccinated population. If everyone were vaccinated then all cases and hospitalizations would be necessarily among vaccinated people, this is not very helpful information.
+
+To turn this data into useful information we need to specify what question we are interested in: **By how much do vaccines reduce our risk of symptomatic COVID and of severe outcomes?**. Unfortunately, in BC we don't have the data we need for robust vaccine effectiveness estimates. But there is a lot of public interest to dig into this question, and with some data being released now it might be a good idea to take a more detailed look at what is needed for vaccine effectiveness estimates, what can go wrong, and what data is missing.
+
+Despite all this uncertainty, one thing is clear: **Vaccines are effective and everyone should get vaccinated as soon as possible.** We are aiming to transition to "endemic mode", which means, for better or worse (I have opinions), we are planning on COVID spreading through the population and everyone should expect to be either vaccinated, or contract COVID, or both.
+
+## Vaccine effectiveness (and efficacy)
+First we need to clear up some terminology. Generally we are interested in the **causal effect** of vaccines, that is by how much the act of getting vaccinated causally lowers the risk of symptomatic COVID or hospitalization or death. The easiest way to ascertain this is through randomized controlled trials, as has been done as part of the vaccine accreditation process. Formally, **vaccine efficacy** against symptomatic COVID (or hospitalization) $Y\in\{0,1\}$, where $Y=1$ means being a case or being hospitalized, depending on vaccine status $V\in\{v_0,v_1,v_2\}$, where $V=v_i$ means being vaccinated with $i$ doses, is given by the risk ratio
+
+$$
+VE_i = 1-\frac{P(Y=1|do(V=v_i))}{P(Y=1|do(V=v_0))},\qquad v_i\in\{v_1,v_2\}.
+$$
+
+In contrast, **vaccine effectiveness** is a much more vague concept. [Generally it is defined as follows:](https://www.who.int/news-room/feature-stories/detail/vaccine-efficacy-effectiveness-and-protection)
+
+>   Vaccine effectiveness is a measure of how well vaccines work in the real world.
+
+Unpacking this, vaccine effectiveness includes "side effects" of getting vaccinated like risk compensation, that can reduce or otherwise alter the benefits of vaccines, as well as problems with vaccine administration that is generally not as well controlled as in trial data and deviations from the vaccine administration protocol, or outright mistakes during vaccine administration, can lead to reduced benefits of vaccines in the real world. Moreover, the sample of participants in vaccine trials may not reflect the risk profile of the general population of interest.
+
+In theory, vaccine effectiveness is also a causal concept that aims to quantify by how much vaccines reduce risk in real world scenarios where vaccine administration is imperfect and allowing for confounding by side effects like risk compensation. In practice in the medical literature vaccine effectiveness estimates are often treated as statistical rather than causal estimates.
+
+In general the logistics of proper vaccine refrigeration and administration is fairly well solved, so we don't expect large effects because of that. And risk compensation is part of the point, vaccines enable us to go back to normal and engage in more risky behaviour. If not accounted for, this will taint vaccine effectiveness estimates, but once a very high portion of the population is vaccinated we don't care about this any more as 'risk compensation' this was part of the goal. So why do we bother with vaccine effectiveness estimates at all, other than concerns about the trail sample under-representing important subgroups of the population?.
+
+## Variants of concern
+Variants of concern complicate our initial vaccine efficacy estimates. What we are interested in now is how vaccines behave against the variants currently under circulation, instead of the variants the vaccines were tested on in randomized controlled trials that by now don't play much of a role in transmissions any more. Vaccine effectiveness studies can help fill that gap to understand how effective vaccines are against new variants.
+
+We could do this by benchmarking vaccine effectiveness against one variant against the known vaccine effectiveness of another variant, assuming quasi-random assignments of variants in exposure events. We don't have publicly available data on variants of, cases and vaccination status in BC, so we can't do this. Another way is to make assumptions about factors influencing vaccinations, cases, and hospitalizations, and try and utilize the tools of causal inference to estimate vaccine effectiveness that way.
+
+To do this it's best to take it slowly and specify a causal model. Inter-jurisdictional differences in how vaccines are rolled out, and how case and hospitalization data is collected, mean it's best to be clear about the (assumed) underlying causal model and how it relates to local peculiarities.
+
+![](images/vaccine_effectiveness_dag.png)
+
+This model acknowledges the effect of the vaccine rollout in BC, where vaccination status isn't assigned randomly but is strongly influenced by age due to the mostly age-based rollout. At the same time the vaccine rollout is impacted by socio-economic status (SES) in several ways, directly by prioritizing certain groups like medical staff but also to some extent essential workers, and indirectly through vaccine hesitancy and ability to access vaccines correlating with various SES variables. 
+
+There are other possible omitted factors, for example it is not clear how various NPI affect the these pathways, for example universal mask wearing may universally lower the initial dose and alter the severity of infections, which may impact vaccine effectiveness against hospitalization. We believe the above model is a decent approximation for estimating vaccine effectiveness in BC.
+
+We expect vaccination status to causally effect the risk of getting infected, the risk of becoming symptomatic even when accounting for getting infected, and the risk of hospitalization even when accounting for being symptomatic.
+
+We similarly expect age and SES to affect risk of infection, of becoming symptomatic, and hospitalized via comorbidities.
+
+In BC (and in most other places) we don't observe infection, and we can't estimate the effect of vaccination status on risk of infection. This also means we can only observe the total effect of vaccination of becoming symptomatic and can't estimate the direct or indirect effects as mediated through infection. We will remove this step from the graph.
+
+![](images/vaccine_effectiveness_dag2.png)
+
+In BC age is an observed variable, and we (in principle) know the vaccination status, case status and hospitalization status by age. Unfortunately, SES is unobserved in BC. Early on BC decided not to collect SES variables relating to COVID cases, hospitalizations or vaccinations, despite PHAC explicitly asking this data be collected. In principle some of the effect of SES on the vaccination rollout may be knowable if BC kept track of who received a vaccination via the age-based rollout and who through medical staff or essential work or other SES-based mechanisms. But this information, if it exists, is not public.
+
+This means that if we believe that either the impact of SES on hospitalization risk, or the impact on vaccination status and on the vaccination rollout are not negligible in BC, the effect of vaccination status on hospitalization is not identifiable in BC. The best we can do is substitute in a range of assumptions about the magnitude of these effects and use this to understand the range of corresponding vaccine effectiveness estimates.
+
+Due to the unobserved nature of SES variables in BC we will assume the following causal model as a first step, and later try to estimate hypothetical impacts of the unobserved SES variables. 
+
+![](images/vaccine_effectiveness_dag3.png)
+
+We will refer to this as the **naive model**.
+
+## Estimating vaccine effectiveness in the naive model
+
+Under the assumptions of this model we can estimate several effects of interest: The effect of of vaccines on cases, the total effect of vaccines on hospitalizations, as well as the direct and indirect effects due to hospitalizations being mediated through cases. Formally we estimate the total vaccine effectiveness against symptomatic COVID or hospitalization $Y=1$ using
+
+$$
+P(Y=1|do(V=v_i)) = \sum_a P(Y=1|V=v_i,A=a)P(A=a).
+$$
+
+Let's get to work using BC data. As mentioned up top, BC does not make the required data easily available, but some approximate version of it can be scraped from the weekly data reports. Thanks to BC's abysmal data practices our 11 year old has quite a bit of practice scraping data out of BCCDC graphs, which he deposited [in a google doc](https://docs.google.com/spreadsheets/d/1vzTFxW6iDeUgyJo90miEfDd6_hrIFPmOE0EuG4nS3wc) in exchange for a gift certificate for fancy ice cream.
+
+There are several issues beyond just imprecisions when scraping data out of graphs, for example consecutive Data Reports have the vaccination rate of 80+ year olds drop from one week to the next, which is nonsensical and speaks to BC's fundamental and ongoing data challenges.
+
+Further, we only have access to aggregate data and thus are constrained in the timing of our input data. For hospitalizations we are using data from the August 19 data report that are pegged to admissions between July 17 and August 17. We use the age-based vaccination status from the July 26th data report that reflects the vaccination status as of July 22. We are unsure of the vaccination status of cases and hospitalizations presented by the BCCDC add a two week lag between the last vaccine or not. We use case data from the same report, ignoring the lag between cases and hospitalizations that we generally observe. Moreover, cases have been rising during the given timeframe, which may further skew the analysis.
+
+These data challenges make it difficult to have confidence in the subsequent estimates. We will continue to carry them out regardless, mostly just to demonstrate the adjustments that are needed to interpret the BCCDC vaccination data if one were able to access proper and accurate data. We remove the age group 0-11 year olds because the BCCDC vaccination data graph shows zero children in this age group being vaccinated, which is directly contradicted by experience (my 11yo is fully vaccinated) as well as PHAC vaccination data as the BC eligibility cutoff is based on birth year (2009) instead of age. This means that our estimates are for effectiveness of 12+ years olds only, which is not a big restriction.
+
+
+To get a feel for the data we first compute simple case and hospitalization rates based on age and vaccination status.
+
+```{r warning=FALSE, include=FALSE}
+plot_data <- case_data %>% select(Age,Cases=Value,type) %>%
+  left_join(hospitalization_data %>% select(Age,Hospitalizations=Value,type),by=c("Age","type")) %>%
+  left_join(vaccine_data %>% select(Age,Vaccinations=Value,type,Population),by=c("Age","type")) 
+plot_data1 <- case_data %>% select(Age,Cases=Value1,type) %>%
+  left_join(hospitalization_data %>% select(Age,Hospitalizations=Value1,type),by=c("Age","type")) %>%
+  left_join(vaccine_data %>% select(Age,Vaccinations=Value,type,Population),by=c("Age","type")) 
+
+total_pop <- plot_data %>% group_by(Age) %>% summarize(p=first(Population)) %>% pull(p) %>% sum()
+
+totals_comp <- totals %>%
+  left_join(plot_data %>% pivot_longer(c("Cases","Vaccinations","Hospitalizations"),names_to="metric") %>%
+              group_by(type,metric) %>%
+              summarize(value=sum(value),.groups="drop"),
+            by=c("type","metric")) %>%
+  left_join(plot_data1 %>% pivot_longer(c("Cases","Vaccinations","Hospitalizations"),names_to="metric") %>%
+              group_by(type,metric) %>%
+              summarize(value1=sum(value),.groups="drop"),
+            by=c("type","metric"))
+
+
+full_table <- plot_data %>%
+  filter(Age!="0-11") %>%
+  mutate(Cases=pmax(Cases,Hospitalizations)) %>% # sanity check
+  pivot_longer(c("Cases","Hospitalizations"),names_to = "metric") %>% 
+  select(Age,metric,type,value,base_age_type=Vaccinations,base_age=Population) %>%
+  mutate(p=value/base_age_type) #%>%
+  #mutate(age_p=base_age/total_pop,
+  #       age_type_p=base_age_type/total_pop)
+
+## naive or ignoring age
+get_naive_rr <- function(data) {
+  data %>%
+    group_by(type,metric) %>%
+    summarize(across(c("value","base_age_type"),sum),.groups="drop")  %>%
+    mutate(value=value/base_age_type) %>%
+    select(type,metric,value) %>%
+    pivot_wider(names_from=type) %>%
+    pivot_longer(matches("dose"),names_to="type") %>%
+    mutate(value=value/Unvaccinated) %>%
+    select(-Unvaccinated)
+}
+
+
+rr_naive <- get_naive_rr(full_table)
+
+
+totals_rr_naive <- totals %>%
+  pivot_wider(names_from=metric,values_from = Total)%>%
+  #mutate(Vaccinations=c(906410,1042699,2627970)) %>%
+  pivot_longer(c("Cases","Hospitalizations"),names_to="metric") %>%
+  rename(base_age_type=Vaccinations) %>%
+  get_naive_rr()
+
+
+totals_2week_rr_naive <- totals_2week %>%
+  pivot_wider(names_from=metric)%>%
+  pivot_longer(c("Cases","Hospitalizations"),names_to="metric") %>%
+  rename(base_age_type=Vaccinations) %>%
+  get_naive_rr()
+  
+
+get_bootstrap_table <- function(full_table){
+  sample_indices <- sample.int(n=total_pop,size=total_pop,replace = TRUE) %>%
+    sort()
+  #n_keep <- round(total_pop*sample_fraction)
+  #n_remove <- total_pop-n_keep
+  #to_remove <- sample.int(total_pop,size=n_remove)
+  
+  fc <- full_table %>% filter(metric=="Cases")
+  fh <- full_table %>% filter(metric=="Hospitalizations")
+  
+  offset <- 0
+  for (i in seq(1,nrow(fc))) {
+    vc<-fc$value[i]
+    vh<-fh$value[i]
+    bat <- fc$base_age_type[i]
+    tr <- sample_indices[sample_indices<=bat+offset & sample_indices>offset]
+    tr2 <- tr[tr<=vc+offset]
+    bat_r <- length(tr)
+    vc_r <- length(tr2) #sum(tr<=vc+offset)
+    vh_r <- sum(tr2<=vh+offset)
+    fc$value[i]<-vc_r
+    fh$value[i]<-vh_r
+    fc$base_age_type[i]<-bat_r
+    fh$base_age_type[i]<-bat_r
+    sample_indices <- sample_indices[sample_indices>offset]
+    offset <- offset + bat
+  }
+  
+  bind_rows(fc,fh) %>%
+    group_by(Age,metric) %>%
+    mutate(base_age=sum(base_age_type)) %>%
+    ungroup() %>%
+    mutate(p=value/base_age_type)
+}
+
+```
+
+
+```{r ve-frequency, echo=FALSE}
+plot_data %>% 
+  filter(Age != "0-11") %>%
+  bind_rows((.)%>% 
+              group_by(type) %>% 
+              summarize(across(c("Cases","Hospitalizations","Vaccinations"),sum),.groups="drop") %>%
+              mutate(Age="Total")) %>%
+  group_by(type) %>%
+  mutate(Cases=Cases/Vaccinations,
+         Hospitalizations=Hospitalizations/Vaccinations) %>%
+  pivot_longer(c("Cases","Hospitalizations")) %>%
+  ggplot(aes(x=Age,y=value,fill=type)) +
+  geom_bar(stat="identity") +
+  facet_grid(name~type,scales="free_y") +
+  scale_y_continuous(labels=scales::percent) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=60,hjust=1)) +
+  scale_fill_manual(values=vaccination_colours, guide="none") +
+  labs(title="Frequency of cases and hospitalizations by age and vaccination status",
+       x=NULL,y="Frequency",
+       caption="Data: BCCCDC, scraped by special 11yo")
+```
+
+As expected this shows that the frequency of cases and hospital admissions strongly depends on both age and vaccination status. We can interpret each bar in this table as giving $P(Y=1|V=v_i,A=a)$, where $Y$ denotes the outcome of either cases or hospitalizations. Dividing the expressions for vaccination status $V=v_1$ and $V=v_2$ (1 or two dose) by the one for vaccination status $V=v_0$ (no vaccination) gives the risk ratio in each category.
+
+What we are interested in is the causal (given our model) total effect of vaccinations on cases and hospitalizations. We can show the vaccine effectiveness for each age group separately, and also estimate the overall vaccine effectiveness by utilizing the adjustment formulas from above.
+
+```{r include=FALSE}
+get_rr_total <- function(data){
+  p_a <- data %>% 
+    group_by(Age) %>% 
+    summarize(Population=first(base_age),.groups="drop") %>%
+    mutate(`Population share`=Population/sum(Population))
+  
+  rr_total <- data %>%
+    select(metric,type,Age,p) %>% 
+    left_join(p_a,by="Age") %>%
+    mutate(value=p*`Population share`) %>%
+    select(metric,Age,type,value) %>%
+    group_by(metric,type) %>%
+    summarize(value=sum(value),.groups="drop") %>% 
+    pivot_wider(names_from=type,values_from=value) %>%
+    mutate(`AEC 1st dose`=`1st dose`-Unvaccinated,
+           `AEC 2nd dose`=`2nd dose`-Unvaccinated) %>%
+    mutate(`1st dose`=`AEC 1st dose`/Unvaccinated+1,
+           `2nd dose`=`AEC 2nd dose`/Unvaccinated+1) %>%
+    pivot_longer(matches("^1|^2"),names_to="type") %>%
+    select(metric,type,value)
+}
+
+
+get_rr_total2 <- function(data){ # sanity check
+  p_a <- data %>% 
+    group_by(Age) %>% 
+    summarize(Population=first(base_age),.groups="drop") %>%
+    mutate(`Population share`=Population/sum(Population))
+
+  p_o_v_a <- data %>%
+    mutate(p=value/sum(p_a$Population)) %>%
+    select(metric,type,Age,p)
+
+  p_v__a<-data %>% 
+    group_by(Age,type) %>%
+    filter(metric==first(metric)) %>% 
+    mutate(Value=base_age_type,Population=base_age) %>% 
+    mutate(Share=Value/Population) %>%
+    select(type,Age,p=Share)
+  
+  rr_total2 <- p_o_v_a %>%
+    rename(p.x=p) %>%
+    left_join(p_v__a %>% mutate(p.y=p),by=c("type","Age")) %>%
+    mutate(p=p.x/p.y) %>%
+    group_by(type,metric) %>%
+    summarise(p=sum(p),.groups="drop") %>%
+    pivot_wider(names_from=type,values_from = p) %>%
+    pivot_longer(matches("dose"),names_to="type") %>%
+    mutate(value=value/Unvaccinated) %>%
+    select(-Unvaccinated)
+}
+
+get_rr <- function(data){
+  rr <- data %>% 
+    select(Age,metric,type,value=p) %>% 
+    pivot_wider(names_from=type) %>% 
+    pivot_longer(matches("dose"),names_to="type") %>% 
+    mutate(value=value/Unvaccinated) %>%
+    select(-Unvaccinated) %>%
+    bind_rows(get_rr_total(data) %>% 
+                mutate(Age="Total"))
+}
+```
+
+
+```{r}
+N <- 1000
+bootstrap_samples <- mountainmathHelpers::simpleCache(seq(1,N) %>% 
+  lapply(function(r)get_bootstrap_table(full_table)),
+  "vaccine_bootstrap_1000.Rds")
+```
+
+Given the fairly small sample of one month of BC data, together with inaccuracies when scraping the data out of the graphs, we are running `r scales::comma(N)` bootstrap samples of the (simulated) underlying line list data (including healthy individuals) derived from the scraped graphs.
+
+```{r}
+sampled_data <- bootstrap_samples %>%
+  lapply(get_rr) %>%
+  bind_rows()
+
+summary_data <- sampled_data %>% 
+  filter(Age=="Total") %>% 
+  group_by(metric,type) %>% 
+  summarise(value=1/mean(value),.groups="drop")
+```
+
+```{r vax-effectiveness}
+ggplot(sampled_data,aes(x=Age,y=1/value,fill=type)) +
+  geom_boxplot() +
+  #geom_bar(stat="identity") +
+  facet_grid(metric~type,scales="free_y") +
+  scale_fill_manual(values=vaccination_colours,guide="none")  +
+  scale_y_continuous(trans="log",breaks=2^seq(0,10)) +
+  #geom_hline(data=rr_naive,aes(yintercept=value),colour="steelblue") +
+  #geom_hline(data=rr, aes(yintercept=value),colour="black",alpha=0.2) +
+  theme_bw() +
+  #coord_cartesian(ylim=c(0,0.5)) +
+  theme(axis.text.x = element_text(angle=60,hjust=1)) +
+  labs(title="Vaccine effectiveness estimates (not adjusting for SES)",
+       x=NULL,y="Reduction of risk due to vaccination (log scale)",
+       caption="Data: BCCDC Data Report scraped by special 11yo, StatCan population estimates")
+```
+
+Overall this confirms that vaccines are highly effective against becoming symptomatic ("case") and even more against becoming hospitalized! It also stresses the importance of people getting their second shot, even though there is some caution as the data we have does not break out the timing between vaccines and having contracted COVID. Getting the second shot increases the vaccine protection by a factor 4, resulting in a `r round(summary_data %>% filter(metric=="Cases",type=="2nd dose") %>% pull(value))`-fold protection against symptomatic COVID and a `r round(summary_data %>% filter(metric=="Hospitalizations",type=="2nd dose") %>% pull(value))`-fold protection against hospitalizations.
+
+
+We can zoom into the bottom right quadrant, total vaccine effectiveness against hospitalizations for fully vaccinated people. This is the estimate we care about most.
+
+```{r ve-2-hospital}
+sampled_data %>%
+  filter(metric=="Hospitalizations",type=="2nd dose") %>%
+ggplot(aes(x=Age,y=1/value,fill=type)) +
+  geom_boxplot() +
+  #geom_bar(stat="identity") +
+  facet_grid(metric~type,scales="free_y") +
+  scale_fill_manual(values=vaccination_colours,guide="none")  +
+  scale_y_continuous(trans="log",breaks=2^seq(0,10)) +
+  #geom_hline(data=rr_naive,aes(yintercept=value),colour="steelblue") +
+  #geom_hline(data=rr, aes(yintercept=value),colour="black",alpha=0.2) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=60,hjust=1)) +
+  labs(title="Vaccine effectiveness estimates (not adjusting for SES)",
+       x=NULL,y="Reduction of risk due to vaccination (log scale)",
+       caption="Data: BCCDC Data Report scraped by special 11yo, StatCan population estimates")
+```
+
+This result is also consistent with older people, especially the 80+ population, not getting the same level of protection from 2 doses compared to younger populations.
+
+## Why adjust for Age?
+But did we really have to do all this work of adjusting for age? We can compare our age-adjusted effectiveness to the unadjusted naive estimate when ignoring age. 
+
+```{r ve-age-effect}
+rr_comp <- rr_naive %>% mutate(name="Naive scraped") %>%
+  #bind_rows(totals_rr_naive %>% mutate(name="Naive totals")) %>%
+  bind_rows(sampled_data %>% 
+              filter(Age=="Total") %>% 
+              group_by(metric, type) %>%
+              summarize(value=mean(value),.groups="drop") %>%
+              mutate(name="Age adjusted"))
+
+ggplot(rr_comp,aes(x=type)) +
+  geom_point(aes(y=1/value,colour=name),size=2) +
+  geom_segment(data=~pivot_wider(.),
+    aes(xend=type,y=1/`Naive scraped`,yend=1/`Age adjusted`),
+               arrow = arrow(length=unit(0.2,"cm"))) +
+  facet_wrap(~metric,ncol=1,scales="free_y") +
+  # scale_y_continuous(trans="log",breaks=2^seq(0,10),
+  #                    labels = function(d)round(d,2)) +
+  theme_bw() +
+  scale_colour_manual(values = sanzo::trios$c149 %>% rev()) +
+  expand_limits(y=c(3,30)) +
+  labs(title="Vaccine effectiveness estimates, effect of adjusting for age",
+       x=NULL,y="Reduction of risk due to vaccination",
+       colour=NULL,
+       caption="Data: BCCDC Data Report scraped by special 11yo, PHAC vaccine data, StatCan population estimates")
+```
+
+This demonstrates the power of age as a confounder when trying to estimate vaccine effectiveness, especially when it comes to effectiveness against hospitalizations. 
+
+## Missing SES and causal vaccine effectiveness estimates
+After seeing how large the effect of adjusting for age is in our vaccine effectiveness estimates we can appreciate the difference between causal estimates and simple statistical estimates. In BC we can't account for SES factors because this data was not collected, but it seems reasonable to question if at this point the unvaccinated population shares the same relevant SES features as the vaccinated population.
+
+Unlike age, the impacts of SES are hard to sign, their single causal pathways in our first DAG up top should be viewed as the combined effect of a collection of mechanisms, many of which come in with opposite signs. However, we should not assume that these effects cancel out.
+
+For example, looking at the difference in first vs second dose effectiveness against "cases" in 80+ year olds we notice a significant increase in risk ratio, so a decrease in vaccine effectiveness. This seems implausible and points to the population of 80+ year olds with only differing significantly from the those with two doses. We don't see the same difference in hospitalizations, which might be explained by the population of 80+ year olds with two doses, which includes people in long term care, being more likely to get tested.
+
+Estimating the uncertainty due to unobserved SES variables requires adding in simulated SES effects, but this is beyond the scope of this post.
+
+## Direct and indirect vaccination effects on hospitalizations mediated through cases
+Hospitalizations are mediated through cases, there are two causal pathways how vaccines reduce hospitalizations. One is indirect by reducing symptomatic COVID and thus hospitalizations which are a consequence of symptomatic COVID. The other is directly by reducing the chance a person with symptomatic COVID will develop symptoms severe enough to require hospitalization.
+
+To understand how hospitalizations are mediated through cases we estimate the **direct effect** of vaccines on hospitalizations for people with symptomatic COVID (cases). 
+
+$$
+VE_{D(C)}^i = 1-\frac{P(H=1|do(V=v_i),do(C=1))}{P(H=1|do(V=v_0),do(C=1))}.
+$$
+
+This allows us to ascertain how vaccinations reduce hospitalizations, by reducing symptomatic infections and leave the risk of hospitalization unchanged given symptomatic infection, or if vaccines also reduce the risk of hospitalization given breakthrough symptomatic infection and requires estimation of the quantities
+
+$$
+P(H=1|do(V=v_i),do(C=1)) = \sum_a P(H=1|V=v_i,C=1,A=a)P(A=a).
+$$
+
+This gets complicated by not having access to line-level data and having to make assumptions about timing, which we will gloss over.
+
+```{r}
+get_direct_effect <- function(data){
+  p_a <- data %>% 
+    group_by(Age) %>% 
+    summarize(Population=first(base_age),.groups="drop") %>%
+    mutate(`Population share`=Population/sum(Population))
+  
+  rr_d <- data %>%
+    select(Age,metric,type,value) %>%
+    pivot_wider(names_from=metric) %>%
+    mutate(value=Hospitalizations/Cases) 
+  
+  rr_d_total <- rr_d %>%
+    left_join(p_a,by="Age") %>%
+    mutate(value=value*`Population share`) %>%
+    group_by(type) %>%
+    summarise(value=sum(value),.groups="drop") %>%
+    pivot_wider(names_from="type") %>%
+    pivot_longer(matches("dose"),names_to="type") %>%
+    mutate(value=value/Unvaccinated) %>%
+    select(-Unvaccinated)
+  
+  rr_d %>%
+    select(Age,type,value) %>%
+    pivot_wider(names_from="type") %>%
+    pivot_longer(matches("dose"),names_to="type") %>%
+    mutate(value=value/Unvaccinated) %>%
+    select(-Unvaccinated) %>%
+    bind_rows(rr_d_total %>% mutate(Age="Total"))
+}
+
+
+direct_data <-bootstrap_samples %>%
+  lapply(get_direct_effect) %>%
+  bind_rows()
+```
+
+```{r direct-ve}
+ggplot(direct_data,aes(x=Age,y=1/value,fill=type)) +
+  #geom_bar(stat="identity") +
+  geom_boxplot() +
+  facet_grid(.~type,scales="free_y") +
+  scale_fill_manual(values=vaccination_colours,guide="none") +
+  scale_y_continuous(trans="log",breaks=2^seq(-2,10)) +
+  #geom_hline(data=rr_naive,aes(yintercept=value),colour="steelblue") +
+  #geom_hline(data=rr_d_total, aes(yintercept=value),colour="black") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=60,hjust=1)) +
+  labs(title="Direct vaccine effectiveness estimates against hospitalization",
+       subtitle="(portion not mediated through cases)",
+       x=NULL,y="Direct reduction of risk due to vaccination given case (log scale)",
+       caption="Data: BCCDC Data Report scraped by special 11yo, StatCan population estimates")
+```
+
+Here we run into issues with our data, likely because of failure to adjust for SES. The 80+ year old age group with only 1 dose shows an increased risk of getting hospitalized, given they have symptomatic COVID. This seems contradictory to all we know about how COVID and vaccines work, and points to the population of 80+ year olds with a single dose being substantially different from the population of unvaccinated 80+ year olds. Data for the fully vaccinated population looks a little better and gives some indication that vaccines protect us not just by preventing symptomatic COVID, but also by reducing the severity of the disease for people that do exhibit symptoms.
+
+## Upshot
+Vaccine effectiveness estimates are difficult, they require proper accounting of confounders to be meaningful. Age is an important one as age heavily impacts both the likelihood of developing symptomatic COVID as well as the likely severity. Not adjusting for age is likely to substantially bias vaccine effectiveness downward.
+
+Over the past year we have learned that SES is also an important factor in COVID, it impacts vaccine effectiveness in a variety of ways, from the vaccine rollout and vaccine uptake, to risk to be exposed to COVID, to test seeking behaviour, to likelihood of severe outcomes due to comorbidities. Unfortunately BC does not collect the relevant data which renders vaccine effectiveness estimates difficult to do with BC data. But there is no reason to expect that vaccines behave fundamentally different in BC compared to other jurisdictions, which allows us to have confidence in vaccine effectiveness data from jurisdictions where better estimates are possible.
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-08-30-thoughts-on-vaccine-effectivess-estimates/index.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
