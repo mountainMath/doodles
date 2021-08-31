@@ -54,7 +54,7 @@ We could do this by benchmarking vaccine effectiveness against one variant again
 
 To do this it's best to take it slowly and specify a causal model. Inter-jurisdictional differences in how vaccines are rolled out, and how case and hospitalization data is collected, mean it's best to be clear about the (assumed) underlying causal model and how it relates to local peculiarities.
 
-![](index_files/figure-html/vaccine_effectiveness_dag.png)
+<img src="{{< blogdown/postref >}}index_files/figure-html/vaccine_effectiveness_dag.png" style="max-width:400px;float:right;"/>
 
 This model acknowledges the effect of the vaccine rollout in BC, where vaccination status isn't assigned randomly but is strongly influenced by age due to the mostly age-based rollout. At the same time the vaccine rollout is impacted by socio-economic status (SES) in several ways, directly by prioritizing certain groups like medical staff but also to some extent essential workers, and indirectly through vaccine hesitancy and ability to access vaccines correlating with various SES variables. 
 
@@ -66,7 +66,8 @@ We similarly expect age and SES to affect risk of infection, of becoming symptom
 
 In BC (and in most other places) we don't observe infection, and we can't estimate the effect of vaccination status on risk of infection. This also means we can only observe the total effect of vaccination of becoming symptomatic and can't estimate the direct or indirect effects as mediated through infection. We will remove this step from the graph.
 
-![](index_files/figure-html/vaccine_effectiveness_dag2.png) 
+<img src="{{< blogdown/postref >}}index_files/figure-html/vaccine_effectiveness_dag2.png" style="max-width:400px;float:right;"/>
+
 
 In BC age is an observed variable, and we (in principle) know the vaccination status, case status and hospitalization status by age. Unfortunately, SES is unobserved in BC. Early on BC decided not to collect SES variables relating to COVID cases, hospitalizations or vaccinations, despite PHAC explicitly asking this data be collected. In principle some of the effect of SES on the vaccination rollout may be knowable if BC kept track of who received a vaccination via the age-based rollout and who through medical staff or essential work or other SES-based mechanisms. But this information, if it exists, is not public.
 
@@ -175,13 +176,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-08-30 23:53:14 PDT"
+## [1] "2021-08-31 00:02:10 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Google Drive/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [a9f37b3] 2021-08-31: description text
+## Head:     [9bf5ec3] 2021-08-31: dags
 ```
 
 ```
