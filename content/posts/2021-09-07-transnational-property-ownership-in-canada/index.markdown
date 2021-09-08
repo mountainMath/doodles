@@ -20,7 +20,7 @@ linktitle: ''
 type: "post" 
 ---
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/09/07/transnational-property-ownership-in-canada/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/09/08/transnational-property-ownership-in-canada/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 
@@ -40,7 +40,7 @@ Three reasons: 1) since the pandemic shutdown, we've seen [very little transnati
 
 <img src="{{< blogdown/postref >}}index_files/figure-html/chsp-share-1.png" width="672" />
 
-Overall non-resident involvement in property ownership in Canada is real, but not large, coming in somewhere between 2% to 6% depending upon where and how it's measured. It's also proportionally largest in Nova Scotia, the province engaged in the least Housing Nationalism. Just a reminder that most properties are occupied regardless of ownership and [there are very few problematic empty homes](https://doodles.mountainmath.ca/blog/2020/03/09/knock-knock-anybody-home/), especially in BC where [multiple rounds of Speculation & Vacancy Tax Data] confirm these patterns(https://homefreesociology.com/2021/01/19/two-years-of-bcs-speculation-and-vacancy-tax-data/). 
+Overall non-resident involvement in property ownership in Canada comes in somewhere between 2% to 6% depending upon where and how it’s measured. It’s also proportionally largest in Nova Scotia, the province engaged in the least Housing Nationalism. Just a reminder that most properties are occupied regardless of ownership and [there are very few problematic empty homes](https://doodles.mountainmath.ca/blog/2020/03/09/knock-knock-anybody-home/), especially in BC where [multiple rounds of Speculation & Vacancy Tax Data](https://homefreesociology.com/2021/01/19/two-years-of-bcs-speculation-and-vacancy-tax-data/) confirm these patterns.
 
 But non-resident ownership of Canadian properties is only half the story. What about properties in other countries owned by Canadians? 
 
