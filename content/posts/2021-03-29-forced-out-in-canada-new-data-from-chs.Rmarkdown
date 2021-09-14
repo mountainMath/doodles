@@ -11,7 +11,7 @@ categories:
   - Vancouver
   - PUMF
 tags: []
-description: "What industries are dominant in Vancouver? People throw around all kinds of crazy stories, time take a look at the data and put some zombies to rest. At least for a day or two before someone else digs them up again."
+description: "Taking a deeper look at forced moves using CHS microdata. And how it changed over time."
 featured: ''
 images: ["https://doodles.mountainmath.ca/posts/2021-03-29-forced-out-in-canada-new-data-from-chs_files/figure-html/forced_vs_voluntary-1.png"]
 featuredalt: ""
