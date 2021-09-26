@@ -8,7 +8,7 @@ categories:
 tags: []
 description: "Playing with Canadian 2021 federal elections data."
 featured: ''
-images: ["https://doodles.mountainmath.ca/blog/2021/09/25/elections-fun-2021-edition/index_files/figure-html/province_fptp_pr-1.png"]
+images: ["https://doodles.mountainmath.ca/blog/2021/09/25/elections-fun-2021-edition/index_files/figure-html/province_fptp_pr2-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -93,7 +93,7 @@ The Liberals are the big winner of FPTP, as is Bloc Québécois. The Conservativ
 
 We can run this by individual province to see how well each province is represented in terms of first-past-the-post vs proportional representation.
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/province_fptp_pr-1.png" width="768" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/province_fptp_pr2-1.png" width="768" />
 
 This reveals that Alberta and Saskatchewan voters are a lot more diverse than the FPTP vote system may suggest, and the while the Conservatives got shut out of a couple of provinces, they still have sizable support there. This kind of outcome is fairly typical for first-past-the-post systems, where the representation in parliament does not match the overall population well, especially when looking by province.
 

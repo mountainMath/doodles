@@ -8,7 +8,7 @@ categories:
 tags: []
 description: "Playing with Canadian 2021 federal elections data."
 featured: ''
-images: ["https://doodles.mountainmath.ca/blog/2021/09/25/elections-fun-2021-edition/index_files/figure-html/province_fptp_pr-1.png"]
+images: ["https://doodles.mountainmath.ca/blog/2021/09/25/elections-fun-2021-edition/index_files/figure-html/province_fptp_pr2-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -145,7 +145,8 @@ results <- simpleCache(get_election_results(),"election_results_2021_09_25")  %>
   filter(Type=="validated" | (!validated & Type !="validated")) %>%
   mutate(name=gsub("--","-",District)) %>%
   #mutate(called=!name %in% not_called) %>%
-  select(-name)
+  select(-name) %>%
+  mutate(Party=recode(Party,"People's Party - PPC"="People's Party"))
 #results <- simpleCache(get_election_results(),"election_results_2021_09_22") 
   
 geos <- get_electoral_areas()
@@ -395,7 +396,7 @@ The Liberals are the big winner of FPTP, as is Bloc Québécois. The Conservativ
 
 We can run this by individual province to see how well each province is represented in terms of first-past-the-post vs proportional representation.
 
-```{r province_fptp_pr}
+```{r province_fptp_pr2}
 pr_share_data %>%
   gather(key="Voting system",value="Share",c("FPTP","PR")) %>%
 ggplot(aes(x=Province,y=Share,fill=fct_rev(Party))) +
