@@ -8,7 +8,7 @@ categories:
 tags: []
 description: "Playing with Canadian 2021 federal elections data."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2021-09-25-elections-fun-2021-edition_files/figure-html/province_fptp_pr-1.png"]
+images: ["https://doodles.mountainmath.ca/blog/2021/09/25/elections-fun-2021-edition/index_files/figure-html/province_fptp_pr-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -391,7 +391,7 @@ ggplot(aes(x=`Voting system`,y=value,fill=fct_rev(Party))) +
        x="Voting system",y="Share of seats",fill="Party")
 ```
 
-The Liberals are the big winner of FPTP, as is Bloc Québécois. The Conservatives fair equally well under either system, and NDP and the Green Party are the losers under the current FPTP system. Which probably explains why the Liberals renegated on their promise to replace FPTP with a more representative voting system.
+The Liberals are the big winner of FPTP, as is Bloc Québécois. The Conservatives fair equally well under either system, and NDP and the Green Party are the losers under the current FPTP system. Which probably explains why the Liberals renegaded on their promise to replace FPTP with a more representative voting system.
 
 We can run this by individual province to see how well each province is represented in terms of first-past-the-post vs proportional representation.
 
@@ -414,4 +414,4 @@ ggplot(aes(x=Province,y=Share,fill=fct_rev(Party))) +
 This reveals that Alberta and Saskatchewan voters are a lot more diverse than the FPTP vote system may suggest, and the while the Conservatives got shut out of a couple of provinces, they still have sizable support there. This kind of outcome is fairly typical for first-past-the-post systems, where the representation in parliament does not match the overall population well, especially when looking by province.
 
 ## Upshot
-There is endless fun to be had with elections data. As usual, the code for this post, including the pre-processing for the animation, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-10-22-elections-fun.Rmarkdown) for anyone to adapt and dig deeper into elections data.
+There is endless fun to be had with elections data. As usual, the code for this post, including the pre-processing for the animation, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-09-25-elections-fun-2021-edition/index.Rmarkdown) for anyone to adapt and dig deeper into elections data.
