@@ -89,7 +89,7 @@ How would the parties have fared under a proportional representation system (PR)
 
 <img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-11-1.png" width="768" />
 
-The Liberals are the big winner of FPTP, as is Bloc Québécois. The Conservatives fair equally well under either system, and NDP and the Green Party are the losers under the current FPTP system.
+The Liberals are the big winner of FPTP, as is Bloc Québécois. The Conservatives fair equally well under either system, and NDP and the Green Party are the losers under the current FPTP system. Which probably explains why the Liberals renegated on their promise to replace FPTP with a more representative voting system.
 
 We can run this by individual province to see how well each province is represented in terms of first-past-the-post vs proportional representation.
 
