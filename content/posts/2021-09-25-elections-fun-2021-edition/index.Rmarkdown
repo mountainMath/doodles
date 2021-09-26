@@ -1,0 +1,417 @@
+---
+title: Elections fun - 2021 edition
+author: Jens von Bergmann
+date: '2021-09-25'
+slug: elections-fun-2021-edition
+categories:
+  - geeky
+tags: []
+description: "Playing with Canadian 2021 federal elections data."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2021-09-25-elections-fun-2021-edition_files/figure-html/province_fptp_pr-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+draft: false
+blackfriday:
+  fractions: false
+  hrefTargetBlank: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width=8,
+	cache = FALSE
+)
+library(tidyverse)
+#remotes::install_github("mountainmath/mountainmathHelpers")
+library(mountainmathHelpers)
+library(sf)
+library(rmapshaper)
+
+my_theme <- list(
+  theme_light(),
+  labs(caption="MountainMath, Elections Canada")
+)
+```
+
+We noticed a lot of recent traffic to our [blog post on the 2019 elections](https://doodles.mountainmath.ca/blog/2019/10/22/elections-fun/), so maybe that means that, now that all districts have been called, we should update the post with 2021 data. We will just lazily run the code from the old post with the new data. And given that the outcome was overall quite similar, we can also leave the text/commentary largely unchanged. Which makes life nice and easy for us.
+
+Election maps in Canada tend to be somewhat terrible, 
+Canada is a large country, with some reasonably densely populated regions, and large areas that are sparsely populated. That makes it hard to map things. CensusMapper, [our project to flexibly map Canadian census data](https://censusmapper.ca), struggles with that. The choropleth maps can be quite misleading. The same problem comes up when mapping Canadian election data.
+
+```{r eval=FALSE, include=FALSE}
+library(httr)
+cbc_url <- "https://canopy.cbc.ca/live/election_hub2/prov/FED2021/all/"
+
+cbc_data<-content(GET(cbc_url))$data$ridings %>% 
+  lapply(function(r){
+  ridings<-tibble(id="1",ridingNumber=r$ridingNumber,name=r$englishName,totalVoters=r$totalVoters,totalPolls=r$totalPolls,
+         resultStatus=paste0(unlist(r$resultStatus),collapse=", "),
+         isCandidateElected=r$isCandidateElected,pollsReported=r$pollsReported,
+         totalVotesReported=r$totalVotesReported,candidateVotesLead=r$candidateVotesLead,
+         leadingPartyCode=r$leadingPartyCode)
+  parties <- r$parties %>% lapply(function(p){
+    tibble(id="1",partyId=p$partyId,englishCode=p$englishCode,candidateFirstName=p$candidateFirstName,
+           candidateLastName=p$candidateLastName,votesPercentage=p$votesPercentage,votesLead=p$votesLead,
+           votes=p$votes,candidateId=p$candidateId)
+  }) %>% bind_rows()
+  full_join(ridings,parties,by="id") %>% select(-id)
+}) %>%
+  bind_rows()%>%
+  mutate(called=grepl("Elected",resultStatus))
+
+not_called<- cbc_data%>% filter(!called) %>% pull(name)%>% unique
+```
+
+```{r}
+get_electoral_areas <- function(refresh=FALSE){
+  # simpleCache(
+  #   geos <- get_shapefile("https://ftp.maps.canada.ca/pub/elections_elections/Electoral-districts_Circonscription-electorale/Elections_Canada_2019/federal_electoral_districts_boundaries_2019.shp.zip") %>% 
+  # mutate(name=ENNAME %>% 
+  #                 gsub("--","-",.)%>%
+  #                 gsub("Rosemont-La Petite-Patrie","Rosemont-La-Petite-Patrie",.)) %>%
+  # rmapshaper::ms_simplify(),
+  # "census_electoral_areas_geos_2019",refresh = refresh)
+  simpleCache(
+    get_shapefile("http://www12.statcan.gc.ca/census-recensement/2011/geo/bound-limit/files-fichiers/2016/lfed000b16a_e.zip") %>%
+      rmapshaper::ms_simplify(0.025),
+    "census_electoral_areas_geos_2016",refresh = refresh) 
+}
+
+get_electoral_census_data <- function(){
+  path=file.path(getOption("custom_data_path"),"census_electoral_areas_data_2016.csv.zip")
+  if (!file.exists(path))
+    download.file("https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/prof/details/download-telecharger/comp/GetFile.cfm?Lang=E&FILETYPE=CSV&GEONO=045",path)
+  data <- read_csv(unz(path,"98-401-X2016045_English_CSV_data.csv"),col_types = cols(.default = "c")) %>%
+    rename(FEDUID=`GEO_CODE (POR)`)
+}
+
+
+get_election_results <- function(){
+  url="https://enr.elections.ca/DownloadResults.aspx"
+  r <- httr::GET(url)
+  text_data <- httr::content(r,type="text")
+  
+  rename_lookup <- c(
+    "FEDUID"="Electoral district number - Numéro de la circonscription",
+    "District"="Electoral district name",
+    "Type"="Type of results*",
+    "Surname"="Surname - Nom de famille",
+    "Middle name(s)"="Middle name(s) - Autre(s) prénom(s)",
+    "Given name"="Given name - Prénom",
+    "Party"="Political affiliation",
+    "Votes"="Votes obtained - Votes obtenus",
+    "Votes_pct"="% Votes obtained - Votes obtenus %",
+    "Rejected"="Rejected ballots - Bulletins rejetés***",
+    "Total"="Total number of ballots cast - Nombre total de votes déposés"
+  )
+  read_tsv(text_data,skip=1,col_types = cols(.default="c")) %>%
+    rename(!!!rename_lookup) %>%
+    select(names(rename_lookup)) %>%
+    filter(!is.na(FEDUID),!is.na(District)) %>%
+    mutate_at(c("Votes","Votes_pct","Rejected","Total"),as.numeric) %>%
+    mutate(Name=paste0(`Given name`," ",Surname)) %>%
+    mutate(Party=recode(Party,"NDP-New Democratic Party"="NDP")) %>%
+    mutate(Party=coalesce(Party,"Other"))
+}
+
+party_colours <- c(
+  "People's Party"="#4a3389",
+  Conservative="#0C499C",
+  "Bloc Québécois"="#02819E",
+  Liberal="#A50B0B",
+  NDP="#DA3D00",
+  "Green Party"="#2E8724",
+  "Independent"="#676767",
+  #"Undecided"="#676767",
+  Other="yellow"
+)
+
+clean_parties <- function(data) {
+ data %>%
+    mutate(Party=ifelse(Party %in% names(party_colours),Party,"Other")) %>%
+    mutate(Party=coalesce(Party,"Other")) %>%
+    mutate(Party=factor(Party,levels=names(party_colours)))
+}
+
+results <- simpleCache(get_election_results(),"election_results_2021_09_25")  %>%
+  left_join((.) %>% filter(Type=="validated") %>% select(FEDUID) %>% unique %>% mutate(validated=TRUE),by="FEDUID") %>%
+  mutate(validated=coalesce(validated,FALSE)) %>%
+  filter(Type=="validated" | (!validated & Type !="validated")) %>%
+  mutate(name=gsub("--","-",District)) %>%
+  #mutate(called=!name %in% not_called) %>%
+  select(-name)
+#results <- simpleCache(get_election_results(),"election_results_2021_09_22") 
+  
+geos <- get_electoral_areas()
+  
+```
+
+```{r fig.height=7}
+map_data <- geos %>%
+  #select(FEDUID=FEDNUM) %>%
+  #mutate(FEDUID=as.character(FEDUID)) %>%
+  left_join(results %>%
+              clean_parties %>%
+              group_by(District) %>%
+              top_n(1,Votes),by="FEDUID")
+  #mutate(Party=factor(case_when(called~as.character(Party),
+  #                       TRUE~"Undecided"),levels=names(party_colours)))
+
+ggplot(map_data,aes(fill=Party)) +
+  geom_sf(size=0.1) +
+  scale_fill_manual(values=party_colours) +
+  coord_sf(datum=NA) +
+  theme(legend.position = "bottom") +
+  labs(title="Canada federal election 2021")
+```
+
+This map makes it virtually impossible to get a good reading of the distribution of votes. There are a couple of ways around this. 
+
+For example, one could break out the areas with electoral districts too small to make a visible impact on the map, or use a cartogram, like the following two examples taken from the [Wikipedia page of the 2021 federal election](https://en.wikipedia.org/wiki/2021_Canadian_federal_election).
+
+<div>
+<img src="https://upload.wikimedia.org/wikipedia/commons/f/f8/Canada_Election_2021_Results_Map.svg" style="width:45%;">
+<span style="width:8%;display:inline-block;"></span>
+<img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Canadian_Federal_Election_Cartogram_2021.svg" style="width:45%;">
+</div>
+
+The first keeps the overall geographic context, although the metropolitan areas that are broken out are hard to interpret unless one if very familiar with each region. The cartogram distorts the areas to give each electoral district the same amopunt of space, and thus gives a proportional view of the number of seats each party won. In this version, the labels and breaks help delineate familiar geographies, but it can be hard to properly place them on a map.
+
+
+To bridge the divide between overall geography and emphasis on treating each district separately, one can also animate the cartogram between the familiar map view and the cartogram view. In the following example that we built [as an observable notebook](https://observablehq.com/@mountainmath/canadian-2021-election-bubble-animiation) we move between a map of Canada and a cartogram where each electoral district is a dot with size given by the total number of votes cast. 
+
+```{r eval=FALSE, include=FALSE}
+# preparing the data for the animation on observablehp
+# https://observablehq.com/@mountainmath/canadian-election-bubble-animiation
+
+cleaned_data <- results %>% 
+  select(FEDUID,District,Name,Party,Votes,Total) %>%
+  filter(Party %in% c("Conservative","Liberal","Green Party","NDP","Bloc Québécois")) %>%
+  clean_parties %>%
+  group_by(FEDUID) %>%
+  mutate(Name=last(Name,order_by = Votes)) %>%
+  group_by(FEDUID,District,Name,Total)
+
+dd <- cleaned_data %>%
+  group_by(FEDUID,District,Name,Total) %>%
+  spread(key = Party,value=Votes) 
+    
+plot_data <- geos %>% 
+  select(FEDUID) %>%
+  mutate(area=as.numeric(st_area(geometry))) %>%
+  cbind(st_centroid(.) %>% st_transform(4326) %>% st_coordinates()) %>%
+  left_join(dd,by=c("FEDUID")) %>%
+  st_cast("POLYGON") %>%
+  mutate(a=st_area(.) %>% as.numeric) %>%
+  group_by(FEDUID) %>%
+  mutate(r=rank(-a)) %>%
+  mutate(main=r==1) %>%
+  select(-a,-r)
+
+local_path <- "~/Desktop/election_2021.json"
+#local_path=tempfile(fileext = ".json")
+# geojsonio::topojson_write(plot_data %>% st_transform(4326),
+#                           file=local_path,geometry="polygon",
+#                           object_name="election_2021")
+plot_data %>% 
+  st_transform(4236) %>%
+  st_make_valid()%>%
+  rename(BLC=`Bloc Québécois`,CPC=Conservative,LIB=Liberal,GRN=`Green Party`) %>%
+  mutate_if(is.numeric,function(d)coalesce(d,0)) %>%
+st_write(local_path,driver = "GeoJSON",delete_dsn=TRUE)
+file_to_s3_gzip("~/Downloads/election_2021.json","mountainmath","elections/election_2021.json.gz")
+unlink("~/Downloads/election_2021.json")
+#sf_to_s3_gzip(plot_data %>% st_transform(4326),"mountainmath","/elections/election_2021.json.gz")
+
+
+#R.utils::gzip(local_path,overwrite=TRUE)
+#aws.s3::put_object(paste0(local_path,".gz"),"vsb/election_2019.json.gz","mountainmath",
+#           acl="public-read",headers=list("Content-Type"='application/json', "Content-Encoding"='gzip'))
+#unlink(local_path)
+# check
+ggplot(plot_data %>% st_transform(4326),aes(fill=Liberal/Total)) +
+  geom_sf() +
+  scale_fill_viridis_c() +
+  coord_bbox(metro_van_bbox())
+
+```
+
+We include a video clip of the animation for convenience, it's just a screenshot from the interactive live [observable notebook](https://observablehq.com/@mountainmath/canadian-2021-election-bubble-animiation).
+
+<video width="100%" controls="controls">
+<source src="https://mountainmath.s3.ca-central-1.amazonaws.com/elections/elections_2021.mp4" type="video/mp4">
+</video>
+
+```{r}
+plot_data <- results %>%
+  clean_parties %>%
+  mutate(Share=Votes/Total) %>%
+  group_by(District) %>%
+  mutate(r=rank(Share)) %>%
+  mutate(LagShare=lag(Share,order_by = r)) %>%
+  top_n(1) %>%
+  mutate(margin=Share-LagShare)
+
+plurality <- plot_data %>% ungroup %>% filter(Share>0.5) %>% count
+```
+
+This still loses a lot of nuance. The colour is determined by who won the district, the animation reveals no information on how wide or narrow the margin of victory was. Or how the other candidates performed. 
+
+## Winning vote share
+With more than 2 candidates in each riding, one does not necessarily require a plurality of votes to win. Only `r plurality` out of the `r nrow(plot_data)` candidates won with over 50% of the vote in their district.
+The largest vote share any winning candidate got was `r scales::percent(max(plot_data$Share))`, the lowest was `r scales::percent(min(plot_data$Share))`. 
+
+```{r fig.height=7}
+ggplot(plot_data ,aes(x=reorder(District,Share),y=Share,fill=Party)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_fill_manual(values=party_colours) +
+  my_theme +
+  scale_y_continuous(labels=scales::percent) +
+  theme(axis.text.y = element_blank()) +
+  labs(title="Canada 2021 federal election",x="Voting districts",y="Vote share of winning candidate")
+```
+
+```{r}
+top_party <- plot_data %>% arrange(-Share) %>% head(1) %>% pull(Party) %>% as.character()
+
+top_sweep <- plot_data %>% 
+  ungroup %>%
+  arrange(-Share) %>% 
+  mutate(n=row_number()) %>%
+  filter(Party != head(.,1)$Party) %>%
+  pull(n) %>%
+  min -1
+```
+
+It stands out that the top `r top_sweep` spots were taken by the Conservatives. 
+
+## Distribution of votes
+We can expand this view to show the vote share by party for each district.
+
+```{r fig.height=7}
+all_data <- results %>% 
+  clean_parties %>%
+  mutate(Share=Votes/Total) %>%
+  group_by(District) %>%
+  mutate(winner=Votes==max(Votes)) %>%
+  ungroup %>%
+  mutate(District=factor(District,levels=group_by(.,District) %>% 
+                           filter(Party %in% c("People's Party","Conservative")) %>% 
+                           summarize(Share=sum(Share,na.rm=TRUE),.groups="drop") %>% 
+                           arrange(Share) %>% 
+                           pull(District),ordered = TRUE))
+
+
+ggplot(all_data ,aes(x=District,y=Share,fill=fct_rev(Party))) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_fill_manual(values=party_colours) +
+  my_theme +
+  scale_y_continuous(labels=scales::percent) +
+  theme(axis.text.y = element_blank()) +
+  labs(title="Canada 2021 federal election",x="Voting districts",y="Vote share",fill="Party")
+
+```
+
+## Wasted votes
+With our first-past-the-post system, we can also take a look at "wasted" votes. We define these as votes that have no bearing on the outcome. For winners it's the vote margin by which they won, for the ones that did not win their district it's the entirety of their votes. 
+
+
+```{r}
+waste_data <- results %>% 
+  clean_parties %>%
+  group_by(District) %>%
+  mutate(r=rank(-Votes)) %>%
+  left_join(filter(.,r==2) %>% select(District,required=Votes),by="District") %>%
+  mutate(winner=Votes==max(Votes)) %>%
+  mutate(waste=ifelse(winner,Votes-required-1,Votes)) %>%
+  group_by(Party) %>%
+  summarize(waste=sum(waste),.groups="drop")
+
+
+ggplot(waste_data ,aes(x=Party,y=waste,fill=fct_rev(Party))) +
+  geom_bar(stat="identity") +
+  #coord_flip() +
+  scale_fill_manual(values=party_colours,guide='none') +
+  my_theme +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Canada 2021 federal election",x="",y="Wasted votes",fill="Party")
+```
+
+Wasted votes is a somewhat artificial system that does not necessarily reflect how parties would have performed under a different voting system. We will need to take a closer look for that.
+
+## First-past-the-post vs proportional representation
+How would the parties have fared under a proportional representation system (PR) instead of first-past-the-post (FPTP)? There are many different kinds of proportional representation systems out there, but they generally try to approximate a seat distribution that mirrors the overall vote share. For simplicity we will simply take the overall vote share as a proxy for what a proportional representation system might have yielded. Well, kind of. The votes were cast under the expectation of a FPTP system, if we had switched to some kind of proportional representation or ranked ballot system some people would likely have voted differently and the outcome would have been different. We should view the PR alternative view as a first approximation to a PR outcome, if people were voting under a PR system the outcome could possibly be quite different.
+
+```{r}
+pr_name_data <- cancensus::list_census_regions("CA16") %>% filter(level=="PR") %>% arrange(as.integer(region))
+pr_names <- set_names(pr_name_data$name,pr_name_data$region)
+pr_share_data <- all_data %>% 
+  mutate(PR=substr(FEDUID,1,2)) %>%
+  group_by(PR,Party) %>%
+  summarize(Votes=sum(Votes),Seats=sum(winner),.groups="drop") %>%
+  group_by(PR) %>%
+  mutate(Share=Votes/sum(Votes)) %>%
+  mutate(Province=pr_names[PR] %>% as.character) %>%
+  #mutate(District=factor(District,levels=as.vector(pr_names))) %>%
+  mutate(Province=factor(Province,levels=group_by(.,Province) %>% 
+                           filter(Party %in% c("People's Party","Conservative")) %>% 
+                           summarize(Share=sum(Share,na.rm=TRUE),.groups="drop") %>% 
+                           arrange(Share) %>% 
+                           pull(Province),ordered = TRUE)) %>%
+  ungroup %>%
+  select(-PR) %>%
+  rename(FPTP=Seats,PR=Votes) 
+```
+
+```{r}
+pr_share_data %>%
+  group_by(Party) %>%
+  summarize(FPTP=sum(FPTP),PR=sum(PR),.groups="drop") %>%
+  #mutate(PR=ifelse(PR/sum(PR)<0.05 | Party=="Other",0,PR))%>%
+  mutate(PR=PR/sum(PR)) %>%
+  gather(key="Voting system",value="value",c("FPTP","PR")) %>%
+ggplot(aes(x=`Voting system`,y=value,fill=fct_rev(Party))) +
+  geom_bar(stat="identity",position = "fill") +
+  coord_flip() +
+  scale_fill_manual(values=party_colours) +
+  my_theme +
+  scale_y_continuous(labels=scales::percent) +
+  theme(legend.position = "bottom") +
+  #theme(axis.text.y = element_blank()) +
+  labs(title="Canada 2021 federal election, comparing FPTP to PR with 5% minimum vote cutoff",
+       subtitle="(preliminary results)",
+       x="Voting system",y="Share of seats",fill="Party")
+```
+
+The Liberals are the big winner of FPTP, as is Bloc Québécois. The Conservatives fair equally well under either system, and NDP and the Green Party are the losers under the current FPTP system.
+
+We can run this by individual province to see how well each province is represented in terms of first-past-the-post vs proportional representation.
+
+```{r province_fptp_pr}
+pr_share_data %>%
+  gather(key="Voting system",value="Share",c("FPTP","PR")) %>%
+ggplot(aes(x=Province,y=Share,fill=fct_rev(Party))) +
+  geom_bar(stat="identity",position = "fill") +
+  coord_flip() +
+  scale_fill_manual(values=party_colours) +
+  my_theme +
+  facet_wrap("`Voting system`") +
+  scale_y_continuous(labels=scales::percent) +
+  theme(legend.position = "bottom") +
+  #theme(axis.text.y = element_blank()) +
+  labs(title="Canada 2019 federal election, comparing FPTP vs PR by province",
+       x="Province",y="Share of seats",fill="Party")
+```
+
+This reveals that Alberta and Saskatchewan voters are a lot more diverse than the FPTP vote system may suggest, and the while the Conservatives got shut out of a couple of provinces, they still have sizable support there. This kind of outcome is fairly typical for first-past-the-post systems, where the representation in parliament does not match the overall population well, especially when looking by province.
+
+## Upshot
+There is endless fun to be had with elections data. As usual, the code for this post, including the pre-processing for the animation, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2019-10-22-elections-fun.Rmarkdown) for anyone to adapt and dig deeper into elections data.
