@@ -16,7 +16,7 @@ categories:
 tags: []
 description: "Paving the way for removing minimum parking requirements."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2021-10-03-fixing-parking_files/figure-html/existing-parking-permit-zones-1.png"]
+images: ["https://doodles.mountainmath.ca/blog/2021/10/03/fixing-parking/index_files/figure-html/existing-parking-permit-zones-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
