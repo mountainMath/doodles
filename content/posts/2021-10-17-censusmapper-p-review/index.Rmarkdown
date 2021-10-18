@@ -110,12 +110,12 @@ CensusMapper also allows for the embedding of scatter plots into the map story s
 ### Moar data
 We will definitely add the 2021 Census data as it rolls out, but there are lots of other datasets that would greatly enhance the usability of CensusMapper, both for mapping as well as a data server. We have already integrated several cross tabulations, for example one on [document type by structural type](https://doodles.mountainmath.ca/blog/2020/01/26/unoccupied-dwellings-data/) to get a better reading of the overall housing stock. We have custom tabulations of [T1FF tax filer data at the census tract level for all census years 2000 through 2018](https://doodles.mountainmath.ca/blog/2020/04/23/census-tract-level-t1ff-tax-data/). 
 
-## API expansion
+### API expansion
 Next to our traditional API services we have added an [enpoint that indentifies census regions intersecting custom geographies](https://mountainmath.github.io/cancensus/articles/intersecting_geometries.html). This is very useful when running analysis relating to custom geographies with a-priory unspecified spatial extent. Traditionally we would first have to identify and download data that covers our custom geographies and then run an analysis, with the new endpoint we can automate the identification of relevant geographies. There are other use cases like this, and the API can be tailored or expanded to better serve such needs.
 
 At the same time, the most convenient way to access census data is via the `cancensus` R package. It would be useful to provide similar bindings to python, the other important statistical language with a mature ecosystem for geospatial analysis. While most people in the data world are bilingual, people have preferences and giving easier access to census data in python would be a lot more convenient for those preferring to work exclusively in python. Cleaning up the API web interface for data download for those looking to do this manually would also be useful, the current UI is quite intuitive.
 
-## Performance boost
+### Performance boost
 The CensusMapper server runs on a $20/month cloud instance. This suffices for most uses, the map server starts to slow down noticeably at around 1000 simultaneous users. Which rarely happens. But it does necessitates some compromises, e.g. the throttling of API calls. We regularly get request for extended API quotas which we usually grant, but this is starting to put some strain on the server and could benefit from a performance boost. At the same time, we could invest some time to improve server logic to better deal with large simultaneous data requests to ensure smooth performance of the other server functions like web mapping.
 
 ### Better map projections
