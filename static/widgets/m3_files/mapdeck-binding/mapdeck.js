@@ -5,93 +5,141 @@ HTMLWidgets.widget({
 
   factory: function(el, width, height) {
 
-    // TODO: define shared variables for this instance
     return {
 
       renderValue: function(x) {
 
-      	//window.params = [];
-      	//window.params.push({ 'map_id' : el.id });
+      	md_setup_window( el.id );
 
-      	window[el.id + 'layers'] = []; // keep track of layers for overlaying multiple
-      	// needs to be an array because .props takes an array of layers
-
-        var mapDiv = document.getElementById(el.id);
-        mapDiv.className = 'mapdeckmap';
-
-        var tooltipdiv = document.createElement('div');
-        tooltipdiv.id = 'tooltip';
-        mapDiv.appendChild(tooltipdiv);
+				if( x.show_view_state ) {
+      	  md_setup_view_state( el.id );
+      	  window[el.id + 'mapViewState'] = document.createElement("div");
+      	  window[el.id + 'mapViewState'].setAttribute('id', el.id + 'mapViewState');
+      	  window[el.id + 'mapViewState'].setAttribute('class', 'mapViewState');
+      	  var mapbox_ctrl = document.getElementById( "mapViewStateContainer"+el.id);
+    			mapbox_ctrl.appendChild( window[el.id + 'mapViewState'] );
+				}
 
         // INITIAL VIEW
         window[el.id + 'INITIAL_VIEW_STATE'] = {
         	longitude: x.location[0],
         	latitude: x.location[1],
         	zoom: x.zoom,
-        	pitch: x.pitch
+        	pitch: x.pitch,
+        	bearing: x.bearing,
+        	maxZoom: x.max_zoom,
+       	 	minZoom: x.min_zoom,
+       	 	maxPitch: x.max_pitch,
+       	 	minPitch: x.min_pitch
         };
 
-        const	deckgl = new deck.DeckGL({
+       if( x.access_token === null ) {
+       	 const deckgl = new deck.DeckGL({
+       	 	  views: [ new deck.MapView({
+       	 	  	id: el.id,
+       	 	  	repeat: x.repeat_view
+       	 	  	}) ],
+       	 	  map: false,
+			      container: el.id,
+			      initialViewState: window[el.id + 'INITIAL_VIEW_STATE'],
+			      layers: [],
+			      controller: true
+			      //onLayerHover: setTooltip
+			   });
+			   window[el.id + 'map'] = deckgl;
+       } else {
+        const deckgl = new deck.DeckGL({
+        	  views: [ new deck.MapView({
+        	  	id: el.id,
+        	  	repeat: x.repeat_view
+        	  	}) ],
           	mapboxApiAccessToken: x.access_token,
 			      container: el.id,
 			      mapStyle: x.style,
 			      initialViewState: window[el.id + 'INITIAL_VIEW_STATE'],
 			      layers: [],
+			      controller: true,
 			      //onLayerHover: setTooltip
+			      onViewStateChange: ({viewId, viewState, interactionState}) => {
+
+			      	if (!HTMLWidgets.shinyMode && !x.show_view_state ) { return; }
+							// as per:
+							// https://github.com/uber/deck.gl/issues/3344
+							// https://github.com/SymbolixAU/mapdeck/issues/211
+			      	const viewport = new deck.WebMercatorViewport(viewState);
+  						const nw = viewport.unproject([0, 0]);
+  						const se = viewport.unproject([viewport.width, viewport.height]);
+
+  						const w = nw[0] < -180 ? -180 : ( nw[0] > 180 ? 180 : nw[0] );
+  						const n = nw[1] < -90 ? -90 : ( nw[1] > 90 ? 90 : nw[1] );
+
+  						const e = se[0] < -180 ? -180 : ( se[0] > 180 ? 180 : se[0] );
+  						const s = se[1] < -90 ? -90 : ( se[1] > 90 ? 90 : se[1] );
+
+  						viewState.viewId = viewId;
+
+							viewState.viewBounds = {
+  							north: n, //nw[1],
+  							east:  e, //se[0],
+  							south: s, //se[1],
+  							west:  w //nw[0]
+  						};
+  						viewState.interactionState = interactionState;
+
+  						if( x.show_view_state ) {
+  							var vs = JSON.stringify( viewState );
+  							//console.log( vs );
+  							window[el.id + 'mapViewState'].innerHTML = vs;
+  						}
+
+  						if (!HTMLWidgets.shinyMode ) { return; }
+
+						  Shiny.onInputChange(el.id + '_view_change', viewState);
+			      },
+			      onDragStart(info, event){
+			      	if (!HTMLWidgets.shinyMode) { return; }
+			      	//if( info.layer !== null ) { info.layer = null; }  // dragging a layer;
+			      	info.layer = undefined; // in case of dragging a layer
+			      	Shiny.onInputChange(el.id +'_drag_start', info);
+			      },
+			      onDrag(info, event){
+			      	if (!HTMLWidgets.shinyMode) { return; }
+			      	//if( info.layer !== null ) { info.layer = null; }  // dragging a layer;
+			      	info.layer = undefined; // in case of dragging a layer
+			      	Shiny.onInputChange(el.id +'_drag', info);
+			      },
+			      onDragEnd(info, event){
+			      	if (!HTMLWidgets.shinyMode) { return; }
+			      	//if( info.layer !== null ) { info.layer = null; }  // dragging a layer;
+			      	info.layer = undefined; // in case of dragging a layer
+			      	Shiny.onInputChange(el.id +'_drag_end', info);
+			      },
+			      onResize(size) {
+			      	if (!HTMLWidgets.shinyMode) { return; }
+			      	Shiny.onInputChange(el.id +'_resize', size);
+			      }
 			  });
 
-			    window[el.id + 'map'] = deckgl;
-			    initialise_map(el, x);
+			  window[el.id + 'map'] = deckgl;
+
+       }
+			    md_initialise_map(el, x);
       },
 
       resize: function(width, height) {
 
         // TODO: code to re-render the widget with a new size
       }
-
     };
   }
 });
 
-// default light settings
-const DEFAULT_NUMBER_OF_LIGHTS = 1;
-const DEFAULT_LIGHTS_POSITION = [0, 0, 0];
-const DEFAULT_AMBIENT_RATIO = 0.4;
-
-function change_location( map_id, location, duration, transition, zoom ) {
-
-	window[map_id + 'map'].setProps({
-    viewState: {
-      longitude: location[0],
-      latitude: location[1],
-      zoom: zoom,
-      pitch: 0,
-      bearing: 0,
-      transitionInterpolator: transition === "fly" ? new deck.FlyToInterpolator() : new deck.LinearInterpolator(),
-      transitionDuration: duration
-    },
-  });
-}
-
-// following: https://codepen.io/vis-gl/pen/pLLQpN
-// and: https://beta.observablehq.com/@pessimistress/deck-gl-geojsonlayer-example
-function updateTooltip({x, y, object}) {
-  const tooltip = document.getElementById('tooltip');
-  if (object) {
-  	if(object.tooltip === undefined) {
-  		return;
-  	}
-    tooltip.style.top = `${y}px`;
-    tooltip.style.left = `${x}px`;
-    tooltip.innerHTML = `<div>${object.tooltip}</div>`;
-  } else {
-    tooltip.innerHTML = '';
-  }
-}
 
 if (HTMLWidgets.shinyMode) {
 
   Shiny.addCustomMessageHandler("mapdeckmap-calls", function (data) {
+
+  	//console.log( "mapdeckmap-calls" );
 
     var id = data.id,   // the div id of the map
       el = document.getElementById(id),
@@ -123,172 +171,4 @@ if (HTMLWidgets.shinyMode) {
     }
   });
 }
-
-function initialise_map(el, x) {
-
-	// call initial layers
-  if (x.calls !== undefined) {
-
-    for (layerCalls = 0; layerCalls < x.calls.length; layerCalls++) {
-
-      //push the map_id into the call.args
-      x.calls[layerCalls].args.unshift(el.id);
-
-      if (window[x.calls[layerCalls].functions]) {
-
-        window[x.calls[layerCalls].functions].apply(window[el.id + 'map'], x.calls[layerCalls].args);
-
-      } else {
-        //console.log("Unknown function " + x.calls[layerCalls]);
-      }
-    }
-  }
-}
-
-
-function findObjectElementByKey(array, key, value, layer_data ) {
-    for (var i = 0; i < array.length; i++) {
-        if (array[i][key] === value) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-
-function update_layer( map_id, layer_id, layer ) {
-  var elem = findObjectElementByKey( window[map_id + 'map'].props.layers, 'id', layer_id);
-  if ( elem != -1 ) {
-  	window[ map_id + 'layers'][elem] = layer;
-  } else {
-  	window[map_id + 'layers'].push( layer );
-  }
-  window[map_id + 'map'].setProps({ layers: [...window[map_id + 'layers'] ] });
-}
-
-
-/**
- * hex to rgb
- *
- * Converts hex colours to rgb
- */
-const hexToRgb_simple = hex =>
-  hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i
-             ,(m, r, g, b) => '#' + r + r + g + g + b + b)
-    .substring(1).match(/.{2}/g)
-    .map(x => parseInt(x, 16));
-
-const hexToRGBA = (hex, alpha = 255) => {
-    let parseString = hex;
-    if (hex.startsWith('#')) {parseString = hex.slice(1, 7);}
-    if (parseString.length !== 6) {return null;}
-    const r = parseInt(parseString.slice(0, 2), 16);
-    const g = parseInt(parseString.slice(2, 4), 16);
-    const b = parseInt(parseString.slice(4, 6), 16);
-    if (isNaN(r) || isNaN(g) || isNaN(b)) {return null;}
-    return [r, g, b, alpha];
-    //return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
-
-function to_rgb( colour_range ) {
-	var arr = [],
-	i,
-	n = colour_range.length;
-
-	for (i = 0; i < n; i++) {
-		arr.push( hexToRgb_simple( colour_range[i]) );
-	}
-  return arr;
-}
-
-/**
- * Converts a 'vector' of hex colours (with alpha) into an array
- */
-function to_rgba( colour_range ) {
-	var arr = [],
-	i,
-	n = colour_range.length;
-
-	for (i = 0; i < n; i++) {
-		arr.push( hexToRGBA( colour_range[i]) );
-	}
-  return arr;
-}
-
-function layer_click( map_id, layer, info ) {
-
-  console.log("layer click");
-  console.log(map_id + "_" + layer + "_click");
-
-  if ( !HTMLWidgets.shinyMode ) {
-    return;
-  }
-
-  var eventInfo = {
-  	index: info.index,
-  	color: info.color,
-  	object: info.object,
-  	layerId: info.layer_id,
-  	lat: info.lngLat[1],
-  	lon: info.lngLat[0]
-  };
-
-  eventInfo = JSON.stringify( eventInfo );
-  Shiny.onInputChange(map_id + "_" + layer + "_click", eventInfo);
-}
-
-function decode_points( polyline ) {
-	var coordinates = decode_polyline( polyline ) ;
-	return coordinates[0];
-}
-
-function decode_polyline(str, precision) {
-  var index = 0,
-      lat = 0,
-      lng = 0,
-      coordinates = [],
-      shift = 0,
-      result = 0,
-      byte = null,
-      latitude_change,
-      longitude_change,
-      factor = Math.pow(10, precision || 5);
-
-  // Coordinates have variable length when encoded, so just keep
-  // track of whether we've hit the end of the string. In each
-  // loop iteration, a single coordinate is decoded.
-  while (index < str.length) {
-
-    // Reset shift, result, and byte
-    byte = null;
-    shift = 0;
-    result = 0;
-
-    do {
-      byte = str.charCodeAt(index++) - 63;
-      result |= (byte & 0x1f) << shift;
-      shift += 5;
-    } while (byte >= 0x20);
-
-    latitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
-
-    shift = result = 0;
-
-    do {
-      byte = str.charCodeAt(index++) - 63;
-      result |= (byte & 0x1f) << shift;
-      shift += 5;
-    } while (byte >= 0x20);
-
-    longitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
-
-    lat += latitude_change;
-    lng += longitude_change;
-
-    coordinates.push([lng / factor, lat / factor]);
-  }
-  return coordinates;
-}
-
 

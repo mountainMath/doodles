@@ -83,7 +83,7 @@ m1 <- mapdeck(token = getOption("mapbox_token"), style = NA) %>%
 
 #frameWidget(m1)
 
-htmlwidgets::saveWidget(m1, file = "../../static/widgets/m1.html", selfcontained = TRUE)
+htmlwidgets::saveWidget(m1, file = here::here("static/widgets/m1.html"), selfcontained = TRUE)
 ```
 
 <iframe src="/widgets/m1.html" style="width: 100%; height: 700px; border:0;" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
@@ -100,7 +100,7 @@ m2 <- mapdeck(token = getOption("mapbox_token"), style = mapdeck_style('light'))
               stroke_width = NA, 
               layer = "buildings") 
 
-htmlwidgets::saveWidget(m2, file = "../../static/widgets/m2.html", selfcontained = TRUE)
+htmlwidgets::saveWidget(m2, file = here::here("static/widgets/m2.html"), selfcontained = TRUE)
 
 ```
 
@@ -114,7 +114,7 @@ We do have another source of buildings: Open Street Map. And that data comes til
 m3 <- mapdeck(token = getOption("mapbox_token"), style = 'mapbox://styles/jens-mountainmath/cjncbngol1e3s2snof3ssdd3d') %>%
   mapdeck_view(location, zoom = 16) 
 
-htmlwidgets::saveWidget(m3, file = "../../static/widgets/m3.html", selfcontained = TRUE)
+htmlwidgets::saveWidget(m3, file = here::here("static/widgets/m3.html"), selfcontained = TRUE)
 
 ```
 
@@ -133,7 +133,7 @@ py$load_osm_data = !file.exists(file.path(getOption("custom_data_path"),"osm_van
 ```
 
 
-```{python}
+```{python eval=FALSE, include=FALSE}
 #if load_osm_data:
 if False:
   import osmnx
@@ -163,7 +163,7 @@ m4 <- mapdeck(token = getOption("mapbox_token"), style = NA) %>%
               stroke_width = NA, 
               layer = "buildings") 
 
-htmlwidgets::saveWidget(m4, file = "../../static/widgets/m4.html", selfcontained = TRUE)
+htmlwidgets::saveWidget(m4, file = here::here("static/widgets/m4.html"), selfcontained = TRUE)
 
 ```
 
