@@ -21,12 +21,12 @@ knitr::opts_chunk$set(
 	message = FALSE,
 	warning = FALSE,
 	fig.width = 8,
-	cache = TRUE
+	cache = FALSE
 )
 library(tidyverse)
 library(cancensusHelpers)
 library(sf)
-library(mapdeck)
+library(mapdeck) 
 library(htmlwidgets)
 #library(htmltools)
 #library(widgetframe)
@@ -92,7 +92,7 @@ If you want to enjoy this in detail, head over to the [fullscreen version](/widg
 
 If you want some context, [here is another one with streets and street names](/widgets/m2.html).
 
-```{r eval=FALSE, include=FALSE}
+```{r eval=TRUE, include=FALSE}
 m2 <- mapdeck(token = getOption("mapbox_token"), style = mapdeck_style('light')) %>%
   mapdeck_view(location, zoom = 11) %>%
   add_polygon(data = plot_data,
