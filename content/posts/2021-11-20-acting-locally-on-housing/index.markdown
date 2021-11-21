@@ -9,7 +9,7 @@ categories:
   - CANSIM
   - affordability
 tags: []
-description: "There are lots of reason why housing is expensive, adding supply."
+description: "Housing faces lots of challenges, some of the global. But our policy leavers are mostly local, incresing housing supply is the most effective (and ethical) local action we can take."
 featured: ''
 images: ["https://homefreesociology.files.wordpress.com/2021/11/furstenau_factors.png","https://doodles.mountainmath.ca/blog/2021/11/20/acting-locally-on-housing/index_files/figure-html/real_industry_gdp-1.png"]
 featuredalt: ""
@@ -21,11 +21,6 @@ type: "post"
 <p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/11/21/acting-locally-on-housing/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
-
-
-
-
-## Thinking Globally, But Acting Locally on Housing as Title?
 
 
 
