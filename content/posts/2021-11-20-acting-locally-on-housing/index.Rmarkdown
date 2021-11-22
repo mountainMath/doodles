@@ -9,7 +9,7 @@ categories:
   - CANSIM
   - affordability
 tags: []
-description: "Housing faces lots of challenges, some of the global. But our policy leavers are mostly local, incresing housing supply is the most effective (and ethical) local action we can take."
+description: "Housing faces lots of challenges, some of the global. But our policy levers are mostly local, increasing housing supply is the most effective (and ethical) local action we can take."
 featured: ''
 images: ["https://homefreesociology.files.wordpress.com/2021/11/furstenau_factors.png","https://doodles.mountainmath.ca/blog/2021/11/20/acting-locally-on-housing/index_files/figure-html/real_industry_gdp-1.png"]
 featuredalt: ""
