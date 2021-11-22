@@ -19,7 +19,7 @@ linktitle: ''
 type: "post"
 ---
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/11/21/acting-locally-on-housing/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/11/22/three-years-of-speculation-vacancy-tax-data/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
