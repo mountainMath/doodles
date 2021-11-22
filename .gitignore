@@ -26,3 +26,4 @@ index_cache/*
 /data/cov_bilding_lines/*
 /data/cov_tax_parcels.Rda
 /data/rs_frontages
+/data/SVT_*
