@@ -424,7 +424,7 @@ revenue %>%
   geom_bar(stat="identity") +
   facet_wrap(~Year) +
   theme(axis.text.x = element_text(angle=60,hjust=1)) +
-  labs(title="SVT revenue compared to alternative scneario with equal tax rates",
+  labs(title="SVT revenue compared to alternative scenario with equal tax rates",
        fill=NULL,x=NULL,y="Revenue")
 ```
 
