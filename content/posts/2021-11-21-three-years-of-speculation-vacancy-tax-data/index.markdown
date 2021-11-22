@@ -34,12 +34,15 @@ type: "post"
 
 ## TL;DR
 
-We now have three years of Speculation and Vacancy Tax data for BC, demonstrating generally less than one percent of properties pay the tax in most municipalities. We play around with the data we scraped from files released by the BC government to show 
+We now have three years of Speculation and Vacancy Tax data for BC, demonstrating generally less than one percent of properties pay the tax in most municipalities. We play around with the data we scraped from files released by the BC government to show:
 
-a. how the federal CHSP program systematically overstates "foreign ownership" 
-b. how source of revenue estimates shift depending upon definitions and tax rates 
-c. how properties are moving into rentals and 
-d. what else we can glean from exemptions and revenue data.
+<ol type="a" style="list-style-type: lower-alpha;">
+  <li>how the federal CHSP program systematically overstates "foreign ownership"</li>
+  <li>how source of revenue estimates shift depending upon definitions and tax rates</li>
+  <li>how properties are moving into rentals and</li>
+  <li>what else we can glean from exemptions and revenue data.</li>
+</ol>
+
 
 ## Celebrating Three Years of Data
 
