@@ -13,7 +13,7 @@ categories:
   - geeky
   - Vancouver
 tags: []
-description: "We now have three years of SVT data, time to take a look at where things stand, how this fits in with related datasets, and what we can learn."
+description: "A deeper look at population and hosehold estimates, how thes estimates are made and what early data can tell us about shifts during COVID times."
 featured: ''
 images: ["https://doodles.mountainmath.ca/blog/2021/11/28/first-peek-at-population-and-household-data-during-covid-caveats/index_files/figure-html/population_change_with_prelim-1.png"]
 featuredalt: ""
@@ -171,13 +171,13 @@ Here we see and interesting pattern for the central city, Victoria, that looks d
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-11-28 17:19:13 PST"
+## [1] "2021-11-28 17:25:56 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [bb9ad07] 2021-11-22: type, thanks Steve!
+## Head:     [01b1e92] 2021-11-29: pop and hh post
 ```
 
 ```
@@ -202,26 +202,20 @@ Here we see and interesting pattern for the central city, Victoria, that looks d
 ## [13] ggplot2_3.3.5   tidyverse_1.3.1
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] nlme_3.1-153     fs_1.5.0         lubridate_1.8.0  bit64_4.0.5     
-##  [5] rprojroot_2.0.2  tools_4.1.2      backports_1.3.0  bslib_0.3.1     
-##  [9] utf8_1.2.2       R6_2.5.1         DBI_1.1.1        mgcv_1.8-38     
-## [13] colorspace_2.0-2 withr_2.4.2      tidyselect_1.1.1 git2r_0.29.0    
-## [17] bit_4.0.4        curl_4.3.2       compiler_4.1.2   cli_3.1.0       
-## [21] rvest_1.0.2      xml2_1.3.2       labeling_0.4.2   bookdown_0.24   
-## [25] sass_0.4.0       scales_1.1.1     rmarkdown_2.11   pkgconfig_2.0.3 
-## [29] htmltools_0.5.2  dbplyr_2.1.1     fastmap_1.1.0    highr_0.9       
-## [33] rlang_0.4.12     readxl_1.3.1     rstudioapi_0.13  RSQLite_2.2.8   
-## [37] jquerylib_0.1.4  generics_0.1.1   farver_2.1.0     jsonlite_1.7.2  
-## [41] vroom_1.5.6      magrittr_2.0.1   Matrix_1.3-4     Rcpp_1.0.7      
-## [45] munsell_0.5.0    fansi_0.5.0      lifecycle_1.0.1  stringi_1.7.5   
-## [49] yaml_2.2.1       grid_4.1.2       blob_1.2.2       parallel_4.1.2  
-## [53] crayon_1.4.2     lattice_0.20-45  haven_2.4.3      splines_4.1.2   
-## [57] hms_1.1.1        knitr_1.36       pillar_1.6.4     codetools_0.2-18
-## [61] reprex_2.0.1     glue_1.5.0       evaluate_0.14    blogdown_1.6    
-## [65] modelr_0.1.8     vctrs_0.3.8      tzdb_0.2.0       cellranger_1.1.0
-## [69] gtable_0.3.0     assertthat_0.2.1 cachem_1.0.6     xfun_0.28       
-## [73] broom_0.7.10     sanzo_0.1.0      memoise_2.0.0    ellipsis_0.3.2  
-## [77] here_1.0.1
+##  [1] Rcpp_1.0.7       lubridate_1.8.0  assertthat_0.2.1 utf8_1.2.2      
+##  [5] R6_2.5.1         cellranger_1.1.0 backports_1.3.0  reprex_2.0.1    
+##  [9] evaluate_0.14    blogdown_1.6     pillar_1.6.4     rlang_0.4.12    
+## [13] readxl_1.3.1     rstudioapi_0.13  jquerylib_0.1.4  rmarkdown_2.11  
+## [17] munsell_0.5.0    broom_0.7.10     compiler_4.1.2   modelr_0.1.8    
+## [21] xfun_0.28        pkgconfig_2.0.3  htmltools_0.5.2  tidyselect_1.1.1
+## [25] bookdown_0.24    fansi_0.5.0      crayon_1.4.2     tzdb_0.2.0      
+## [29] dbplyr_2.1.1     withr_2.4.2      grid_4.1.2       jsonlite_1.7.2  
+## [33] gtable_0.3.0     lifecycle_1.0.1  DBI_1.1.1        git2r_0.29.0    
+## [37] magrittr_2.0.1   scales_1.1.1     cli_3.1.0        stringi_1.7.5   
+## [41] fs_1.5.0         xml2_1.3.2       bslib_0.3.1      ellipsis_0.3.2  
+## [45] generics_0.1.1   vctrs_0.3.8      tools_4.1.2      glue_1.5.0      
+## [49] hms_1.1.1        fastmap_1.1.0    yaml_2.2.1       colorspace_2.0-2
+## [53] rvest_1.0.2      knitr_1.36       haven_2.4.3      sass_0.4.0
 ```
 </details>
 
