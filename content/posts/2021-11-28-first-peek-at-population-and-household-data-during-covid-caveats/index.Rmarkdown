@@ -1,0 +1,573 @@
+---
+title: First Peek at Population and Household Data During COVID & Caveats
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
+date: '2021-11-28'
+slug: first-peek-at-population-and-household-data-during-covid-caveats
+categories:
+  - cancensus
+  - CANSIM
+  - cmhc
+  - covid-19
+  - geeky
+  - Vancouver
+tags: []
+description: "We now have three years of SVT data, time to take a look at where things stand, how this fits in with related datasets, and what we can learn."
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2021/11/28/first-peek-at-population-and-household-data-during-covid-caveats/index_files/figure-html/population_change_with_prelim-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2021/11/29/first-peek-at-population-and-household-data-during-covid-caveats/" target="_blank">HomeFreeSociology</a>)</i></p> 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 150,
+	fig.width = 8,
+	fig.height = 6,
+	cache = TRUE
+)
+library(tidyverse)
+library(cansim)
+library(cancensus)
+library(cmhc)
+```
+
+
+In this post we look at the most recent population (and household) estimates to see if we can detect any signals concerning how the COVID-19 pandemic may have impacted how (and where) we live. This is inherently tricky; lots of things changed during COVID times, including how well our normal methods of estimation work. That makes time series less reliable, even as we're especially concerned with how conditions have changed. So in this post we attempt to pay special attention to what we can and can't glean from the signals we're receiving so far.
+
+## Population estimates
+Population is the most basic unit of measurement for demographic data. But how do we know how many people live in a region at a given point in time? The short answer is: we don't know exactly how many, unless we are talking about a highly regulated environment like a prison. Population is floating, constantly in motion, moving, getting born, or dying. But we generally don't need exact counts insofar as good estimates will work just fine for most purposes.
+
+```{r}
+url <- "https://www12.statcan.gc.ca/census-recensement/2016/ref/98-303/chap11-eng.cfm"
+uo_tables <- rvest::read_html(url) %>% 
+  rvest::html_table()
+
+undercoverage <- uo_tables[[1]]
+overcoverage <- uo_tables[[5]] %>%
+  select(1,12) %>%
+  slice(-seq(1,2)) %>%
+  filter(!grepl("^\\.\\.",`Provinces and territories`)) %>%
+  rename(Overcoverage=`2016`) %>%
+  mutate(Overcoverage=as.numeric(Overcoverage)/100)
+```
+
+So how do we estimate the population in a given region at a specific point in time? The simplest way is we count, and we do that every 5 years in the census. We'll be getting estimates from 2021 soon! But even the census misses people (who are mostly asked to count themselves). And it occasionally counts people twice. Ultimately, it's only an estimate. Which leads us to the question: how good of an estimate is it?
+
+### Census population coverage error
+By how much does the census under or over-count people? We've got ways to estimate that. It starts with the [Reverse Record Check](https://www23.statcan.gc.ca/imdb/p2SV.pl?Function=getSurvey&SDDS=3902). This is a post-census survey that aims to estimate over and undercoverage errors. Next the Record Check gets combined with the results from the [Census Overcoverage Study](https://www12.statcan.gc.ca/census-recensement/2016/ref/98-303/chap8-eng.cfm) that uses census responses to find possible instances where people have been counted multiple times. Administrative data from CRA tax returns aid in this process. The result is census under and overcoverage estimates. So far undercoverage always exceeds overcoverage, and so combining the two we can get a net undercoverage estimate.
+
+
+```{r}
+undercoverage %>%
+  filter(grepl("^\\d{4}$",`Census year`)) %>%
+  pivot_longer(-`Census year`) %>%
+  mutate(value=as.numeric(value)/100) %>%
+  mutate(value=case_when(grepl("overcoverage",name) ~ -value, TRUE ~ value)) %>%
+  ggplot(aes(x=`Census year`,y=value,fill=name)) +
+  scale_y_continuous(labels=scales::percent) +
+  geom_bar(stat="identity", data = ~ filter(.,!grepl(" net ",name))) +
+  geom_point(data = ~ filter(.,grepl(" net ",name)),fill=NA,aes(colour=name)) +
+  scale_color_manual(values="black") +
+  labs(title="Census over and undercoverage",
+       fill=NULL,colour=NULL,x=NULL,y=NULL,
+       caption="Coverage Technical Report, Census of Population, 2016")
+  
+```
+
+Statistics Canada works hard to get better at its job, and there have been changes in methods over time, continuously refining how to estimate these errors. Statistics Canada also breaks out reasons for overcoverage, the largest of which is that some kids live in and get reported as members of more than one household (hello dual custody!) But there are all kinds of reasons that it's tricky to keep track of counting everyone once and only once as they move around.
+
+```{r}
+url="https://www12.statcan.gc.ca/census-recensement/2016/ref/98-303/chap8-eng.cfm"
+cos_tables <- rvest::read_html(url) %>% 
+  rvest::html_table()
+
+cos_tables[[9]] %>%
+  set_names((.)[2,]) %>%
+  slice(-seq(1,3)) %>%
+  filter(!grepl("^Source",`Provinces and territories`)) %>%
+  pivot_longer(-`Provinces and territories`) %>%
+  mutate(value=as.numeric(value)/100) %>% 
+  left_join(overcoverage,by="Provinces and territories") %>%
+  ggplot(aes(x=`Provinces and territories`,y=value*Overcoverage,fill=name)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  scale_y_continuous(labels=scales::percent) +
+  theme(legend.position = "bottom") +
+  guides(fill=guide_legend(ncol=2)) +
+  scale_fill_discrete(labels=function(d)str_wrap(d,40)) +
+  labs(title="Census overcoverage by scenario",
+       x=NULL,y="Share of population counted multiple times",
+       fill=NULL,caption="StatCan Census Overcoverage Study 2016")
+```
+
+
+### Annual population estimates
+What do we do in years when we don't have a census? This was a major problem making it difficult to [judge the effects of the 1918 pandemic](https://twitter.com/paulkrugman/status/1464683273951617024); it occurred between censuses, along with a major Depression and World War. Sure would've been nice to have annual population estimates! Now we do. Basically, we use tax records to extrapolate forward from the census. When people file their taxes they give their address, and the T1 taxfiler data allows the count of taxfilers per census geography. Sort of... the details of assigning taxfiler address to census geographies are messy. Tax data also has information on family structure. For example, people with children may claim child benefits. This gets compiled into a richer dataset that contains information on "taxfilers and dependants", called the T1FF taxfiler data.
+
+### T1 and T1FF data
+
+In Canada everyone aged 15 and over is supposed to file a tax return. But not everyone does, and legal obligation is relaxed for those without taxes owing. The T1 and T1FF coverage [gets estimated by comparing with demographic estimates (that again use T1FF tax data) anchored around the census](https://www150.statcan.gc.ca/n1/pub/72-212-x/2021001/sect1-eng.htm). We can tell that over time the rate of people (of all ages) filing a tax return has increased. 
+
+```{r}
+url <- "https://www150.statcan.gc.ca/n1/pub/72-212-x/2021001/sect1-eng.htm"
+tables <- rvest::read_html(url) %>% 
+  rvest::html_table()
+
+tax_coverage <- tables[[1]] %>%
+  filter(!grepl("^Note",`Tax year`)) %>%
+  pivot_longer(-matches("Tax year|Date of ")) %>%
+  mutate(value=gsub(",","",value) %>% as.numeric) %>%
+  mutate(value=case_when(grepl("\\('000\\)$",name)~ value*1000,
+                         grepl("Percent",name)~ value/100,
+                         TRUE ~ NA_real_))
+
+tax_theme <- list(
+  scale_y_continuous(labels=scales::percent),
+  labs(x=NULL,
+       y="Share of the entire population that filed their taxes",
+       caption="StatCan document 72-212-X")
+)
+
+tax_coverage %>%
+  filter(name=="Percent Coverage") %>%
+  mutate(Date=as.Date(paste0(`Tax year`,"-01-01"))) %>%
+  ggplot(aes(x=Date,y=value,group=1)) +
+  geom_line() +
+  scale_y_continuous(labels=scales::percent) +
+  scale_x_date(breaks=as.Date(paste0(seq(1990,2020,5),"-01-01")),
+               minor_breaks =as.Date(paste0(seq(1990,2020,1),"-01-01")),
+               date_labels ="%Y") +
+  tax_theme +
+  labs(title="T1 coverage")
+```
+
+
+Despite the rise in tax-filing, it's worth noting that there are still a lot of people missed (a problem, for instance, in [redesigning the CRA system to deliver benefits to those in need](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3822626)). Once the T1 data is processed to identify children and other dependants that did not file a return, we arrive at the T1FF file. 
+
+```{r}
+t0<-tables[[2]] %>%
+  filter(!grepl("^Note",`Rates of Coverage by Age`)) %>%
+  mutate(rate=as.numeric(Percent)/100)
+
+si <- which(t0[,1]=="Rates of Coverage by Province")  
+
+t1 <- t0 %>% slice(seq(1,si-1)) %>%
+  mutate(`Rates of Coverage by Age`=factor(`Rates of Coverage by Age`,
+                                           levels=pull(.,`Rates of Coverage by Age`)))
+
+t2 <- t0 %>% slice(seq(si+1,nrow(t0))) %>%
+  rename(`Rates of Coverage by Province`=`Rates of Coverage by Age`) %>%
+  mutate(`Rates of Coverage by Province`=factor(`Rates of Coverage by Province`,
+                                           levels=pull(.,`Rates of Coverage by Province`)))
+  
+
+ggplot(t1,aes(x=`Rates of Coverage by Age`,y=rate)) +
+  geom_bar(stat="identity") +
+  tax_theme +
+  coord_flip() +
+  labs(title="2019 T1FF coverage by age group")
+```
+
+Now we notice a slight overcoverage of children, likely reflecting multiple people filing the same children as dependants ("That's what we get when we use this denominator"). We also notice a persistent under-coverage for other age groups, especially young adults around university age. We can also assess provincial and territorial variation in T1FF coverage, where Yukon appears the farthest off the grid administratively speaking.
+
+
+```{r}
+ggplot(t2,aes(x=`Rates of Coverage by Province`,y=rate)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  tax_theme +
+  labs(title="2019 T1FF coverage by province")
+```
+
+### Annual population estimates (for real now)
+We have seen that T1 and T1FF data give us a pretty good idea how many people live in an area, but it's not really good enough to use that as population estimates, with the possible exception of well-claimed children. But how do we know that? What are the coverage estimates based on? This is where things get slightly tricky and might seem circular at first sight.
+
+For census years, we know how to measure the T1 and T1FF coverage by using census counts plus the census coverage estimates. To get population estimates for the in-between years we might be tempted to use the T1FF data, but instead of using the counts directly StatCan looks at the change of population in T1FF data, and estimates the population the year after the census by multiplying it with the growth rate of the T1FF population. This assumes that coverage is roughly constant in each region. Then there are a whole bunch of quality control steps that look at births, deaths, immigration and other records to round things off, using standard demographic accounting formulae (subtract deaths, add births and net immigration), but these typically happen at census district or higher level geography.
+
+The basic assumption that makes things work is that population changes gradually, and the composition of population changes slowly too. So any kind of errors in the T1FF data change slowly and divide out when looking at rates of change of T1FF data year over year. But as we get further and further out from the last census our estimates get worse. Fortunately we have a census every 5 years in Canada to anchor things again, and the StatCan population estimate time series gets updated retroactively to reflect that. We can see the echo of this in the estimates of the components of population change that contains the "Residual deviation" component, which distributes the difference of the original population estimates and the post-censual population estimates over the last 5 years. For example, by the time the 2016 census rolled around the population estimate for Metro Vancouver was 50,296 people short (an error of about 2%), so these extra people were retroactively distributed as population growth of unknown source over the five year over year growth periods between 2011 and 2016. 
+
+
+## Show me the data
+```{r message=FALSE, warning=FALSE}
+get_prelim_2021_data <- function(path){
+  prelim_header2 <- readxl::read_xlsx(path,"Population",
+                                      skip = 3,n_max=2,col_names=FALSE) %>%
+    t() %>%
+    as.data.frame() %>%
+    mutate(Name=coalesce(V1,V2)) %>%
+    pull(Name)
+  prelim_data2 <- readxl::read_xlsx(path,"Population",
+                                    skip = 5,col_names = prelim_header2)
+}
+
+metro_van <- list_census_regions("CA16") %>% filter(CMA_UID=="59933",level=="CSD")
+
+yvr_geo_uids <- metro_van %>% top_n(16,pop) %>% pull(region)
+
+
+plot_data <- get_cansim_sqlite("17-10-0142") %>% 
+  filter(GeoUID %in% yvr_geo_uids) %>%
+  collect_and_normalize(default_month = 7,disconnect = TRUE) %>%
+  bind_rows(get_prelim_2021_data(here::here("data/59_CSD_SDR_TOT_2021.xlsx")) %>% 
+              mutate(GEO=paste0(`Area Name`," (",Type,")"),
+                     GeoUID=as.character(CSD)) %>%
+              filter(GeoUID %in% yvr_geo_uids) %>%
+              mutate(REF_DATE="2021",Date=as.Date("2021-07-01")) %>%
+              select(REF_DATE,Date,GEO,GeoUID,val_norm=`2021`)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  group_by(Name) %>%
+  mutate(Change=val_norm-lag(val_norm,order_by = Date)) %>%
+  mutate(Change_pct=Change/val_norm)
+  
+```
+
+Let's take a look at the population estimates. As we have seen, they aren't perfect. And the smaller the areas we choose the more error-prone they become. The finest geography that StatCan publishes population estimates on is census subdivisions, i.e. municipalities. This data informs municipal planning. There may be some quality issues at times, but hopefully not too bad. 
+
+To add some fun, StatCan just released provisional population estimates for BC municipalities for 2021 to aid with disaster response. T1FF taxfiler data for the 2020 tax year, which are used as a population growth proxy for their filing date in spring 2021, are not yet available, so this is based off of projecting forward the growth rate of 2019 tax year T1 data vs the preliminary 2020 T1 data. In effect, it's a bit more funky than usual, but let's throw that into the mix.
+
+To better see how the population changes over the years we compute the year over year growth rate, essentially reverse-engineering the process used to derive the population estimates in the first place (i.e. looking at change in tax-filers).
+
+
+```{r population_change_with_prelim}
+ggplot(plot_data,aes(x=Date,y=Change_pct,fill=REF_DATE=="2021")) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::percent) +
+  facet_wrap("Name") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values = c("TRUE"="brown","FALSE"="steelblue"),
+                    labels=c("TRUE"="Preliminary","FALSE"="Regular")) +
+  labs(title="Annual population change in Metro Vancouver",
+       fill="Estimates",
+       x=NULL,y=NULL,caption="MountainMath, StatCan 17-10-0142")
+```
+
+We see that for the most part population does indeed change slowly, we don't see huge jumps year over year. However, the smaller municipalities do see rapid changes in population growth at various times. For example, Port Moody was growing fast until 2010, when the growth dropped and stayed relatively flat from 2015 on. This can be explained nicely with construction activity; completions dropped dramatically after 2009. Population growth goes [where housing allows it to go](https://doodles.mountainmath.ca/blog/2020/05/25/projections-and-self-fulfilling-prophecies/).
+
+The real outliers are the preliminary 2021 estimates, likely due to two reasons. First, the methods changed. Now we're using preliminary T1 data instead of T1FF data to estimate the population change. And the other and possibly more important factor is the COVID-19 pandemic, the effects of which have not really been visible in the 2020 data. And the 2021 data is quite remarkable! City of Vancouver shows a population drop relative to 2020, while West Vancouver shows a strong increase!
+
+At this point it is good to remember that the estimates are pegged to July 1st, but derived from tax data filed (mostly) earlier in the year (generally April 30th) based upon income and household situations for the previous year (ending December 31st). Extrapolating to July 1st works reasonably well in normal years that follow predictable patterns. But that assumption is questionable during COVID times, where lots of things changed. Universities being closed and students moving back in with parents, remote work giving people more freedoms where to reside, and other factors. Even people's propensity to file their taxes may have changed! The 2020 T1FF data probably mostly captured what happened either pre-pandemic or during the initial more static phase of the pandemic, with the full effect hitting with the 2021 T1-derived estimates. But by July 2021 many things had already changed again. Universities were preparing for in-person classes, employers were calling people back to in-person work and immigration was ramping up again. All of that will be missed in the 2021 T1 data.
+
+In short, preliminary estimates based on T1 filers suggest we're seeing some pandemic effects, but it's still hard to separate out the precise timing of when they occurred and how much they represent real effects versus methodological artifacts. 
+
+Is there other data we can look at?
+
+## Household estimates
+On this blog we are often interested in the intersection of people and housing. What links those to together is households. Can we also estimate households? Yes, but not as well. The *household economic accounts* gives us rough estimates at the national and the provincial level derived from an [interesting and complicated mix of reporting](https://www150.statcan.gc.ca/n1/pub/13-607-x/2016001/858-eng.htm). Let's take a look. In particular, let's see if we can glean if anything has changed in our most recent data. In this case, our most recent data is for 2020 rather than 2021. But the 2020 household accounts data likely reflects the entirety of 2020, rather than a particular moment early in the year (as seems to be the case for the population estimates). As before, one general caveat with data in COVID times is that lots of things have changed. In particular we should expect survey response bias that is different from normal years, so everything should be taken with a grain of salt.
+
+Before we get into this we need to take a closer look at what a *household* is. The answer of course is: It depends! In the census a household is simply defined as an *occupied dwelling unit*, which can further be divided into household types and give rise to [an interesting variety of household types](https://doodles.mountainmath.ca/blog/2017/12/01/what-s-a-household/). For the household economic accounts a *household* is defined to conform with OECD standards as
+
+>   either an individual person or a group of persons who live together under the same housing arrangement and who combine to provide themselves with food and possibly other essentials of living.
+
+This is a refinement of the census household category, for example census roommate households aren't OECD households unless they share food and possibly other essentials of living. Thus we expect the household estimate from the household economic accounts to be higher than census households. At the same time we expect the estimate of OECD households to be lower than the number of economic families and unattached individuals as e.g. derived from tax data. Those would count all individuals in roommate households as separate units, and also separate out other unrelated people living in the same dwelling unit.
+
+With the basic definition cleared up, let's look at the data. Estimates come mostly at the national level, with provincial breakdowns for household estimates. Before jumping into details let's see how it fairs against census household counts and economic families and unattached individuals from T1FF data as a cross-check.
+
+```{r}
+hec_data <- get_cansim_sqlite("36-10-0101") %>% 
+  collect_and_normalize(disconnect = TRUE)
+
+
+census_households <- c("CA01","CA06","CA11","CA16") %>%
+  lapply(function(ds) 
+    get_census(ds,regions=list(PR=c("48","59","24","35"))) %>%
+      mutate(Year=paste0("20",substr(ds,3,4)))) %>%
+  bind_rows() %>%
+  select(Name=`Region Name`,GeoUID,Year,Households) %>%
+  mutate(Name=gsub("| \\/.+$","",Name)) %>%
+  group_by(Name) %>%
+  mutate(Change=(Households/lag(Households,order_by = Year))^(1/5))
+
+ef <- get_cansim_sqlite("11-10-0012") %>%
+  filter(GEO %in% c("Ontario","Quebec","Alberta","British Columbia"),
+         `Age of older adult`=="Total all ages",
+         `Family income`=="Total all income groups",
+         `Family type` %in% c("Couple families","Lone-parent families","Persons not in census families")) %>%
+  collect_and_normalize(disconnect = TRUE) %>%
+  group_by(Year=REF_DATE,Name=GEO) %>%
+  summarize(Households=sum(val_norm),.groups="drop")
+
+pd <- bind_rows(hec_data %>% 
+    filter(grepl(", households",`Socio-demographic characteristics`),
+           grepl("Alberta|British|Ontario|Quebec",`Socio-demographic characteristics`),
+           Quintile=="All quintiles") %>%
+    group_by(`Socio-demographic characteristics`) %>%
+    mutate(Change=val_norm/lag(val_norm,order_by = Date))  %>% 
+      mutate(Year=strftime(Date,"%Y")) %>%
+      select(Name=`Socio-demographic characteristics`,Households=val_norm,Change,Year) %>%
+      mutate(Name=gsub(", households","",Name),
+             Source="Household economic accounts"),
+    census_households %>% mutate(Source="Census")) %>%
+  bind_rows(ef %>% mutate(Source="T1FF"))
+
+ggplot(pd,aes(x=Year,y=Households,colour=Name,
+             group=interaction(Name,Source),
+             shape=Source,linetype=Source)) +
+  geom_point() +
+  scale_y_continuous(labels=function(d)scales::comma(d,scale=10^-6,suffix="M")) +
+  scale_colour_manual(values=sanzo::quads$c252) +
+  geom_line() +
+  labs(title="Comparing household estimates",
+       y="Number of households",
+       x=NULL,
+       caption="StatCan Census 2001-2016, Table 36-10-0101")
+```
+
+As expected, the households economic accounts estimate of OECD households falls between the census household estimates and the number of economic families and unattached individuals. Eyeballing it the growth rates are quite similar, which allows us to use the growth rate of one of these concepts as a proxy for the other. Let's check how close the growth rates are when aggregated over the inter-census periods.
+
+```{r}
+pd %>% filter(Year %in% seq(2001,2016,5)) %>%
+  group_by(Name,Source) %>%
+  mutate(Change=Households/lag(Households,order_by = Year),
+         Period=paste0(lag(Year,order_by = Year)," - ",Year)) %>%
+  filter(Year!="2001") %>%
+ggplot(aes(x=Period,y=Change-1,fill=Source)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_manual(values=sanzo::trios$c148) +
+  facet_wrap(~Name) +
+  theme(legend.position = "bottom") +
+  labs(title="Comparing household estimates",
+       y="Change of households",
+       x=NULL,
+       caption="StatCan Census 2001-2016, Table 36-10-0101")
+```
+
+The correspondence is relatively good overall, with Alberta showing the largest divergence. We have at least some confidence that the concepts and estimations are fairly interchangeable when looking at growth rates. Knowing that, let's take a more detailed look at the year over year growth rates of households form the household economic accounts.
+
+```{r}
+hec_data %>% 
+  filter(grepl(", households",`Socio-demographic characteristics`),
+         grepl("Alberta|British|Ontario|Quebec",`Socio-demographic characteristics`),
+         Quintile=="All quintiles") %>%
+  group_by(`Socio-demographic characteristics`) %>%
+  mutate(change=val_norm/lag(val_norm,order_by = Date)) %>%
+  ggplot(aes(x=Date,y=change-1,colour=`Socio-demographic characteristics`)) +
+  geom_point() +
+  scale_colour_manual(values=sanzo::quads$c252) +
+  geom_smooth(se=FALSE,data=~filter(.,Date<=as.Date("2020-01-01"))) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Households formation",
+       y="Year over year change in households",
+       x=NULL,colour=NULL,caption="StatCan Table 36-10-0101")
+```
+
+There is quite a bit of variation in the data, probably at least partially due to noise in the survey. But generally the growth rates of households does align with census estimates, even if the level can be off by a bit. We added a trend line to smooth out some of that, and deliberately removed the last data point for 2020. 
+
+The 2020 data point is dramatically lower for all provinces, and almost certainly due to COVID. Part of it may well be a change in survey response behaviour, but at least a good portion is likely real, due to net outflow of non-permanent resident workers and students, as well as students moving back in with parents or other mechanisms resulting in lower households, like singles coupling up and moving in together. This matches with observations including increased slack in the rental market, stats about lower NPRs, as well as anecdotal evidence of students moving back in with parents.
+
+Some of these effects will likely be temporary, and the rental market has tightened up again as immigration and in-migration of non-permanent residents has returned and Universities are back to in-person teaching. But some effects may prove sticky. It will be interesting to watch how the timeline continues for the next couple of years.
+
+We can also take a look at how, across Canada, households have changed by generation status of major income earner (as defined by Statistics Canada, with Gen X born between 1965 and 1980, and millennials thereafter). 
+
+```{r}
+hec_data %>% 
+  filter(grepl("1946|Baby|Genera|Mille",`Socio-demographic characteristics`),
+         Quintile=="All quintiles") %>%
+  group_by(`Socio-demographic characteristics`) %>%
+  mutate(change=val_norm/lag(val_norm,order_by = Date)) %>%
+  ggplot(aes(x=Date,y=val_norm,colour=`Socio-demographic characteristics`)) +
+  geom_point() +
+  scale_colour_manual(values=sanzo::quads$c249) +
+  geom_smooth(se=FALSE,data=~filter(.,Date<=as.Date("2020-01-01"))) +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Households formation",
+       y="Number of households",
+       x=NULL,colour=NULL,caption="StatCan Table 36-10-0101")
+```
+
+The 2020 data points looks roughly in line for all generations except the Millennial generation. Here the Millennial generation also contains a small number of younger people that aren't broken out separately. To judge if the 2020 data point is an anomaly or just a sign of the millennial generation peaking, just like Generation X did, we can fold in population data and convert this to household maintainer rates.
+
+
+```{r}
+pop_data <- get_cansim_sqlite("17-10-0005") %>% 
+  filter(GEO=="Canada",Sex=="Both sexes") %>%
+  collect_and_normalize(default_month = 7,disconnect = TRUE)
+
+pop_generation <- pop_data %>% 
+  filter(grepl("^\\d+ years$|90 years and over",`Age group`)) %>% 
+  filter(!grepl("^9\\d{1} years$",`Age group`)) %>%
+  mutate(Age=as.integer(gsub(" years.*$","",`Age group`)),
+         Year=as.integer(REF_DATE)) %>%
+  mutate(`Birth year`=Year-Age) %>%
+  mutate(Generation=case_when(`Birth year`<1946 ~ "Pre-1946",
+                              `Birth year`<1965 ~ "Baby boom",
+                              `Birth year`<1981 ~ "Generation X",
+                              TRUE ~ "Millennials",
+                              )) %>%
+  group_by(Year=REF_DATE,Generation) %>%
+  summarize(Population=sum(val_norm),.groups="drop")
+
+maintainer_rates <- hec_data %>% 
+  filter(grepl("1946|Baby|Genera|Mille",`Socio-demographic characteristics`),
+         Quintile=="All quintiles") %>%
+  select(Date,Year=REF_DATE,Generation=`Socio-demographic characteristics`,Households=val_norm) %>%
+  left_join(pop_generation,by=c("Year","Generation")) %>%
+  mutate(HMR=Households/Population) %>%
+  mutate(Generation=factor(Generation,levels=levels(hec_data$`Socio-demographic characteristics`))) %>%
+  #mutate(Generation,fct_recode(Generation,"Millennials or younger"="Millennials"))
+  mutate(Generation=fct_recode(Generation,"Millennials\nor younger"="Millennials"))
+
+
+ggplot(maintainer_rates,
+       aes(x=Date,y=HMR,colour=Generation)) +
+  geom_point() +
+  scale_colour_manual(values=sanzo::quads$c249) +
+  geom_smooth(se=FALSE,data=~filter(.,Date<=as.Date("2020-01-01"))) +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Household maintainer rates",
+       y="Household maintainer rate",
+       x=NULL,colour=NULL,caption="StatCan Tables 36-10-0101, 17-10-0005")
+```
+
+This suggests that household maintainer rates for Millennials (or younger) actually dropped a bit in 2020, which is consistent with the narrative of millennials moving back in with parents, but also an outflow of the non-permanent resident population which skews younger.
+
+We can also check on changes in household size by separating out single and multiple person households.
+
+
+```{r}
+hec_data %>% 
+  filter(grepl("One-person|Multiple-pers",`Socio-demographic characteristics`),
+         Quintile=="All quintiles") %>%
+  group_by(`Socio-demographic characteristics`) %>%
+  mutate(change=val_norm/lag(val_norm,order_by = Date)) %>%
+  ggplot(aes(x=Date,y=val_norm,colour=`Socio-demographic characteristics`)) +
+  geom_point() +
+  scale_colour_manual(values=sanzo::duos$c085) +
+  geom_smooth(se=FALSE,data=~filter(.,Date<=as.Date("2020-01-01"))) +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Households formation",
+       y="Number of households",
+       x=NULL,colour=NULL,caption="StatCan Table 36-10-0101")
+```
+
+Multi-person households have continued to grow, whereas the number of single-person actually dropped significantly, below 2018 levels, again consistent with interpretations above.
+
+Lastly we can look at households by tenure.
+
+```{r}
+hec_data %>% 
+  filter(grepl("Owner w|Renter",`Socio-demographic characteristics`),
+         Quintile=="All quintiles") %>%
+  group_by(`Socio-demographic characteristics`) %>%
+  mutate(change=val_norm/lag(val_norm,order_by = Date)) %>%
+  ggplot(aes(x=Date,y=val_norm,colour=`Socio-demographic characteristics`)) +
+  geom_point() +
+  scale_color_manual(values=sanzo::trios$c142) +
+  geom_smooth(se=FALSE,data=~filter(.,Date<=as.Date("2020-01-01"))) +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Households formation",
+       y="Number of households",
+       x=NULL,colour=NULL,caption="StatCan Table 36-10-0101")
+```
+
+Renter households have roughly flatlined over the past year, whereas owner households have grown. But we do see a shift from owner households with mortgage to owner households without a mortgage. However, the data looks quite volatile and we should be careful not to over-interpret these one-year shifts.
+
+### The Rental Market
+Let's circle back to the rental market. Did it provide a foreshadowing of what we're now observing with population data? We first got our fist systematic look at the pandemic rental market back in [January of 2021](https://www.cmhc-schl.gc.ca/en/blog/2021/2020-rental-market-report), based on the results of CMHC's annual [Rental Market Survey](https://www.cmhc-schl.gc.ca/en/professionals/housing-markets-data-and-research/market-reports/rental-market-reports-major-centres) in the field in October of 2020. By October we already saw a dramatic rise in rental vacancy rates within major Metro Areas. And the rise was most pronounced within central cities. 
+
+
+```{r}
+pd <- c("5915022","59933","5917034","59935","35535","3520005") %>%
+  lapply(function(g)
+    get_cmhc(cmhc_timeseries_params(
+      table_id = cmhc_table_list$`Rms Vacancy Rate Time Series`,
+      region = cmhc_region_params_from_census(g))) %>%
+      as_tibble() %>%
+      mutate(GeoUID=g)) %>%
+  bind_rows() %>%
+  mutate(Date=as.Date(paste0(X1," 01"),format="%Y %B %d"),
+         Rate=Total/100,
+         Year=substr(X1,1,4)) %>% 
+  select(-X1) %>%
+  filter(Date>=as.Date("2000-01-01")) %>%
+  left_join(list_census_regions("CA16") %>%
+              mutate(Name=paste0(name," (",municipal_status,")")) %>%
+              select(GeoUID=region,Name),by="GeoUID") %>%
+  mutate(Name=gsub("\\(B\\)","(CMA)",Name)) %>%
+  mutate(Name=factor(Name,levels=c("Vancouver (CMA)","Victoria (CMA)","Toronto (CMA)",
+                                   "Vancouver (CY)","Victoria (CY)","Toronto (C)"))) %>%
+  mutate(Type=grepl("CMA",Name))
+
+ggplot(pd,aes(x=Date,y=Rate,fill=Type)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::percent) +
+  facet_wrap(~Name,ncol=3) +
+  theme_bw() +
+  scale_fill_manual(values = sanzo::duos$c106,guide='none') +
+  theme(legend.position = "bottom") +
+  labs(title="Rental apartment vacancy rates",
+       fill="Estimates",
+       x=NULL,y=NULL,caption="MountainMath, CMHC RMS")
+```
+Here we see the vacancy rate rises corresponding to population loss within central cities and young adults moving back home. In effect, it certainly looks like our rental market data was the first data in suggesting the population and household data that would arrive much later in 2021. The next round of rental market data should be coming out early in 2022, and should give us a foretaste of where we're heading population-wise. At the same time, vacancy rates can rise due to population loss and household consolidation (as we saw in 2020) or due to increases in rental stock, which we're hoping to see in years to come as new construction comes on-line. 
+
+### Takeaway
+Again, the takeaway here is suggestive of notable pandemic-related changes in population and population distribution, both geographically and within households. A consistent theme emerging is that many young adults likely moved back home during the early days of the pandemic, as seemingly reflected in preliminary population data for municipalities in 2021; and household data and rental market data for 2020. That these, our most recent data points in each case, seem to converge is useful and interesting. But that the convergence comes attached to slightly different chronologies is also notable. The question remains how much has already changed since our most recent estimates. And there we just don't know, and probably won't know for a little while longer. But we'll be paying close attention to rental market data when it comes out. As we've noted before, those vacancy rates are a [really useful metric](https://homefreesociology.com/2019/06/12/simple-metrics-for-deciding-if-you-have-enough-housing/)!
+
+## Appendix
+We make the effort to make our analysis transparent, reproducible and highly adaptable by [publishing the code](https://github.com/mountainMath/doodles/blob/master/content/posts/2021-11-28-first-peek-at-population-and-household-data-during-covid-caveats/index.Rmarkdown). For example, someone interested in repeating parts of the analysis for a different region can simple download the code and change a line or two to point it to their region of interest. However, there are still barriers to actually doing this, from having an R installation or the rudimentary familiarity with R required to make the necessary tweaks. So we have resolved to start adding some graphs in appendices that offer a view into other relevant regions, if appropriate.
+
+For this post, looking at Metro Victoria population growth estimates and preliminary 2021 population growth offers another useful view. (StatCan only released preliminary population estimates for BC, but not for other provinces.)
+
+```{r}
+metro_yyj <- list_census_regions("CA16") %>% filter(CMA_UID=="59935",level=="CSD")
+
+yyj_geo_uids <- metro_yyj %>% top_n(12,pop) %>% pull(region)
+
+
+plot_data <- get_cansim_sqlite("17-10-0142") %>% 
+  filter(GeoUID %in% yyj_geo_uids) %>%
+  collect_and_normalize(default_month = 7,disconnect = TRUE) %>%
+  bind_rows(get_prelim_2021_data(here::here("data/59_CSD_SDR_TOT_2021.xlsx")) %>% 
+              mutate(GEO=paste0(`Area Name`," (",Type,")"),
+                     GeoUID=as.character(CSD))  %>%
+
+              filter(GeoUID %in% yyj_geo_uids)%>%
+              mutate(REF_DATE="2021",Date=as.Date("2021-07-01")) %>%
+              select(REF_DATE,Date,GEO,GeoUID,val_norm=`2021`)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  group_by(Name) %>%
+  mutate(Change=val_norm-lag(val_norm,order_by = Date)) %>%
+  mutate(Change_pct=Change/val_norm) %>%
+  ungroup
+
+ggplot(plot_data,aes(x=Date,y=Change_pct,fill=REF_DATE=="2021")) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::percent) +
+  facet_wrap("Name") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values = c("TRUE"="brown","FALSE"="steelblue"),
+                    labels=c("TRUE"="Preliminary","FALSE"="Regular")) +
+  labs(title="Annual population change in Metro Victoria",
+       fill="Estimates",
+       x=NULL,y=NULL,caption="MountainMath, StatCan 17-10-0142")
+```
+
+Here we see and interesting pattern for the central city, Victoria, that looks different from Vancouver. Victoria shows a decline in population in 2020, followed by an increase in 2021, whereas the situation in Vancouver was reversed. This speaks further to the diversity of changes during COVID times, but likely also to the difficulty of measuring this. Victoria's population [skews older than the population in the City of Vancouver](https://censusmapper.ca/maps/2057?index=3#9/48.9423/-123.1924), have a [higher share of non-permanent residents](https://censusmapper.ca/maps/919?index=3#8/49.228/-123.085), and a [higher share of recent immigrants](https://censusmapper.ca/maps/2953#9/48.8756/-123.1897), all factors that we would expect to shape the impact of COVID on population growth.
+
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
+
