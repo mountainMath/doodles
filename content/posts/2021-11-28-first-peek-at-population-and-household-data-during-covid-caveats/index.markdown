@@ -171,13 +171,13 @@ Here we see and interesting pattern for the central city, Victoria, that looks d
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-11-28 17:25:56 PST"
+## [1] "2021-11-29 08:52:39 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [01b1e92] 2021-11-29: pop and hh post
+## Head:     [348e910] 2021-11-29: update description text
 ```
 
 ```
@@ -204,18 +204,20 @@ Here we see and interesting pattern for the central city, Victoria, that looks d
 ## loaded via a namespace (and not attached):
 ##  [1] Rcpp_1.0.7       lubridate_1.8.0  assertthat_0.2.1 utf8_1.2.2      
 ##  [5] R6_2.5.1         cellranger_1.1.0 backports_1.3.0  reprex_2.0.1    
-##  [9] evaluate_0.14    blogdown_1.6     pillar_1.6.4     rlang_0.4.12    
-## [13] readxl_1.3.1     rstudioapi_0.13  jquerylib_0.1.4  rmarkdown_2.11  
-## [17] munsell_0.5.0    broom_0.7.10     compiler_4.1.2   modelr_0.1.8    
-## [21] xfun_0.28        pkgconfig_2.0.3  htmltools_0.5.2  tidyselect_1.1.1
-## [25] bookdown_0.24    fansi_0.5.0      crayon_1.4.2     tzdb_0.2.0      
-## [29] dbplyr_2.1.1     withr_2.4.2      grid_4.1.2       jsonlite_1.7.2  
-## [33] gtable_0.3.0     lifecycle_1.0.1  DBI_1.1.1        git2r_0.29.0    
-## [37] magrittr_2.0.1   scales_1.1.1     cli_3.1.0        stringi_1.7.5   
-## [41] fs_1.5.0         xml2_1.3.2       bslib_0.3.1      ellipsis_0.3.2  
-## [45] generics_0.1.1   vctrs_0.3.8      tools_4.1.2      glue_1.5.0      
-## [49] hms_1.1.1        fastmap_1.1.0    yaml_2.2.1       colorspace_2.0-2
-## [53] rvest_1.0.2      knitr_1.36       haven_2.4.3      sass_0.4.0
+##  [9] evaluate_0.14    highr_0.9        blogdown_1.6     pillar_1.6.4    
+## [13] rlang_0.4.12     curl_4.3.2       readxl_1.3.1     rstudioapi_0.13 
+## [17] jquerylib_0.1.4  rmarkdown_2.11   labeling_0.4.2   munsell_0.5.0   
+## [21] broom_0.7.10     compiler_4.1.2   modelr_0.1.8     xfun_0.28       
+## [25] pkgconfig_2.0.3  htmltools_0.5.2  tidyselect_1.1.1 bookdown_0.24   
+## [29] codetools_0.2-18 fansi_0.5.0      crayon_1.4.2     tzdb_0.2.0      
+## [33] dbplyr_2.1.1     withr_2.4.2      grid_4.1.2       jsonlite_1.7.2  
+## [37] gtable_0.3.0     lifecycle_1.0.1  DBI_1.1.1        git2r_0.29.0    
+## [41] magrittr_2.0.1   scales_1.1.1     cli_3.1.0        stringi_1.7.5   
+## [45] farver_2.1.0     fs_1.5.0         xml2_1.3.2       bslib_0.3.1     
+## [49] ellipsis_0.3.2   generics_0.1.1   vctrs_0.3.8      tools_4.1.2     
+## [53] glue_1.5.0       hms_1.1.1        fastmap_1.1.0    yaml_2.2.1      
+## [57] colorspace_2.0-2 rvest_1.0.2      knitr_1.36       haven_2.4.3     
+## [61] sass_0.4.0
 ```
 </details>
 

@@ -134,7 +134,7 @@ tax_coverage <- tables[[1]] %>%
 tax_theme <- list(
   scale_y_continuous(labels=scales::percent),
   labs(x=NULL,
-       y="Share of the entire population that filed their taxes",
+       y="Share of the entire population covered by T1FF data",
        caption="StatCan document 72-212-X")
 )
 
