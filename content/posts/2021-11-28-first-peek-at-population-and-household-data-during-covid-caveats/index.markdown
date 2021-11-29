@@ -167,17 +167,31 @@ For this post, looking at Metro Victoria population growth estimates and prelimi
 
 Here we see and interesting pattern for the central city, Victoria, that looks different from Vancouver. Victoria shows a decline in population in 2020, followed by an increase in 2021, whereas the situation in Vancouver was reversed. This speaks further to the diversity of changes during COVID times, but likely also to the difficulty of measuring this. Victoria's population [skews older than the population in the City of Vancouver](https://censusmapper.ca/maps/2057?index=3#9/48.9423/-123.1924), have a [higher share of non-permanent residents](https://censusmapper.ca/maps/919?index=3#8/49.228/-123.085), and a [higher share of recent immigrants](https://censusmapper.ca/maps/2953#9/48.8756/-123.1897), all factors that we would expect to shape the impact of COVID on population growth.
 
+## Update (2021-11-29)
+The day after we published this post StatCan revised their 2021 preliminary population estimates for BC, one more indication that these stats need to be treated carefully. This data release was produced to aid emergency response efforts of the BC flooding, and produced with very short lead time. It is good to see StatCan rising to the challenge and push their analysis methods to meet needs like this, 
+
+We have replaced data underlying the graphs above with the updated estimates, for comparison and increased transparency we include the original (and now outdated) graphs based on the first round of released data below.
+
+
+
+
+
+<img src="{{< blogdown/postref >}}index_files/figure-html/population_change_with_prelim-outdated-1.png" width="1200" />
+
+
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-18-1.png" width="1200" />
+
 
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2021-11-29 08:52:39 PST"
+## [1] "2021-11-29 09:24:04 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [348e910] 2021-11-29: update description text
+## Head:     [687c9d7] 2021-11-29: fix legend in T1FF graph
 ```
 
 ```
@@ -202,22 +216,24 @@ Here we see and interesting pattern for the central city, Victoria, that looks d
 ## [13] ggplot2_3.3.5   tidyverse_1.3.1
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] Rcpp_1.0.7       lubridate_1.8.0  assertthat_0.2.1 utf8_1.2.2      
-##  [5] R6_2.5.1         cellranger_1.1.0 backports_1.3.0  reprex_2.0.1    
-##  [9] evaluate_0.14    highr_0.9        blogdown_1.6     pillar_1.6.4    
-## [13] rlang_0.4.12     curl_4.3.2       readxl_1.3.1     rstudioapi_0.13 
-## [17] jquerylib_0.1.4  rmarkdown_2.11   labeling_0.4.2   munsell_0.5.0   
-## [21] broom_0.7.10     compiler_4.1.2   modelr_0.1.8     xfun_0.28       
-## [25] pkgconfig_2.0.3  htmltools_0.5.2  tidyselect_1.1.1 bookdown_0.24   
-## [29] codetools_0.2-18 fansi_0.5.0      crayon_1.4.2     tzdb_0.2.0      
-## [33] dbplyr_2.1.1     withr_2.4.2      grid_4.1.2       jsonlite_1.7.2  
-## [37] gtable_0.3.0     lifecycle_1.0.1  DBI_1.1.1        git2r_0.29.0    
-## [41] magrittr_2.0.1   scales_1.1.1     cli_3.1.0        stringi_1.7.5   
-## [45] farver_2.1.0     fs_1.5.0         xml2_1.3.2       bslib_0.3.1     
-## [49] ellipsis_0.3.2   generics_0.1.1   vctrs_0.3.8      tools_4.1.2     
-## [53] glue_1.5.0       hms_1.1.1        fastmap_1.1.0    yaml_2.2.1      
-## [57] colorspace_2.0-2 rvest_1.0.2      knitr_1.36       haven_2.4.3     
-## [61] sass_0.4.0
+##  [1] sass_0.4.0       bit64_4.0.5      vroom_1.5.6      jsonlite_1.7.2  
+##  [5] here_1.0.1       modelr_0.1.8     bslib_0.3.1      assertthat_0.2.1
+##  [9] highr_0.9        blob_1.2.2       cellranger_1.1.0 yaml_2.2.1      
+## [13] pillar_1.6.4     RSQLite_2.2.8    backports_1.3.0  glue_1.5.0      
+## [17] rvest_1.0.2      colorspace_2.0-2 htmltools_0.5.2  pkgconfig_2.0.3 
+## [21] broom_0.7.10     haven_2.4.3      bookdown_0.24    scales_1.1.1    
+## [25] tzdb_0.2.0       git2r_0.29.0     farver_2.1.0     generics_0.1.1  
+## [29] ellipsis_0.3.2   cachem_1.0.6     withr_2.4.2      cli_3.1.0       
+## [33] magrittr_2.0.1   crayon_1.4.2     readxl_1.3.1     memoise_2.0.0   
+## [37] evaluate_0.14    fs_1.5.0         fansi_0.5.0      xml2_1.3.2      
+## [41] blogdown_1.6     tools_4.1.2      hms_1.1.1        lifecycle_1.0.1 
+## [45] munsell_0.5.0    reprex_2.0.1     compiler_4.1.2   jquerylib_0.1.4 
+## [49] rlang_0.4.12     grid_4.1.2       rstudioapi_0.13  labeling_0.4.2  
+## [53] rmarkdown_2.11   gtable_0.3.0     codetools_0.2-18 DBI_1.1.1       
+## [57] curl_4.3.2       R6_2.5.1         lubridate_1.8.0  knitr_1.36      
+## [61] fastmap_1.1.0    bit_4.0.4        utf8_1.2.2       rprojroot_2.0.2 
+## [65] stringi_1.7.5    parallel_4.1.2   Rcpp_1.0.7       vctrs_0.3.8     
+## [69] dbplyr_2.1.1     tidyselect_1.1.1 xfun_0.28
 ```
 </details>
 

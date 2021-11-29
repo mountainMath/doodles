@@ -218,7 +218,7 @@ yvr_geo_uids <- metro_van %>% top_n(16,pop) %>% pull(region)
 plot_data <- get_cansim_sqlite("17-10-0142") %>% 
   filter(GeoUID %in% yvr_geo_uids) %>%
   collect_and_normalize(default_month = 7,disconnect = TRUE) %>%
-  bind_rows(get_prelim_2021_data(here::here("data/59_CSD_SDR_TOT_2021.xlsx")) %>% 
+  bind_rows(get_prelim_2021_data(here::here("data/59_CSD_SDR_TOT_20212021.xlsx")) %>% 
               mutate(GEO=paste0(`Area Name`," (",Type,")"),
                      GeoUID=as.character(CSD)) %>%
               filter(GeoUID %in% yvr_geo_uids) %>%
@@ -228,7 +228,6 @@ plot_data <- get_cansim_sqlite("17-10-0142") %>%
   group_by(Name) %>%
   mutate(Change=val_norm-lag(val_norm,order_by = Date)) %>%
   mutate(Change_pct=Change/val_norm)
-  
 ```
 
 Let's take a look at the population estimates. As we have seen, they aren't perfect. And the smaller the areas we choose the more error-prone they become. The finest geography that StatCan publishes population estimates on is census subdivisions, i.e. municipalities. This data informs municipal planning. There may be some quality issues at times, but hopefully not too bad. 
@@ -250,6 +249,7 @@ ggplot(plot_data,aes(x=Date,y=Change_pct,fill=REF_DATE=="2021")) +
   labs(title="Annual population change in Metro Vancouver",
        fill="Estimates",
        x=NULL,y=NULL,caption="MountainMath, StatCan 17-10-0142")
+
 ```
 
 We see that for the most part population does indeed change slowly, we don't see huge jumps year over year. However, the smaller municipalities do see rapid changes in population growth at various times. For example, Port Moody was growing fast until 2010, when the growth dropped and stayed relatively flat from 2015 on. This can be explained nicely with construction activity; completions dropped dramatically after 2009. Population growth goes [where housing allows it to go](https://doodles.mountainmath.ca/blog/2020/05/25/projections-and-self-fulfilling-prophecies/).
@@ -529,7 +529,7 @@ yyj_geo_uids <- metro_yyj %>% top_n(12,pop) %>% pull(region)
 plot_data <- get_cansim_sqlite("17-10-0142") %>% 
   filter(GeoUID %in% yyj_geo_uids) %>%
   collect_and_normalize(default_month = 7,disconnect = TRUE) %>%
-  bind_rows(get_prelim_2021_data(here::here("data/59_CSD_SDR_TOT_2021.xlsx")) %>% 
+  bind_rows(get_prelim_2021_data(here::here("data/59_CSD_SDR_TOT_20212021.xlsx")) %>% 
               mutate(GEO=paste0(`Area Name`," (",Type,")"),
                      GeoUID=as.character(CSD))  %>%
 
@@ -556,6 +556,74 @@ ggplot(plot_data,aes(x=Date,y=Change_pct,fill=REF_DATE=="2021")) +
 ```
 
 Here we see and interesting pattern for the central city, Victoria, that looks different from Vancouver. Victoria shows a decline in population in 2020, followed by an increase in 2021, whereas the situation in Vancouver was reversed. This speaks further to the diversity of changes during COVID times, but likely also to the difficulty of measuring this. Victoria's population [skews older than the population in the City of Vancouver](https://censusmapper.ca/maps/2057?index=3#9/48.9423/-123.1924), have a [higher share of non-permanent residents](https://censusmapper.ca/maps/919?index=3#8/49.228/-123.085), and a [higher share of recent immigrants](https://censusmapper.ca/maps/2953#9/48.8756/-123.1897), all factors that we would expect to shape the impact of COVID on population growth.
+
+## Update (2021-11-29)
+The day after we published this post StatCan revised their 2021 preliminary population estimates for BC, one more indication that these stats need to be treated carefully. This data release was produced to aid emergency response efforts of the BC flooding, and produced with very short lead time. It is good to see StatCan rising to the challenge and push their analysis methods to meet needs like this, 
+
+We have replaced data underlying the graphs above with the updated estimates, for comparison and increased transparency we include the original (and now outdated) graphs based on the first round of released data below.
+
+
+
+```{r}
+plot_data <- get_cansim_sqlite("17-10-0142") %>% 
+  filter(GeoUID %in% yvr_geo_uids) %>%
+  collect_and_normalize(default_month = 7,disconnect = TRUE) %>%
+  bind_rows(get_prelim_2021_data(here::here("data/59_CSD_SDR_TOT_2021.xlsx")) %>% 
+              mutate(GEO=paste0(`Area Name`," (",Type,")"),
+                     GeoUID=as.character(CSD)) %>%
+              filter(GeoUID %in% yvr_geo_uids) %>%
+              mutate(REF_DATE="2021",Date=as.Date("2021-07-01")) %>%
+              select(REF_DATE,Date,GEO,GeoUID,val_norm=`2021`)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  group_by(Name) %>%
+  mutate(Change=val_norm-lag(val_norm,order_by = Date)) %>%
+  mutate(Change_pct=Change/val_norm)
+```
+
+```{r population_change_with_prelim-outdated}
+ggplot(plot_data,aes(x=Date,y=Change_pct,fill=REF_DATE=="2021")) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::percent) +
+  facet_wrap("Name") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values = c("TRUE"="brown","FALSE"="steelblue"),
+                    labels=c("TRUE"="Preliminary","FALSE"="Regular")) +
+  labs(title="Annual population change in Metro Vancouver (superseded version)",
+       fill="Estimates",
+       x=NULL,y=NULL,caption="MountainMath, StatCan 17-10-0142")
+```
+
+
+```{r}
+plot_data <- get_cansim_sqlite("17-10-0142") %>% 
+  filter(GeoUID %in% yyj_geo_uids) %>%
+  collect_and_normalize(default_month = 7,disconnect = TRUE) %>%
+  bind_rows(get_prelim_2021_data(here::here("data/59_CSD_SDR_TOT_2021.xlsx")) %>% 
+              mutate(GEO=paste0(`Area Name`," (",Type,")"),
+                     GeoUID=as.character(CSD))  %>%
+
+              filter(GeoUID %in% yyj_geo_uids)%>%
+              mutate(REF_DATE="2021",Date=as.Date("2021-07-01")) %>%
+              select(REF_DATE,Date,GEO,GeoUID,val_norm=`2021`)) %>%
+  mutate(Name=gsub(", .+$","",GEO)) %>%
+  group_by(Name) %>%
+  mutate(Change=val_norm-lag(val_norm,order_by = Date)) %>%
+  mutate(Change_pct=Change/val_norm) %>%
+  ungroup
+
+ggplot(plot_data,aes(x=Date,y=Change_pct,fill=REF_DATE=="2021")) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::percent) +
+  facet_wrap("Name") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values = c("TRUE"="brown","FALSE"="steelblue"),
+                    labels=c("TRUE"="Preliminary","FALSE"="Regular")) +
+  labs(title="Annual population change in Metro Victoria (superseded version)",
+       fill="Estimates",
+       x=NULL,y=NULL,caption="MountainMath, StatCan 17-10-0142")
+```
 
 
 <details><summary>Reproducibility receipt</summary>
