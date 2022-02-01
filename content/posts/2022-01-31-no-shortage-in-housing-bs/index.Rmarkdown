@@ -567,7 +567,8 @@ Have we been building a lot? Well, not really. It's worth taking a step back to 
 ```{r housing-starts-completions-long-timeline}
 pop_data <- read_csv(here::here("data/metro_van_population_estimate_timeline.csv"),skip=13) %>% 
   mutate(Date=as.Date(date)) %>%
-  mutate(Year=strftime(Date,"%Y") %>% as.integer())
+  mutate(Year=strftime(Date,"%Y") %>% as.integer())  %>%
+  mutate(Date=as.Date(paste0(Year,"-07-01")))
 
 short_cma_uids <- c("933")
 
@@ -599,7 +600,7 @@ starts %>% filter(GeoUID %in% short_cma_uids,
   geom_bar(stat="identity",position="dodge") +
   theme_bw() +
   geom_smooth(formula=y~1,method="lm",se=FALSE,size=0.5,colour="black",show.legend = FALSE) +
-  scale_x_date(breaks=seq(as.Date("1950-01-01"),as.Date("2020-01-01"),by="5 years"),date_labels = "%Y") +
+  scale_x_date(breaks=seq(as.Date("1950-07-01"),as.Date("2020-07-01"),by="5 years"),date_labels = "%Y") +
   theme(legend.position = "bottom") +
   facet_wrap(~`Housing estimates`,ncol=1) +
   scale_fill_manual(values=sanzo::duos$c070) +
