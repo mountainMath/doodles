@@ -152,7 +152,7 @@ The second largest category is highrise apartments. But that's also the form of 
 
 <img src="{{< blogdown/postref >}}index_files/figure-html/change-in-unoccupied-pp-1.png" width="1200" />
 
-Looking at the percentage point change we see that "duplex", as well as "single detached" homes, have seen the increases in the share of homes not occupied by usual residents. All other forms of housing has seen decreases. Which also underlines that housing is a system, and it's not necessarily the new homes that end up being unoccupied (by usual residents), but could well be existing homes. And many of these have probably just been re-absorbed for use by their owners rather than sitting empty.
+Looking at the percentage point change we see that “duplex”, as well as “single detached” homes, have seen increases in the share of homes not occupied by usual residents. All other forms of housing have seen decreases. Which also underlines that housing is a system, and it’s not necessarily the new homes that end up being unoccupied (by usual residents), but could well be existing homes. And many of these suites in "duplexes" have probably just been re-absorbed for use by their owners rather than sitting empty.
 
 ## Population growth vs demand
 The last point left is the equating of population growth with demand. In its balancing act with supply, demand contributes to prices. But we don't (and really can't) measure demand directly. Demand reflects more than simply population growth. It's also dependent upon the ease of financing, as well as wealth and incomes of the population here now. But - and this is key - there's still more to demand. There are people who continue to move to Vancouver, bringing their own wealth and income. We anticipate even more of them would come if prices and rents were lower. And there are others who invest in Vancouver, in part because prices and rents keep going up. All this works itself out through markets, matching supply to demand in setting prices.
@@ -182,13 +182,13 @@ As usual, the code for this post, including the code to scrape the data out of t
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-01-31 17:12:54 PST"
+## [1] "2022-01-31 18:17:03 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [6d51823] 2022-02-01: no shortage bs post
+## Head:     [2e62ae0] 2022-02-01: fix date alignment
 ```
 
 ```
@@ -212,25 +212,21 @@ As usual, the code for this post, including the code to scrape the data out of t
 ##  [9] tidyr_1.1.4     tibble_3.1.6    ggplot2_3.3.5   tidyverse_1.3.1
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] httr_1.4.2       sass_0.4.0       bit64_4.0.5      vroom_1.5.7     
-##  [5] jsonlite_1.7.3   splines_4.1.2    here_1.0.1       modelr_0.1.8    
-##  [9] bslib_0.3.1      assertthat_0.2.1 highr_0.9        cellranger_1.1.0
-## [13] yaml_2.2.1       sanzo_0.1.0      pillar_1.6.4     backports_1.4.0 
-## [17] lattice_0.20-45  glue_1.6.1       digest_0.6.29    rvest_1.0.2     
-## [21] colorspace_2.0-2 Matrix_1.3-4     htmltools_0.5.2  pkgconfig_2.0.3 
-## [25] broom_0.7.12     haven_2.4.3      bookdown_0.24    scales_1.1.1    
-## [29] tzdb_0.2.0       git2r_0.29.0     mgcv_1.8-38      farver_2.1.0    
-## [33] generics_0.1.1   ellipsis_0.3.2   withr_2.4.3      cli_3.1.0       
-## [37] magrittr_2.0.1   crayon_1.4.2     readxl_1.3.1     evaluate_0.14   
-## [41] fs_1.5.1         fansi_1.0.2      nlme_3.1-153     xml2_1.3.3      
-## [45] blogdown_1.6     tools_4.1.2      hms_1.1.1        lifecycle_1.0.1 
-## [49] munsell_0.5.0    reprex_2.0.1     compiler_4.1.2   jquerylib_0.1.4 
-## [53] rlang_0.4.12     grid_4.1.2       rstudioapi_0.13  labeling_0.4.2  
-## [57] rmarkdown_2.11   codetools_0.2-18 gtable_0.3.0     DBI_1.1.2       
-## [61] curl_4.3.2       R6_2.5.1         lubridate_1.8.0  knitr_1.36      
-## [65] fastmap_1.1.0    bit_4.0.4        utf8_1.2.2       rprojroot_2.0.2 
-## [69] stringi_1.7.6    parallel_4.1.2   Rcpp_1.0.8       vctrs_0.3.8     
-## [73] dbplyr_2.1.1     tidyselect_1.1.1 xfun_0.28
+##  [1] Rcpp_1.0.8       lubridate_1.8.0  assertthat_0.2.1 digest_0.6.29   
+##  [5] utf8_1.2.2       R6_2.5.1         cellranger_1.1.0 backports_1.4.0 
+##  [9] reprex_2.0.1     evaluate_0.14    httr_1.4.2       blogdown_1.6    
+## [13] pillar_1.6.4     rlang_0.4.12     readxl_1.3.1     rstudioapi_0.13 
+## [17] jquerylib_0.1.4  rmarkdown_2.11   munsell_0.5.0    broom_0.7.12    
+## [21] compiler_4.1.2   modelr_0.1.8     xfun_0.28        pkgconfig_2.0.3 
+## [25] htmltools_0.5.2  tidyselect_1.1.1 bookdown_0.24    fansi_1.0.2     
+## [29] crayon_1.4.2     tzdb_0.2.0       dbplyr_2.1.1     withr_2.4.3     
+## [33] grid_4.1.2       jsonlite_1.7.3   gtable_0.3.0     lifecycle_1.0.1 
+## [37] DBI_1.1.2        git2r_0.29.0     magrittr_2.0.1   scales_1.1.1    
+## [41] cli_3.1.0        stringi_1.7.6    fs_1.5.1         xml2_1.3.3      
+## [45] bslib_0.3.1      ellipsis_0.3.2   generics_0.1.1   vctrs_0.3.8     
+## [49] tools_4.1.2      glue_1.6.1       hms_1.1.1        fastmap_1.1.0   
+## [53] yaml_2.2.1       colorspace_2.0-2 rvest_1.0.2      knitr_1.36      
+## [57] haven_2.4.3      sass_0.4.0
 ```
 </details>
 
