@@ -23,7 +23,7 @@ linktitle: ''
 type: "post"
 ---
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/01/31/no-shortage-in-housing-bs/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/02/01/no-shortage-in-housing-bs/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(

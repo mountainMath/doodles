@@ -23,7 +23,7 @@ linktitle: ''
 type: "post"
 ---
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/01/31/no-shortage-in-housing-bs/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/02/01/no-shortage-in-housing-bs/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 
@@ -182,13 +182,13 @@ As usual, the code for this post, including the code to scrape the data out of t
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-01-31 18:17:03 PST"
+## [1] "2022-01-31 18:21:01 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [2e62ae0] 2022-02-01: fix date alignment
+## Head:     [4108e69] 2022-02-01: minor edits
 ```
 
 ```
