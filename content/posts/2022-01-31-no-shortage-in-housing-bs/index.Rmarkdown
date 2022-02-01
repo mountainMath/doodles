@@ -1,0 +1,640 @@
+---
+title: No shortage in Housing BS
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
+date: '2022-01-31'
+slug: no-shortage-in-housing-bs
+categories:
+  - affordability
+  - cancensus
+  - CANSIM
+  - CensusMapper
+  - Empty Homes
+  - newsfail
+  - Vancouver
+tags: []
+description: "There is a special brain worm making the rounds that Vancouver supply has been outstripping demand. Which is obvious nonsense, but maybe still deserves a detailed takedown."
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2022/01/31/no-shortage-in-housing-bs/index_files/figure-html/pop-change-decomposition-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/01/31/no-shortage-in-housing-bs/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 150,
+	fig.width = 8,
+	fig.height = 6,
+	cache = TRUE
+)
+library(tidyverse)
+library(cancensus)
+library(cmhc)
+library(cansim)
+```
+
+Say you built a bunch of housing in a cornfield in the middle of rural Iowa. Would people come to live in it? Maybe. But probably not. Let's imagine the same scenario scooted over to Vancouver. The conditions for our little field of dreams have changed. Here we're pretty comfortable predicting: [if you build it, they will come](https://en.wikipedia.org/wiki/Field_of_Dreams). Housing limits population growth here in a way it does not in rural Iowa.
+
+![<Field of Dreams>](https://c.tenor.com/8DxYcrLiGJUAAAAd/field-of-dreams-baseball.gif)
+
+But maybe we're wrong?
+
+There is a special brain worm making the rounds that we somehow built a bunch of housing in Vancouver and then no one came to live in it. This despite decades of [extraordinary low rental vacancy rates](https://doodles.mountainmath.ca/blog/2018/11/28/vacancy-rate-and-rent-change/), and successive reports from an [Empty Homes Tax in place since 2017](https://vancouver.ca/home-property-development/empty-homes-tax.aspx) and a [Vacancy Tax since 2018](https://homefreesociology.com/2021/11/22/three-years-of-speculation-and-vacancy-tax-data/), both of which consistently demonstrate very few empty dwellings. 
+
+So how would one, if one were so inclined, try to drum up support for such a position? Here is a good example:
+
+
+<blockquote class="twitter-tweet" data-conversation="none"><p lang="en" dir="ltr">Ten years roughly 55 thousand new units built in City of Vancouver. <a href="https://t.co/oQUx9yGF9S">https://t.co/oQUx9yGF9S</a><br><br>Ten year population growth roughly<br>55 thousand persons<a href="https://t.co/cLaPm22IEz">https://t.co/cLaPm22IEz</a><br><br>Supply double demand with average household size of 2<br><br>Meanwhile prices doubled</p>&mdash; Patrick Condon (@pmcondon2) <a href="https://twitter.com/pmcondon2/status/1487549637812633601?ref_src=twsrc%5Etfw">January 29, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+The claim is that during 10 years roughly 55 thousand new units were built in the City of Vancouver, while the population grew by roughly 55 thousand people. Taking roughly 2 people per unit, that means we got twice as many units as we needed. That means, so the argument goes, that supply is double the demand, but prices still doubled. So this clearly shows that supply and demand don't matter when it comes to housing, right?
+
+No. This is a **load of [data bullshit](https://www.callingbullshit.org)** that has been unleashed upon us. But if you bear with us, we will take this data bullshit as fertilizer and endeavour to grow from it something more useful. 
+
+## TL;DR
+For the purpose of a quick summary, here are all the elements that have gone into the data bullshit:
+
+* The mixing of two different time frames, years 2010 through 2019 for new buildings and between the 2006 and 2016 censuses for population change.
+* The use of building starts, when no one can live in a start. If anything, the relevant metric should be completions.
+* The overlooking of demolitions, when no one can live a demolished unit.
+* The ignorance of declining household size, necessitating additional units even just to keep population constant.
+* The neglect of fluff. There needs to be some extra fluff in the housing market. If there aren't any extra vacant units it becomes logistically impossible for people to move. (And the more differentiated the housing market is, the more vacant units are needed.)
+* The equating of population growth with demand. Population growth reflects only the part of the demand that managed to come to or stay in Vancouver, but it ignores the money they express their demand through as well as all the people that have been pushed out by not having enough of it.
+
+
+
+
+## Population growth of 55 thousand 
+```{r}
+uid <- "5915022"
+
+d16<-get_census("CA16",regions=list(CSD=uid),vectors=c(pph="v_CA16_424"))
+d06<-get_census("CA06",regions=list(CSD=uid),vectors=c(pph="v_CA06_134"))
+
+census_data <- bind_rows(
+  d16 %>% select(Population,Dwellings,Households,pph) %>% mutate(Year=2016),
+  d06 %>% select(Population,Dwellings,Households,pph) %>% mutate(Year=2006))
+
+pop_change <- census_data %>% 
+  select(Year,Population) %>% 
+  pivot_wider(names_from=Year,values_from=Population) %>% 
+  mutate(Change=`2016`-`2006`) %>% 
+  pull(Change)
+
+pph_change <- census_data %>% 
+  select(Year,pph) %>% 
+  pivot_wider(names_from=Year,values_from=pph) %>% 
+  mutate(Change=`2016`-`2006`) %>% 
+  pull(Change)
+```
+
+This stat is pretty simple, and the tweet's author, Patrick Condon (Prof. of Landscape Architecture and all-around commentator-at-large), vaguely points to a [City of Vancouver report](https://vancouver.ca/files/cov/social-indicators-profile-city-of-vancouver.pdf), which cites census population counts, which has the City of Vancouver population changing by `r scales::comma(pop_change)` between the 2006 and 2016 censuses. 
+
+## 55 thousand new homes
+This numbers is sourced from a [PDF posted on BC government website detailing aggregate annual housing starts for BC cities for the ten years 2010 through 2019](https://www2.gov.bc.ca/assets/gov/data/statistics/economy/building-permits/econ_housing_starts_urban_communities.pdf) These are just taken from the CMHC Scss, which makes it easier to get to the raw numbers.
+
+
+```{r}
+cov_completions <- 
+  get_cmhc(cmhc_timeseries_params(table_id=cmhc_table_list$`Scss Completions Time Series`,
+                                  region=cmhc_region_params_from_census(uid))) %>%
+  mutate(GeoUID=uid) %>%
+  mutate(Date=as.Date(paste0("01 ",X1),format="%d %b %Y")) %>%
+  pivot_longer(c("Single","Semi-Detached",   "Row", "Apartment",   "All"),names_to = "Type",values_to = "Count")
+
+cov_starts <- 
+  get_cmhc(cmhc_timeseries_params(table_id=cmhc_table_list$`Scss Starts Time Series`,
+                                  region=cmhc_region_params_from_census(uid))) %>%
+  mutate(GeoUID=uid) %>%
+  mutate(Date=as.Date(paste0("01 ",X1),format="%d %b %Y")) %>%
+  pivot_longer(c("Single","Semi-Detached",   "Row", "Apartment",   "All"),names_to = "Type",values_to = "Count")
+```
+
+```{r starts-wrong-timeframe}
+mind <- as.Date("2010-01-01")
+maxd <- as.Date("2020-01-01")
+plot_data <- cov_starts %>%
+  group_by(Year=strftime(Date,"%Y"),Type) %>%
+  summarise(Count=sum(Count)) %>%
+  mutate(Date=as.Date(paste0(Year,"-07-01")))
+
+summary_data <- plot_data %>%
+  filter(Date>=mind,Date<=maxd) %>%
+  group_by(Type) %>%
+  summarize(label=sum(Count),
+            Count=max(Count)*1.1)
+
+ggplot(plot_data,aes(x=Date,y=Count)) +
+  geom_rect(xmin=mind,xmax=maxd,ymin=-Inf,ymax=Inf,fill="darkgrey",colour=NA,alpha=0.25) +
+  #geom_point(shape=21) +
+  #geom_line() +
+  geom_bar(stat="identity",fill="steelblue") +
+  facet_wrap(~Type,scales="free_y") +
+  theme_bw() +
+  geom_text(data=summary_data %>% mutate(Date=as.Date("2015-01-01")),aes(label=label)) +
+  scale_y_continuous(labels=scales::comma) +
+  scale_x_date(breaks=as.Date(paste0(seq(1990,2020,10),"-07-01")),date_labels = "%Y") +
+  labs(title="City of Vancouver annual housing starts",
+       x=NULL,y="Number of units",
+       caption="Data: CMHC Scss")
+```
+
+Aggregating to annual starts we see the sharp dip during the crash in 2009 and the bumper year in 2016 in response to rising prices. For reference we shade the ten years 2010 through 2019 that Condon picked out and aggregate the counts.
+
+## Starts vs Completions
+Starts are a poor metric for comparing to population growth, nobody can live in a building start. Let move on to look at completions, which is a much better metric for this and is readily available. 
+
+
+```{r completions-wrong-timeframe}
+mind <- as.Date("2010-01-01")
+maxd <- as.Date("2020-01-01")
+plot_data <- cov_completions %>%
+  group_by(Year=strftime(Date,"%Y"),Type) %>%
+  summarise(Count=sum(Count)) %>%
+  mutate(Date=as.Date(paste0(Year,"-07-01")))
+
+summary_data <- plot_data %>%
+  filter(Date>=mind,Date<=maxd) %>%
+  group_by(Type) %>%
+  summarize(label=sum(Count),
+            Count=max(Count)*1.1)
+
+ggplot(plot_data,aes(x=Date,y=Count)) +
+  geom_rect(xmin=mind,xmax=maxd,ymin=-Inf,ymax=Inf,fill="darkgrey",colour=NA,alpha=0.25) +
+  #geom_point(shape=21) +
+  #geom_line() +
+  geom_bar(stat="identity",fill="steelblue") +
+  facet_wrap(~Type,scales="free_y") +
+  theme_bw() +
+  geom_text(data=summary_data %>% mutate(Date=as.Date("2015-01-01")),aes(label=label)) +
+  scale_y_continuous(labels=scales::comma) +
+  scale_x_date(breaks=as.Date(paste0(seq(1990,2020,10),"-07-01")),date_labels = "%Y") +
+  labs(title="City of Vancouver annual housing completions",
+       x=NULL,y="Number of units",
+       caption="Data: CMHC Scss")
+```
+
+So we are left with about 50k newly constructed units. 
+
+## Matching timeframes
+But the time frame is off. Condon was using population numbers between 2006 and 2016 censuses, we should look at completions in that timeframe. We can think about what month we want to break the time series, but that won't change the numbers much. For simplicity we just take completions for the years 2006 through 2015.
+
+```{r completions-coorect-timeframe}
+mind <- as.Date("2006-01-01")
+maxd <- as.Date("2016-01-01")
+plot_data <- cov_completions %>%
+  group_by(Year=strftime(Date,"%Y"),Type) %>%
+  summarise(Count=sum(Count)) %>%
+  mutate(Date=as.Date(paste0(Year,"-07-01")))
+
+summary_data <- plot_data %>%
+  filter(Date>=mind,Date<=maxd) %>%
+  group_by(Type) %>%
+  summarize(label=sum(Count),
+            Count=max(Count)*1.1)
+
+ggplot(plot_data,aes(x=Date,y=Count)) +
+  geom_rect(xmin=mind,xmax=maxd,ymin=-Inf,ymax=Inf,fill="darkgrey",colour=NA,alpha=0.25) +
+  #geom_point(shape=21) +
+  #geom_line() +
+  geom_bar(stat="identity",fill="steelblue") +
+  facet_wrap(~Type,scales="free_y") +
+  theme_bw() +
+  geom_text(data=summary_data %>% mutate(Date=as.Date("2011-01-01")),aes(label=label)) +
+  scale_x_date(breaks=as.Date(paste0(seq(1990,2020,10),"-07-01")),date_labels = "%Y") +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="City of Vancouver annual housing completions",
+       x=NULL,y="Number of units",
+       caption="Data: CMHC Scss")
+```
+
+For that timeframe the total number of completions was around 42k. Breaking it out by type of dwelling we also notice that around 8 thousand of those completions were single detached, many of which which are likely one-for-one replacements. This points the issue that completions isn't really the right metric to use to compare against population growth, we need to account for demolitions and take net new units.
+
+## Gross vs net new units
+Unfortunately we don't have good data on demolitions, but there is some and we can fold that in. 
+
+```{r}
+
+get_demolitions_data <- function(cache_path=here::here("data/metro_van_demolutions.csv")){
+  if (!file.exists(cache_path)){
+  get_raw_demolitions_data <- function(url,page){
+    d<-tabulizer::extract_tables(url,pages = page)[[1]] %>% 
+      as.data.frame() %>%
+      setNames(slice(.,1:2) %>% summarize_all(function(d)paste0(d,collapse = " ") %>% gsub("^ *","",.)) %>% as.character()) %>%
+      slice(-seq(1,2)) %>%
+      as_tibble() %>%
+      mutate(across(-one_of("Municipality"),function(d)gsub(",","",d) %>% as.integer))
+  }
+  
+  d0 <- get_raw_demolitions_data("https://fraseropolis.files.wordpress.com/2016/11/2010-metro-van-housing_data_book.pdf",41)
+  d1 <- get_raw_demolitions_data("http://www.metrovancouver.org/services/regional-planning/PlanningPublications/MV_Housing_Data_Book.pdf",42)
+  
+  raw_data <- d0 %>% select(-matches("Average")) %>%
+    left_join(d1 %>% select(-matches("Average")) %>% select(c("Municipality",setdiff(names(.),names(d0)))))
+  write_csv(raw_data,cache_path)
+  } 
+  read_csv(cache_path)
+}
+
+raw_data <- get_demolitions_data()
+
+years= names(raw_data %>% select(matches("\\d{4}"))) 
+
+muni_lookup <- list(
+  "Anmore (VL)"="Anmore",
+  "Belcarra (VL)"="Belcarra",
+  "Bowen Island (IM)"="Bowen Island",
+  "Burnaby (CY)"="Burnaby",
+  "Coquitlam (CY)"="Coquitlam",               
+  "Delta"="Delta (DM)",
+  "Greater Vancouver A (RDA)"="UBC, UEL",                
+  "Langley (CY)"="Langley City",
+  "Langley (DM)"="Langley Township",
+  "Lions Bay (VL)"="Lions Bay",
+  "Maple Ridge (CY)"="Maple Ridge",
+  "Maple Ridge (DM)"="Maple Ridge",
+  "New Westminster (CY)"="New Westminster",
+  "North Vancouver (CY)"="North Vancouver City",
+  "North Vancouver (DM)"="North Vancouver District",
+  "Pitt Meadows"="Pitt Meadows (CY)",
+  "Pitt Meadows"="Pitt Meadows (DM)",
+  "Port Coquitlam (CY)"="Port Coquitlam",
+  "Port Moody (CY)"="Port Moody",
+  "Richmond (CY)"="Richmond",
+  "Surrey (CY)"="Surrey",
+  "Vancouver (CY)"="Vancouver",
+  "West Vancouver (DM)"="West Vancouver",
+  "White Rock (CY)"="White Rock",
+  "Metro Vancouver"="Metro Vancouver"
+)
+
+demolitions <- raw_data %>% 
+  pivot_longer(-Municipality,names_to = "Year",values_to = "Count") %>%
+  filter(Municipality =="Vancouver") %>%
+  mutate(Series="Demolitions") 
+  
+data <-  
+  bind_rows(demolitions,
+            cov_completions %>% 
+              filter(Type=="All") %>% 
+              mutate(Series="Completions",Year=strftime(Date,"%Y")) %>%
+              group_by(Series,Year) %>%
+              summarise(Count=sum(Count))) %>%
+  select(Year,Series,Count) %>%
+  mutate(Date=as.Date(paste0(Year,"-07-01"))) 
+
+```
+
+```{r completions-demo-combo}
+mind <- as.Date("2006-01-01")
+maxd <- as.Date("2016-01-01")
+
+plot_data <- data %>% 
+  filter(Year%in% years) %>%
+  mutate(Value=case_when(Series=="Demolitions"~ -Count,TRUE ~ Count))
+
+summary_data <- plot_data %>%
+  filter(Date>=mind,Date<=maxd) %>%
+  group_by(Series) %>%
+  summarize(label=sum(Count),
+            Count=max(Count)*1.1,
+            Value=ifelse(max(Value)>max(-Value),max(Value),-max(-Value))*1.3) %>%
+  mutate(Total=sign(Value)*label)
+
+
+
+plot_data %>% 
+ggplot(aes(x=Date,y=Value,fill=fct_rev(Series))) +
+  geom_rect(xmin=mind,xmax=maxd,ymin=-Inf,ymax=Inf,fill="darkgrey",colour=NA,alpha=0.25) +
+  geom_bar(stat="identity") +
+  geom_text(data=summary_data %>% mutate(Date=as.Date("2011-01-01")),aes(label=label,colour=Series)) +
+  scale_fill_manual(values=c("Completions"="darkgreen","Demolitions"="brown")) +
+  scale_colour_manual(values=c("Completions"="darkgreen","Demolitions"="brown"),guide='none') +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_date(breaks=as.Date(paste0(years,"-07-01")),date_labels = "%Y") +
+  labs(title="City of Vancouver Completions and demolitions",x="Date",y="Total Number",
+       caption="MountianMath, CMHC Scss, Metro Vancouver Housing Databook",fill=NULL)
+```
+
+This leaves us with `r scales::comma(sum(summary_data$Total))` completions net of demolitions. This is only a rough estimate, demolitions are prone to under-counting, and this does not account for conversions or de-conversions.
+
+We can plot the quotient of demolitions to completions to better understand how these two relate.
+
+```{r completions-demo-ratio}
+plot_data <- data %>% 
+  select(Date,Series,Count) %>%
+  pivot_wider(names_from = Series,values_from=Count) %>%
+  mutate(Ratio=Demolitions/Completions) %>%
+  filter(!is.na(Ratio))
+
+
+averages <- plot_data %>% 
+  summarize_at(c("Demolitions","Completions"),sum) %>%  
+  mutate(Ratio=Demolitions/Completions)
+ggplot(plot_data,aes(x=Date,y=Ratio)) +
+  geom_line() +
+  geom_hline(data=averages,aes(yintercept = Ratio),linetype="dashed") +
+  theme_bw() +
+  labs(title="Demolitions to Completions",x="Date",y="Ratio",caption="MountianMath, CMHC Scss, Metro Vancouver Housing Databook",x=NULL,y="Ratio of demolitions to completions")
+
+```
+
+This tells us that as a heuristic for the City of Vancouver we should expect about 20% of completions to replace demolitions, and 80% of gross completions amounting to net new dwellings.
+
+
+## Just use the census for both population and dwellings counts
+```{r}
+dw_change <- census_data %>% 
+  select(Year,Dwellings) %>% 
+  pivot_wider(names_from=Year,values_from=Dwellings) %>% 
+  mutate(Change=`2016`-`2006`) %>% 
+  pull(Change)
+```
+
+Ultimately we should probably just go back to the census, which has estimates for dwelling units for exactly the timeframe we need. The census counted `r scales::comma(dw_change)` more private dwelling units in 2016 than in 2006. This differed from our above estimate mostly because of problems with tracking demolitions, but also with failure to account for conversions and deconversions, as well as re-classifications of dwelling units in the census. 
+
+## Relating population to dwelling change
+
+Now that we have net counts of population and dwellings, we need to combine these two. The coupling depends on how people group up into households. For this kind of analysis it suffices to just look at the average household size, so the total population divided by the total number of households. But some dwellings are (necessarily) unoccupied as explained up top, so this gets complicated. We will have to take this slowly.
+
+The above numbers leaves us naively with a net ratio of `r round(pop_change/dw_change,2)` net new people per net new dwelling unit. But what does that mean?
+
+Before we move on, there is another problem. The census, as well as the construction numbers we have been using, only counts private dwellings, which excludes things like nursing homes. Which means we should not use the total population change, but only the change of population in private dwellings, which was `r scales::comma(pph_change)` and brings our ratio to `r round(pph_change/dw_change,2)`. (We will ignore the rabbit hole with dwellings having been [re-classified from private to collective between these censuses](https://doodles.mountainmath.ca/blog/2018/02/08/neighbourhood-level-census-data/).)
+
+```{r}
+hh_size <- census_data %>%
+  mutate(hh_size=pph/Households) %>%
+  select(Year,hh_size) %>%
+  pivot_wider(names_from=Year,values_from=hh_size)
+
+hh_diff <- hh_size %>%
+  mutate(d=`2006`-`2016`) %>% 
+  pull(d)
+  
+pop_pushed_out <- hh_diff * (census_data %>%
+  filter(Year==2006) %>%
+  pull(Households))
+```
+
+But what does this number mean? The average households size in the City of Vancouver in 2006 was `r round(hh_size[['2006']],2)`, so have we been building too many dwellings? Not really. The average household size dropped to `r round(hh_size[['2016']],2)` by 2016. Which may not seem like much of a difference until one realizes that this change in household size means that if we had not built any extra dwelling we would have seen a population loss of `r scales::comma(pop_pushed_out)`! This effect can be seen by [looking at longer census timelines at fine geography, where for example much of the West Side of Vancouver has lost population](https://doodles.mountainmath.ca/blog/2019/06/15/census-custom-timelines/). That alone increases the population we effectively need to accommodate by new buildings by `r scales::percent(pop_pushed_out/pph_change)`.
+
+We can take this calculus a step further and [break up the change in population into three factors](https://doodles.mountainmath.ca/blog/2017/02/10/2016-census-data/):
+
+* population change due to a (net) change in dwelling units,
+* population change due to a change in household size,
+* population change due to a change in dwellings unoccupied by usual residents.
+
+The latter of which can be split up into a change in dwellings that are split further into a change in dwellings that are occupied by temporarily present residents, for example students or seasonal workers, or change in truly unoccupied dwellings. We also made an [interactive map to visualize these components separately for the 2011 to 2016 timeframe](https://censusmapper.ca/maps/988).
+
+This accounting identity allows us to better understand why population changed.
+
+```{r pop-change-decomposition}
+dw06=filter(census_data,Year==2006)$Dwellings
+dw16=filter(census_data,Year==2016)$Dwellings
+pop06=filter(census_data,Year==2006)$pph
+pop16=filter(census_data,Year==2016)$pph
+hh06=filter(census_data,Year==2006)$Households
+hh16=filter(census_data,Year==2016)$Households
+hs06=hh_size$`2006`
+hs16=hh_size$`2016`
+ur06=filter(census_data,Year==2006) %>% mutate(ur=1-Households/Dwellings) %>% pull(ur)
+ur16=filter(census_data,Year==2016) %>% mutate(ur=1-Households/Dwellings) %>% pull(ur)
+
+d_ur <- ur16-ur06
+d_hs <- hs16-hs06
+d_dw <- dw16-dw06
+d_pop <- pop16-pop06
+d_hh <- hh16-hh06
+
+# sanity check:
+
+dd_dw <- hs06 *  d_dw * (1-ur06)
+dd_ur <- - hs06 * dw16 * d_ur
+dd_hs <- hh16 * d_hs
+
+stopifnot(abs(d_pop - dd_dw - dd_ur - dd_hs)<1)
+
+pop_change_reasons <- 
+tibble(Type=c("Change in dwellings","Change in unoocupied\n(by usual residents)","Change in household size"),
+       Value=c(dd_dw,dd_ur,dd_hs)) 
+
+pop_change_reasons %>%
+  ggplot(aes(y=Type,x=Value)) +
+  geom_bar(stat="identity",fill="brown") +
+  theme_bw() +
+  scale_x_continuous(labels=scales::comma,breaks=seq(-50000,100000,10000)) +
+  labs(title="City of Vancouver composition of population change 2006-2016",
+       x="Number of people",y="Reason for poulation change",
+       caption="StatCan Census 2006, 2016")
+
+```
+
+If household size and share of unoccupied dwellings had remained constant, then Vancouver would have gained almost 75k people over this timeframe. But household size shrank, leading to a loss of 20k people. The share of dwelling units not occupied by usual residents also increased, leading to an additional loss of 5k people.
+
+## Focusing in on dwellings not occupied by usual residents
+
+So what all of this comes down to is the population loss due to an increase in the rate of dwelling units not occupied by usual residents. Now we at least have the numbers right, but this still requires some thoughtful analysis as we have learned from the [misinterpretations past](https://doodles.mountainmath.ca/blog/2020/01/27/mythical-oversupply/).
+
+Let's see what's going on there. 
+
+```{r}
+regions <- list(CSD=uid)
+
+structural_names <- c("Total",
+                      "Single-detached",
+                     "Semi-detached",
+                     "Row/Townhouse",
+                     "Duplex",
+                     "Lowrise",
+                     "Highrise",
+                     "Other single",
+                     "Movable")
+
+vancouver_dwellings_1996 <- 697429
+vancouver_households_1996 <- 692960
+get_detail_data <- function(regions,year,level="Regions"){
+  short_year=substr(as.character(year),3,4)
+  ds = paste0("CA",short_year,"xSD")
+  total_vars <- setNames(paste0("v_",ds,"_",seq(1,9)),structural_names)
+  unoccupied_vars <- setNames(paste0("v_",ds,"_",seq(1,9)+27),structural_names)
+  temporary_vars <- setNames(paste0("v_",ds,"_",seq(1,9)+18),structural_names)
+  bind_rows(
+    get_census(paste0("CA",short_year),regions=regions,vectors=total_vars,level=level) %>% mutate(Metric="Total"),
+    get_census(paste0("CA",short_year),regions=regions,vectors=unoccupied_vars,level=level) %>% mutate(Metric="Unoccupied"),
+    get_census(paste0("CA",short_year),regions=regions,vectors=temporary_vars,level=level) %>% mutate(Metric="Temporary"),
+    ) %>%
+    mutate(Year=year) %>%
+    pivot_longer(cols=structural_names,names_to = "Structural type",values_to = "Value")
+}
+
+pure_structural_types <- setdiff(structural_names,"Total")
+structure_colours <- setNames(RColorBrewer::brewer.pal(length(pure_structural_types),"Dark2"),pure_structural_types)
+
+
+data <- c(2006,2016) %>% 
+  lapply(function(year) {
+  get_detail_data(regions,year) %>%
+    mutate(Year=year)
+}) %>%
+  bind_rows  %>%
+  left_join((.) %>% filter(Metric=="Total") %>% select(GeoUID,Year,`Structural type`,Total=Value),
+            by=c("GeoUID","Year","Structural type")) %>%
+  mutate(Share=Value/Total) %>%
+  group_by(GeoUID,Metric,`Structural type`) %>%
+  arrange(Year) %>%
+  mutate(Last=lag(Value,order_by = Year)) %>%
+  mutate(Change=Value-Last) %>%
+  mutate(Period=paste0(lag(Year,order_by = Year),"-",Year))
+
+
+share_plot_data <- data %>% 
+  #filter(GeoUID=="59933") %>%
+  filter(Metric %in% c("Unoccupied","Temporary"),`Structural type`!="Total") %>%
+  filter(!(`Structural type` %in% c("Movable","Other single"))) %>%
+  group_by(GeoUID,`Structural type`,Metric) %>%
+  mutate(ShareChange=Share-lag(Share,order_by = Year)) %>%
+  select(GeoUID,`Structural type`,Metric,Year,Period,Share,Total,Value,Change,ShareChange)
+
+share_plot_data_combined <- share_plot_data %>%
+  group_by(GeoUID,`Structural type`,Year,Period) %>%
+  summarize(Share=sum(Share),Total=first(Total),Value=sum(Value),Change=sum(Change),ShareChange=sum(ShareChange),
+            .groups = "drop") %>%
+  group_by(GeoUID,`Structural type`) %>%
+  mutate(ShareChange=Share-lag(Share,order_by = Year))
+
+```
+
+
+```{r change-in-unoccupied-total}
+ggplot(share_plot_data_combined %>% filter(Year==2016),
+       aes(x=`Structural type`,y=Change,fill=`Structural type`)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=structure_colours,guide=FALSE) +
+  scale_y_continuous(labels=scales::comma) +
+  theme_light() +
+  facet_wrap("Period") +
+  theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+  labs(title="Change in dwelling units not occupied by usual residents by structural type",
+       caption="MountainMath, StatCan Census 2006, 2016",
+       x="",y="Change in dwelling units not\noccupied by usual residents")
+```
+
+This gives an accounting of the change in the total number of units not occupied by usual residents. Most of these are "duplex" units, which [as we know](https://doodles.mountainmath.ca/blog/2020/01/27/mythical-oversupply/) maps onto units in single family homes where the census has found a suite at some point in time, and suites are the most empty form of housing in Vancouver. And some of that addition is simply due to the census updating its methods to discover more suites between years, rather than owners becoming less willing to rent them out.
+
+The second largest category is highrise apartments. But that's also the form of housing that we have been adding the most of, so it's hard to interpret this, as it is with the suites. To get a better sense we can see if the share of units not occupied by usual residents has changed between those two censuses.
+
+
+```{r change-in-unoccupied-pp}
+pp_scale <-function(x) {
+  paste0(prettyNum(x*100,digits=2),"pp")
+}
+
+ggplot(share_plot_data_combined %>% filter(Year==2016),
+       aes(x=`Structural type`,y=ShareChange,fill=`Structural type`)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=structure_colours,guide=FALSE) +
+  scale_y_continuous(labels=pp_scale) +
+  theme_light() +
+  facet_wrap("Period") +
+  theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+  labs(title="Change in share of 'surplus' dwelling units by structural type",
+       caption="MountainMath, StatCan Census 2001-2016",
+       x="",y="Percentage point change in\nshare of 'surplus' dwelling units")
+
+```
+
+Looking at the percentage point change we see that "duplex", as well as "single detached" homes, have seen the increases in the share of homes not occupied by usual residents. All other forms of housing has seen decreases. Which also underlines that housing is a system, and it's not necessarily the new homes that end up being unoccupied (by usual residents), but could well be existing homes. And many of these have probably just been re-absorbed for use by their owners rather than sitting empty.
+
+## Population growth vs demand
+The last point left is the equating of population growth with demand. In its balancing act with supply, demand contributes to prices. But we don't (and really can't) measure demand directly. Demand reflects more than simply population growth. It's also dependent upon the ease of financing, as well as wealth and incomes of the population here now. But - and this is key - there's still more to demand. There are people who continue to move to Vancouver, bringing their own wealth and income. We anticipate even more of them would come if prices and rents were lower. And there are others who invest in Vancouver, in part because prices and rents keep going up. All this works itself out through markets, matching supply to demand in setting prices.
+
+Prices, as Condon points out, are very high. And if you think that prices are too high (we definitely do), you should certainly advocate for more social housing (we definitely do). You can also advocate for higher property taxes that would cut into investment profits (we certainly do). But if you also want housing to remain accessible via markets, you have to take demand seriously, and not think you're going to catch it all by the handy shortcut of looking at past population growth. Maybe you don't care so much about the abstract vastness of demand, and you just want to make sure the housing we have gets used for housing? Given concerns about all the stuff investors might get up to, that seems reasonable. Try putting in place an Empty Homes Tax like we have here in Vancouver! Where we know very few homes remain empty for long.
+
+Given what we know about supply and demand and the lack of empty homes in Vancouver, there's no good path to lower prices that doesn't run through adding a lot more housing. There are still bad paths, of course. We could make Vancouver a much less desirable place to live by, say, plunking down an enormous chicken factory farm in Shaughnessy. But that's a topic for a different post. 
+
+## But we have been building a lot, right?
+Have we been building a lot? Well, not really. It's worth taking a step back to look at all of Metro Vancouver over longer timelines to put our current construction into context. The Vancouver of the 70s, or even earlier, was very different from the Vancouver of today, so we normalize by population.
+
+```{r housing-starts-completions-long-timeline}
+pop_data <- read_csv(here::here("data/metro_van_population_estimate_timeline.csv"),skip=13) %>% 
+  mutate(Date=as.Date(date)) %>%
+  mutate(Year=strftime(Date,"%Y") %>% as.integer())
+
+short_cma_uids <- c("933")
+
+# population_cma <- get_cansim_sqlite("17-10-0135") %>%
+#   filter(GeoUID %in% short_cma_uids,
+#          `Age group`=="All ages",
+#          Sex=="Both sexes") %>%
+#   collect_and_normalize(disconnect = TRUE) %>%
+#   mutate(Year=as.integer(REF_DATE)) %>%
+#   select(GeoUID,Year,Name=GEO,Population=val_norm)
+
+# search_cansim_cubes("Canada Mortgage and Housing") %>% filter(grepl("starts",cubeTitleEn)) %>% View
+# search_cansim_cubes("population") %>% 
+#   filter(grepl("metro",cubeTitleEn,ignore.case = TRUE)) %>% 
+#   filter(grepl("population",cubeTitleEn,ignore.case = TRUE)) %>% 
+#   arrange(cubeStartDate) %>% View
+
+starts <- get_cansim("34-10-0143")
+
+starts %>% filter(GeoUID %in% short_cma_uids,
+                  `Housing estimates` %in% c("Housing starts","Housing completions")) %>%
+  mutate(Year=as.integer(strftime(Date,"%Y"))) %>%
+  group_by(Year,GeoUID,`Housing estimates`,`Type of unit`) %>%
+  summarise(Value=sum(val_norm,na.rm=TRUE),.groups="drop") %>%
+  #left_join(population_cma,by=c("GeoUID","Year")) %>%
+  left_join(pop_data %>% select(Year,Date,pop2=Population),by="Year") %>%
+  filter(`Type of unit`=="Total units") %>%
+  ggplot(aes(x=Date,y=Value/pop2*1000,fill=`Housing estimates`)) +
+  geom_bar(stat="identity",position="dodge") +
+  theme_bw() +
+  geom_smooth(formula=y~1,method="lm",se=FALSE,size=0.5,colour="black",show.legend = FALSE) +
+  scale_x_date(breaks=seq(as.Date("1950-01-01"),as.Date("2020-01-01"),by="5 years"),date_labels = "%Y") +
+  theme(legend.position = "bottom") +
+  facet_wrap(~`Housing estimates`,ncol=1) +
+  scale_fill_manual(values=sanzo::duos$c070) +
+  labs(title="Metro Vancouver housing starts and completions",
+       y="Starts/Completions per 1000 population",
+       x=NULL,
+       caption="StatCan table 34-10-0143, Population estimates from macrotrends.net")
+
+```
+This shows that while construction's gone up within the last decade, in historical context we aren't building nearly as much as we did in decades past. The last year per-capita housing completions have been above the long-run average was 1996. And this is before accounting for demolitions, the rate of which has likely increased over time as we are running out of greenfield and brownfield development sites.
+
+
+## Upshot
+When we built housing in Vancouver, people came to live in it. We knew this already because hardly any of our housing is empty. So it is likely to continue for the foreseeable future: if we build it, they will come. Indeed, for the most part [they're already here](https://homefreesociology.com/2022/01/26/a-brief-data-based-primer-on-mobility-and-housing/).
+
+But maybe it's still worth wading through data bullshit suggesting otherwise, if only to fertilize more careful analysis. Hopefully we've managed to explain some of the complexities that render overly simplistic approaches to comparing dwelling growth to population growth useless. Given the many intersecting processes at work, it's tricky to figure out how people sort themselves into homes, even when using correct numbers and not some diffusely assembled non-matching numbers. 
+
+If you take affordability and human hardship seriously, there is no question that we have a housing shortage. All data clearly point to this. Prominent commentators like Patrick Condon are now on the record attacking Housing Minister David Eby for taking this data seriously. Indeed, his tweet links back to his Tyee article with exactly this theme. But these attacks are largely based on data bullshit strung together with a bunch of faulty and rather idiosyncratic logic. When faced with this kind of housing shortage denial, coupled with demands we pause for a bespoke rethink of all our working models, we recommend [the Eby response](https://www.theglobeandmail.com/real-estate/vancouver/article-bc-housing-minister-eager-to-spur-supply/).
+
+>   “Well, I’ll be sure to mention that to all the people sleeping in their cars, and lining up to find rental units; that we are going to study the problem more.”
+
+As usual, the code for this post, including the code to scrape the data out of the PDFs, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-01-31-no-shortage-in-housing-bs/index.Rmarkdown) for anyone to reproduce or adapt.
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
+
+
+
