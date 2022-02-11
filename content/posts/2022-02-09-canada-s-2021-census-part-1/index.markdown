@@ -65,13 +65,13 @@ As usual, the code for this post, including the code to scrape the data out of t
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-02-09 08:23:38 PST"
+## [1] "2022-02-10 16:54:48 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [dce93b3] 2022-02-01: link to nathan's blog
+## Head:     [862b66b] 2022-02-09: census 2021 post
 ```
 
 ```
@@ -90,7 +90,7 @@ As usual, the code for this post, including the code to scrape the data out of t
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] mountainmathHelpers_0.1.3 tongfen_0.3.3            
+##  [1] mountainmathHelpers_0.1.3 tongfen_0.3.4            
 ##  [3] forcats_0.5.1             stringr_1.4.0            
 ##  [5] dplyr_1.0.7               purrr_0.3.4              
 ##  [7] readr_2.1.1               tidyr_1.1.4              
