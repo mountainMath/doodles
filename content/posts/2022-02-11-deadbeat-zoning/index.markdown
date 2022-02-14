@@ -60,7 +60,7 @@ To underline that point, let's look at how much these various categories take up
 
 <img src="{{< blogdown/postref >}}index_files/figure-html/zoning-area-1.png" width="1200" />
 
-This shows what we already know, the deadbeat core low-density areas take up a huge portion of our city, and the low-density parts of the fringe will add to that. We can combine the data from these last to graphs to see how much population change per area we got for each of these categories.
+One issue here is that we are including agricultural zoning in Southlands in the "Rest" category, which inflates it's area. Still, this shows what we already know, the deadbeat core low-density areas take up a huge portion of our city, and the low-density parts of the fringe will add to that. We can combine the data from these last to graphs to see how much population change per area we got for each of these categories.
 
 <img src="{{< blogdown/postref >}}index_files/figure-html/pop-growth-per-area-1.png" width="1200" />
 
@@ -75,18 +75,47 @@ One last thing to do is a quick visual check which areas ended up in the Core, F
 <img src="{{< blogdown/postref >}}index_files/figure-html/zoning-check-1.png" width="1200" />
 
 
+## Update (Feb 13th)
+Of course we can ask how this pans out through other Metro Vancouver municipalities. Thanks to our [UBC Socioology Zoning Project](https://zoning.sociology.ubc.ca) we can grab the data from our [interactive metro wide zonig map](https://mountainmath.ca/zoning_map) and run this for all Metro Vancouver municipalities. We have [investigated before how zoning impacts population growth](https://engage.gov.bc.ca/app/uploads/sites/121/2021/06/UBCSociologyZoningProject_appendix_3.pdf), time to run it against 2021 data.
+
+Additionally we will refine the above analysis by running a second version that includes agricultural zoning. This won't really make much of a difference in Vancouver, but will matter for some other Metro Vancouver municipalities with large share of agricultural land. However, much of the agricultural zoning is in the flood plains, and the benefits of densifying in this area have to be carefully weighted against the risks. At some point we should come back to this with a more detailed analysis, for now we just run two versions, one with agricultural zoning included in "low density" areas, and one where it's not included. This really only matters when looking at population change per hectare
+
+
+
+
+ 
+
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-6-1.png" width="1200" />
+
+This paints a more varied picture of how growth has been allocated with respect to low-density zoning. Some municipalities, like Surrey and the District of Langley, do manage to add population in low-density zoning. We will need to look in more detail if this is happening due to greenfield development or densification, or due to increasing household sizes as [initial naive data suggests](https://censusmapper.ca/maps/3066). However it should not surprise that all municipalities are better at adding population to higher-density areas, especially when considering the Metro Vancouver Zoning Project zoning data that is pegged to summer 2021, so at the end of our 2016-2021 population change observation period.
+
+We also notice the difference when counting agricultural zoning as part of low-density zoning, hinting at ongoing development of agricultural land. However, we should check this more carefully, Pit Meadows looks funny with the "Rest" area losing population when including Agricultural zoning as part of the low-density cutout. This warrants further investigation. Let's take a closer look at the areas in Pitt Meadows that lost at least 50 people.
+
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-7-1.png" width="1200" />
+
+The areas in question are a three dissemination block, two of which were joined via TongFen to match up across the censuses, that are situated in the middle strip of the Lougheed Highway. In 2016 the Census registered 679 people living in the middle of the highway, in 2021 the census has zero living there. This was likely due to a geocoding error that got corrected in the 2021 census, and the people got moved to their proper place in neighbouring regions. This is a case where StatCan should have indicated that these blocks be joined with their appropriate neighbouring blocks in their official correspondence file, but unfortunately this did not happen.
+
+A good reminder that census data is not always as accurate as we might light it to be, and visual inspection and ground-truthing of data is important.
+
+Again, all these categories have different areas, and thus the impact of the population change can be quite different. To get a better view of this we can look at total population change per hectare of land in each of these categories, after removing schools and parks.
+
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-1.png" width="1200" />
+
+This brings home the point that across the region most of the growth happens outside of low-density areas, especially if we include agricultural land in our low-density base.
+
+
 As usual, the code for this post, including the code to scrape the data out of the PDFs, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-02-11-deadbeat-zoning/index.Rmarkdown) for anyone to reproduce or adapt.
 
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-02-11 21:07:48 PST"
+## [1] "2022-02-13 20:48:28 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [1eaa724] 2022-02-12: deadbeat zoning
+## Head:     [47130e7] 2022-02-12: minor edits
 ```
 
 ```
