@@ -1,0 +1,494 @@
+---
+title: Unoccupied Canada
+author: Jens von Bergmann
+date: '2022-02-14'
+slug: unoccupied-canada
+categories:
+  - cancensus
+  - Empty Homes
+  - Vancouver
+tags: []
+description: "The census 'unoccupied by usual residents' metric is often in the news and one of the most frequentliy misrepresnted parts of census data. A quick primer on what does does and does not say."
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2022/02/14/unoccupied-canada/index_files/figure-html/census-eht-svt-share-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/02/14/unoccupied-canada/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 150,
+	fig.width = 8,
+	fig.height = 6,
+	cache = TRUE
+)
+library(tidyverse)
+library(sf)
+library(cancensus)
+library(tongfen)
+library(cmhc)
+library(mountainmathHelpers)
+```
+
+
+## TLDR
+
+Canadian Census data on ["Dwellings Unoccupied by Usual Residents"](https://censusmapper.ca/maps/3055) are frequently misunderstood. Now that data from 2021 are out, we provide a timely explainer and draw upon a variety of resources, including comparisons with US data, Empty Homes Tax data, and zooming in on census geographies, to help people interpret what we can see.
+
+## Canada Unoccupied
+
+Given that [ongoing occupations](https://www.cbc.ca/news/politics/trudeau-premiers-cabinet-1.6350734) are so much in the news, let's turn the channel to talk about those parts of Canada that are unoccupied!
+
+We have new census data with population, dwelling and household counts. This gives us a [first view on how neighbourhoods in Canada have changed](https://doodles.mountainmath.ca/blog/2022/02/09/canada-s-2021-census-part-1/). For better or worse, one metric that can be derived from these three census variables is "dwellings not occupied by usual residents," otherwise known as the difference between dwelling units and households.
+
+This metric is frequently misunderstood and we have devoted a lot of digital ink attempting to clear things up. With new data out we are already seeing [bad takes based on this metric in the news](https://www.theglobeandmail.com/business/article-census-data-shows-torontos-housing-units-growing-faster-than/). And it only gets worse when looking at social media commentary. 
+
+## Explainer
+What does "not occupied by usual residents mean"? In Canada this metric can be decomposed into two components: 1) dwellings that were unoccupied on census day, and 2) dwellings that were occupied, but by people who have their usual residence elsewhere. This second category includes, for instance, people working and living temporarily in a different city and students that return to their parent's place at the end of the semester. Out of these two components, actually unoccupied dwellings make up the vast majority of unoccupied by usual resident dwellings, but in some regions, for example college towns, temporarily occupied dwellings can make up half of such dwellings. By way of illustration, for the censuses 2001 through 2016 we have a [cross-tabulation on CensusMapper](https://censusmapper.ca/maps/2491) that shows just the unoccupied dwellings, which can additionally be sliced by structural type of dwelling.
+
+So what's going on with unoccupied dwellings? Social media and many (poorly done) news reports would have us believe these are indicative of some form of "toxic demand" or empty "safety deposit boxes in the sky." But is this the case?
+
+There are multiple sources of data that can help shed light on the nature of dwellings counted as unoccupied in the census. First, we can put Canadian rates of units not occupied by usual residents in context with US cities, where the ACS collects information on the reason why a dwelling unit may be unoccupied. Second, we can look at a cross tabulation of document type (detailing if the dwelling is occupied by usual residents, temporarily present persons, or unoccupied) and structural type. Third, we can look at relevant administrative data, including the City of Vancouver's Empty Homes Tax and BC's Speculation & Vacancy Tax. Finally, we can zoom in and look in more detail at the data newly released from the 2021 Census results.
+
+### Comparison to US ACS data
+
+![](https://doodles.mountainmath.ca/posts/2020-01-27-mythical-oversupply_files/figure-html/unnamed-chunk-22-1.png)
+
+In this infographic we match data from the last Census (2016) to ACS data from the same year. The closest to "toxic demand" or "empty safe deposit boxes in the sky" in the ACS data would appear to be dwellings showing up in green for "seasonal, recreational or occasional use." These are the sort generally welcomed by vacation destinations like Miami. By contrast, other big cities, like Detroit, see what looks more like a "toxic lack of demand" in "other," likely abandoned dwellings (showing up in brown), though "other" is a broad term encompassing many possible reasons for vacant dwellings (e.g. recent death of owner). The rest of the vacancies showing up in US data tend to be temporary and transactional (related to sales and rentals). We don't get this same breakdown in the Canadian data, but we expect the underlying patterns to be similar, suggesting a baseline of vacancies associated with normal transactions; not unoccupied long term, but merely on Census day. Larger variation in occasional and other uses which may reflect longer-term vacancies is layered on top.  
+
+### Document type by structural type
+Refined data from the 2016 Census (not yet available in 2021) also enables us to split out unoccupied units by structural type of dwelling. Let's take a look at what this looks like for three Canadian cities: the City of Vancouver, City of Toronto, and City of Ottawa.
+
+![](https://doodles.mountainmath.ca/posts/2020-12-07-what-to-expect-from-an-empty-homes-tax_files/figure-html/ott-tor-unoccupied-1.png)
+
+We note that in all three cities, the dwelling type most likely to register as unoccupied is an apartment in a "duplex." Duplex is the designation the Census gives to buildings when a basement apartment is added to a single-family detached house, turning both the upper and lower unit created into "apartments in a duplex." The census puts in an effort to find these [slippery and often informal kinds of housing](https://homefreesociology.com/2021/06/09/basement-confidential-vancouvers-informal-housing-stock/). But it's tricky to do well and keep up with these flexible units.  When a homeowner reabsorbs the suite into the main unit or chooses not to rent it out for whatever reason, the suite registers as unoccupied in the census. Accordingly, the distribution of housing stock matters for occupancy rates. Cities with [lots of secondary suites](https://homefreesociology.com/2021/06/09/basement-confidential-vancouvers-informal-housing-stock/) mixed into their dwelling stock tend to register with higher rates of unoccupied homes. 
+
+## Administrative Data
+Let's turn to administrative data from the City of Vancouver's [Empty Homes Tax](https://vancouver.ca/files/cov/vancouver-2021-empty-homes-tax-annual-report.pdf) (EHT) and BC's [Speculation and Vacancy Tax](https://homefreesociology.com/2021/11/22/three-years-of-speculation-and-vacancy-tax-data/) (SVT). While the most recent data from these taxes extend only to 2020, they provide a bridge, of sorts, between the 2016 Census and the 2021 Census, and also establish estimates of the prevalence of problematic long-term vacancies, as defined by the taxes for these years.  Of note, the taxes were put in place in 2017 (EHT) and 2018 (SVT) amid the perception that problematic long-term vacancies were widespread, in part extending from [misinterpretations of Census data](https://www.cbc.ca/news/canada/british-columbia/number-of-empty-homes-in-vancouver-hits-record-high-1.4175999).
+
+Below we plot the percentage of Private Dwellings Unoccupied by Usual Residents from the 2016 and 2021 Census against the percentage of Taxable Properties Containing Dwellings taxed as "Empty" in the publicly reported EHT and SVT data. For EHT, we also note properties declared exempt from taxation but not occupied by an owner or renter. These properties represent possible long-term empty dwellings (as distinct from shorter term empty dwellings that would also be caught by the Census).
+
+
+```{r message=FALSE, warning=FALSE}
+
+get_svt_data <- function(year=2020){
+  tmp <- tempfile(fileext = ".pdf")
+  url <- NULL
+  if (year==2018) url="https://news.gov.bc.ca/files/SVT_Consultation_All.pdf"
+  if (year==2019) url="https://news.gov.bc.ca/files/SVT_2019_Data.pdf"
+  if (year==2020) url="https://news.gov.bc.ca/files/SVT_Detailed_Data_2020.pdf"
+  download.file(url,tmp)
+  d<-tabulizer::extract_tables(tmp,method = "stream")
+  svt_data <- d %>% 
+    lapply(function(dd){
+    dd <- dd %>% as_tibble(.name_repair = "unique")
+    i1 <- which(grepl("Table 3",dd$...1))
+    i2 <- which(grepl("Table 4",dd$...1))
+    if (length(i1)==0) return(NULL)
+    name <- dd$...1[i1] %>% gsub("Table 3: Residential Properties in | - Declared Properties","",.)
+    #print(name)
+    h <- dd %>% slice(seq(i1+1,i1+2))
+    ddd<-dd %>% 
+      slice(seq(i1+3,i2-1))
+    if (year==2018) {
+      hh <- h %>% apply(1 , paste , collapse = " " )
+      hhh <- c("BC Resident","Other Canadian","Foreign Owner","Satellite Family","Mixed","Other","Total")
+      
+      ddd <- ddd %>% 
+        apply(1 , paste , collapse = " " ) %>% 
+        gsub("Exempt|Non exempt|Total","",.) %>% 
+        trimws() %>%
+        lapply(function(d)str_split(d," +") %>% unlist) %>%
+        as.data.frame() %>%
+        t() %>%
+        as_tibble(.name_repair = "unique") %>%
+        set_names(hhh) %>%
+        mutate(Status=c("Exempt","Non Exempt","Total"))
+    } else {
+      names(ddd)[1] <- "Status"
+      for (i in seq(2,length(names(ddd)))){
+        h1 <- h[1,i] %>% str_split(" ") %>% unlist()
+        h2 <- h[2,i] %>% str_split(" ") %>% unlist()
+        if (length(h1)>1) {
+          n1=paste0(na.omit(c(h1[1],h2[1])), collapse = " ") %>% trimws()
+          n2=paste0(na.omit(c(h1[2],h2[2])), collapse = " ") %>% trimws()
+          col <- as.name(paste0("...",i))
+          ddd<-ddd %>% mutate(!!n1:=!!col %>% strsplit(" ") %>% map(first) %>% unlist,
+                              !!n2:=!!col %>% strsplit(" ") %>% map(last) %>% unlist)
+        } else {
+          n1=paste0(na.omit(c(h1[1],h2[1])), collapse = " ") %>% trimws()
+          names(ddd)[i]=n1 
+        }
+      }
+    }
+    ddd <- ddd %>% 
+      select(-matches("\\.\\.\\.\\d{1}$|^$")) %>%
+      mutate(Municipality=name) %>%
+      select(Municipality,Status,`BC Resident`,`Other Canadian`,`Foreign Owner`,`Satellite Family`,Other,Mixed,Total) %>%
+      mutate_all(function(d)na_if(d,"nr")) %>%
+      mutate_at(vars(-matches("Municipality|Status")),function(d)gsub(",","",d) %>% as.integer)
+  }) %>%
+    bind_rows
+}
+
+
+bc_cities <- list_census_regions("CA16") %>% filter(PR_UID=="59",level=="CSD") %>%
+  mutate(dup=name %in% name[duplicated(name)]) %>%
+  mutate(Name=case_when(!dup ~ .data$name,
+                        municipal_status=="CY" ~ paste0("City of ",name),
+                        name=="Langley" ~ "Township of Langley",
+                        name=="Esquimalt" ~ name,
+                        municipal_status=="DM" ~ paste0("District of ",name),
+                        TRUE ~ as.character(NA))) %>%
+  filter(municipal_status!="IRI")
+
+svt_data_2020 <-   simpleCache(get_svt_data(2020), "SVT_2020",path=here::here("data")) %>% 
+  left_join(bc_cities %>% select(Municipality=Name,GeoUID=region), by="Municipality") 
+
+svt_data_2019 <-   simpleCache(get_svt_data(2019), "SVT_2019",path=here::here("data")) %>% 
+  left_join(bc_cities %>% select(Municipality=Name,GeoUID=region), by="Municipality") 
+
+svt_data_2018 <-   simpleCache(get_svt_data(2018), "SVT_2018",path=here::here("data")) %>% 
+  left_join(bc_cities %>% select(Municipality=Name,GeoUID=region), by="Municipality") 
+
+svt_data <- bind_rows(svt_data_2018 %>% mutate(Year="2018"),
+                      svt_data_2019 %>% mutate(Year="2019"),
+                      svt_data_2020 %>% mutate(Year="2020")) %>%
+  mutate(Municipality=factor(Municipality,levels=(.) %>% 
+                               filter(Status=="Total",Year==max(Year)) %>%
+                               arrange(Total) %>%
+                               pull(Municipality))) 
+
+cov_svt_data <- svt_data %>% 
+  filter(Municipality=="Vancouver") %>%
+  filter(Status!="Total") %>%
+  mutate_at(c("BC Resident","Other Canadian","Foreign Owner","Mixed","Other"),function(d)coalesce(d,0)) %>%
+  mutate(`Empty`=`BC Resident`+`Other Canadian`+`Foreign Owner`+Mixed+`Other`) %>%
+  group_by(GeoUID,Year) %>%
+  mutate(`Share empty`=`Empty`/sum(`Empty`),Total=sum(`Empty`)) %>%
+  filter(Status=="Non Exempt") %>%
+  ungroup() %>%
+  mutate(Source=paste0("SVT ",Year)) %>%
+  select(GeoUID,Municipality,Source,matches("empty"),Total) 
+
+```
+
+
+```{r}
+
+get_eht_data <- function(){
+  url <- "https://vancouver.ca/files/cov/vancouver-2021-empty-homes-tax-annual-report.pdf"
+  tmp <- tempfile(fileext = ".pdf")
+  download.file(url,tmp)
+  d<-tabulizer::extract_tables(tmp,method = "stream",page=10)
+  
+  
+  base<-d[[1]] %>% 
+    as.data.frame()
+  base_header <- base[1,]%>% as.character()
+  base_header[1]="Dwelling type"
+  base <- base %>% 
+    setNames(base_header) %>%
+    as_tibble() %>%
+    slice(-1) %>%
+    pivot_longer(matches("^\\d{4}$"),names_to="Year",values_to="Count") %>%
+    mutate(Count=as.numeric(gsub(",","",Count))) %>%
+    select(`Dwelling type`,Year,Count) %>%
+    mutate(Status="Total")
+  
+  condo <- d[[2]] %>% 
+    as.data.frame() %>%
+    setNames(slice(.,1) %>% as.character) %>%
+    as_tibble() %>%
+    slice(-1) %>%
+    rename(Status=1) %>%
+    pivot_longer(matches("^\\d{4}$"),names_to="Year",values_to="Count") %>%
+    mutate(Count=as.numeric(gsub(",","",Count))) %>%
+    select(Status,Year,Count) %>%
+    mutate(`Dwelling type`="Condo")
+  
+    other <- d[[4]] %>% 
+    as.data.frame() %>%
+    setNames(slice(.,1) %>% as.character) %>%
+    as_tibble() %>%
+    slice(-1) %>%
+    rename(Status=1) %>%
+    pivot_longer(matches("^\\d{4}$"),names_to="Year",values_to="Count") %>%
+    mutate(Count=as.numeric(gsub(",","",Count))) %>%
+    select(Status,Year,Count) %>%
+    mutate(`Dwelling type`="Single Family Including Duplex")
+    sf <- d[[3]] %>% 
+    as.data.frame() %>%
+    setNames(slice(.,1) %>% as.character) %>%
+    as_tibble() %>%
+    slice(-1) %>%
+    rename(Status=1) %>%
+    pivot_longer(matches("^\\d{4}$"),names_to="Year",values_to="Count") %>%
+    mutate(Count=as.numeric(gsub(",","",Count))) %>%
+    select(Status,Year,Count) %>%
+    mutate(`Dwelling type`="Other")
+    
+    bind_rows(base,condo,sf,other)
+}
+
+get_eht_exemption_data <- function(){
+  url <- "https://vancouver.ca/files/cov/vancouver-2021-empty-homes-tax-annual-report.pdf"
+  tmp <- tempfile(fileext = ".pdf")
+  download.file(url,tmp)
+  d<-tabulizer::extract_tables(tmp,method = "stream",page=11)
+  
+  
+  condo <- d[[1]] %>% 
+    as.data.frame() %>%
+    setNames(slice(.,1) %>% as.character) %>%
+    as_tibble() %>%
+    slice(-1) %>%
+    rename(`Exemption category`=1) %>%
+    pivot_longer(matches("^\\d{4}$"),names_to="Year",values_to="Count") %>%
+    mutate(Count=as.numeric(gsub(",","",Count))) %>%
+    select(`Exemption category`,Year,Count) %>%
+    mutate(`Dwelling type`="Condo") %>%
+    filter(!is.na(Count)) %>%
+    mutate(`Exemption category`=ifelse(`Exemption category`=="","Redevelopment/Renovation",
+                                       `Exemption category`))
+
+  sf <- d[[2]] %>% 
+    as.data.frame() %>%
+    setNames(slice(.,1) %>% as.character) %>%
+    as_tibble() %>%
+    slice(-1) %>%
+    rename(`Exemption category`=1) %>%
+    pivot_longer(matches("^\\d{4}$"),names_to="Year",values_to="Count") %>%
+    mutate(Count=as.numeric(gsub(",","",Count))) %>%
+    select(`Exemption category`,Year,Count) %>%
+    mutate(`Dwelling type`="Single Family Including Duplex") %>%
+    filter(!is.na(Count)) %>%
+    mutate(`Exemption category`=ifelse(`Exemption category`=="","Redevelopment/Renovation",
+                                       `Exemption category`))
+
+    bind_rows(condo,sf)
+}
+
+eht_data <- simpleCache(get_eht_data(), "CoV_EHT_data.Rda",path=here::here("data"))
+eht_exemptions <- simpleCache(get_eht_exemption_data(), "CoV_EHT_exemptions.Rda",path=here::here("data"))
+
+```
+
+```{r}
+cov_census_unoccupied <- get_census("CA21",regions=list(CSD="5915022"),geo_format = 'sf') %>%
+  st_drop_geometry() %>%
+  mutate(`Empty 2021`=(Dwellings-Households),
+         `Empty 2016`=(`Dwellings 2016`-`Households 2016`)) %>%
+  select(GeoUID,Name=name,matches("Empty"),`Total 2021`=Dwellings,`Total 2016`=`Dwellings 2016`) %>%
+  pivot_longer(matches("\\d{4}"),names_pattern = "(.+) (\\d{4})$",names_to = c(".value","Year")) %>%
+  mutate(`Share empty`=Empty/Total)
+```
+
+
+```{r}
+
+svt_taxed <- cov_svt_data %>% 
+    mutate(Year=str_extract(Source,"\\d{4}")) %>%
+    mutate(Source="SVT taxed")
+```
+
+
+```{r census-eht-svt-share}
+eht_summary <- eht_data %>% 
+  filter(`Dwelling type` %in% c("Condo", "Single Family Including Duplex")) %>%
+  left_join(filter(.,Status=="Total") %>% select(`Dwelling type`,Year,Total=Count),
+            by=c("Dwelling type","Year")) %>%
+  filter(Status!="Total",Status!="TOTAL") %>%
+  rename(Empty=Count) %>%
+  mutate(Status=recode(Status,Vacant="Taxed")) %>%
+  bind_rows((.) %>% 
+              group_by(Year,Status) %>%
+              summarize(`Dwelling type`="Combined",Empty=sum(Empty),Total=sum(Total),.groups="drop")) %>%
+  bind_rows((.) %>% 
+              group_by(Year,`Dwelling type`) %>%
+              summarize(`Status`="Vacant",Empty=sum(Empty),Total=first(Total),.groups="drop")) %>%
+  mutate(`Share empty`=Empty/Total) %>%
+  mutate(Source=paste0("EHT ",Status," ",`Dwelling type`)) 
+
+
+combined_unoccupied_data <- 
+  bind_rows(cov_census_unoccupied %>% mutate(Source="Census"),
+          eht_summary %>% filter(grepl("Combined",Source),!grepl("Exempt",Source)) %>%
+            mutate(Source=gsub(" Combined","",Source)),
+          svt_taxed) %>% 
+  select(Source,Year,Empty,`Share empty`,Total) %>%
+  mutate(Source=factor(Source,levels=group_by(.,Source) %>% filter(Year==max(Year)) %>% arrange(-`Share empty`) %>% pull(Source)))
+
+combined_unoccupied_data %>%
+  ggplot(aes(x=Year,y=`Share empty`,colour=Source,group=Source)) +
+  geom_point(shape=21) +
+  geom_line() +
+  theme_bw() +
+  expand_limits(y=0) +
+  scale_color_brewer(palette = "Dark2") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="City of Vancouver trends of various metrics of unoccupied homes",
+       colour="Source",
+       x=NULL,y="Share",
+       caption="Data: SatCan Census 2016, 2021, CoV EHT report 2020, BC SVT reports 2018-2020") 
+
+```
+The percentage of dwellings showing up as plausibly vacant in the Empty Homes Tax data is far below the percentage showing up as Unoccupied by Usual Residents in the Census data. This likely reflects a combination of factors, including the Census referring specifically to occupation on Census day, and hence picking up dwellings that were just temporarily vacant. Indeed, most of the dwellings picked up in the EHT data as plausibly vacant are still exempt from taxation. The largest reason for exemption is that the properties changed hands during the tax year, emphasizing the role of regular transactions in driving short-term vacancies.
+
+Properties actually taxed as problematic vacancies are quite rare in the City of Vancouver, declining from just over 1% to just under 1% between 2017 and 2020. Between the Census years spanning that period, the percent of dwellings declared Unoccupied by Usual Residents declined from just over 8% to 7%. Can we suggest that around 1-in-8 dwellings determined to be unoccupied by usual residents on Census day reflect problematic long-term empty dwellings (a.k.a. "toxic demand")? Tempting, but not quite. For one, our denominators for percentage figures from Census (private dwellings) and tax data (taxable properties) aren't quite the same. Mostly this reflects the prevalence of single properties containing multiple dwellings, including our "duplexes" discussed above, but also most purpose-built rental apartment buildings. To re-examine the issue, let's just get rid of denominators and look at raw numbers of dwellings deemed unoccupied by usual residents or deemed empty and taxed as such.
+
+```{r census-eht-svt-counts}
+combined_unoccupied_data %>%
+  ggplot(aes(x=Year,y=Empty,fill=Source,group=Source)) +
+  #geom_line() +
+  #geom_point(shape=21) +
+  geom_bar(stat="identity",position = position_dodge2(width = 0.9, preserve = "single")) +
+  theme_bw() +
+  expand_limits(y=0) +
+  scale_fill_brewer(palette = "Dark2") +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="City of Vancouver trends of various metrics of unoccupied homes",
+       fill="Source",
+       x=NULL,y="Number of properties/units",
+       caption="Data: SatCan Census 2016, 2021, CoV EHT report 2020, BC SVT reports 2018-2020") 
+```
+
+
+Looking just at raw numbers, it looks like instead of 1-in-8 unoccupied hit with a tax, we get closer to 1-in-12 when the Empty Homes Tax first when into effect in 2017 (matched to 2016 Census), dropping to more like 1-in-15 by 2020 (matched to 2021 Census). For the Speculation and Vacancy Tax, the figures are even lower, declining to one property taxed in 2020 for every twenty-eight dwellings showing up as unoccupied by usual resident in 2021. (It appears to us that the difference between SVT taxed and EHT taxed is largely explained by different reporting standards emphasizing only properties declared as empty for SVT data vs. properties declared, determined, or deemed to be vacant in the EHT data.)
+
+It's difficult to say what the rate of Dwellings Unoccupied by Usual Residents would look like in the City of Vancouver absent the EHT and SVT. It's a counterfactual, requiring some thought and many assumptions to work out properly. For instance, we should keep in mind that the 2021 census happened during COVID times, with possible short as well as long term effect of COVID further muddying the waters. But we can say that at this point it appears very little of what shows up as Dwellings Unoccupied by Usual Residents in the Census translates into problematically empty dwellings as defined by the Empty Homes and Speculation & Vacancy Taxes. 
+
+Does this mean the Empty Homes Tax is useless? Probably not. And it's notable that Census data and EHT data agree on a decline in unoccupied by usual resident and vacant dwellings. Returning to the ACS data, it's apparent that inter-city variation is largest in uses like temporary residences that drive EHT or SVT taxed empties. Once taxes are put in place on long-term vacancies, it likely reduces the proportion of properties used for temporary residence. This, in turn, likely reduces the ratio of properties taxed as problematically empty relative to properties showing up as Unoccupied by Usual Residents in the Census. But as in the Vancouver data, we can see that the overall effect is probably limited. This, quite simply, is because in most cities the vast majority of dwellings showing up as Unoccupied by Usual Residents in the Census are not actually long-term or problematically vacant. 
+
+
+
+## Zooming in on Vancouver
+
+Finally, let's turn to the geographic distribution of Dwellings Unoccupied by Usual Residents, plotting the new 2021 data for the City of Vancouver at the Census Tract level. 
+
+```{r census-unoccpued-ct}
+ct_data<-get_census("CA21",regions=list(CSD="5915022"),geo_format="sf",level="CT") %>%
+  mutate(uobur=(Dwellings-Households)/Dwellings)
+
+ggplot(ct_data,aes(fill=uobur)) +
+  geom_sf(size=0.1)  +
+  geom_water() +
+  geom_roads() +
+  scale_fill_viridis_c(option = "plasma",labels=scales::percent) +
+  labs(title="City of Vancouver share of dwellings not occupied by usual residents",
+       subtitle = "Census Tract geography",
+       fill=NULL,caption="StatCan Census 2021") +
+  coord_sf(datum=NA)
+```
+
+We see the rate of Dwellings Not Occupied by Usual Residents varies throughout the city, but some areas jump out. And [just like when the 2016 numbers come out](https://doodles.mountainmath.ca/blog/2017/04/03/joyce-collingwood/) some hapless commentator will inevitably zoom in on the bright areas and complain about empty homes. 
+
+One census tract, Census Tract 9330049.05 south of 2nd Ave between Cambie and Main, stands out with `r scales::percent(filter(ct_data,GeoUID=="9330049.05")$uobur)` of dwellings not occupied by usual residents. Let's take a closer look and try and get ahead of silly arguments like commentators claiming that ["speculation is one of our prime suspects"](https://www.theglobeandmail.com/real-estate/vancouver/bcs-empty-home-problem-moving-beyond-just-vancouver/article34130746/) or running headlines decrying this as a case of [empty or underused housing](https://vancouversun.com/business/local-business/three-transit-oriented-communities-in-metro-rival-coal-harbour-for-empty-or-underused-housing).
+
+### Enhance
+Tract level household and dwelling counts are summed up from dissemination areas, so let's switch our map resolution to that finer-grained level census geography.
+
+```{r census-unoccpued-da}
+da_data<-get_census("CA21",regions=list(CSD="5915022"),geo_format="sf",level="DA")%>%
+  mutate(uobur=(Dwellings-Households)/Dwellings)
+
+ggplot(da_data,aes(fill=uobur)) +
+  geom_sf(size=0.1)  +
+  geom_water() +
+  geom_roads() +
+  scale_fill_viridis_c(option = "plasma",labels=scales::percent) +
+  labs(title="City of Vancouver share of dwellings not occupied by usual residents",
+       subtitle = "Dissemination area geography",
+       fill=NULL,caption="StatCan Census 2021") +
+  coord_sf(datum=NA)
+```
+
+That only added moderate detail, splitting the census tract into two dissemination areas, the larger of the two now sporting a share of `r scales::percent(filter(da_data,GeoUID=="59154173")$uobur)` dwellings not occupied by usual residents, adding up to `r filter(da_data,GeoUID=="59154173") %>% mutate(u=Dwellings-Households) %>% pull(u)` "unoccupied" dwellings. Let's zoom in even more to locate where the census found those "empty" homes.
+
+### Enhance more
+Dissemination blocks are the finest level of geography for which the census releases this data. So let's utilize blocks to take an even closer look at our tract of interest and add block counts of dwellings unoccupied by usual residents.
+
+```{r census-unoccpued-db}
+db_data<-get_census("CA21",regions=list(CSD="5915022"),geo_format="sf",level="DB")
+
+problem_id="59154173"
+problem_da <- da_data %>% filter(GeoUID==problem_id)
+
+bbox <- st_bbox(problem_da %>% st_buffer(200))
+
+db_data %>%
+  st_filter(problem_da %>% st_buffer(300)) %>%
+  ggplot(aes(fill=(Dwellings-Households)/Dwellings)) +
+  geom_sf(size=0.1)  +
+  geom_sf(data = problem_da,fill=NA,colour="white",size=1) +
+  scale_fill_viridis_c(option = "plasma",labels=scales::percent) +
+  geom_water()+
+  geom_roads() +
+  geom_sf_text(data= ~ filter(.,DA_UID==problem_id), aes(label=Dwellings-Households)) +
+  labs(title="City of Vancouver share of dwellings not occupied by usual residents",
+       subtitle = "Area around Main and 2nd",
+       fill=NULL,caption="StatCan Census 2021") +
+  coord_bbox(bbox)
+```
+
+Blocks enable us to pinpoint how the higher level geography numbers were derived and where problematic buildings may be located. Three of the areas show up as 100% unoccupied, but two of them only have a single dwelling unit. These may be live-work spaces in this mostly industrial area. But one block shows up as having 38 dwelling units. And while the block at the corner of Main and 2nd has a lower share of units not occupied by usual residents, the total count comes out at 178. Let's take a closer look at those two blocks.
+
+### Main and 2nd
+The building at the southwest corner of Main and 2nd was newly constructed around census day. The census counted 233 dwelling units on this block with no other apparent housing on it, with 178 dwelling units not occupied by usual residents. It's likely the case that residents simply hadn't yet moved in to this building that completed quite near to Census day. The effect here is similar to what we witnessed for newly constructed areas in 2016 [where an outcry was raised over vacancies picked up by the census data release](https://doodles.mountainmath.ca/blog/2017/04/03/joyce-collingwood/).
+
+![](images/main_2nd.png)
+
+```{r}
+completions <- seq(1,6) %>%
+  lapply(function(month){
+    get_cmhc(cmhc_snapshot_params(table_id = cmhc_table_list$`Scss Completions CT`,
+                                  region = cmhc_region_params_from_census("5915022"),
+                                  year = 2021, month = month)) %>%
+      mutate(Year=2021,Month=month)
+  }) %>%
+    bind_rows() %>%
+  mutate(GeoUID=paste0("933",X1))
+```
+
+While we know the building is new, we can also perform a quick check with CMHC completions data to see how many units got completed close to census day in 2021. One complication is that CMHC data for 2021 was still reported on 2016 boundaries, and the census tract in question came from 2016 census tract 9330049.01 which was split into four separate tracts in 2021. Doing a quick check at the census tract level from January through June 2016 on census tract 9330049.01 reveals that indeed `r filter(completions,Month==4,GeoUID=="9330049.01")$Apartment` apartment units completed in April 2021, most of which are likely the ones in the building in question.
+
+
+### Yukon and 5th
+There are 38 dwelling units with nobody living in them at the block with the [Yukon Shelter](https://www.linkvan.ca/facilities/269) and no other apparent housing units. The shelter [states that it is for people in "emergency and transitional situations"](https://www.linkvan.ca/facilities/269), which is why people living there would not be classified as usual residents. This is an example where all these units are very likely lived in as shelter or transitional housing units, just not by people classified as usual residents. 
+
+![](images/yukon_shelter.png)
+
+
+## The bigger picture
+With these examples under our belt we can start to appreciate some of the complexities of this metric. When the Census counts Dwellings Unoccupied by Usual Residents, it's a by-product of their primary aim, which is simply to find out where everyone in Canada is living on Census Day. Dwellings are tabulated to provide a frame for finding people. As such, the Census doesn't care that much about overshooting its count of dwellings (as we see with secondary suites in duplexes). What it cares about is finding people and linking them back to a single residence (which explains how we get dwellings occupied by people who aren't usual residents). We suggest that Dwellings Unoccupied by Usual Residents can still be an interesting metric, but only when treated with appropriate caution.
+
+So our final takeaway is that when you see commentators throwing out figures on Dwellings Unoccupied by Usual Residents without appropriate cautions, or as a straightforward indicator of Empty Homes, keep in mind that it's an indicator of something else entirely. It's an indicator they don't know much about housing.
+
+
+
+
+As usual, the code for this post, including the code to scrape the data out of the PDFs, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-02-14-unoccupied-canada/index.Rmarkdown) for anyone to reproduce or adapt.
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+
+
+
