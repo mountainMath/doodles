@@ -202,6 +202,7 @@ We see that declining household size has been a major component in the populatio
 
 What's interesting is that the decrease in unoccupied dwellings, and associated increase in population, can be seen across almost all neighbourhoods, with the exception of the West End, Fairview and Grandview-Woodland. While it's good to remember that [this metric is difficult to interpret and outliers in some areas should be expected](https://doodles.mountainmath.ca/blog/2022/02/14/unoccupied-canada/), it is consistent with the notion that the Empty Homes Tax and Speculation and Vacancy tax had some effect.
 
+We also have an [interactive Canada-wide map on CensusMapper showing these components of population change in each region down to the census tract level](https://censusmapper.ca/maps/3056).
 
 As usual, the code for this post, including the code to scrape the data out of the PDFs, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-02-15-ndeadbeat-neighbourhoods/index.Rmarkdown) for anyone to reproduce or adapt.
 
