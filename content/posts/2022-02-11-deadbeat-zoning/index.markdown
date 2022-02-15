@@ -78,7 +78,7 @@ One last thing to do is a quick visual check which areas ended up in the Core, F
 ## Update (Feb 13th)
 Of course we can ask how this pans out through other Metro Vancouver municipalities. Thanks to our [UBC Socioology Zoning Project](https://zoning.sociology.ubc.ca) we can grab the data from our [interactive metro wide zonig map](https://mountainmath.ca/zoning_map) and run this for all Metro Vancouver municipalities. We have [investigated before how zoning impacts population growth](https://engage.gov.bc.ca/app/uploads/sites/121/2021/06/UBCSociologyZoningProject_appendix_3.pdf), time to run it against 2021 data.
 
-Additionally we will refine the above analysis by running a second version that includes agricultural zoning. This won't really make much of a difference in Vancouver, but will matter for some other Metro Vancouver municipalities with large share of agricultural land. However, much of the agricultural zoning is in the flood plains, and the benefits of densifying in this area have to be carefully weighted against the risks. At some point we should come back to this with a more detailed analysis, for now we just run two versions, one with agricultural zoning included in "low density" areas, and one where it's not included. This really only matters when looking at population change per hectare
+Additionally we will refine the above analysis by running a second version that includes agricultural zoning. This won't really make much of a difference in Vancouver, but will matter for some other Metro Vancouver municipalities with large share of agricultural land. However, much of the agricultural zoning is in the flood plains, and the benefits of densifying in this area have to be carefully weighted against the risks. At some point we should come back to this with a more detailed analysis, for now we just run two versions, one with agricultural zoning included in "low density" areas, and one where it's not included. This really only matters when looking at population change per hectare. (**Update Fev 14**: Additionally we cut out unzoned areas like roads, which removes some issues where people have been geocoded to highway medians but also dignificantly improves the match of census data to zoning data. However this also hints at data quality problems in the census that are likely to impact some of the analysis. We are removing Pitt Meadows from this analysis because of geocoding problems. A good reminder that census data is not always as accurate as we might light it to be, and visual inspection and ground-truthing of data is important.)
 
 
 
@@ -89,17 +89,9 @@ Additionally we will refine the above analysis by running a second version that 
 
 This paints a more varied picture of how growth has been allocated with respect to low-density zoning. Some municipalities, like Surrey and the District of Langley, do manage to add population in low-density zoning. We will need to look in more detail if this is happening due to greenfield development or densification, or due to increasing household sizes as [initial naive data suggests](https://censusmapper.ca/maps/3066). However it should not surprise that all municipalities are better at adding population to higher-density areas, especially when considering the Metro Vancouver Zoning Project zoning data that is pegged to summer 2021, so at the end of our 2016-2021 population change observation period.
 
-We also notice the difference when counting agricultural zoning as part of low-density zoning, hinting at ongoing development of agricultural land. However, we should check this more carefully, Pit Meadows looks funny with the "Rest" area losing population when including Agricultural zoning as part of the low-density cutout. This warrants further investigation. Let's take a closer look at the areas in Pitt Meadows that lost at least 50 people.
+Again, all these categories have different areas, and thus the impact of the population change can be quite different. To get a better view of this we can look at total population change per hectare of land in each of these categories, after removing schools and parks. This is where it will matter more if we count agrecultural zoning as part of the low-density areas or not.
 
 <img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-7-1.png" width="1200" />
-
-The areas in question are a three dissemination block, two of which were joined via TongFen to match up across the censuses, that are situated in the middle strip of the Lougheed Highway. In 2016 the Census registered 679 people living in the middle of the highway, in 2021 the census has zero living there. This was likely due to a geocoding error that got corrected in the 2021 census, and the people got moved to their proper place in neighbouring regions. This is a case where StatCan should have indicated that these blocks be joined with their appropriate neighbouring blocks in their official correspondence file, but unfortunately this did not happen.
-
-A good reminder that census data is not always as accurate as we might light it to be, and visual inspection and ground-truthing of data is important.
-
-Again, all these categories have different areas, and thus the impact of the population change can be quite different. To get a better view of this we can look at total population change per hectare of land in each of these categories, after removing schools and parks.
-
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-1.png" width="1200" />
 
 This brings home the point that across the region most of the growth happens outside of low-density areas, especially if we include agricultural land in our low-density base.
 
@@ -111,13 +103,13 @@ As usual, the code for this post, including the code to scrape the data out of t
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-02-14 17:04:21 PST"
+## [1] "2022-02-15 09:33:48 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [1e2eb9d] 2022-02-14: add section on metro zoning
+## Head:     [6973a4d] 2022-02-15: fix link
 ```
 
 ```
@@ -137,7 +129,7 @@ As usual, the code for this post, including the code to scrape the data out of t
 ## 
 ## other attached packages:
 ##  [1] sf_1.0-4                  mountainmathHelpers_0.1.3
-##  [3] VancouvR_0.1.7            tongfen_0.3.4            
+##  [3] VancouvR_0.1.7            tongfen_0.3.5            
 ##  [5] forcats_0.5.1             stringr_1.4.0            
 ##  [7] dplyr_1.0.7               purrr_0.3.4              
 ##  [9] readr_2.1.1               tidyr_1.1.4              
@@ -145,30 +137,23 @@ As usual, the code for this post, including the code to scrape the data out of t
 ## [13] tidyverse_1.3.1          
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] fs_1.5.1           lubridate_1.8.0    bit64_4.0.5        httr_1.4.2        
-##  [5] rmapzen_0.4.3      tools_4.1.2        backports_1.4.0    bslib_0.3.1       
-##  [9] utf8_1.2.2         R6_2.5.1           KernSmooth_2.23-20 lazyeval_0.2.2    
-## [13] rgeos_0.5-8        DBI_1.1.2          colorspace_2.0-2   sp_1.4-6          
-## [17] withr_2.4.3        tidyselect_1.1.1   git2r_0.29.0       bit_4.0.4         
-## [21] curl_4.3.2         compiler_4.1.2     cli_3.1.0          rvest_1.0.2       
-## [25] geojsonsf_2.0.1    xml2_1.3.3         labeling_0.4.2     bookdown_0.24     
-## [29] triebeard_0.3.0    sass_0.4.0         scales_1.1.1       classInt_0.4-3    
-## [33] proxy_0.4-26       digest_0.6.29      foreign_0.8-81     rmarkdown_2.11    
-## [37] cancensus_0.5.0    pkgconfig_2.0.3    htmltools_0.5.2    dbplyr_2.1.1      
-## [41] fastmap_1.1.0      highr_0.9          rlang_0.4.12       readxl_1.3.1      
-## [45] httpcode_0.3.0     rstudioapi_0.13    jquerylib_0.1.4    generics_0.1.1    
-## [49] farver_2.1.0       jsonlite_1.7.3     vroom_1.5.7        magrittr_2.0.1    
-## [53] s2_1.0.7           Rcpp_1.0.8         munsell_0.5.0      fansi_1.0.2       
-## [57] lifecycle_1.0.1    stringi_1.7.6      yaml_2.2.1         jqr_1.2.2         
-## [61] maptools_1.1-2     grid_4.1.2         parallel_4.1.2     geojsonio_0.9.4   
-## [65] crayon_1.4.2       lattice_0.20-45    haven_2.4.3        geojson_0.3.4     
-## [69] hms_1.1.1          knitr_1.36         pillar_1.6.4       codetools_0.2-18  
-## [73] crul_1.2.0         wk_0.5.0           reprex_2.0.1       glue_1.6.1        
-## [77] evaluate_0.14      blogdown_1.6       V8_3.6.0           modelr_0.1.8      
-## [81] vctrs_0.3.8        tzdb_0.2.0         urltools_1.7.3     cellranger_1.1.0  
-## [85] gtable_0.3.0       assertthat_0.2.1   xfun_0.28          broom_0.7.12      
-## [89] e1071_1.7-9        sanzo_0.1.0        class_7.3-19       units_0.7-2       
-## [93] ellipsis_0.3.2
+##  [1] Rcpp_1.0.8         lubridate_1.8.0    class_7.3-19       assertthat_0.2.1  
+##  [5] digest_0.6.29      utf8_1.2.2         R6_2.5.1           cellranger_1.1.0  
+##  [9] backports_1.4.0    reprex_2.0.1       evaluate_0.14      e1071_1.7-9       
+## [13] httr_1.4.2         blogdown_1.6       pillar_1.6.4       rlang_0.4.12      
+## [17] readxl_1.3.1       rstudioapi_0.13    jquerylib_0.1.4    rmarkdown_2.11    
+## [21] urltools_1.7.3     triebeard_0.3.0    munsell_0.5.0      proxy_0.4-26      
+## [25] broom_0.7.12       compiler_4.1.2     modelr_0.1.8       xfun_0.28         
+## [29] pkgconfig_2.0.3    htmltools_0.5.2    tidyselect_1.1.1   bookdown_0.24     
+## [33] fansi_1.0.2        crayon_1.4.2       tzdb_0.2.0         dbplyr_2.1.1      
+## [37] withr_2.4.3        grid_4.1.2         jsonlite_1.7.3     gtable_0.3.0      
+## [41] lifecycle_1.0.1    DBI_1.1.2          git2r_0.29.0       magrittr_2.0.1    
+## [45] units_0.7-2        scales_1.1.1       KernSmooth_2.23-20 cli_3.1.0         
+## [49] stringi_1.7.6      fs_1.5.1           xml2_1.3.3         bslib_0.3.1       
+## [53] ellipsis_0.3.2     generics_0.1.1     vctrs_0.3.8        tools_4.1.2       
+## [57] glue_1.6.1         hms_1.1.1          fastmap_1.1.0      yaml_2.2.1        
+## [61] colorspace_2.0-2   classInt_0.4-3     rvest_1.0.2        knitr_1.36        
+## [65] haven_2.4.3        sass_0.4.0
 ```
 </details>
 
