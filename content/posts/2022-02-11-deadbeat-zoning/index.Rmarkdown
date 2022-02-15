@@ -250,11 +250,14 @@ Additionally we will refine the above analysis by running a second version that 
 ```{r}
 metro_zoning_data <- read_sf("https://s3.ca-central-1.amazonaws.com/mountainmath/cmhc/metro_van_zoning_aggregate.geojson.gz") %>%
   st_transform(crs) %>%
-  st_make_valid()
+  st_make_valid()  
 
 parks <- read_sf("https://s3.ca-central-1.amazonaws.com/mountainmath/cmhc/cov_parks_schools.geojson") %>%
   st_transform(crs) %>%
-  st_make_valid()
+  st_make_valid() %>%
+  bind_rows(metro_zoning_data %>% filter(zc == "Recreational/Civic"))
+
+#metro_zoning_data <- metro_zoning_data %>% filter(zc != "Recreational/Civic")
 
 metro_pop_change_data <- get_tongfen_ca_census(regions=list(CMA="59933"),meta=meta,level="DB",na.rm=TRUE) %>%
   bind_cols(st_coordinates(st_centroid(.)) %>% as_tibble)  %>%
@@ -283,7 +286,7 @@ name_lookup <- cancensus::list_census_regions("CA16") %>%
   mutate(Name=paste0(name," (",municipal_status,")")) %>%
   filter(CMA_UID=="59933") %>%
   mutate(Name=factor(Name,levels=arrange(.,pop)$Name)) %>%
-  select(CSD_UID=region,Name)
+  select(CSD_UID=region,Name) 
 
 db_lookup <- cancensus::get_census("CA16",regions=list(CMA="59933"),level="DB") %>%
   select(GeoUID,CSD_UID) %>%
@@ -305,7 +308,7 @@ metro_missed_summary <- metro_missed_areas %>%
 metro_zoning_results <- simpleCache(get_summary(metro_shrunk_areas,metro_low_density_zoning),
                                     "metro_low_density_zoning_results.Rda") %>%
   mutate(GeoUID=substr(TongfenID,1,11)) %>%
-  left_join(db_lookup,by="GeoUID")
+  left_join(db_lookup,by="GeoUID") 
 
 metro_zoning_results2 <- simpleCache(get_summary(metro_shrunk_areas,metro_low_density_zoning2),
                                     "metro_low_density_zoning_results2.Rda") %>%
@@ -346,7 +349,7 @@ This paints a more varied picture of how growth has been allocated with respect 
 We also notice the difference when counting agricultural zoning as part of low-density zoning, hinting at ongoing development of agricultural land. However, we should check this more carefully, Pit Meadows looks funny with the "Rest" area losing population when including Agricultural zoning as part of the low-density cutout. This warrants further investigation. Let's take a closer look at the areas in Pitt Meadows that lost at least 50 people.
 
 ```{r} 
-problem_areas <- metro_pop_change_data %>%  
+problem_areas <- metro_pop_change_data %>%   
   mutate(GeoUID=substr(TongfenID,1,11)) %>%
   left_join(db_lookup,by="GeoUID") %>% 
   mutate(change=Population_CA21-Population_CA16) %>%
@@ -389,7 +392,7 @@ plot_data <- metro_pop_change_data %>%
   group_by(Name) %>%
   mutate(Total_CA21=sum(Population_CA21),
          min=min(Population_CA21)) 
-
+ 
 plot_data %>%
   filter(!grepl("IRI",Name)) %>%
   group_by(Name,Zoning) %>%
@@ -408,6 +411,24 @@ ggplot(aes(y=Name,x=change/area*10000,fill=Type)) +
 ```
 
 This brings home the point that across the region most of the growth happens outside of low-density areas, especially if we include agricultural land in our low-density base.
+
+```{r eval=FALSE, include=FALSE}
+# Checks
+metro_pop_change_data %>%  
+    inner_join(combind_zoning_results %>% 
+                 select(TongfenID,Type,Name,CSD_UID,Zoning) %>% 
+                 st_drop_geometry(),by="TongfenID") %>% 
+    mutate(change=Population_CA21-Population_CA16) %>% 
+  filter(Name=="North Vancouver (DM)") %>% 
+  ggplot(aes(fill=Type)) + 
+  geom_sf(size=0.1) + 
+  facet_wrap(~Zoning) + 
+  geom_water() +
+  geom_roads() + 
+  scale_fill_manual(values=sanzo::trios$c157) +
+  theme(legend.position = "bottom") + 
+  coord_sf(datum=NA) 
+```
 
 
 As usual, the code for this post, including the code to scrape the data out of the PDFs, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-02-11-deadbeat-zoning/index.Rmarkdown) for anyone to reproduce or adapt.

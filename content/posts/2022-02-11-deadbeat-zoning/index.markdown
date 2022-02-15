@@ -104,18 +104,20 @@ Again, all these categories have different areas, and thus the impact of the pop
 This brings home the point that across the region most of the growth happens outside of low-density areas, especially if we include agricultural land in our low-density base.
 
 
+
+
 As usual, the code for this post, including the code to scrape the data out of the PDFs, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-02-11-deadbeat-zoning/index.Rmarkdown) for anyone to reproduce or adapt.
 
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-02-13 20:48:28 PST"
+## [1] "2022-02-14 17:04:21 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [47130e7] 2022-02-12: minor edits
+## Head:     [1e2eb9d] 2022-02-14: add section on metro zoning
 ```
 
 ```
@@ -143,23 +145,30 @@ As usual, the code for this post, including the code to scrape the data out of t
 ## [13] tidyverse_1.3.1          
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] Rcpp_1.0.8         lubridate_1.8.0    class_7.3-19       assertthat_0.2.1  
-##  [5] digest_0.6.29      utf8_1.2.2         R6_2.5.1           cellranger_1.1.0  
-##  [9] backports_1.4.0    reprex_2.0.1       evaluate_0.14      e1071_1.7-9       
-## [13] httr_1.4.2         blogdown_1.6       pillar_1.6.4       rlang_0.4.12      
-## [17] readxl_1.3.1       rstudioapi_0.13    jquerylib_0.1.4    rmarkdown_2.11    
-## [21] urltools_1.7.3     triebeard_0.3.0    munsell_0.5.0      proxy_0.4-26      
-## [25] broom_0.7.12       compiler_4.1.2     modelr_0.1.8       xfun_0.28         
-## [29] pkgconfig_2.0.3    htmltools_0.5.2    tidyselect_1.1.1   bookdown_0.24     
-## [33] fansi_1.0.2        crayon_1.4.2       tzdb_0.2.0         dbplyr_2.1.1      
-## [37] withr_2.4.3        grid_4.1.2         jsonlite_1.7.3     gtable_0.3.0      
-## [41] lifecycle_1.0.1    DBI_1.1.2          git2r_0.29.0       magrittr_2.0.1    
-## [45] units_0.7-2        scales_1.1.1       KernSmooth_2.23-20 cli_3.1.0         
-## [49] stringi_1.7.6      fs_1.5.1           xml2_1.3.3         bslib_0.3.1       
-## [53] ellipsis_0.3.2     generics_0.1.1     vctrs_0.3.8        tools_4.1.2       
-## [57] glue_1.6.1         hms_1.1.1          fastmap_1.1.0      yaml_2.2.1        
-## [61] colorspace_2.0-2   classInt_0.4-3     rvest_1.0.2        knitr_1.36        
-## [65] haven_2.4.3        sass_0.4.0
+##  [1] fs_1.5.1           lubridate_1.8.0    bit64_4.0.5        httr_1.4.2        
+##  [5] rmapzen_0.4.3      tools_4.1.2        backports_1.4.0    bslib_0.3.1       
+##  [9] utf8_1.2.2         R6_2.5.1           KernSmooth_2.23-20 lazyeval_0.2.2    
+## [13] rgeos_0.5-8        DBI_1.1.2          colorspace_2.0-2   sp_1.4-6          
+## [17] withr_2.4.3        tidyselect_1.1.1   git2r_0.29.0       bit_4.0.4         
+## [21] curl_4.3.2         compiler_4.1.2     cli_3.1.0          rvest_1.0.2       
+## [25] geojsonsf_2.0.1    xml2_1.3.3         labeling_0.4.2     bookdown_0.24     
+## [29] triebeard_0.3.0    sass_0.4.0         scales_1.1.1       classInt_0.4-3    
+## [33] proxy_0.4-26       digest_0.6.29      foreign_0.8-81     rmarkdown_2.11    
+## [37] cancensus_0.5.0    pkgconfig_2.0.3    htmltools_0.5.2    dbplyr_2.1.1      
+## [41] fastmap_1.1.0      highr_0.9          rlang_0.4.12       readxl_1.3.1      
+## [45] httpcode_0.3.0     rstudioapi_0.13    jquerylib_0.1.4    generics_0.1.1    
+## [49] farver_2.1.0       jsonlite_1.7.3     vroom_1.5.7        magrittr_2.0.1    
+## [53] s2_1.0.7           Rcpp_1.0.8         munsell_0.5.0      fansi_1.0.2       
+## [57] lifecycle_1.0.1    stringi_1.7.6      yaml_2.2.1         jqr_1.2.2         
+## [61] maptools_1.1-2     grid_4.1.2         parallel_4.1.2     geojsonio_0.9.4   
+## [65] crayon_1.4.2       lattice_0.20-45    haven_2.4.3        geojson_0.3.4     
+## [69] hms_1.1.1          knitr_1.36         pillar_1.6.4       codetools_0.2-18  
+## [73] crul_1.2.0         wk_0.5.0           reprex_2.0.1       glue_1.6.1        
+## [77] evaluate_0.14      blogdown_1.6       V8_3.6.0           modelr_0.1.8      
+## [81] vctrs_0.3.8        tzdb_0.2.0         urltools_1.7.3     cellranger_1.1.0  
+## [85] gtable_0.3.0       assertthat_0.2.1   xfun_0.28          broom_0.7.12      
+## [89] e1071_1.7-9        sanzo_0.1.0        class_7.3-19       units_0.7-2       
+## [93] ellipsis_0.3.2
 ```
 </details>
 

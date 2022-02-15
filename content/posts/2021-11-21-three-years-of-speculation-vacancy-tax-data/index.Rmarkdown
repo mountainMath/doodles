@@ -243,7 +243,7 @@ svt_data_2018 <-   simpleCache(get_svt_data(2018), "SVT_2018",path=here::here("d
 
 svt_data <- bind_rows(svt_data_2018 %>% mutate(Year="2018"),
                       svt_data_2019 %>% mutate(Year="2019"),
-                      svt_data_2019 %>% mutate(Year="2020")) %>%
+                      svt_data_2020 %>% mutate(Year="2020")) %>% 
   mutate(Municipality=factor(Municipality,levels=(.) %>% 
                                filter(Status=="Total",Year==max(Year)) %>%
                                arrange(Total) %>%
@@ -262,7 +262,7 @@ svt_totals <- bind_rows(
          Count=c(2682, 925, 1087, 977, 653, 232, 6556),
          Year=2020)
 )
-
+ 
 flow_categories <- c("Remains non-exempt in 2019","Claims principal residence in 2019",
                "Claims tenancy exemption in 2019","Claims another exemption in 2019",
                "Is no longer on title in 2019 (sold)","Total")
@@ -287,7 +287,7 @@ svt_flows <- bind_rows(
 
 ```{r}
 residency_types <- c("Resident owners only","Mix of resident and non-resident owners","Non-resident owners only")
-
+ 
 non_resident_owner_data <- get_cansim_sqlite("46-10-0027") %>%
   filter(`Property type`=="Total, all property types",
          `Period of construction`=="Total, all periods of construction",
@@ -308,7 +308,7 @@ source_colours <- setNames(sanzo::trios$c157 %>% rev,c("CHSP","SVT","Taxed forei
 ```
 
 ```{r}
-exemptions <- simpleCache(seq(2018,2020) %>% 
+exemptions <- simpleCache(seq(2018,2020) %>%  
   lapply(get_svt_exemptions) %>%
   bind_rows(), 
   "SVT_exemptions_2018_2020",path=here::here("data"))%>%
@@ -342,7 +342,7 @@ Speculation and Vacancy Tax Technical Reports are now available for [2018](https
 The first thing we’d like to update is [our simple comparison](https://homefreesociology.com/2021/01/26/rethinking-the-foreignness-of-owners-living-abroad/) of SVT data with CHSP data on Foreign and Non-Resident Owners for BC. Since it’s based upon auditable declarations, as we’ve noted before, the Speculation and Vacancy Tax offers a valuable check on the [Canadian Housing Statistics Program](https://www23.statcan.gc.ca/imdb/p2SV.pl?Function=getSurvey&SDDS=5257)’s (CHSP) estimates of Non-Resident Owners. Often erroneously cast as a measure of “foreign ownership,” the CHSP measure of Non-Resident Owners attempts to match owners on property titles in the provinces of BC, ON, NB, and NS with income tax and related records in Canada. Where it fails to find a good match, it labels the owner Non-Resident. This creates two big possible source of error in the CHSP data as a measure of “foreign ownership.” First, it’s a residual measure, and it’s possible the failure to find a match reflects things as benign as administrative errors in inputting a name correctly rather than an owner’s residence outside of Canada. Second, many owners outside of Canada may still be Canadian citizens and Permanent Residents, and hence not “foreign” despite living abroad. [We noted before](https://doodles.mountainmath.ca/blog/2021/01/25/rethinking-the-foreignness-of-owners-living-abroad/) that comparing SVT to CHSP data, it appeared that somewhere less than half of CHSP’s “Non-Resident Owners” show up as “Foreign Owners” within the SVT data. Using the most recent data from CHSP and SVT, we can see the pattern continues to hold below.
 
 ```{r svt_chsp_comparison, fig.height=6}
-svt_data %>% 
+svt_data %>%  
   filter(Status=="Total") %>%
   select(Municipality,GeoUID,Year,`Foreign Owner`,Mixed,SVT_Total=Total) %>%
   left_join(svt_data %>% 
@@ -389,7 +389,7 @@ We can see that as a proxy for “foreign owners,” CHSP vastly and systematica
 There’s lots of other data in the Speculation and Vacancy Tax technical reports! Let's look at the revenue, which largely goes into BC Housing. BC’s reporting on the tax revenue has emphasized that relatively little of it comes from BC Residents. Instead the revenue comes mostly from those perceived as outsiders: Foreign Owners and Satellite Families. There are two problems with this way of presenting the data. First, and foremost, it alienates BC Residents who are deemed members of Satellite Families from being considered residents anymore. In our view, this is a serious problem. People should not be removed from consideration as BC Residents because of who they are married to. Period. Second, at this point, given the dramatic drop in foreign owners and satellite families and the rise in BC residents paying the tax, a decisive factor in BC's revenue claims is that BC Residents pay such a low tax rate on properties left empty relative to other categories. Were tax revenues held constant at 1% for all categories, as per the simulation below, BC Residents would pay more tax than foreign owners, especially if Satellite Families were more correctly considered as Residents.
 
 ```{r svt-revenue-overview}
-revenue <- bind_rows(
+revenue <- bind_rows( 
   tibble(Type=categories,
          Revenue=c(11.2,5.7,25.6,25.5,4.9,7.7,80.6),
          Year=2020),
@@ -431,7 +431,7 @@ revenue %>%
 The shift away from Foreign Owners and Satellite Families (and "Mixed"), and toward BC residents can also be seen in the number of properties subject to the tax.
 
 ```{r svt-taxed-properties-overvierw}
-svt_totals %>%
+svt_totals %>% 
   filter(Category!="Total") %>%
   mutate(Category=factor(Category,levels=names(type_colours))) %>%
   ggplot(aes(x=as.character(Year),y=Count,fill=Category)) +
@@ -449,7 +449,7 @@ Note that we're generally supportive of Empty Homes Taxes, and their targeting t
 Another often touted aspect of the Speculation and Vacancy Tax is the return of housing to the rental market. As we’ve often noted, this is definitely a potential benefit of vacancy taxes! They add pressure to owners of empty dwellings to rent them out while not in use or between sales. As we’ve noted before, there are multiple ways to attempt to see the relationship between the SVT and rentals. The simplest is to simply look at changes over time in Tenancy Exemptions. Unfortunately, we’re missing the information about tenancy prior to the imposition of the SVT that would be most helpful in assessing its full effects. But we can see how increasing proportions of properties are being rented out over time, as demonstrated via tenancy exemption to the SVT, in larger cities including Vancouver, Burnaby, and Richmond. This fits especially well with what we know about condominiums, insofar as they’re a major source of secondary market rental stock across BC. 
  
 ```{r rental-properties, fig.height=6}
-exemptions %>%
+exemptions %>% 
   filter(Exemption=="Occupied by a tenant") %>%
   ggplot(aes(x=City,y=Count/Total,fill=as.factor(Year))) +
   geom_bar(stat="identity",position="dodge") +
@@ -479,7 +479,6 @@ exemptions %>%
        y="Share of properties claiming owner-occupied",
        x=NULL,
        caption="MountainMath, Data: SVT Reports")
-
 ```  
  
  
@@ -503,7 +502,6 @@ short_totals <- svt_totals %>%
   mutate(`BC/Can/Mix/Other`=Total-`Satellite Family`-`Foreign Owner`) %>%
   pivot_longer(all_of(short_categories),names_to = "Short category") %>%
   select(`Short category`,Year,Count=value)
-
 
 plot_data <- short_totals %>% 
   left_join(short_flows, 
@@ -536,7 +534,7 @@ Worth noting that the 2020 results may end up overstating the final number of no
 regional_by_dwelling <- simpleCache(seq(2018,2020) %>% 
   lapply(get_svt_table_4) %>%
   bind_rows(), 
-  "SVT_regional_dwellings_2018_2020",path=here::here("data"))
+  "SVT_regional_dwellings_2018_2020",path=here::here("data")) 
 
 regional_by_dwelling %>%
   pivot_longer(-one_of(c("Regional District","Year","Type of dwelling"))) %>%
@@ -564,7 +562,7 @@ plot_data <- short_flows %>%
   pivot_longer(matches("Remains|Claims|Is no longer")) %>%
   filter(Year!=2018) %>%
   mutate(Year=Year-1)
-
+ 
 ggplot(plot_data,aes(x=`Short category`,y=value,fill=name))+
   geom_bar(stat="identity") +
   facet_wrap(~Year) +
@@ -589,7 +587,7 @@ Finally we demonstrate the range of other exemptions provided to the Speculation
 ```{r exemptions-overview, fig.height=6}
 max_e <- 8
 pd <- exemptions %>%
-  filter(Exemption!="Occupied by a tenant",
+  filter(Exemption!="Occupied by a tenant", 
          Exemption!="Principal residence",
          Exemption!="Total") %>%
   group_by(Exemption) %>%
@@ -626,7 +624,7 @@ For completeness we are adding municipal breakdowns of properties by municipalit
 ```{r municipal-breakdown-declarations, fig.height=6}
 statuses <- c("BC Resident","Other Canadian","Foreign Owner","Satellite Family","Other","Mixed")
 status_colours <- setNames(c("darkgrey",RColorBrewer::brewer.pal(length(statuses)-1,"Dark2")),statuses)
-e_statuses <- c("Suppressed",statuses)
+e_statuses <- c("Suppressed",statuses) 
 #e_status_colours <- c("Suppressed"="darkgrey",status_colours)
 
 svt_data %>%
@@ -653,7 +651,7 @@ There is a bit of variation across municipalities, ranging from under 5% to over
 
 
 ```{r municipal-breakdown-non-exempt, fig.height=6}
-svt_data %>%
+svt_data %>% 
   left_join(filter(.,Status=="Total") %>% select(GeoUID,Year,SVT_Total=Total),
             by=c("GeoUID","Year")) %>%
   filter(Status=="Non Exempt") %>%
@@ -686,7 +684,7 @@ This view switches when we don't look at the number of properties subject to the
 
 ```{r municipal-breakdown-revenue, fig.height=6}
 revenue <- simpleCache(seq(2018,2020) %>% 
-  lapply(get_svt_table_5) %>%
+  lapply(get_svt_table_5) %>% 
   bind_rows(), 
   "SVT_revenue_2018_2020",path=here::here("data")) %>%
   left_join((.) %>% 
