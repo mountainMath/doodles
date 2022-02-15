@@ -1,0 +1,208 @@
+---
+title: Deadbeat Neighbourhoods
+author: Jens von Bergmann
+date: '2022-02-15'
+slug: deadbeat-neighbourhoods
+categories:
+  - Vancouver
+  - tongfen
+  - cancensus
+tags: []
+escription: "Population change in Vancouver's neoighbourhoods 2016-2021. A first look."
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2022/02/11/deadbeat-neighbourhoods/index_files/figure-html/neighbourhood-pop-change-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 150,
+	fig.width = 8,
+	fig.height = 6,
+	cache = TRUE
+)
+library(tidyverse)
+library(tongfen)
+library(VancouvR)
+library(mountainmathHelpers)
+library(sf)
+```
+
+
+How much have City of Vancouver neighbourhoods changed 2016-2021? We have our [interactive Canada-wide population change map on CensusMapper](https://censusmapper.ca/maps/3054#12/49.2539/-123.1435) showing 2016-2021 population change down to the census tract level, and we have [looked at finer geography population change using TongFen](https://doodles.mountainmath.ca/blog/2022/02/09/canada-s-2021-census-part-1/). But sometimes we don't want maps but just a list of how city neighbourhoods changed.
+
+The city pulls a custom tabulation for city neighbourhood geographies for every census, but that will still take more than year until that arrives. Until then we can use  [TongFen](https://mountainmath.github.io/tongfen/) to get good estimates, just like what we did for our [deadbeat zoning post](https://doodles.mountainmath.ca/blog/2022/02/11/deadbeat-zoning/) to go down to block level and build a least common denominator geography for the 2016 and 2021 based on the respective dissemination blocks. Then we can categorize the geographies by which neighbourhood they (mostly) fall in. Strictly speaking we are going to look at the City of Vancouver together with Musqueam 2, which is part of the Dunbar-Southlands neighbourhood.
+
+```{r}
+meta <-c("Population","Households","Dwellings") %>%
+  lapply(function(metric) meta_for_additive_variables(c("CA16","CA21"),metric)) %>%
+  bind_rows()
+db_data <- get_tongfen_ca_census(regions=list(CSD=c("5915022","5915803")),meta,level="DB")
+#cov_db_data <-  get_tongfen_ca_census(regions=list(CSD=c("5915022")),meta,level="DB")
+
+hoods <- get_cov_data("local-area-boundary",format = "geojson")
+
+tagged_db_data <- tongfen_tag_largest_overlap(db_data,hoods,"name") %>%
+    filter(!(Population_CA21==0&Population_CA16==0))
+
+missed_areas <- db_data %>% 
+  filter(!(TongfenID %in% tagged_db_data$TongfenID)) %>%
+  filter(!(Population_CA21==0&Population_CA16==0)) 
+```
+
+
+Let's take a look what that matchup between the (harmonized) dissemination blocks and the city neighbourhoods looks like.
+
+```{r neighbourhood-census-match}
+tagged_db_data %>% 
+  ggplot(aes(fill=name)) +
+  geom_sf(size=0.1) +
+  geom_water() +
+  geom_sf(data=hoods,fill=NA,colour="black") +
+  coord_sf(datum=NA) +
+  scale_fill_discrete(guide='none') +
+  labs(title="City of Vancouver neighbourhood match",
+       subtitle="Blocks with non-zero population in both years",
+       caption="Mountainmath, Data:StatCan Census 2016, 2021; CoV Open Data")
+```
+
+Overall the match is good, with the exception of a small areas of Kerrisdale bleeding into Dunbar-Southlands in this classification. We will ignore this for this post. Part of the advantage of creating the unified geography is that the population in that area will be consistently classified as Dunbar-Southlands for both censuses.
+
+```{r}
+plot_data <- tagged_db_data %>% 
+  sf::st_drop_geometry() %>%
+  group_by(name) %>%
+  summarise(across(matches("Population|Households|Dwellings"),sum),.groups="drop") %>%
+  pivot_longer(-name,names_pattern = "(.+)_CA(.+)",names_to=c("Metric","Year"),values_to="Count") %>%
+  mutate(Year=paste0(20,Year)) %>%
+  group_by(name,Metric) %>%
+  mutate(change=Count-lag(Count,order_by = Year)) %>%
+  mutate(Previous=lag(Count,order_by = Year)) %>%
+  mutate(change_pct=change/Previous) %>%
+  ungroup %>%
+  filter(!is.na(change)) %>%
+  mutate(Name=factor(name,levels=filter(.,Metric=="Population") %>% arrange(-change) %>% pull(name)))  %>%
+  mutate(Name_pct=factor(name,levels=filter(.,Metric=="Population") %>% arrange(-change_pct) %>% pull(name)))
+```
+
+## Absolute population change
+First, let's look at absolute population change. Which neighbourhood added the most people, and which added the least.
+
+```{r neighbourhood-pop-change}
+plot_data %>% 
+  filter(Metric=="Population") %>% 
+  ggplot(aes(y=fct_rev(Name),x=change,fill=change)) +
+  #scale_fill_viridis_c(guide="none",option="plasma") +
+  #scale_fill_distiller(guide="none",palette = "RdYlBu",direction = 1) +
+  scale_fill_gradient(guide = "none") +
+  geom_bar(stat="identity",position = "dodge") +
+  scale_x_continuous(labels=scales::comma) +
+  labs(title="Population change by neighbourhood",
+       y=NULL,x="Absolute population change 2016-2021",
+       caption="Mountainmath, Data: StatCan Census 2016, 2021, CoV Open Data")
+```
+
+It's probably not a surprise that Downtown, Mount Pleasant, and Marpole lead the pack. That's where a lot of the development in this city has been concentrated over this cycle. On the other end of the spectrum we see neighbourhoods with population drops, with the "No Towers" neighbourhood of Grandview-Woodland seeing the highest population drop. In total, the census counted `r filter(plot_data,grepl("Gran",Name),Metric=="Dwellings")$change` more dwelling units in 2021 compared to 2016 in Grandview-Woodland, not nearly enough to make up for other demographic factors like declining household size.
+
+
+We don't have income data yet, but it will be interesting to see the effects of the gentrification pressure on Grandview Woodland resulting from this lack of adding housing. Looking at [census tract level taxfiler data that takes us up to 2017](https://doodles.mountainmath.ca/blog/2020/04/23/census-tract-level-t1ff-tax-data/) Grandview-Woodland stands out as one of the areas with the highest drop in low-income population and large increase in median income. 
+
+## Relative population change
+Not all neighbourhoods are the same (population) size, so growth by the same number of people can feel different in different neighbourhoods. Let's look at relative population change by neighbourhood.
+
+
+```{r neighbourhood-pop-change-rel}
+
+mean_change <- plot_data %>% 
+  filter(Metric=="Population") %>%
+  summarise(change=weighted.mean(change_pct,Previous),
+            Previous=sum(Previous),
+            Count=sum(Count)) %>%
+  mutate(pop_change=Count/Previous-1) %>%
+  pull(pop_change)
+
+plot_data %>% 
+  filter(Metric=="Population") %>%
+  ggplot(aes(y=fct_rev(Name_pct),x=change_pct,fill=change_pct)) +
+  #scale_fill_viridis_c(guide="none",option="plasma") +
+  #scale_fill_distiller(guide="none",palette = "RdYlBu",direction = 1) +
+  scale_fill_gradient(guide = "none") +
+  geom_bar(stat="identity",position = "dodge") +
+  geom_text(x=0.15,y="Sunset",label="Average city wide\npopulation change") +
+  geom_curve(x=0.15,y="West End",xend=0.05,yend="Arbutus-Ridge",arrow = arrow(),curvature = -0.2) +
+  geom_vline(xintercept = mean_change,linetype="dotted") +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Population change by neighbourhood",
+       y=NULL,x="Relative population change 2016-2021",
+       caption="Mountainmath, Data: StatCan Census 2016, 2021, CoV Open Data")
+```
+
+That reshuffles things a little, with South Cambie rising to the top where densification along the Cambie Corridor has added significant population to the otherwise fairly low-population neighbourhood. At the bottom end Shaughnessey takes the lead, due to its already quite small starting population.
+
+When comparing to the city average growth rate there have to be neighbourhoods that punch above their weight and neighbourhoods that fall below the average. For the next round we should pay special attention to those neighbourhoods that have fallen behind, and especially to the **deadbeat neighbourhoods** that have gone the opposite direction and dropped population.
+
+## Components of population change
+One [useful way to slice the data is to break down the population change into three components](https://doodles.mountainmath.ca/blog/2022/01/31/no-shortage-in-housing-bs/):
+
+* population change due to a (net) change in dwelling units,
+* population change due to a change in household size,
+* population change due to a change in dwellings unoccupied by usual residents.
+
+At this point it's a bit of a hack because we should be using population in private households instead of overall population, but that data is not yet available and the difference for larger areas like city neighbourhoods won't be large and we will gloss over this detail. This gives a pretty good idea why population has changed.
+
+```{r neighbourhood-pop-change-components}
+components_of_change <- tagged_db_data %>%
+  sf::st_drop_geometry() %>%
+  group_by(name) %>%
+  summarise(across(matches("Population|Households|Dwellings"),sum),.groups="drop") %>%
+  pivot_longer(-name,names_pattern = "(.+)_CA(.+)",names_to=c("Metric","Year"),values_to="Count") %>%
+  mutate(Year=paste0(20,Year)) %>%
+  pivot_wider(names_from=Metric,values_from = Count) %>%
+  mutate(Unoccupied=Dwellings-Households,
+         `Household size`=Population/Households) %>%
+  mutate(`Unoccupied rate`=Unoccupied/Dwellings) %>%
+  pivot_longer(-all_of(c("name","Year")),names_to="Metric",values_to = "Current") %>%
+  group_by(name,Metric) %>%
+  mutate(change=Current-lag(Current,order_by = Year)) %>%
+  mutate(Previous=lag(Current,order_by = Year)) %>%
+  mutate(change_pct=change/Previous) %>%
+  ungroup %>%
+  filter(Year!=min(Year)) %>%
+  pivot_wider(names_from = "Metric",values_from = setdiff(names(.),c("name","Year","Metric"))) %>%
+  mutate(dd_dw = `Previous_Household size`*  change_Dwellings * (1-`Previous_Unoccupied rate`),
+  dd_ur = - `Previous_Household size` * Current_Dwellings * `change_Unoccupied rate`,
+  dd_hs = Current_Households * `change_Household size`) %>%
+  mutate(check=dd_dw+dd_ur+dd_hs) %>%
+  left_join(plot_data %>% select(Name,name),by="name")
+
+stopifnot(components_of_change %>% mutate(c=abs(change_Population-check)) %>% pull(c) %>% sum<0.1)
+
+components_of_change %>%
+  pivot_longer(matches("dd_"), names_to = "Metric",values_to="Value") %>%
+  mutate(Metric=factor(Metric,levels=c("dd_dw","dd_ur","dd_hs"))) %>%
+  ggplot(aes(y=fct_rev(Name),x=Value,fill=Metric)) +
+  scale_x_continuous(labels=scales::comma) +
+  geom_bar(stat="identity",position = "dodge") +
+  scale_fill_manual(values=sanzo::trios$c157, labels=c(dd_dw="Change in dwellings",
+                                                       dd_ur="Change in unoccupied",
+                                                       dd_hs="Change in household size")) +
+  labs(title="Composition of population change by neighbourhood",
+       fill="Reason",
+       y=NULL,x="Absolute population change 2016-2021",
+       caption="Mountainmath, Data: StatCan Census 2016, 2021, CoV Open Data")
+```
+
+We see that declining household size has been a major component in the population change in most areas. In particular the population loss in Victoria-Fraserview is entirely due to a drop in average household size in this period, while population increased due to increased dwelling stock and decrease in unoccupied dwellings. Grandview-Woodland really stands out with it's dismal dwelling growth.
+
+What's interesting is that the decrease in unoccupied dwellings, and associated increase in population, can be seen across almost all neighbourhoods, with the exception of the West End, Fairview and Grandview-Woodland. While it's good to remember that [this metric is difficult to interpret and outliers in some areas should be expected](https://doodles.mountainmath.ca/blog/2022/02/14/unoccupied-canada/), it is consistent with the notion that the Empty Homes Tax and Speculation and Vacancy tax had some effect.
+
+
+As usual, the code for this post, including the code to scrape the data out of the PDFs, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-02-15-ndeadbeat-neighbourhoods/index.Rmarkdown) for anyone to reproduce or adapt.
+
+
