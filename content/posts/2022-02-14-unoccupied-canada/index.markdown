@@ -19,7 +19,7 @@ type: "post"
 
 
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/02/14/unoccupied-canada/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/02/15/unoccupied-canada/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 
@@ -142,13 +142,13 @@ As usual, the code for this post, including the code to scrape the data out of t
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-02-14 18:11:47 PST"
+## [1] "2022-02-14 19:22:19 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [1472a57] 2022-02-15: svt 2020 data fix and slight deadbeat zoning tweak
+## Head:     [41f4d31] 2022-02-15: unoccupied canada post
 ```
 
 ```
