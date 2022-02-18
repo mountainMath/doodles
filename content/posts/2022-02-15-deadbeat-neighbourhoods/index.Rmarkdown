@@ -207,3 +207,67 @@ We also have an [interactive Canada-wide map on CensusMapper showing these compo
 As usual, the code for this post, including the code to scrape the data out of the PDFs, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-02-15-ndeadbeat-neighbourhoods/index.Rmarkdown) for anyone to reproduce or adapt.
 
 
+```{r neighbourhood-pop-change-ha, eval=FALSE, include=FALSE}
+plot_data <- tagged_db_data %>% 
+  mutate(area=st_area(.) %>% as.numeric/10000) %>%
+  sf::st_drop_geometry() %>%
+  group_by(name) %>%
+  summarise(across(matches("Population|Households|Dwellings|area"),sum),.groups="drop") %>%
+  pivot_longer(matches("_CA"),names_pattern = "(.+)_CA(.+)",names_to=c("Metric","Year"),values_to="Count") %>%
+  mutate(Year=paste0(20,Year)) %>%
+  group_by(name,Metric) %>%
+  mutate(change=Count-lag(Count,order_by = Year)) %>%
+  mutate(Previous=lag(Count,order_by = Year)) %>%
+  mutate(change_pct=change/Previous) %>%
+  mutate(change_ha=change/area) %>%
+  ungroup %>%
+  filter(!is.na(change)) %>%
+  mutate(Name=factor(name,levels=filter(.,Metric=="Population") %>% arrange(-change) %>% pull(name)))  %>%
+  mutate(Name_pct=factor(name,levels=filter(.,Metric=="Population") %>% arrange(-change_pct) %>% pull(name))) %>%
+  mutate(Name_ha=factor(name,levels=filter(.,Metric=="Population") %>% arrange(-change_ha) %>% pull(name)))
+
+mean_change <- plot_data %>% 
+  filter(Metric=="Population") %>%
+  summarise(change=weighted.mean(change_ha,area),
+            Previous=sum(Previous),
+            Count=sum(Count)) %>%
+  mutate(pop_change=Count/Previous-1) %>%
+  pull(change)
+
+plot_data %>% 
+  filter(Metric=="Population") %>%
+  ggplot(aes(y=fct_rev(Name_ha),x=change_ha,fill=change_ha)) +
+  #scale_fill_viridis_c(guide="none",option="plasma") +
+  #scale_fill_distiller(guide="none",palette = "RdYlBu",direction = 1) +
+  scale_fill_gradient(guide = "none") +
+  geom_bar(stat="identity",position = "dodge") +
+  #geom_text(x=0.15,y="Sunset",label="Average city wide\npopulation change") +
+  #geom_curve(x=0.15,y="West End",xend=0.05,yend="Arbutus-Ridge",arrow = arrow(),curvature = -0.2) +
+  geom_vline(xintercept = mean_change,linetype="dotted") +
+  labs(title="Population change by neighbourhood",
+       y=NULL,x="Population change per hectare 2016-2021",
+       caption="Mountainmath, Data: StatCan Census 2016, 2021, CoV Open Data")
+```
+
+
+```{r neighbourhood-pop-density, eval=FALSE, include=FALSE}
+plot_data %>% 
+  filter(Metric=="Population") %>%
+  mutate(density=Count/area) %>%
+  mutate(Name=factor(name,levels=(.) %>% arrange(-density) %>% pull(name)))  %>%
+  ggplot(aes(y=fct_rev(Name),x=density,fill=density)) +
+  #scale_fill_viridis_c(guide="none",option="plasma") +
+  #scale_fill_distiller(guide="none",palette = "RdYlBu",direction = 1) +
+  scale_fill_gradient(guide = "none") +
+  geom_bar(stat="identity",position = "dodge") +
+  #geom_text(x=0.15,y="Sunset",label="Average city wide\npopulation change") +
+  #geom_curve(x=0.15,y="West End",xend=0.05,yend="Arbutus-Ridge",arrow = arrow(),curvature = -0.2) +
+  #geom_vline(xintercept = mean_change,linetype="dotted") +
+  labs(title="Population density by neighbourhood",
+       y=NULL,x="People per hectare 2021",
+       caption="Mountainmath, Data: StatCan Census 2021, CoV Open Data")
+```
+
+
+
+

@@ -75,3 +75,11 @@ We also have an [interactive Canada-wide map on CensusMapper showing these compo
 As usual, the code for this post, including the code to scrape the data out of the PDFs, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-02-15-ndeadbeat-neighbourhoods/index.Rmarkdown) for anyone to reproduce or adapt.
 
 
+
+
+
+
+
+
+
+

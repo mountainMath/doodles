@@ -1,0 +1,326 @@
+---
+title: Census quirks; using UBC area as an example
+author: Jens von Bergmann
+date: '2022-02-17'
+slug: census-quirks-using-ubc-area-as-an-example
+categories:
+  - CANSIM
+  - CensusMapper
+  - Vancouver
+tags: []
+description: "Census data is great. But census data also has lots of little quirks. We take the Point Grey Peninsula as an example to show how census data can go sideways."
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2022/02/17/census-quirks-using-ubc-area-as-an-example/index_files/figure-html/ct_pop_history-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+ 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( 
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 150,
+	fig.width = 8,
+	fig.height = 6,
+	cache = TRUE
+)
+library(tidyverse)
+library(tongfen)
+library(cancensus)
+library(sf)
+library(mountainmathHelpers)
+```
+
+Census data serves as the baseline for a lot of downstream data products, we like to think of it as a solid and authoritative data source. And the data from the Canadian census is indeed amazing. But counting people is hard, and the closer one looks the more one realizes little problems.
+
+All it takes to shake your faith in census data is spending 30 minutes browsing dissemination block or dissemination area data in a neighbourhood you know well.
+
+Some areas are easier to enumerate than others. One of the more challenging areas, and one the census has been struggling with for many years now, is the Point Grey Peninsula west of the City of Vancouver consisting of the UBC/UNA/UEL communities. There are lots of reasons why this is a difficult area to enumerate, the student population is hard to reach and their usual place of residence is often ambiguous. The area is rapidly changing, and it involves lots of judgement calls on whether to classify housing units as private or collective dwellings.
+
+
+These problems plague census data throughout Canada, but they are particularly strong in the Point Grey Peninsula. This makes it a good example case to walk through in detail to help understand the little (and sometimes large) quirks in census data.
+
+## The big picture
+Issues often jump out when comparing census data cross two censuses. For the 2021 census all we have right now is population, household and dwelling counts. These are the backbone of all census data, the base denominators for everything else.
+
+
+```{r ct_pop_history}
+refrence_point <- function(g){
+  d<-seq(1:nrow(g)) %>%
+    lapply(function(n)g[n,] %>%  
+             st_cast("POLYGON") %>%
+             st_geometry() %>%
+             st_inscribed_circle(dTolerance=0.001) %>% 
+             st_centroid() %>% 
+             st_coordinates() %>%
+             as_tibble() %>%
+             slice(1)) %>%
+    bind_rows()
+  d
+}
+
+core_metrics <- c("Population","Dwellings","Households")
+regions <- list(CT=paste0("9330069.0",seq(0,4)))
+data_ct <- c("CA1996","CA01","CA06","CA11","CA16","CA21") %>%
+  lapply(function(ds)get_census(ds,regions=regions,level="CT",geo_format='sf') %>%
+           mutate(Year=ifelse(ds=="CA1996","1996",paste0("20",substr(ds,3,4))))) %>%
+  bind_rows()
+crs <- lambert_conformal_conic_at(data_ct)
+
+data_ct <- data_ct %>% st_transform(crs)
+
+data_ct %>%
+  bind_cols(refrence_point(.)) %>%
+  ggplot(aes(fill=GeoUID)) +
+  geom_sf() +
+  facet_wrap(~Year) + 
+  geom_water() +
+  geom_roads() +
+  geom_label(aes(x=X,y=Y,label=scales::comma(Population)),alpha=0.5,fill="whitesmoke") +
+  coord_sf(datum=NA) +
+  labs(title="Census tracts and their population in the Point Grey Penninsula",
+       fill="CT UID",x=NULL,y=NULL,
+       caption="StatCan Census 1996 - 2021")
+```
+
+We can see the transformation that happened across the past six censuses, the regions went from a single census tract in the first four years to two census tracts in 2016 splitting further into 3 in 2021. Of note, census tract 9330069.02 covering South Campus remained mostly intact, but had some important boundary changes while keeping the same name. This means that if we wanted to TongFen the census tracts the resulting least common denominator regions would be the whole Point Grey Peninsula, just like during the first four census years in this period.
+
+
+```{r}
+gd <- get_geo_suite("CT") %>% 
+  filter(CTuid %in% regions$CT) %>%
+  select(CTuid,matches("pop"))
+```
+
+How large is that difference between the 2016 and 2021 boundaries for tract 9330069.02? [GeoSuite](https://geosuite.statcan.gc.ca/geosuite/en/index) comes with the 2016 population data on the new 2021 boundaries, and it quantifies it at `r scales::comma(filter(gd,CTuid=="9330069.02")$CTpop_2016a)`, quite a bit lower than the population of `r scales::comma(filter(gd,CTuid=="9330069.02")$CTpop_2016)` it had in the original boundaries. Even small boundary changes like this do matter.
+
+
+```{r ct_tracts_metrics}
+data_ct %>%
+  filter(Year %in% seq(2011,2021,5)) %>%
+  bind_cols(refrence_point(.)) %>%
+  pivot_longer(all_of(core_metrics),names_to="Metric") %>%
+  ggplot(aes(fill=GeoUID)) +
+  geom_sf() +
+  facet_grid(Metric~Year) + 
+  geom_water() +
+  geom_roads() +
+  geom_label(aes(x=X,y=Y,label=scales::comma(value)),alpha=0.5,fill="whitesmoke") +
+  coord_sf(datum=NA) +
+  labs(title="Census tracts and their population in the Point Grey Penninsula",
+       fill="CT UID",x=NULL,y=NULL,
+       caption="StatCan Census 1911 - 2021")
+```
+
+A big cautionary tale in this that geographic identifiers may not change from census to census, even if the underlying geography does. This makes comparing census data across time tricky, we can't just rely on geographic identifier but need to ensure the associated geographies match. The move to [Dissemination Geography Unique Identifiers (DGUIDs)](https://www150.statcan.gc.ca/n1/pub/92f0138m/92f0138m2019001-eng.htm) mitigates these issues at the expense of extra complexity.
+
+But why would StatCan change the boundaries of this census tract? To understand why this boundary change happened we need to understand that the administrative landscape of the Point Grey Peninsula. It is part of Electoral Area A, an unincorporated area in BC. There is no municipal government, but there are three quasi-administrative entities operating within this Point Grey Peninsula. There is UBC and campus housing serving (mostly) students. Then there is the [UNA](https://www.myuna.ca/about-us/), a quasi-municipal body with an elected board and limited power that oversee some of the affairs of residents on campus lands, including faculty and staff housing but also general public market rental and condo housing on land leased directly or indirectly from the university. And then there is the [UEL](http://www.universityendowmentlands.gov.bc.ca), an unincorporated area administered by the province with limited opportunity for community input, the smallest (in population) of the three groups yet people often invoke its name to refer to the whole Point Grey Peninsula.
+
+This most recent boundary change (roughly) aligns census tract 9330069.04 with the UEL and leaves the other two for UBC/UNA, which is useful for the different administrative bodies. Unfortunately the boundary change left out [leləm](https://lelemliving.com), a Musqueam development in the Point Grey Peninsula that will be part of the UEL administrative region but is still part of 9330069.02 in the 2021 census.
+
+Compare this to the breakdown of the various administrative regions from the [rather dated Bike Walk UBC project](https://bikewalkubc.org)
+
+```{r ubc_admin_areas}
+url <- 'https://bikewalkubc.org/map/regions_pure'
+
+tmp <- tempfile(fileext = ".json")
+download.file(url,tmp)
+s<-read_lines(tmp)
+geojson_string <- gsub('.+"collection":|,"class":"admin"}','',s)
+tmp_out <- tempfile(fileext = ".geojson")
+write_lines(s,tmp_out)
+ubc_boundaries_data <- read_sf(tmp_out) %>%
+  mutate(fill=recode(fill,"green"="darkgreen"))
+
+label_colour_data <- ubc_boundaries_data %>% 
+  st_drop_geometry() %>%
+  select(label,fill) %>% 
+  unique
+
+label_colours <- setNames(label_colour_data$fill,label_colour_data$label)
+
+ubc_boundaries_data %>%
+  slice(-14) %>%
+ggplot() +
+  geom_sf(aes(fill=label)) +
+  scale_fill_manual(values=label_colours) +
+  geom_water() +
+  geom_roads() +
+  coord_sf(datum=NA) +
+  labs(title="Quasi-administrative areas within the Point Grey Penninsula",
+       subtitle = "(partially outdated, but reasonable overview)",
+       fill=NULL,
+       caption="Data: BikeWalkUBC.org")
+```
+
+We see leləm and also the Musqueam lands that have been leased to the golf course coloured in orange, and the Pacific Spirit Park that has been leased to the Metro Vancouver in green.
+
+
+## Looking in more detail
+
+
+```{r}
+regions <- list(CT=paste0("9330069.0",seq(0,4)))
+
+meta <- c("CA16","CA21") %>% 
+  lapply(function(ds)
+    meta_for_additive_variables(ds,core_metrics)) %>%
+  bind_rows()
+meta2 <- c("CA11","CA16","CA21") %>% 
+  lapply(function(ds)
+    meta_for_additive_variables(ds,core_metrics)) %>%
+  bind_rows()
+
+data <- get_tongfen_ca_census(regions,meta,base_geo="CA21",level = "DB")
+data2 <- get_tongfen_ca_census(regions,meta2,base_geo="CA21",level = "DB")
+```
+
+
+We want to focus in what happened between those last three censuses, for that we will go down to census block level and TongFen the geographies and values. We will focus on the most recent three censuses.
+
+```{r ubc_db_tongfen}
+change_data_db <- data2 %>%
+  pivot_longer(matches(paste0(core_metrics,collapse = "|")),
+               names_pattern = "(.+)_CA(\\d{2})",
+               names_to=c("Metric","Year")) %>%
+  mutate(Year=paste0(20,Year)) %>%
+  group_by(TongfenID,Metric) %>%
+  mutate(previous=lag(value,order_by = Year)) %>%
+  mutate(Period=paste0(lag(Year,order_by = Year),"-",Year)) %>%
+  filter(Year!=first(Year)) %>%
+  ungroup() %>%
+  mutate(change=value-previous)
+
+change_data_db %>%
+  ggplot(aes(fill=change)) +
+  geom_sf(size=0.1) +
+  facet_grid(Period~Metric) +
+  scale_fill_gradient2(breaks=seq(-2000,2000,500)) +
+  coord_sf(datum=NA) +
+  labs(title="Inter-census change",fill=NULL,caption="StatCan Census 2011-2021")
+```
+
+This gives a quick overview of the geographies resulting from TongFen for three consecutive censuses, as well as the changes happening in each region. The strong growth on South Campus is clearly visible. But the regions showing loss of dwelling units, as well as regions with strong population loss seem curious. 
+
+This warrants a closer look. Let's graph the change in each individual block for those two periods, for ease of throwing out the blocks where none of our metrics, population, dwellings or households, changed by less than 50.
+
+```{r ubc_change_bar}
+change_data_db %>%
+  st_drop_geometry() %>%
+  group_by(TongfenID) %>%
+  filter(max(abs(change))>=50) %>%
+  ungroup() %>%
+  mutate(TongfenID=factor(TongfenID, levels=(.) %>% arrange(abs(change)) %>% pull(TongfenID) %>% unique)) %>%
+  mutate(Period=factor(Period)) %>%
+  ggplot(aes(x=TongfenID,y=change,fill=fct_rev(Period))) +
+  geom_bar(stat="identity",position = "stack") +
+  scale_y_continuous(labels=scales::comma) +
+  theme_bw() +
+  facet_wrap(~Metric,ncol=1,scales="free_y") +
+  scale_fill_manual(values=sanzo::duos$c047) +
+  theme(axis.text.x=element_blank(),
+        legend.position = "bottom") +
+  labs(title="Point Grey Peninsula blocks",
+       fill="Period",
+       x=NULL,y="Absolute change")
+```
+
+First looking at dwellings we notice a pattern where dwellings got add 2011-2016, and subtracted again in 2016-2021. That's the little triangle that changes from blue to red in the map, it's (mostly) undergraduate family student housing. It got neither built nor torn down during any of these periods, it just got reclassified as private housing in the 2016 census and changed back to collective housing in 2021. There was no population change associated with this because the population got counted the same way, mostly as this being not their usual residence. In 2016 the census recorded `r filter(data2,grepl("59150940017",TongfenUID))$Dwellings_CA16` dwellings with `r filter(data2,grepl("59150940017",TongfenUID))$Population_CA16` people living there as their usual residence. In 2021 that flipped to `r filter(data2,grepl("59150940017",TongfenUID))$Dwellings_CA21` dwellings with `r filter(data2,grepl("59150940017",TongfenUID))$Population_CA21` people living there. A big change in the data, but virtually no change on the ground.
+
+
+When it comes to population declines 2016-2021, we can identify several red-ish areas on the map higher up that correspond to student housing. UBC was operating fully remote during the semester near the 2021 census, and the on-campus student population was only a fraction of it's normal size. While a higher portion of the students that did stay on campus would have had their usual residence on campus (as opposed to their parent's place), there were much fewer of them and the net result was negative.
+
+Let's take a look at the development of the absolute number of those metrics across the three censuses. To make it a little easier to understand what's going on we will roughly classify each metric in each block depending on if the count is falling, rising, flat, or exhibits a sawtooth pattern.
+
+```{r ubc_change_cat}
+ plot_data <- data2 %>%
+  st_drop_geometry() %>%
+  pivot_longer(matches(paste0(core_metrics,collapse = "|")),
+               names_pattern = "(.+)_CA(\\d{2})",
+               names_to=c("Metric","Year")) %>%
+  mutate(Year=paste0(20,Year))  %>%
+  group_by(Metric,TongfenID) %>%
+  filter(max(value)>0) %>%
+  arrange(Year) %>%
+  mutate(Category=case_when( value[1]/value[2]>1.4 & value[3]/value[2]>1.4 ~ "Sawtooth",
+                            value[2]/value[1]>1.4 & value[2]/value[3]>1.4 ~ "Sawtooth",
+                            max(value)/min(value)<1.4 ~ "Flat",
+                            last(value)/first(value)>1.5 ~ "Rise",
+                            first(value)/last(value)>1.5 ~ "Fall",
+                           
+                            #first(value)/last(value)<1.3 & last(value)/first(value)<1.3 ~ "Reclassification",
+                            TRUE ~ "Flat")) 
+plot_data %>%
+  ggplot(aes(x=Year,y=value,colour=TongfenID,group=TongfenID)) +
+  geom_line() +
+  geom_point(shape=21) +
+  scale_colour_discrete(guide="none") +
+  scale_y_continuous(labels=scales::comma,trans="log", breaks=10^seq(0,20) %>% as.integer()) +
+  theme_bw() +
+  facet_grid(Metric~Category,scales="free_y") +
+  theme(legend.position = "bottom") +
+  labs(title="Point Grey Peninsula blocks",
+       fill="Period",
+       x=NULL,y="Absolute change (log scale)")
+```
+
+The areas exhibiting a sawtooth pattern likely saw reclassification of some sort, although a rise and then fall in population may also happen when student housing got added 2011-2016 and then students stayed away from campus during COVID in 2021. Areas showing a fall likely underwent some kind of reclassification too, areas showing a consistent rise have likely seen dwellings and then also population and households added.
+
+## Other quirks
+```{r}
+data_db <- c("CA01","CA06","CA11","CA16","CA21") %>%
+  lapply(function(ds)get_census(ds,regions=regions,level="DB",geo_format='sf') %>%
+           mutate(Year=ifelse(ds=="CA1996","1996",paste0("20",substr(ds,3,4))))) %>%
+  bind_rows()
+#data_db %>% filter(GeoUID %in% "59150940017")
+#data2 %>% filter(grepl("59150940017",TongfenUID))
+```
+
+The UBC area highlight the issues around enumerating private vs collective dwellings, usual and temporary residence, and the implications it has for the people living in these arrangements and how they are represented in the upcoming release of the census profile data.
+
+Take for example [dissemination block 59150946020](https://censusmapper.ca/maps/3053#18/49.25950/-123.24998) hosting the Thunderbird student residences, where the 2021 census lists 1 dwelling unit with one household, and a total population of 635 people. Or [dissemmination block 59154100003](https://censusmapper.ca/maps/3053#16/49.2687/-123.2604) encompassing Cecile Green Residences as well as the residence of the President of UBC. The 2021 census lists two private dwelling units, one private household and 104 residents living there. 
+
+At first sight one might think these blocks are host to giant communes, but what's likely going on with block 59154100003 is that the two dwelling units are within the presidents residence, with the president's household and family members living there. But the vast majority of the population is likely the subset of residents of Cecile Green that claim Cecile Green as their usual residence. Similarly for block 59150946020, where a residence might be an in-house caretaker. None of this counts residents of Cecile Green or Thunderbird that are returning back to their parent's place over the summer, these are counted at their parent's residence.
+
+
+Moreover, the people living at Cecile Green or Thunderbird, while counted in this area, aren't considered as living in private households and therefore will be excluded from the other demographic data that will be released later this year, with the exception of the age group breakdown. We won't learn about their ethnicity, immigrant status, languages, income or other census variables from the census profiles. 
+
+
+```{r}
+pph_data <- get_census("CA16",regions=regions,level="DA",vectors=c(pph="v_CA16_424"))
+```
+
+This can make quite a difference, in the 2016 census reported `r scales::comma(sum(pph_data$Population))` people living in the Point Grey Peninsula as their usual residence, `r scales::comma(sum(pph_data$pph,na.rm=TRUE))` of which were living in private households and the remaining `r scales::comma(sum(pph_data$Population)-sum(pph_data$pph,na.rm=TRUE))` are not included in any of the census profile data except the age group breakdown. And the people with usual residence elsewhere, but who very much shape life in the area for much of the year, aren't included at all. This adds an extra layer of complexity when interpreting census data for UBC or other areas with similarly complex enumeration challenges.
+
+We can get even more extreme with [block 59154083011](https://censusmapper.ca/maps/3053#17/49.26377/-123.24609), listing zero dwelling units but 324 people living there. What's interesting is that there is actually no housing at all in this block, although there is student housing on neighbouring blocks. 
+
+Which leads us to another problem: geocoding.
+
+## Geocoding
+Other issues persist on UBC campus that may or may not be representative of broader issues with the census. [block 59154083011](https://censusmapper.ca/maps/3053#17/49.26377/-123.24609) is just one example, but geocoding issues exist throughout. Be it [block 59150863012](https://censusmapper.ca/maps/3053#17/49.28788/-123.14369) listing 15 people living in 9 households out of a total of 15 dwelling units on the beach at the north end of English Bay. Or more personally my condo building on campus,  which since the 2016 census has it's own census block. However, the census lists less than half the number of dwelling units in my building. And this is despite sending an enumerator to the building in 2021. 
+
+These kind of quirks exist throughout, for example the 679 people that the census had [living in the median of the Lougheed Highway in Mitt Meadows in 2016](https://censusmapper.ca/maps/591#18/49.22427/-122.67140), and moved them out by the 2021 census, presumably because their geocoding improved. While it is impossible to eliminate all problems like this it is somewhat disappointing that the census is still quite sloppy when it comes to geocoding. In BC we have the excellent [BC Address Geocoder](https://www2.gov.bc.ca/gov/content/data/geographic-data-services/location-services/geocoder) which, together with BC Assessment roll data, could greatly enhance the accuracy of census data in BC. And this is already in the hands of StatCan via the Canadian Housing Statistics Program.
+
+## Upshot
+Census data is great, but census data also has lots of quirks and things that can trip people up. When things look funny in a particular area it's always a good idea to consider who is counted and who isn't. Using CensusMapper makes it east to zoom into block level and read off the population, dwelling and household counts to better understand where the higher geography totals come from. Satellite images and street view can provide more context, especially where coverage is good and we have to ability to step backward through time and compare with previous censuses to understand how areas have changed. Deeper on-the-ground knowledge is very helpful to add additional context, and sometimes is essential for resolving issues.
+
+
+As usual, the code for this post, including the code to scrape the data out of the PDFs, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-02-17- census-quirks-using-ubc-area-as-an-example/index.Rmarkdown) for anyone to reproduce or adapt.
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+
