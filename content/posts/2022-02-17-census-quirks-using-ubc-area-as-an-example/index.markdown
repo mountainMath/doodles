@@ -121,13 +121,13 @@ As usual, the code for this post, including the code to scrape the data out of t
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-02-17 20:48:29 PST"
+## [1] "2022-02-18 16:47:56 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [59608ba] 2022-02-15: link to components of population change censusmapper map
+## Head:     [d9602a5] 2022-02-18: census quirks
 ```
 
 ```
@@ -172,4 +172,4 @@ As usual, the code for this post, including the code to scrape the data out of t
 ## [57] fastmap_1.1.0      yaml_2.2.1         colorspace_2.0-2   classInt_0.4-3    
 ## [61] rvest_1.0.2        knitr_1.36         haven_2.4.3        sass_0.4.0
 ```
-
+</details>
