@@ -1,6 +1,8 @@
 ---
 title: Unoccupied Canada
-author: Jens von Bergmann
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
 date: '2022-02-14'
 slug: unoccupied-canada
 categories:
@@ -142,19 +144,19 @@ As usual, the code for this post, including the code to scrape the data out of t
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-02-14 19:22:19 PST"
+## [1] "2022-03-29 18:09:01 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [41f4d31] 2022-02-15: unoccupied canada post
+## Head:     [b35bffa] 2022-02-19: rent change vs vacanct rates post
 ```
 
 ```
 ## R version 4.1.2 (2021-11-01)
 ## Platform: aarch64-apple-darwin20 (64-bit)
-## Running under: macOS Monterey 12.1
+## Running under: macOS Monterey 12.3
 ## 
 ## Matrix products: default
 ## BLAS:   /Library/Frameworks/R.framework/Versions/4.1-arm64/Resources/lib/libRblas.0.dylib
@@ -168,30 +170,30 @@ As usual, the code for this post, including the code to scrape the data out of t
 ## 
 ## other attached packages:
 ##  [1] mountainmathHelpers_0.1.3 cmhc_0.1.0               
-##  [3] tongfen_0.3.4             cancensus_0.5.0          
-##  [5] sf_1.0-4                  forcats_0.5.1            
-##  [7] stringr_1.4.0             dplyr_1.0.7              
-##  [9] purrr_0.3.4               readr_2.1.1              
-## [11] tidyr_1.1.4               tibble_3.1.6             
+##  [3] tongfen_0.3.5             cancensus_0.5.0          
+##  [5] sf_1.0-7                  forcats_0.5.1            
+##  [7] stringr_1.4.0             dplyr_1.0.8              
+##  [9] purrr_0.3.4               readr_2.1.2              
+## [11] tidyr_1.2.0               tibble_3.1.6             
 ## [13] ggplot2_3.3.5             tidyverse_1.3.1          
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] Rcpp_1.0.8         lubridate_1.8.0    class_7.3-19       assertthat_0.2.1  
+##  [1] Rcpp_1.0.8.3       lubridate_1.8.0    class_7.3-20       assertthat_0.2.1  
 ##  [5] digest_0.6.29      utf8_1.2.2         R6_2.5.1           cellranger_1.1.0  
-##  [9] backports_1.4.0    reprex_2.0.1       evaluate_0.14      e1071_1.7-9       
-## [13] httr_1.4.2         blogdown_1.6       pillar_1.6.4       rlang_0.4.12      
-## [17] readxl_1.3.1       rstudioapi_0.13    jquerylib_0.1.4    rmarkdown_2.11    
+##  [9] backports_1.4.1    reprex_2.0.1       evaluate_0.15      e1071_1.7-9       
+## [13] httr_1.4.2         blogdown_1.8       pillar_1.7.0       rlang_1.0.2       
+## [17] readxl_1.3.1       rstudioapi_0.13    jquerylib_0.1.4    rmarkdown_2.13    
 ## [21] munsell_0.5.0      proxy_0.4-26       broom_0.7.12       compiler_4.1.2    
-## [25] modelr_0.1.8       xfun_0.28          pkgconfig_2.0.3    htmltools_0.5.2   
-## [29] tidyselect_1.1.1   bookdown_0.24      fansi_1.0.2        crayon_1.4.2      
-## [33] tzdb_0.2.0         dbplyr_2.1.1       withr_2.4.3        grid_4.1.2        
-## [37] jsonlite_1.7.3     gtable_0.3.0       lifecycle_1.0.1    DBI_1.1.2         
-## [41] git2r_0.29.0       magrittr_2.0.1     units_0.7-2        scales_1.1.1      
-## [45] KernSmooth_2.23-20 cli_3.1.0          stringi_1.7.6      fs_1.5.1          
-## [49] xml2_1.3.3         bslib_0.3.1        ellipsis_0.3.2     generics_0.1.1    
-## [53] vctrs_0.3.8        tools_4.1.2        glue_1.6.1         hms_1.1.1         
-## [57] fastmap_1.1.0      yaml_2.2.1         colorspace_2.0-2   classInt_0.4-3    
-## [61] rvest_1.0.2        knitr_1.36         haven_2.4.3        sass_0.4.0
+## [25] modelr_0.1.8       xfun_0.30          pkgconfig_2.0.3    htmltools_0.5.2   
+## [29] tidyselect_1.1.2   bookdown_0.25      fansi_1.0.3        crayon_1.5.1      
+## [33] tzdb_0.2.0         dbplyr_2.1.1       withr_2.5.0        grid_4.1.2        
+## [37] jsonlite_1.8.0     gtable_0.3.0       lifecycle_1.0.1    DBI_1.1.2         
+## [41] git2r_0.30.1       magrittr_2.0.2     units_0.8-0        scales_1.1.1      
+## [45] KernSmooth_2.23-20 cli_3.2.0          stringi_1.7.6      fs_1.5.2          
+## [49] xml2_1.3.3         bslib_0.3.1        ellipsis_0.3.2     generics_0.1.2    
+## [53] vctrs_0.3.8        tools_4.1.2        glue_1.6.2         hms_1.1.1         
+## [57] fastmap_1.1.0      yaml_2.3.5         colorspace_2.0-3   classInt_0.4-3    
+## [61] rvest_1.0.2        knitr_1.38         haven_2.4.3        sass_0.4.1
 ```
 
 
