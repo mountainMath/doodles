@@ -26,7 +26,7 @@ type: "post"
 
 
 
-In our [previous post we have outligned the broad problems with the recent UBCM report](https://doodles.mountainmath.ca/blog/2022/03/29/ubcm-shenanigans/), in this post we return to one particular one, the comparison of dwelling growth to population growth for "BC Major Census Metropolitan Areas" (Figure 2 in the report), paying particular attention to Squamish as the largest outlier. To start out, let's take a comprehensive look at how dwelling and population growth play out across BC's CMAs and CAs.
+In our [previous post we have outlined the broad problems with the recent UBCM report](https://doodles.mountainmath.ca/blog/2022/03/29/ubcm-shenanigans/), in this post we return to one particular one, the comparison of dwelling growth to population growth for "BC Major Census Metropolitan Areas" (Figure 2 in the report), paying particular attention to Squamish as the largest outlier. To start out, let's take a comprehensive look at how dwelling and population growth play out across BC's CMAs and CAs.
 
 <img src="{{< blogdown/postref >}}index_files/figure-html/bc_cma_ca_pop_dw_change-1.png" width="1200" />
 
@@ -85,13 +85,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-03-29 19:37:27 PDT"
+## [1] "2022-03-29 19:42:29 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [cb40a66] 2022-03-30: ubcm and squamish posts
+## Head:     [a09fc91] 2022-03-30: update links
 ```
 
 ```
