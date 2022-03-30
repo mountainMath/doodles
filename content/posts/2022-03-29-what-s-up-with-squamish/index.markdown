@@ -20,7 +20,7 @@ linktitle: ''
 type: "post"
 ---
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/03/30/what-s-up-with-squamish/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/03/30/population-vs-dwelling-growth-squamish-edition/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 
@@ -85,13 +85,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-03-29 19:42:29 PDT"
+## [1] "2022-03-29 19:44:06 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [a09fc91] 2022-03-30: update links
+## Head:     [1000294] 2022-03-30: spelling
 ```
 
 ```
