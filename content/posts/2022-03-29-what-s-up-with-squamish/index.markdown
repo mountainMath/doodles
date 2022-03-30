@@ -13,7 +13,7 @@ categories:
 tags: []
 escription: "Squamish's dwelling stock grew faster than their population, what does that mean?"
 featured: ''
-images: ["https://doodles.mountainmath.ca/blog/2021/11/21/what-s-up-with-squamish-data/index_files/figure-html/bc_cma_ca_pop_dw_change-1.png"]
+images: ["https://doodles.mountainmath.ca/blog/2022/03/30/what-s-up-with-squamish/index_files/figure-html/bc_cma_ca_pop_dw_change-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -85,13 +85,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-03-29 19:31:20 PDT"
+## [1] "2022-03-29 19:37:27 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [b35bffa] 2022-02-19: rent change vs vacanct rates post
+## Head:     [cb40a66] 2022-03-30: ubcm and squamish posts
 ```
 
 ```

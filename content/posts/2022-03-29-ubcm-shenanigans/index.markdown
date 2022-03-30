@@ -82,7 +82,7 @@ The above provides a summary review of the UBCM report. It's bad. But maybe it's
 
 This post barely starts to look at specific points and arguments brought up by UBCM within the report, many of which are misleading at best and display a shockingly amateurish level of analysis. Take the claim about "exponential" (do words still have meanings?) increases in pre-sale assignments, where the UBCM exploits the left-censored nature of their data source, and rising condo construction activity in Langley, and misinterpret this as a "remarkable growth in flipping of pre-sale condos." 
 
-Another example is the shallow comparison of population to dwelling growth in Squamish. We have looked into this kind of argument in detail before when it was made about [the City of Vancouver supposedly building more than enough housing](https://doodles.mountainmath.ca/blog/2022/01/31/no-shortage-in-housing-bs/), and how one particular ingredient of these claims, the number of housing units not occupied by usual residents, [can easily be misinterpreted](https://doodles.mountainmath.ca/blog/2022/02/14/unoccupied-canada/) and [has frequently been misinterpreted in the past](https://doodles.mountainmath.ca/blog/2017/04/03/joyce-collingwood/) in a [number of different ways](https://doodles.mountainmath.ca/blog/2020/01/27/mythical-oversupply/). For good measure it might be worthwhile to repeat this for Squamish, which showed the largest discrepancy between population and dwelling growth in the UBCM report, and we delegate that to [a separate blog post](https://doodles.mountainmath.ca/blog/2022/03/29/what-s-up-with-squamish/).
+Another example is the shallow comparison of population to dwelling growth in Squamish. We have looked into this kind of argument in detail before when it was made about [the City of Vancouver supposedly building more than enough housing](https://doodles.mountainmath.ca/blog/2022/01/31/no-shortage-in-housing-bs/), and how one particular ingredient of these claims, the number of housing units not occupied by usual residents, [can easily be misinterpreted](https://doodles.mountainmath.ca/blog/2022/02/14/unoccupied-canada/) and [has frequently been misinterpreted in the past](https://doodles.mountainmath.ca/blog/2017/04/03/joyce-collingwood/) in a [number of different ways](https://doodles.mountainmath.ca/blog/2020/01/27/mythical-oversupply/). For good measure it might be worthwhile to repeat this for Squamish, which showed the largest discrepancy between population and dwelling growth in the UBCM report, and we delegate that to [a separate blog post](https://doodles.mountainmath.ca/blog/2022/03/30/what-s-up-with-squamish/).
 
 In the meantime, the amateurish level of analysis on display by UBCM jut underscores the problem. BC municipalities have been given enormous power over land use in the province. At the same time, they're often under-resourced relative to the power they wield, so much so that they don't recognize the damage they're doing with their powers. This, of course, brings us back to Spider-Man: "With great power there must also come great responsibility."
 
@@ -95,13 +95,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-03-29 19:30:25 PDT"
+## [1] "2022-03-29 19:38:28 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [b35bffa] 2022-02-19: rent change vs vacanct rates post
+## Head:     [cb40a66] 2022-03-30: ubcm and squamish posts
 ```
 
 ```
