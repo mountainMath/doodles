@@ -78,26 +78,26 @@ It's probably no coincidence that the UBCM report cites a prime example of such 
 ## Upshot
 What does the cherry-picked stat about Squamish's dwelling growth exceeding population growth tell us? Nothing, except once again that the authors of the report don't understand housing.
 
-As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-03-30-what-s-up-with-squamish/index.Rmarkdown) for anyone to replicate or adapt for their own purposes.
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-03-29-what-s-up-with-squamish/index.Rmarkdown) for anyone to replicate or adapt for their own purposes.
 
 
 
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-03-29 19:44:06 PDT"
+## [1] "2022-04-05 16:32:40 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [1000294] 2022-03-30: spelling
+## Head:     [cf74cf8] 2022-03-30: link to nathan's post
 ```
 
 ```
 ## R version 4.1.2 (2021-11-01)
 ## Platform: aarch64-apple-darwin20 (64-bit)
-## Running under: macOS Monterey 12.3
+## Running under: macOS Monterey 12.3.1
 ## 
 ## Matrix products: default
 ## BLAS:   /Library/Frameworks/R.framework/Versions/4.1-arm64/Resources/lib/libRblas.0.dylib

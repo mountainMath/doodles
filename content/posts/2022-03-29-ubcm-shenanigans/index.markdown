@@ -88,26 +88,26 @@ In the meantime, the amateurish level of analysis on display by UBCM jut undersc
 
 ![](/images/spiderman2.jpeg)
 
-As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-03-30-ubcm-shenanigans/index.Rmarkdown) for anyone to replicate or adapt for their own purposes.
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-03-29-ubcm-shenanigans/index.Rmarkdown) for anyone to replicate or adapt for their own purposes.
 
 
 
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-03-29 19:38:28 PDT"
+## [1] "2022-04-05 16:31:26 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [cb40a66] 2022-03-30: ubcm and squamish posts
+## Head:     [cf74cf8] 2022-03-30: link to nathan's post
 ```
 
 ```
 ## R version 4.1.2 (2021-11-01)
 ## Platform: aarch64-apple-darwin20 (64-bit)
-## Running under: macOS Monterey 12.3
+## Running under: macOS Monterey 12.3.1
 ## 
 ## Matrix products: default
 ## BLAS:   /Library/Frameworks/R.framework/Versions/4.1-arm64/Resources/lib/libRblas.0.dylib
