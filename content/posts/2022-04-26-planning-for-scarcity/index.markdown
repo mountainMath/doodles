@@ -1,5 +1,5 @@
 ---
-title: Planning for scracity
+title: Planning for scarcity
 authors: 
   - Jens von Bergmann
   - Nathan Lauster
