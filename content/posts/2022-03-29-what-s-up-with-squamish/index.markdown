@@ -11,7 +11,7 @@ categories:
   - CensusMapper
   - tongfen
 tags: []
-escription: "Squamish's dwelling stock grew faster than their population, what does that mean?"
+description: "Squamish's dwelling stock grew faster than their population, what does that mean?"
 featured: ''
 images: ["https://doodles.mountainmath.ca/blog/2022/03/30/what-s-up-with-squamish/index_files/figure-html/bc_cma_ca_pop_dw_change-1.png"]
 featuredalt: ""
@@ -85,23 +85,23 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-04-05 16:32:40 PDT"
+## [1] "2022-04-26 16:13:39 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [cf74cf8] 2022-03-30: link to nathan's post
+## Head:     [ac5107a] 2022-04-05: fix link to github code
 ```
 
 ```
-## R version 4.1.2 (2021-11-01)
+## R version 4.2.0 (2022-04-22)
 ## Platform: aarch64-apple-darwin20 (64-bit)
 ## Running under: macOS Monterey 12.3.1
 ## 
 ## Matrix products: default
-## BLAS:   /Library/Frameworks/R.framework/Versions/4.1-arm64/Resources/lib/libRblas.0.dylib
-## LAPACK: /Library/Frameworks/R.framework/Versions/4.1-arm64/Resources/lib/libRlapack.dylib
+## BLAS:   /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/lib/libRblas.0.dylib
+## LAPACK: /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/lib/libRlapack.dylib
 ## 
 ## locale:
 ## [1] en_CA.UTF-8/en_CA.UTF-8/en_CA.UTF-8/C/en_CA.UTF-8/en_CA.UTF-8
@@ -110,7 +110,7 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] mountainmathHelpers_0.1.3 tongfen_0.3.5            
+##  [1] mountainmathHelpers_0.1.4 tongfen_0.3.5            
 ##  [3] cancensus_0.5.0           forcats_0.5.1            
 ##  [5] stringr_1.4.0             dplyr_1.0.8              
 ##  [7] purrr_0.3.4               readr_2.1.2              
@@ -121,19 +121,19 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ##  [1] Rcpp_1.0.8.3       lubridate_1.8.0    class_7.3-20       assertthat_0.2.1  
 ##  [5] digest_0.6.29      utf8_1.2.2         R6_2.5.1           cellranger_1.1.0  
 ##  [9] backports_1.4.1    reprex_2.0.1       e1071_1.7-9        evaluate_0.15     
-## [13] httr_1.4.2         blogdown_1.8       pillar_1.7.0       rlang_1.0.2       
-## [17] readxl_1.3.1       rstudioapi_0.13    jquerylib_0.1.4    rmarkdown_2.13    
-## [21] munsell_0.5.0      proxy_0.4-26       broom_0.7.12       compiler_4.1.2    
+## [13] httr_1.4.2         blogdown_1.9       pillar_1.7.0       rlang_1.0.2       
+## [17] readxl_1.4.0       rstudioapi_0.13    jquerylib_0.1.4    rmarkdown_2.13    
+## [21] munsell_0.5.0      proxy_0.4-26       broom_0.8.0        compiler_4.2.0    
 ## [25] modelr_0.1.8       xfun_0.30          pkgconfig_2.0.3    htmltools_0.5.2   
-## [29] tidyselect_1.1.2   bookdown_0.25      fansi_1.0.3        crayon_1.5.1      
-## [33] tzdb_0.2.0         dbplyr_2.1.1       withr_2.5.0        sf_1.0-7          
-## [37] grid_4.1.2         jsonlite_1.8.0     gtable_0.3.0       lifecycle_1.0.1   
-## [41] DBI_1.1.2          git2r_0.30.1       magrittr_2.0.2     units_0.8-0       
-## [45] scales_1.1.1       KernSmooth_2.23-20 cli_3.2.0          stringi_1.7.6     
+## [29] tidyselect_1.1.2   bookdown_0.26      fansi_1.0.3        crayon_1.5.1      
+## [33] tzdb_0.3.0         dbplyr_2.1.1       withr_2.5.0        sf_1.0-7          
+## [37] grid_4.2.0         jsonlite_1.8.0     gtable_0.3.0       lifecycle_1.0.1   
+## [41] DBI_1.1.2          git2r_0.30.1       magrittr_2.0.3     units_0.8-0       
+## [45] scales_1.2.0       KernSmooth_2.23-20 cli_3.3.0          stringi_1.7.6     
 ## [49] fs_1.5.2           xml2_1.3.3         bslib_0.3.1        ellipsis_0.3.2    
-## [53] generics_0.1.2     vctrs_0.3.8        tools_4.1.2        glue_1.6.2        
+## [53] generics_0.1.2     vctrs_0.4.1        tools_4.2.0        glue_1.6.2        
 ## [57] hms_1.1.1          fastmap_1.1.0      yaml_2.3.5         colorspace_2.0-3  
-## [61] classInt_0.4-3     rvest_1.0.2        knitr_1.38         haven_2.4.3       
+## [61] classInt_0.4-3     rvest_1.0.2        knitr_1.38         haven_2.5.0       
 ## [65] sass_0.4.1
 ```
 </details>
