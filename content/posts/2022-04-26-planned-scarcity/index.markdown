@@ -10,7 +10,7 @@ categories:
 tags: []
 description: "Vancouver's planning regime is set up to reinforce housing scracity. A closer look how Vancouver plans for growth, what's wrong with it, and some ideas how to fix it."
 featured: ''
-images: ["https://doodles.mountainmath.ca/blog/2022/04/26/planned-scarcity/index_files/figure-html/bc_cma_ca_pop_dw_change-1.png"]
+images: ["https://doodles.mountainmath.ca/blog/2022/04/26/planned-scarcity/index_files/figure-html/pop_dw_model_policy_leaver-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -47,7 +47,7 @@ When in the *controlling regime*, population and housing projections tend to ser
 
 As an example we take the [Metro Vancouver Population and Housing projections](http://www.metrovancouver.org/services/regional-planning/PlanningPublications/OverviewofMetroVancouversMethodsinProjectingRegionalGrowth.pdf), which implicitly builds on the following model.
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-1-1.png" width="672" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/pop_dw_model_naive-1.png" width="672" />
 
 It starts from projections of births, deaths and migration, which are simply derived from past trends and adjusted for changes to federal immigration targets, which then directly translate to population projections. These then are used to derive jobs projections and, after processing through a age-specific household maintainer rates model that is informed by past trends, translates this into household estimates (mislabeled as dwelling estimates in the [Metro Vancouver projections](http://www.metrovancouver.org/services/regional-planning/PlanningPublications/Metro_Vancouver_Growth_Projections_Methodology_Report.pdf#page=12)).
 
@@ -55,7 +55,7 @@ At first sight this looks scientific and value-free, but the assumptions of the 
 
 To better understand how exactly this works we need to move away from the framework of projections and flow diagrams that show how we compute the estimates and toward a causal framework that tries to capture how the different components in the model interact. This is quite ambitious, the causal processes at work are complex and hard to measure. Here we will focus on what we see as the most important mechanisms.  
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-2-1.png" width="672" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/pop_dw_model-1.png" width="672" />
 
 We added a bunch of factors and causal pathways. Most importantly, dwelling growth impacts both (net) migration and household maintainer rates. [Demographers understand this](https://www.jstor.org/stable/26347917?seq=1#metadata_info_tab_contents) when they talk about the "two-sided relationship" between population and dwelling growth. Similarly, this is what economists mean when they say population and dwelling growth are endogenous.
 
@@ -67,7 +67,7 @@ While we feel our model offers a more realistic guide to how housing relates to 
 
 One key observation is that there's only one prominent policy lever at the local level. Municipalities can't directly impact migration, or other important aspects of the model. They can tinker with amenities and attempt to draw in new business investment, but these efforts probably aren't too important. But there's one set of powers municipalities have been granted in abundance, and that's control over the addition of new dwellings.
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="672" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/pop_dw_model_policy_leaver-1.png" width="672" />
 
 Which brings us to the final version of our graph, where we add in municipal approvals. And with it we gain a replacement for the Metro Vancouver population projections. We need to do scenario-based modelling, starting from a range of scenarios of municipal housing approvals and their economic feasibility. Of note, adding in estimates of feasibility is just what [New Zealand](https://homefreesociology.com/2021/06/22/the-other-down-under-grows-up-new-zealands-new-urban-development-policy/) has recently attempted in its reforms to move away from its current control regime and back toward a planning regime. In effect, we can vary the amount, type (market, non-market, rental, ownership, etc.), and location of housing approvals, and then work through the model to estimate the impacts on population, migration, prices and rents, household maintainer rates, jobs and the other factors to paint a picture of the resulting scenarios of a future Vancouver. These estimates will come with uncertainties, but they will roughly show how the demographics change, [who will get pushed out](https://homefreesociology.com/2020/08/28/keeping-the-leavers/) and who gets to stay in Vancouver under the given scenarios.
 
