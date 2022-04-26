@@ -10,7 +10,7 @@ categories:
   - Vancouver
   - zoning
 tags: []
-description: "Vancouver's planning regime is set up to reinforce housing scracity. A closer look how Vancouver plans for growth, what's wrong with it, and some ideas how to fix it."
+description: "Vancouver's planning regime is set up to reinforce housing scarcity A closer look how Vancouver plans for growth, what's wrong with it, and some ideas how to fix it."
 featured: ''
 images: ["https://doodles.mountainmath.ca/blog/2022/04/26/planning-for-scarcity/index_files/figure-html/pop_dw_model_policy_leaver-1.png"]
 featuredalt: ""
