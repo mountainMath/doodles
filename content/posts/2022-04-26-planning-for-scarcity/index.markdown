@@ -1,8 +1,10 @@
 ---
-title: Planned Scarcity
-author: Jens von Bergmann
+title: Planning for scracity
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
 date: '2022-04-26'
-slug: planned-scarcity
+slug: planning-for-scarcity
 categories:
   - affordability
   - Vancouver
@@ -10,25 +12,17 @@ categories:
 tags: []
 description: "Vancouver's planning regime is set up to reinforce housing scracity. A closer look how Vancouver plans for growth, what's wrong with it, and some ideas how to fix it."
 featured: ''
-images: ["https://doodles.mountainmath.ca/blog/2022/04/26/planned-scarcity/index_files/figure-html/pop_dw_model_policy_leaver-1.png"]
+images: ["https://doodles.mountainmath.ca/blog/2022/04/26/planning-for-scarcity/index_files/figure-html/pop_dw_model_policy_leaver-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
 type: "post"
 ---
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/04/46/planned-scarcity/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/04/46/planning-for-scarcity/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(
-	echo = FALSE,
-	message = FALSE,
-	warning = TRUE
-)
-library(tidyverse)
-theme_set(mountainmathHelpers::theme_mm())
-```
+
 
 This is the first in a series of posts where we will explore what's gone wrong with planning for growth, how misguided planning and policy-making has exacerbated our housing shortage, and ways to start fixing things.
 
@@ -55,43 +49,7 @@ When in the *controlling regime*, population and housing projections tend to ser
 
 As an example we take the [Metro Vancouver Population and Housing projections](http://www.metrovancouver.org/services/regional-planning/PlanningPublications/OverviewofMetroVancouversMethodsinProjectingRegionalGrowth.pdf), which implicitly builds on the following model.
 
-```{r pop_dw_model_naive}
-mv_vertices <- tibble(Name=c("Dwellings","Household\nMaintainer\nRates","Population",
-                             "Births","Deaths","Migration"),
-                      x=c(0,1,2,1,3,2),
-                      y=c(0,1,2,3,3,1))
-
-mv_edges <- tibble(x=c(0.73,1.73,1.2,2.8,2),
-                   y=c(0.71,1.87,2.87,2.87,1.2),
-                   xend=c(0.27,1.32,1.73,2.3,2),
-                   yend=c(0.12,1.32,2.13,2.13,1.85),
-                   curvature=0.5)
-
-missing_edges <- tibble(x=c(0),
-                        y=c(0.12),
-                        xend=c(0.72),
-                        yend=c(1),
-                        c=c(-0.2))
-
-g<-ggplot(mv_vertices) +
-  geom_label(aes(x=x,y=y,label=Name)) +
-  geom_segment(data=mv_edges,
-               aes(x=x,y=y,xend=xend,yend=yend),
-               size=1,
-               arrow=arrow(length=unit(0.25,"cm"))) +
-  geom_label(data=NULL,label="Jobs\ngrowth",x=3,y=2,colour="black") +
-  geom_curve(data=NULL,
-             x=2.3,y=2,xend=2.8,yend=2,
-             curvature = -0.0,
-             size=1, colour="black",
-             arrow=arrow(length=unit(0.25,"cm")))  +
-  theme_void()+
-  theme(plot.title = element_text(hjust=0.5),
-        plot.subtitle = element_text(hjust=0.5)) +
- expand_limits(x=c(-0.2,3.2),y=c(-0.2,3.2)) +
-  labs(title="Metro Vancouver population and housing growth model")
-g
-```
+<img src="{{< blogdown/postref >}}index_files/figure-html/pop_dw_model_naive-1.png" width="672" />
 
 It starts from projections of births, deaths and migration, which are simply derived from past trends and adjusted for changes to federal immigration targets, which then directly translate to population projections. These then are used to derive jobs projections and, after processing through a age-specific household maintainer rates model that is informed by past trends, translates this into household estimates (mislabeled as dwelling estimates in the [Metro Vancouver projections](http://www.metrovancouver.org/services/regional-planning/PlanningPublications/Metro_Vancouver_Growth_Projections_Methodology_Report.pdf#page=12)).
 
@@ -99,55 +57,7 @@ At first sight this looks scientific and value-free, but the assumptions of the 
 
 To better understand how exactly this works we need to move away from the framework of projections and flow diagrams that show how we compute the estimates and toward a causal framework that tries to capture how the different components in the model interact. This is quite ambitious, the causal processes at work are complex and hard to measure. Here we will focus on what we see as the most important mechanisms.  
 
-```{r pop_dw_model}
-gg<-g + 
-    geom_curve(data=NULL,
-             x=0,y=0.12,xend=0.72,yend=1,
-             curvature = -0.2,
-             size=1, colour="brown",
-             arrow=arrow(length=unit(0.25,"cm"))) + 
-  geom_curve(data=NULL,
-             x=0.27,y=-0.05,xend=2,yend=0.87,
-             curvature = 0.4, angle=150,
-             size=1, colour="brown",
-             arrow=arrow(length=unit(0.25,"cm"))) + 
-  geom_curve(data=NULL,
-             x=1,y=1.3,xend=1,yend=2.87,
-             curvature = -0.1, angle=90,
-             size=0.5, colour="brown",
-             arrow=arrow(length=unit(0.25,"cm"))) +
-  geom_label(data=NULL,label="Income\nWealth",x=0.5,y=2,colour="brown") +
-  geom_curve(data=NULL,
-             x=0.45,y=1.75,xend=-0.05,yend=0.13,
-             curvature = 0.2,
-             size=0.5, colour="brown",
-             arrow=arrow(length=unit(0.25,"cm")))  +
-  geom_curve(data=NULL,
-             x=0.55,y=1.75,xend=0.9,yend=1.35,
-             curvature = 0,
-             size=1, colour="brown",
-             arrow=arrow(length=unit(0.25,"cm")))  +
-  geom_curve(data=NULL,
-             x=2.85,y=1.85,xend=2.25,yend=1.15,
-             curvature = -0,
-             size=1, colour="brown",
-             arrow=arrow(length=unit(0.25,"cm")))  +
-  geom_label(data=NULL,label="Jobs\ngrowth",x=3,y=2,colour="black") +
-  geom_label(data=NULL,label="Amenities",x=3,y=1,
-             colour="brown") +
-  geom_curve(data=NULL,
-             x=2.77,y=1,xend=2.22,yend=1,
-             curvature = 0, 
-             size=1, colour="brown",
-             arrow=arrow(length=unit(0.25,"cm"))) +
-  geom_curve(data=NULL,
-             x=3,y=1.15,xend=3,yend=1.75,
-             curvature = -0,
-             size=0.5, colour="brown",
-             arrow=arrow(length=unit(0.25,"cm"))) +
-  labs(title="Population and housing growth model with missing causal pathways")
-gg
-```
+<img src="{{< blogdown/postref >}}index_files/figure-html/pop_dw_model-1.png" width="672" />
 
 We added a bunch of factors and causal pathways. Most importantly, dwelling growth impacts both (net) migration and household maintainer rates. [Demographers understand this](https://www.jstor.org/stable/26347917?seq=1#metadata_info_tab_contents) when they talk about the "two-sided relationship" between population and dwelling growth. Similarly, this is what economists mean when they say population and dwelling growth are endogenous.
 
@@ -159,16 +69,7 @@ While we feel our model offers a more realistic guide to how housing relates to 
 
 One key observation is that there's only one prominent policy lever at the local level. Municipalities can't directly impact migration, or other important aspects of the model. They can tinker with amenities and attempt to draw in new business investment, but these efforts probably aren't too important. But there's one set of powers municipalities have been granted in abundance, and that's control over the addition of new dwellings.
 
-```{r pop_dw_model_policy_leaver}
-gg+
-  geom_label(data=NULL,label="Municipal\napprovals",x=0.2,y=3,colour="darkgreen") +
-  geom_curve(data=NULL,
-             x=0.2,y=2.8,xend=-0.1,yend=0.13,
-             curvature = 0.2,
-             size=1, colour="darkgreen",
-             arrow=arrow(length=unit(0.25,"cm")))  +
-  labs(title="Population and housing growth model with missing pathways and policy leaver")
-```
+<img src="{{< blogdown/postref >}}index_files/figure-html/pop_dw_model_policy_leaver-1.png" width="672" />
 
 Which brings us to the final version of our graph, where we add in municipal approvals. And with it we gain a replacement for the Metro Vancouver population projections. We need to do scenario-based modelling, starting from a range of scenarios of municipal housing approvals and their economic feasibility. Of note, adding in estimates of feasibility is just what [New Zealand](https://homefreesociology.com/2021/06/22/the-other-down-under-grows-up-new-zealands-new-urban-development-policy/) has recently attempted in its reforms to move away from its current control regime and back toward a planning regime. In effect, we can vary the amount, type (market, non-market, rental, ownership, etc.), and location of housing approvals, and then work through the model to estimate the impacts on population, migration, prices and rents, household maintainer rates, jobs and the other factors to paint a picture of the resulting scenarios of a future Vancouver. These estimates will come with uncertainties, but they will roughly show how the demographics change, [who will get pushed out](https://homefreesociology.com/2020/08/28/keeping-the-leavers/) and who gets to stay in Vancouver under the given scenarios.
 
