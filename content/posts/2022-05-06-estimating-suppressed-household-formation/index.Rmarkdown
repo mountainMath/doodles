@@ -1,0 +1,1083 @@
+---
+title: Estimating Suppressed Household Formation
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
+date: '2022-05-06'
+slug: estimating-suppressed-household-formation
+categories:
+  - affordability
+  - cancensus
+  - cmhc
+  - PUMF
+  - Toronto
+  - Vancouver
+tags: []
+description: "Household formation is a complex process that is impacted by many factors. We explore the variation in household maintainer rates across Canada to estimate the CMA-level effects on household maintainer rates and suppressed household formation using Montréal as a counterfactual, paying attention to differences in age structure and cultural aspects."
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2022/05/06/estimating-suppressed-household-formation/index_files/figure-html/effect_hmr_share-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/05/07/estimating-suppressed-household-formation/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = TRUE,
+	fig.width = 8,
+	cache=TRUE
+)
+library(tidyverse)
+theme_set(mountainmathHelpers::theme_mm())
+library(statcanXtabs)
+library(cancensus)
+library(cmhc)
+
+ages1 <- c("20 to 24 years" ,   "25 to 29 years"  ,  "30 to 34 years" ,   "35 to 39 years",    "40 to 44 years")
+ages2 <- c("25 to 29 years"  ,  "30 to 34 years" )
+ages3 <- c("20 to 24 years" ,   "25 to 29 years"  ,  "30 to 34 years" ,   "35 to 39 years")
+ages4 <- c("25 to 29 years"  ,  "30 to 34 years" ,   "35 to 39 years")
+ages_all <- c("15 to 17 years",
+              "18 to 19 years",    "20 to 24 years",    "25 to 29 years",    "30 to 34 years",
+              "35 to 39 years",    "40 to 44 years" , "45 to 49 years" ,   "50 to 54 years",    
+              "55 to 59 years",
+              "60 to 64 years" ,   "65 to 69 years",    "70 to 74 years", "75 to 79 years",
+              "80 to 84 years",    "85 years and over")
+
+selected_cmas <- c("Canada","Vancouver","Toronto","Calgary","Edmonton","Ottawa - Gatineau","Montréal",
+          "Victoria","Hamilton","Winnipeg","Ottawa – Gatineau","Halifax","Québec")
+selected_geouids <- list_census_regions("CA16") %>%
+  filter(level=="CMA" & (name %in% selected_cmas) | name=="Canada") 
+```
+
+## TL;DR
+
+We develop and elaborate a Montréal Method for estimating housing shortfalls related to constraints upon current residents who might wish to form independent households but are forced to share by local housing markets. Applying simple versions of the Montréal Method to Metro Areas across Canada suggests that Toronto has the biggest shortfall, which we estimate at 250,000 to 400,000 dwellings, depending upon assumptions. For Vancouver, the estimated shortfall range is narrower, from roughly 75,000 to 100,000 dwellings. But models suggest housing shortfalls remain widespread, and there is much room for further elaboration. Note: shortfalls estimated in this post only account for those due to suppressed household formation among residents and do not account for e.g. migration pressures, which means that overall housing shortfalls are likely much larger.
+
+## Intro
+
+In a [previous post](https://homefreesociology.com/2022/04/26/planning-for-scarcity/) we tried to explain what goes wrong with population and dwelling growth projections in planning. In this post we will examine household maintainer rates more closely, one of the two key places where implicit model assumptions perpetuate and amplify housing scarcity. We'll also lay out adjustments to consider that we'll call "The Montréal Method" for estimating housing needs based on suppressed household formation.
+
+Household maintainer rates, sometimes called headship rates, are the share of the population 15+, or within a specific age group, who are coded as ["primary household maintainer" in the census](https://www12.statcan.gc.ca/census-recensement/2016/ref/dict/households-menage020-eng.cfm). The concept draws upon an older & occasionally patriarchal notion of household head, where the census was interested in identifying who was "in charge" of the household, and updates it by merely identifying the first person listed who pays the bills. Often, of course, as with most couples, there are two or more people paying the bills. But only one gets identified as the "primary" household maintainer in order to help identify a single link between households and the people they contain. Correspondingly, household maintainer rates serve as a sort of missing link in how we fit populations into dwellings. This missing link also contains information about household size. And as we [noted previously](https://doodles.mountainmath.ca/blog/2022/04/26/planning-for-scarcity/) with respect to [Metro population projections](http://www.metrovancouver.org/services/regional-planning/PlanningPublications/Metro_Vancouver_Growth_Projections_Methodology_Report.pdf#page=12), assumptions about household maintainer rates have a significant impact on housing needs and demand estimates.
+
+Often housing needs and demand projections assume household maintainer rates will follow past trends, but as explained in our previous post this assumption tends to enshrine and worsen past housing shortages. If in the past housing was scarce, and household maintainer rates have been suppressed by, e.g. delaying independent household formation of young adults, simply projecting past trends forward would bake these past shortages into plans for the future. In other words, normal planning processes, as with [Metro Vancouver's growth projections](http://www.metrovancouver.org/services/regional-planning/PlanningPublications/Metro_Vancouver_Growth_Projections_Methodology_Report.pdf), can serve to systematically enshrine housing shortages.
+
+
+```{r}
+age_data <- get_sqlite_xtab("98-400-X2016028","https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=109647&OFT=CSV") %>%
+  filter(#GEO_NAME=="Canada",
+         Sex=="Total - Sex",
+         `Family characteristics of adults`=="Total - Family characteristics of adults (restricted to persons aged 15 and over)") %>%
+  collect() %>%
+    standardize_xtab() %>%
+    select(Year=`Census year`,Name=GEO_NAME,GeoUID=`GEO_CODE (POR)`,Age, Total=Value) %>%
+  mutate(Age=recode(Age,"80 to 84 years"="75 to 84 years","75 to 79 years"="75 to 84 years")) %>%
+  group_by(GeoUID,Age,Year) %>%
+  summarise(Total=sum(Total),.groups="drop")
+
+hmr_data <- get_sqlite_xtab("98-400-X2016226","https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=110568&OFT=CSV") %>%
+  filter(#GEO_NAME=="Canada",
+         `Condominium status`=="Total - Condominium status",
+         `Structural type of dwelling`=="Total - Structural type of dwelling",
+         `Household type including census family structure`=="Total - Household type including census family structure") %>%
+  select(Year=CENSUS_YEAR,Name=GEO_NAME,GeoUID=`GEO_CODE (POR)`,Age=`Age of primary household maintainer`,
+         Value=`Dim: Tenure (4): Member ID: [1]: Total - Tenure`) %>%
+  collect() %>%
+  mutate(Age=recode(Age,"Total - Age of primary household maintainer"="Total - Age")) %>%
+  left_join(age_data,by=c("GeoUID","Year","Age")) %>%
+  mutate(Share=Value/Total) %>%
+  mutate(Name=factor(Name,levels=filter(.,Age=="Total - Age") %>% arrange(-Total) %>% pull(Name)))
+
+hmr_canada <- filter(hmr_data,Name=="Canada",Age=="Total - Age")$Share
+hmr_canada4 <- hmr_data %>% 
+  filter(Name=="Canada",Age %in% ages_all) %>%
+  summarise(Share=weighted.mean(Share,w=Total))
+```
+
+As a start, let's estimate recent household maintainer rates in Canada for the population 15 years or older. Our figure comes out to `r scales::percent(hmr_canada)`. That's the factor we need to multiply the population 15 years or older by to get to our estimated number of private households. It tells us what to put into the 'Household Maintainer Rate' box on the diagram in the [previous post](https://doodles.mountainmath.ca/blog/2022/04/26/planning-for-scarcity/). In other words, in Canada the average household size is just over 2, if we don't count children under the age of 15. 
+
+We can think of this number as constituting *model zero* for how to integrate household maintainer rates into linking population to housing. 
+
+```{r}
+mv_vertices <- tibble(Name=c("CMA",
+                             "Age","Income", "School/Work","Culture",
+                             "Household\nMaintainer\nRate"),
+                      x=c(0,1,1,1,1,2),
+                      y=c(1,-1,0,2,3,1))
+
+mv_edges <- bind_rows(
+  tibble(x=0.2,y=1,xend=1.8,yend=1,colour="brown",curvature=0,comment = "CMA -> HMR"),
+  tibble(x=0.8,y=1.9,xend=0.2,yend=1.1,colour="black",curvature=0,comment = "Student -> CMA"),
+  tibble(x=0.9,y=-0.85,xend=0.2,yend=0.8,colour="black",curvature=0,comment = "AGE -> CMA"),
+  tibble(x=0.8,y=2.8,xend=0.2,yend=1.2,colour="black",curvature=0,comment = "ETH/IMM -> CMA"),
+  tibble(x=0.2,y=0.9,xend=0.8,yend=0.2,colour="black",curvature=0,comment = "CMA -> INC"),
+  tibble(x=1.2,y=2.8,xend=1.8,yend=1.2,colour="black",curvature=0,comment = "ETH/IMM -> HMR"),
+  tibble(x=1.2,y=1.9,xend=1.8,yend=1.1,colour="black",curvature=0,comment = "Student -> HMR"),
+  tibble(x=1.2,y=0.2,xend=1.8,yend=0.9,colour="black",curvature=0,comment = "INC -> HMR"),
+  tibble(x=1.1,y=-0.9,xend=1.8,yend=0.8,colour="black",curvature=0,comment = "AGE -> HMR"),
+  tibble(x=1,y=-0.8,xend=1,yend=-0.2,colour="black",curvature=0,comment = "AGE -> INC"),
+  tibble(x=1,y=1.8,xend=1,yend=0.2,colour="black",curvature=0,comment = "Student -> INC"),
+  tibble(x=0.9,y=-0.8,xend=0.9,yend=1.8,colour="black",curvature=0.2,comment = "AGE -> Student"),
+  tibble(x=1.1,y=2.8,xend=1.1,yend=0.2,colour="black",curvature=0.2,comment = "ETH/IMM -> Income")
+  )
+
+model_theme <- list(
+  mountainmathHelpers::theme_mm(),
+    theme(panel.grid = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.text = element_blank()),
+    labs(x=NULL,y=NULL)
+)
+```
+
+
+```{r model0}
+ggplot(mv_vertices %>% filter(grepl("Household",Name))) +
+  geom_label(aes(x=x,y=y,label=Name)) +
+  geom_text(x=2,y=1.4,label=round(hmr_canada,3)) +
+  scale_colour_identity() +
+  expand_limits(x=c(-0.2,2.2),y=c(-1.2,2)) +
+  model_theme +
+  labs(title="Household maintainer rate Model 0")
+```
+
+
+ 
+## Household maintainer rates vary across CMAs
+Model zero provides a starting number to link population to dwellings. But household maintainer rates aren't constant across the country; some CMAs have higher household maintainer rates than others. In fact, this is at the core of what we are interested in in this post. How should we understand this variation?
+
+
+```{r crude_hmr_cma}
+hmr_cma_crude <- hmr_data %>%
+  filter(Name %in% selected_cmas) %>%
+  #filter(Age %in% ages_all) %>%
+  filter(!grepl("Total",Age)) %>%
+  group_by(Name) %>%
+  summarize(Share=weighted.mean(Share,Total))
+
+hmr_cma_crude %>%
+ggplot(aes(y=fct_rev(Name),x=Share)) +
+  geom_bar(stat="identity",position = "dodge",fill="steelblue") +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Household maintainer rates in Canada",
+       y=NULL,x="Household maintainer rate",
+       caption="StatCan Census 2016 Tables 98-400-X2016028, 98-400-X2016226")
+
+```
+
+The central question is what causes discrepancies between e.g. Toronto with a household maintainer rate of `r scales::percent(filter(hmr_cma_crude,Name=="Toronto")$Share,accuracy=3)` and Montréal with a rate of `r scales::percent(filter(hmr_cma_crude,Name=="Montréal")$Share,accuracy=3)`? One candidate that immediately comes to mind is the availability of housing. We can encode that in an extension of our Model 0 by explicitly acknowledging that CMA can impact household maintainer rates.
+
+
+```{r model1}
+ggplot(mv_vertices %>% filter(grepl("Household|CMA",Name))) +
+  geom_label(aes(x=x,y=y,label=Name)) +
+  geom_segment(data=mv_edges %>% filter(curvature==0,comment %in% c("CMA -> HMR")),
+               aes(x=x,y=y,xend=xend,yend=yend,colour=colour),
+               size=1,
+               arrow=arrow(length=unit(0.25,"cm"))) +
+  scale_colour_identity() +
+  expand_limits(x=c(-0.2,2.2),y=c(-1.2,2)) +
+  model_theme +
+  labs(title="Household maintainer rate Model 1",
+       subtitle="")
+```
+
+
+This is still somewhat simplistic, but if we assume that our Model 1 is complete, that CMA variation can be explained by housing constraints, and that there aren't any other important factors linking CMAs to household maintainer rates, we can ask how much more housing each of these CMAs would need in order to achieve the same household maintainer rates as any other given Metro Area. 
+
+Which metro area should we use as our counterfactual of unconstrained household formation? We could use Canada as a whole, of course, but that would just be balancing constrained and unconstrained areas (and there have recently been suggestions that the country as a whole should be understood as in housing deficit). Quebec City is tempting as the metro area with the highest household maintainer rate. But it's also somewhat small and might be distinct for other reasons. By contrast, Montreal looks like a nice, big, reasonable counterfactual, enabling us to ask how much more housing would other metros need to reach the household maintainer rate of Montreal?  
+
+To see if this is reasonable, let's do a quick preliminary check-in on vacancy rates in the lead-up to our 2016 household maintainer rates as another measure of how they might plausibly have been influenced by housing conditions.
+
+```{r vacancy_rates, warning=FALSE}
+vacancy_rates <- selected_geouids$region %>%
+  lapply(function(id){
+    d<-get_cmhc(cmhc_timeseries_params(table_id = cmhc_table_list$`Rms Vacancy Rate Time Series`,
+                                    region = cmhc_region_params_from_census(id)))
+    if (!is.null(d)) d <- d %>% mutate(GeoUID=id)
+    d
+  }) %>%
+  bind_rows() %>%
+  left_join(selected_geouids %>% select(GeoUID=region,Name=name),by="GeoUID") %>%
+  mutate(Year=factor(substr(X1,1,4)))
+
+vacancy_rates %>%
+  filter(Year %in% c("2014","2015","2016")) %>%
+  ggplot(aes(y=Name,x=Total/100,fill=fct_rev(Year))) +
+  geom_bar(stat="identity",position="dodge") +
+  guides(fill=guide_legend(reverse = TRUE)) +
+  MetBrewer::scale_fill_met_d("Tam",direction = -1) +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Primary market rental vacancy rates",
+       x="Vacancy rate",y=NULL,fill="Year",
+       caption="CMCH Rms")
+```
+
+Here we can see patterns that generally support, but might also complicate our understanding of household maintainer rates being linked to housing conditions. Toronto and Vancouver, of course, have notoriously low rental vacancy rates, which match well onto their low household maintainer rates. People can't readily find apartments to rent, and it's been that way for awhile. But Victoria's vacancy rates are also quite low, despite the area having a high household maintainer rate. Québec's vacancy rates climbed to a high just prior to the 2016 Census that might help explain its high household maintainer rate, but leave concerns about whether it was a temporary effect. Yet Edmonton and Calgary's rental vacancy rates climbed even more dramatically, while their household maintainer rates aren't much different from Vancouver's. It may be the case that fluctuations in vacancy rates take some time to translate into household maintainer rates, but we're not sure. 
+
+This perhaps furthers the case for using Montréal as our counterfactual. Montréal is a big metro area with rental vacancy rates that have remained relatively stable within the 3%-4% range, with high household maintainer rates, if not the highest. So we're going to go ahead and use Montréal as our baseline to provide estimates for how household formation might be suppressed elsewhere across Canada. And we're going to call it The Montréal Method.
+
+How much more housing would other metro areas need to reach household maintainer rates matching Montréal's?
+
+```{r shortfall1}
+shortfall_1 <- hmr_cma_crude %>%
+  mutate(s=filter(.,Name=="Montréal")$Share) %>%
+  mutate(c=s/Share-1) %>%
+  filter(Name!="Montréal") 
+
+shortfall_1 %>%
+  ggplot(aes(y=fct_rev(Name),x=c)) +
+  geom_bar(stat="identity",position = "dodge",fill="brown") +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Housing shortfall to achieve Montréal's household maintainer rates",
+       y=NULL,x="Counterfactual housing shortfall based on Model 1",
+       caption="StatCan Census 2016 Tables 98-400-X2016028, 98-400-X2016226")
+```
+
+Interesting! But our initial results from The Montréal Method could easily be questioned. Toronto and Vancouver registering with a large housing shortfall seems in principle plausible, but what about Calgary? Does Toronto really need `r scales::percent(filter(shortfall_1,Name=="Toronto")$c,accuracy=3)` more dwellings to accommodate all those desiring an independent household? And why do Québec City and Victoria appear to have an excess of housing? We might be missing something. 
+
+It's also a good time to remember that the housing shortfall estimated here is only the shortfall due to suppressed household formation, and it disregards housing shortfall due to other factors, for example suppressed in-migration or [forced out-migration](https://homefreesociology.com/2020/08/28/keeping-the-leavers/). Still, it's a start.
+
+## Household maintainer rates vary by age
+Time to get a bit more serious. Most household maintainer rate models, including the Metro Vancouver projection models, stratify by age groups. And for good reason! For any given year, age is the strongest predictor for household maintainer rates. The household maintainer rates for 15 year olds are essentially zero. But household maintainer rates generally increase with age and for seniors they rise well over 60%. 
+
+```{r canada_hmr_age}
+hmr_data %>%
+  filter(Name=="Canada") %>%
+  filter(!grepl("Total",Age)) %>%
+ggplot(aes(y=Age,x=Share)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Household maintainer rates in Canada",
+       x="Household maintainer rate",
+       y=NULL,
+       caption="StatCan Census 2016 Tables 98-400-X2016028, 98-400-X2016226")
+```
+
+Correspondingly, if different CMAs have different age distributions, that might skew our estimates. This tells us we need to refine our Model 1 to account for Age. Here we think of people sorting into CMAs by age, with some CMAs skewing younger and others skewing older. Victoria, for instance, is regularly promoted as "[Canada's Retirement Capital](https://www.retireinvictoria.com/)."
+
+```{r model2}
+ggplot(mv_vertices %>% filter(grepl("Household|Age|CMA",Name))) +
+  geom_label(aes(x=x,y=y,label=Name)) +
+  geom_segment(data=mv_edges %>% filter(curvature==0,comment %in% c("AGE -> HMR","AGE -> CMA","CMA -> HMR")),
+               aes(x=x,y=y,xend=xend,yend=yend,colour=colour),
+               size=1,
+               arrow=arrow(length=unit(0.25,"cm"))) +
+  scale_colour_identity() +
+  expand_limits(x=c(-0.2,2.2),y=c(-1.2,2)) +
+  model_theme +
+  theme(plot.title = element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5)) +
+  labs(title="Household maintainer rate model 2",
+       subtitle="")
+```
+
+Part of the justification of using household maintainer rates to translate between population and dwellings is the recognition that in most situations all household maintainers in a given household are of similar age, and thus the choice of "primary" household maintainer does not impact these kind of estimates much. Based on this model we can estimate age-adjusted household maintainer rates for each CMA by weighting age specific rates by the overall age distribution in Canada. 
+
+```{r canada_hmr_age_adjusted}
+pd <- hmr_data %>%
+  filter(Name %in% selected_cmas) %>%
+  filter(!grepl("Total",Age)) %>%
+  left_join(hmr_data %>% filter(Name=="Canada",!grepl("Total",Age)) %>% select(Age,Total_CA=Total),by="Age") %>%
+  group_by(Name) %>%
+  mutate(P_Age=Total_CA/sum(Total_CA)) %>%
+  summarize(Share=weighted.mean(Share,Total_CA),
+            Share2=sum(Share*P_Age)) %>%
+  mutate(Estimate="Age-adjusted") %>%
+  bind_rows(hmr_data %>% filter(Name %in% selected_cmas,grepl("Total",Age)) %>% mutate(Estimate="Crude")) #%>%
+  #mutate(Name=factor(Name,levels=filter(.,Estimate=="Age-adjusted") %>% arrange(Share) %>% pull(Name)))
+
+hhmr_var <- pd %>% group_by(Estimate) %>% summarise(e=var(Share))
+hhmr_var_change <- filter(hhmr_var,Estimate=="Age-adjusted")$e/filter(hhmr_var,Estimate=="Crude")$e
+
+ggplot(pd, aes(y=fct_rev(Name),x=Share,fill=Estimate)) +
+  geom_bar(stat="identity",position = "dodge") +
+  scale_fill_manual(values=sanzo::duos$c070 %>% rev) +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Household maintainer rates in Canada",
+       y=NULL,x="Household maintainer rate",
+       caption="StatCan Census 2016 Tables 98-400-X2016028, 98-400-X2016226")
+```
+
+Adjusting by age highlights how some of the difference in household maintainer rates can be accounted for by difference in age distribution across municipalities. In particular, Toronto has a younger than average age distribution whereas Victoria is on average older, so the adjustments go in opposite directions. Nevertheless, the differences across CMA are quite stubborn, only Montréal and Victoria flipped positions in our lineup.
+
+In other words, adjusting for age reduces the variation in household maintainer rates across CMAs a little, by `r scales::percent(1-hhmr_var_change)` to be precise, but there is still considerable variation left. We can again estimate how many more housing units we would need to achieve the same household maintainer rates as Montréal, after accounting for differences in the age distributions.
+
+```{r shortfall_2}
+shortfall_2 <- hmr_data %>%
+  filter(Name %in% selected_cmas) %>%
+  filter(!grepl("Total",Age)) %>%
+  left_join(hmr_data %>% 
+              filter(Name=="Montréal",!grepl("Total",Age)) %>%
+              select(Age,Total_M=Total,Share_M=Share),
+            by="Age") %>%
+  mutate(diff=Share_M-Share) %>%
+  group_by(Name) %>%
+  mutate(P_Age=Value/sum(Value)) %>%
+  summarise(Share=weighted.mean(Share,Total),
+            diff=weighted.mean(diff,Total),
+            diff2=sum(diff*P_Age),
+            .groups="drop") %>%
+  mutate(scale=diff/Share) 
+
+shortfall_2 %>%
+  #mutate(Name=factor(Name,levels=arrange(.,scale)$Name)) %>%
+  filter(Name!="Montréal") %>%
+ggplot(aes(y=fct_rev(Name),x=scale)) +
+  geom_bar(stat="identity",position = "dodge",fill="brown") +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Housing shortfall to achieve Montréal's household maintainer rates",
+       y=NULL,x="Counterfactual housing shortfall based on Model 2",
+       caption="StatCan Census 2016 Tables 98-400-X2016028, 98-400-X2016226")
+```
+
+Assuming age offers our only important household maintainer determinant and Montréal makes a good counterfactual for where other metro areas could be, this offers us a nice estimate of how much housing we would need to reach Montréal levels of maintainer rates. The Age-Adjusted Montréal Method estimates Vancouver is short well over 10% and Toronto by well over 15%, but shortfalls still appear to be common across most Canadian metro areas, save for Québec.
+
+
+## Age-Specific Metro Household Maintainer Rates across History
+Let's examine our counterfactual a little more carefully by comparing age-specific household maintainer rates directly and taking them backward in time. History gives us another view into the differences in household maintainer rates across CMAs that we have observed above. Have these differences been stable over time, or have they changed significantly? Here we'll just focus on the historical data we have on age-specific household maintainer rates from 1971-2016 PUMF data for Montréal, Toronto and Vancouver CMAs. 
+
+Of note, we have to switch our data source to allow more flexibility. So far we have used data from census cross tabulations, going forward we need to cut data in more custom ways and will rely on PUMF data. In this overview we gloss over a couple of complications, we just use standard weights and don't show confidence intervals for PUMF estimates, and we ignore that the geographic boundaries of CMAS, in particular Montréal, have changed over time. The broad effects we are trying to highlight here are large enough that they can't be explained by variability in the PUMF, and we believe that the changing geography won't have significant effects on the age-specific household maintainer rates in either direction.  We talk about the different data sources more in our appendix.
+
+
+```{r}
+get_pumf_cma_timeline <- function(){
+  
+  pumf_base_path <- file.path(getOption("canpumf.cache_path"))
+  #dir(pumf_base_path)
+  
+  age_labels <- c(
+    "1"=  "0 to 4 years",
+    "2" = "5 to 6 years",
+    "3"=  "7 to 9 years",
+    "4"=  "10 to 11 years",
+    "5"=  "12 to 14 years",
+    "6"=  "15 to 17 years",
+    "7"=  "18 to 19 years",
+    "8"=  "20 to 24 years",
+    "9"=  "25 to 29 years",
+    "10"=  "30 to 34 years",
+    "11"=  "35 to 39 years",
+    "12"=  "40 to 44 years",
+    "13"=  "45 to 49 years",
+    "14"=  "50 to 54 years",
+    "15"=  "55 to 59 years",
+    "16"=  "60 to 64 years",
+    "17"=  "65 to 69 years",
+    "18"= "70 to 74 years",
+    "19"=  "75 to 79 years",
+    "20"=  "80 to 84 years",
+    "21"=  "85 years and over"
+  )
+  
+  
+  pumf_data <- dir(pumf_base_path,"individual.csv") %>%
+    lapply(function(n){
+      year=str_extract(n,"\\d{4}")
+      #print(year)
+      d<-read_csv(file.path(pumf_base_path,n),col_types=cols(.default = "c")) %>%
+        mutate(Year=year)
+      if ("cmap" %in% names(d)) d <- d %>% rename(cma=cmap)
+      if ("cmapust" %in% names(d)) d <- d %>% rename(cma=cmapust)
+      if ("cmapumfp" %in% names(d)) d <- d %>% rename(cma=cmapumfp)
+      if ("weightp" %in% names(d)) d <- d %>% rename(weight=weightp)
+      if ("hmainp" %in% names(d)) d <- d %>% rename(hmain=hmainp)
+      if ("prmainp" %in% names(d)) d <- d %>% rename(prmain=prmainp)
+      if ("agep" %in% names(d)) d <- d %>% rename(age=agep)
+      if ("hhldclas" %in% names(d)) d<- d %>% rename(hhclass=hhldclas)
+      if ("hhclassp" %in% names(d)) d<- d %>% rename(hhclass=hhclassp)
+      if ("hhclass" %in% names(d)) d<- d %>% filter(hhclass=='1') # private households only
+      if (!("weight" %in% names(d))) d <- d %>% mutate(weight="1") # early years don't have weights
+      if ("hhldrel" %in% names(d)) d <- d %>% rename(hhdlrel=hhldrel)
+      # set household maintainer flag
+      if ("hhdlrel" %in% names(d)) {
+        d <- d %>% 
+          filter(hhdlrel!=0) %>%
+          mutate(PRIHM=hhdlrel==1)
+      } else if ("prihm" %in% names(d)) {
+        d <- d %>% 
+          filter(prihm!=9) %>%
+          mutate(PRIHM=prihm==1)
+      } else if ("prmain" %in% names(d)) {
+        d <- d %>% 
+          filter(prmain!=9) %>%
+          mutate(PRIHM=prmain==1)
+      } else if ("hmain" %in% names(d)) {
+        d <- d %>% 
+          filter(hmain!=0) %>%
+          mutate(PRIHM=hmain==1)
+      } else {
+        stop(n)
+      }
+      
+      if ("cmacode" %in% names(d)) d<- d %>% 
+        mutate(cma=recode(cmacode,"8"="462","21" = "535")) 
+      
+      if ("age" %in% names(d))  d<- d %>%
+        mutate(age=as.integer(age)) %>%
+        mutate(agegrp=case_when(age <5~1,
+                                age<7~2,
+                                age<10~3,
+                                age<12~4,
+                                age<15~5,
+                                age<18~6,
+                                age<20~7,
+                                age<25~8,
+                                age<30~9,
+                                age<35~10,
+                                age<40~11,
+                                age<45~12,
+                                age<50~13,
+                                age<55~14,
+                                age<60~15,
+                                age<65~16,
+                                age<70~17,
+                                age<75~18,
+                                age<80~19,
+                                age<85~20,
+                                age<90~21,
+                                TRUE ~ 98) %>% as.character)
+      
+      d %>% select(cma,agegrp,Year,PRIHM,weight) %>%
+        mutate(weight=as.numeric(weight))
+    }) %>%
+    bind_rows()
+  
+  pumf_2016 <- foreign::read.spss(getOption("census_2016_pumf_i.sav")) %>%
+    as_tibble()
+  
+  pumf_2016_d <- pumf_2016 %>% mutate(PRIHM=(PRIHM=="Person is primary maintainer")) %>%
+    select(CMA,PRIHM,AGEGRP,weight=WEIGHT) %>%
+    mutate(agegrp=as.integer(AGEGRP) %>% as.character) %>%
+    mutate(Year="2016")
+  
+  cma_codes <- c(
+    "462" ="Montreal",
+    "535"=  "Toronto",
+    "933"="Vancouver"  
+  )
+  
+  pd <- pumf_data %>% 
+    filter(cma %in% names(cma_codes)) %>%
+    mutate(CMA=recode(cma,!!!cma_codes)) %>%
+    bind_rows(pumf_2016_d) %>%
+    mutate(CMA=recode(CMA,"Montreal"="Montréal")) %>%
+    filter(CMA %in% c("Vancouver","Toronto","Montreal","Montréal")) %>%
+    filter(as.integer(agegrp)>=5,as.integer(agegrp)<22) %>%
+    mutate(Age=recode(agegrp,!!!age_labels)) %>%
+    group_by(CMA,Age,PRIHM,Year) %>%
+    summarize(across("weight",sum),.groups="drop") %>%
+    group_by(CMA,Age,Year) %>%
+    mutate(share=weight/sum(weight))
+}
+
+
+pumf_cma_timeline <- mountainmathHelpers::simpleCache(get_pumf_cma_timeline(),
+                                                      "pumf_cma_timeline.Rda",
+                                                      path=here::here("data"),
+                                                      refresh = FALSE)
+```
+
+First we compare how age-specific household maintainer rates have changed over time in each of the CMAs.
+
+
+```{r age_based_timelines_cma, fig.height=9, fig.width=8}
+pumf_cma_timeline %>%
+  filter(PRIHM) %>%
+  ggplot(aes(y=Age,x=share,fill=Year)) + 
+  facet_wrap(~CMA) +
+  MetBrewer::scale_fill_met_d("Paquin",direction = -1) +
+  geom_bar(stat="identity",position="dodge") +
+  guides(fill=guide_legend(reverse=TRUE)) +
+  labs(title="Age-specific household maintainer rates timelines",
+       subtitle="(no data for Vancouver for 1971)",
+       x="Household maintainer rate",y=NULL,
+       caption="StatCan Census 1971-2016 PUMF (individuals)")
+```
+
+What does Montréal offer as a counterfactual? Strikingly, age-specific household maintainer rates in Montréal have remained fairly constant over time. The most notable trend is for older age groups, especially age 75+, where we can see a rise in independent living during the 1970s and 1980s, as reflected in rising household maintainer rates.
+
+Comparing Montréal to Toronto and Vancouver, we can see that they had quite similar age-specific household maintainer rates in the 1970s. Then rates in Toronto and Vancouver began to plummet to quite a bit below Montréal's rates from 2000 onward. These drops are most evident in the age ranges from 25-39, but they also show up in older ranges, with ages 75-79 most notable for Vancouver.
+
+We can slice the data differently and compare the CMAs next to each other over the years.
+
+```{r age_based_timelines_year, fig.height=9,fig.width=8}
+pumf_cma_timeline %>%
+  filter(PRIHM) %>%
+  ggplot(aes(y=Age,x=share,fill=CMA)) + 
+  facet_wrap(~Year) +
+  scale_fill_manual(values=sanzo::trios$c157) +
+  geom_bar(stat="identity",position="dodge") +
+  labs(title="Age-specific household maintainer rates timelines",
+       subtitle="(no data for Vancouver for 1971)",
+       x="Household maintainer rate",y=NULL,
+       caption="StatCan Census 1971-2016 PUMF (individuals)")
+```
+
+
+This highlights how similar all three CMAs were in the 1970s, strengthening the case for Montréal as a reasonable counterfactual. Montréal didn't pull ahead in the 1980s and 1990s so much as Toronto and Vancouver fell behind. The graphic effect is kind of like receding gums gradually leaving Montréal's teeth exposed. 
+
+Let's leave dentistry behind and return to thinking about housing. Using our Montréal Method can provide estimates of how much housing would be needed to return Toronto and Vancouver to similar household maintainer rates as Montréal, and correspondingly to similar rates reflecting where they were in the 1970s. But is it reasonable to assume that the divergence between these three metro areas is entirely about housing constraints?
+
+Let's add one more complicating factor: culture.
+
+## Cultural Differences?
+```{r}
+pumf_2016 <- foreign::read.spss(getOption("census_2016_pumf_i.sav")) %>%
+  as_tibble() %>%
+  set_names(names(.) %>% toupper) %>%
+  mutate(LWP=ifelse(CFSTAT %in% c("Child of a lone parent","Child of a couple","Person not in a census family but living with other relatives"),"Living with parents","Not living with parents")) %>%
+  mutate(LWP=factor(LWP,levels=c("Living with parents","Not living with parents"))) 
+```
+
+Perhaps cultural differences emerging in Toronto and Vancouver have altered their trajectories away from their past patterns and away from Montréal's. These could be associated with the quite different immigration patterns we've seen in Toronto and Vancouver. The important idea here is that maybe some of the variation in household maintainer rates has less to do with housing constraints than with different ideas about family and ideal living situations. Maybe some groups of young adults don't want to live on their own? Maybe some groups of seniors similarly prefer to live with their children? 
+
+This leads us to the next refinement of our household maintainer model. There is literature on large cultural differences, and those differences have complex fault lines. For example [young adults leave home much later](https://ec.europa.eu/eurostat/statistics-explained/index.php?oldid=494351) in south and eastern European countries like Italy, Greece, or Spain than in north and western European countries. There are similar arguments to be made about various cultural differences across Asia. For instance, Statistics Canada estimates that South Asian Canadians are over three times as likely to live in [complex, multi-family households](https://www150.statcan.gc.ca/n1/pub/46-28-0001/2021001/article/00008-eng.htm) compared to Canadians as a whole. So we should probably consider ethnic background, but also immigrant generation status. First generation immigrants may have few other options than forming households at high rates, as they often have no parents or support networks to fall back on. Second generation immigrants might stay longer living with their parents, whereas their third or higher generation counterparts may converge toward broader Canadian patterns. We will loosely refer to the intersections of these variables as potentially pointing out differences in *Culture*.
+
+This tells us that ethnic background, as well as immigrant generation, will likely have an impact on household maintainer rates. We also think of immigrants sorting by cultural background into CMAs, for example based on existing networks.
+
+```{r model3}
+ggplot(mv_vertices %>% filter(grepl("Household|Age|CMA|Cult",Name))) +
+  geom_label(aes(x=x,y=y,label=Name)) +
+  geom_segment(data=mv_edges %>% filter(curvature==0,comment %in% c("AGE -> HMR","AGE -> CMA","CMA -> HMR",
+                                                                    "ETH/IMM -> CMA", "ETH/IMM -> HMR")),
+               aes(x=x,y=y,xend=xend,yend=yend,colour=colour),
+               size=1,
+               arrow=arrow(length=unit(0.25,"cm"))) +
+  scale_colour_identity() +
+  expand_limits(x=c(-0.2,2.2),y=c(-1.2,2)) +
+  model_theme +
+  labs(title="Household maintainer rate model 3",
+       subtitle="")
+```
+
+But this is where things get tricky for several reasons. For one, the concepts of ethnic background are somewhat fluid and hard to nail down. A more technical reason is that we are forced to move the analysis to PUMF data, which is roughly a 1:40 subsample of the population, and we are quickly running up against model complexity limits. The PUMF data is simply not thick enough to be able to expect robust estimates of counterfactual model when simultaneously accounting for CMA, Age, and Culture unless we distill *Culture&* down to very broad categories. This is somewhat in keeping with our approach of successively refining our model.
+
+To derive broad categories of *Culture* we first recode generation status into three groups, First Generation (born outside of Canada), Second Generation (both parents first generation) and all other. Then we manually group the `r length(levels(pumf_2016$ETHDER))` ethnic origin categories that are split out in the PUMF into broader groups. After that we cross the ethnicity categories with the generation status, and collapse some categories further in order to ensure the categories are thick enough to yield somewhat robust estimates. Then we take data from Canada outside of Vancouver and Toronto (where we know housing is constrained) to estimate overall household maintainer rates for these categories and cluster them to arrive at three broad *Culture* categories (C1, C2, and C3) we will use in our model, the results of which are depicted here.
+
+```{r culture_selection}
+recode_ethder <- function(data){
+  data %>% 
+  mutate(GEN=case_when(GENSTAT=="First generation, respondent born outside Canada"~"First",
+                       GENSTAT=="Second generation, respondent born in Canada, both parents born outside Canada" ~ "Second",
+                       TRUE ~ "Other")) %>%
+    mutate(ETHDER=fct_recode(ETHDER,
+                             "Filipino"="Oceania origins",
+                             "Filipino"="Other East and Southeast Asian origins",
+                             "Canadian"="French origins only",
+                             "Canadian"="French origins, Canadian and other",
+                             "Northwestern European origins"="Dutch",
+                             "Northwestern European origins"="Other Western European origins",
+                             "Northwestern European origins"="Other Northern European origins",
+                             "Northwestern European origins"="German",
+                             "Northwestern European origins"="Other European origins",
+                             "Latin, Central and South American origins"="Jamaican",
+                             "Latin, Central and South American origins"="Other Caribbean origins",
+                             "British"="Other British Isles origins",
+                             "Eastern European origins"="Hungarian",
+                             "Eastern European origins"="Ukrainian",
+                             "Eastern European origins"="Polish",
+                             "Eastern European origins"="Russian",
+                             "South Asian"="East Indian",
+                             "South Asian"="Other South Asian origins",
+                             "Canadian"="Other North American origins",
+                             "Canadian"="Not available",
+                             "Canadian"="Canadian and other",
+                             "Eastern European origins"="Other Eastern European origins",
+                             "Canadian"="British Isles origins, French origins, Canadian and other",
+                             "West Asian/African"="West Central Asian and Middle Eastern origins",
+                             "West Asian/African"="African origins",
+                             "Canadian"="French origins and Canadian",
+                             "Canadian"="British Isles origins and Canadian",
+                             "Southern European"="Italian",
+                             "Southern European"="Spanish",
+                             "Southern European"="Greek",
+                             "Southern European"="Portuguese",
+                             "Southern European"="Other Southern European origins",
+                             "Southern European"="Spanish",
+                             "British"="British Isles origins only",
+                             "British"="Irish",
+                             "British"="Scottish",
+                             "British"="English",
+                             "British"="British Isles origins and other",
+                             "Canadian"="British Isles origins, French origins and Canadian",
+                             "British, French"="British Isles origins, French origins and other",
+                             "British, French"="British Isles origins and French origins",
+                             "British, French"="French origins and other",
+                             "Canadian"="British Isles origins, Canadian and other")) %>%
+    mutate(ETHDER=fct_recode(ETHDER,
+                             "Filipino/South Asian"="Filipino",
+                             "Filipino/South Asian"="South Asian")) %>%
+    mutate(ETHDER=fct_recode(ETHDER,
+                             "British, French"="British",
+                             "British, French"="French origins")) %>%
+    mutate(Culture=paste0(GEN," - ",ETHDER)) %>%
+    mutate(Culture=ifelse(ETHDER=="North American Aboriginal origins","All - North American Aboriginal origins",Culture)) %>%
+    mutate(Culture=ifelse(ETHDER=="Canadian","Canadian",Culture)) %>%
+    mutate(Culture=ifelse(ETHDER=="South Asian","South Asian",Culture)) %>%
+    mutate(Culture=ifelse(ETHDER=="Filipino","Filipino",Culture)) %>%
+    mutate(Culture=ifelse(ETHDER=="Filipino/South Asian","Filipino/South Asian",Culture)) %>%
+    mutate(Culture=ifelse(ETHDER=="West Asian/African","All - West Asian/African",Culture)) %>%
+    mutate(Culture=ifelse(ETHDER=="Latin, Central and South American origins","All - Latin, Central and South American origins",Culture)) #%>%
+    #mutate(Culture=ETHDER)#%>%
+    # mutate(Culture=recode(Culture,
+    #                       "First - Filipino/South Asian"="First/Other - Filipino/South Asian",
+    #                       "Other - Filipino/South Asian"="First/Other - Filipino/South Asian"))
+}
+
+er2 <- pumf_2016 %>% 
+  filter(AGEGRP %in% ages_all) %>%
+  filter(AGEGRP %in% c("25 to 29 years", "30 to 34 years" , "35 to 39 years",    "40 to 44 years")) %>%
+  mutate(AGEGRP = droplevels(AGEGRP)) %>%
+  #filter(CMA %in% c("Montréal","Halifax")) %>%
+  filter(!CMA %in% c("Vancouver","Toronto")) %>%
+  recode_ethder() %>%
+  group_by(PRIHM,AGEGRP,Culture) %>% 
+  summarize(n=sum(WEIGHT),cases=n(),.groups="drop") %>% 
+  complete(PRIHM,AGEGRP,Culture,fill=list(n=0,cases=0)) %>%
+  group_by(AGEGRP) %>%
+  mutate(w=sum(n)) %>%
+  group_by(Culture,AGEGRP) %>% 
+  mutate(Total=sum(n),
+         TotalCases=sum(cases),
+         HMR=n/Total) %>%
+  filter(PRIHM=="Person is primary maintainer") %>%
+  group_by(Culture) %>%
+  summarise(HMR=weighted.mean(HMR,w),Total=sum(Total),TotalCases=sum(TotalCases),.groups="drop") %>%
+  select(Culture,HMR,Total,TotalCases) %>%
+  arrange(HMR) %>%
+  mutate(rank=row_number()) %>%
+  mutate(c=cumsum(Total))
+
+d2 <- dist(er2 %>% select(HMR), method = "euclidean")
+hc2 <- hclust(d2, method = "complete")
+#plot(hc2,labels=er2$Culture)
+sub_grp2 <- cutree(hc2, k=3)
+
+eth_groups <- er2 %>% 
+  mutate(subgroup=sub_grp2) %>%
+  select(Culture,subgroup,HMR,TotalCases) %>%
+  mutate(ETHIMM=paste0("C",subgroup)) %>%
+  mutate(ETHIMM=factor(ETHIMM)) 
+  
+
+
+eth_groups %>%
+  mutate(Culture=ifelse(grepl(" - ",Culture),Culture,paste0("Other - ",Culture))) %>%
+  mutate(`Generation status`=gsub(" - .+$","",Culture),
+         `Ethnic origin`=gsub("^.+ - ","",Culture)) %>%
+  ggplot(aes(y=`Ethnic origin`,x=HMR,colour=ETHIMM,shape=`Generation status`)) +
+  geom_point() +
+  MetBrewer::scale_color_met_d("Egypt") +
+  labs(title="Culture model category selection",
+       x="Age-adjusted household maintainer rates",
+       colour="Culture categories",
+       caption="StatCan 2016 Census PUMF")
+```
+
+```{r}
+model_data <- pumf_2016 %>%
+  filter(AGEGRP %in% ages_all) %>%
+  mutate(same_cd = MOB5 %in% c("Non-movers", "Non-migrants", "Different CSD, same census division")) %>%
+  recode_ethder() %>%
+  left_join(eth_groups,by="Culture") %>%
+  #mutate(ETHIMM=interaction(ETH,GEN)) %>%
+  group_by(PRIHM,AGE=AGEGRP,CMA,ETHIMM) %>%
+  summarize(across(matches("WEIGHT|WT\\d+"),sum),cases=n(),.groups="drop") %>%
+  pivot_longer(matches("WEIGHT|WT\\d+"),names_to = "Weight",values_to = "Count") %>%
+  mutate(across(c("CMA"),function(d)fct_recode(d,"Other"="Other census metropolitan areas, census agglomerations and other geographies"))) 
+
+cma_levels <- c("Canada",setdiff(levels(model_data$CMA),"Canada"))
+
+model_data <- model_data %>%
+  filter(CMA!="Canada") %>% # just in case
+  bind_rows(model_data %>%
+              group_by(PRIHM,AGE,ETHIMM,Weight) %>%
+              summarise(cases=sum(cases),Count=sum(Count),.groups="drop") %>%
+              mutate(CMA="Canada")) %>%
+  mutate(CMA=factor(CMA,levels=cma_levels)) %>%
+  group_by(AGE,CMA,ETHIMM,Weight) %>%
+  mutate(Total=sum(Count),
+         HMR=Count/Total,
+         TotalCases=sum(cases)) %>%
+  group_by(CMA) %>%
+  mutate(TotalPop=sum(Count)) %>%
+  ungroup() %>%
+  mutate(CMA=reorder(CMA,TotalPop))
+
+
+  #filter(PRIHM=="Person is primary maintainer")
+
+
+prob_conditional <- function(data,x,y,w,f){
+  data %>%
+    group_by_at(c(y,w)) %>%
+    mutate(...d=sum(!!as.name(f))) %>%
+    group_by_at(c(x,y,w)) %>%
+    mutate(...p=sum(!!as.name(f))) %>%
+    ungroup() %>%
+    mutate(...p=ifelse(...p==0|is.na(...p),0,...p/...d)) %>%
+    pull(...p)
+}
+
+
+ages_working <- c("25 to 29 years",    "30 to 34 years" , "35 to 39 years",
+               "40 to 44 years" ,   "45 to 49 years" ,   "50 to 54 years",   
+               "55 to 59 years"  , "60 to 64 years")
+base_probs_total <- model_data %>%
+  ungroup() %>%
+  filter(AGE %in% ages_all) %>%
+  mutate_if(is.factor,droplevels) %>%
+  mutate(P_PRIHM__CMA=prob_conditional(.,c("PRIHM"),c("CMA"),"Weight","Count")) %>%
+  mutate(P_AGE=prob_conditional(.,c("AGE"),c(),"Weight","Count")) %>%
+  mutate(P_ETHIMM=prob_conditional(.,c("ETHIMM"),c(),"Weight","Count")) %>%
+  mutate(P_AGE__CMA=prob_conditional(.,c("AGE"),c("CMA"),"Weight","Count")) %>%
+  mutate(P_ETHIMM__CMA=prob_conditional(.,c("ETHIMM"),c("CMA"),"Weight","Count")) %>%
+  mutate(P_PRIHM__AGE_CMA_ETHIMM=prob_conditional(.,c("PRIHM"), c("AGE","CMA","ETHIMM"),"Weight","Count")) %>%
+  mutate(P_PRIHM__AGE_CMA=prob_conditional(.,c("PRIHM"), c("AGE","CMA"),"Weight","Count")) %>%
+  mutate(p=P_PRIHM__AGE_CMA_ETHIMM*P_AGE*P_ETHIMM,
+         pc=P_PRIHM__AGE_CMA_ETHIMM*P_AGE__CMA*P_ETHIMM__CMA)
+
+tdt <- base_probs_total %>%
+  group_by(PRIHM,CMA,Weight) %>%
+  summarise(across(c("p","pc","Count"),sum), .groups="drop") 
+
+cte <- tdt %>%
+  left_join((.) %>%
+              select(PRIHM,CMA2=CMA,Weight,p2=p,pc2=pc),
+            by=c("PRIHM","Weight"))  %>%
+  mutate(cde=p-p2)
+
+```
+
+We're the first to admit that our C1, C2, and C3 "Cultural" groupings linked to different household maintainer patterns are rough. But they allow us to make another pass at understanding differences across metro areas and applying our Montréal Method. With this set up we now have three different models to estimate counter-factual household maintainer rates. The crude estimates, the age-adjusted model and the model adjusting for age and ethnic/immigration background. 
+
+We can express this in terms of household maintainer rates as observed using Montréal as counterfactual.
+
+```{r effect_hmr_rate}
+model1_shortfall <- base_probs_total %>%
+  group_by(CMA,PRIHM,Weight) %>%
+  summarise(Count=sum(Count),.groups = "drop") %>%
+  mutate(P_PRIHM__CMA=prob_conditional(.,c("PRIHM"),c("CMA"),"Weight","Count")) %>%
+  left_join((.) %>% filter(CMA=="Montréal") %>% select(PRIHM,Weight,pcounter=P_PRIHM__CMA),
+            by=c("PRIHM","Weight")) %>%
+  filter(CMA!="Montréal") %>%
+  mutate(p1=P_PRIHM__CMA,
+         p0=pcounter) %>%
+  mutate(e=p1-p0) %>%
+  group_by(PRIHM,CMA,Weight) %>%
+  summarise(across(c("p0","p1","e"),sum), .groups="drop") 
+
+model2_shortfall <- base_probs_total %>%
+  group_by(CMA,PRIHM,AGE,Weight) %>%
+  summarise(Count=sum(Count),.groups = "drop") %>%
+  mutate(P_PRIHM__AGE_CMA=prob_conditional(.,c("PRIHM"),c("AGE","CMA"),"Weight","Count")) %>%
+  mutate(P_AGE__CMA=prob_conditional(.,c("AGE"),c("CMA"),"Weight","Count")) %>%
+  left_join((.) %>% filter(CMA=="Montréal") %>% select(PRIHM,AGE,Weight,pcounter=P_PRIHM__AGE_CMA),
+            by=c("PRIHM","AGE","Weight")) %>%
+  filter(CMA!="Montréal") %>%
+  mutate(p1=P_PRIHM__AGE_CMA*P_AGE__CMA,
+         p0=pcounter*P_AGE__CMA) %>%
+  mutate(e=p1-p0) %>%
+  group_by(PRIHM,CMA,Weight) %>%
+  summarise(across(c("p0","p1","e"),sum), .groups="drop") 
+
+model3_shortfall <- base_probs_total %>%
+  left_join((.) %>% filter(CMA=="Montréal") %>% select(PRIHM,ETHIMM,AGE,Weight,pcounter=P_PRIHM__AGE_CMA_ETHIMM),
+            by=c("PRIHM","ETHIMM","AGE","Weight")) %>%
+  filter(CMA!="Montréal") %>%
+  mutate(p1=P_PRIHM__AGE_CMA_ETHIMM*P_AGE__CMA*P_ETHIMM__CMA,
+         p0=pcounter*P_AGE__CMA*P_ETHIMM__CMA) %>%
+  mutate(p0=ifelse(is.na(p0) & (cases<10 | cases < 18 & CMA=="Canada"),p1,p0)) %>%
+  mutate(e=p1-p0) %>%
+  group_by(PRIHM,CMA,Weight) %>%
+  summarise(across(c("p0","p1","e"),sum), .groups="drop") 
+
+m3_data <- bind_rows(model1_shortfall %>% mutate(Type="Model 1 (Crude)"),
+          model2_shortfall %>% mutate(Type="Model 2 (Age)"),
+          model3_shortfall %>% mutate(Type="Model 3 (Age and Eth/Imm)")) %>%
+  mutate(Type=factor(Type,levels=c("Model 1 (Crude)","Model 2 (Age)","Model 3 (Age and Eth/Imm)"))) %>%
+  filter(CMA %in% selected_cmas) %>%
+  filter(PRIHM=="Person is primary maintainer") 
+
+ggplot(m3_data,aes(y=CMA,x=-e)) +
+  geom_vline(xintercept =0,linetype="dashed") +
+  geom_boxplot(fill="gold") +
+  geom_boxplot(colour="brown",data=~filter(.,Weight=="WEIGHT")) +
+  facet_wrap(~Type) +
+  labs(title="Effect of CMA on household maintainer rates",
+       subtitle = "Counterfactual using Montréal as control, three different model specifications",
+       y=NULL,
+       x="Counterfactual impact of CMA on household maintainer rates",
+       caption="StatCan Census 2016 PUMF (individuals)")
+```
+
+Or, following our Montréal Method, we can express this directly as housing shortfall relative to our counter-factual of Montréal. This corresponds to three different versions of our Montréal Method which we can use to estimate the housing shortfall in other metro areas. Results from the Montréal Method are interpretable as the number of extra dwellings we'd need to enable people to maintain independent households like they do in Montréal. We've now established a crude version, and age adjusted version, and a version adjusted for both age and ethnic/immigration background.
+
+```{r effect_hmr_share}
+ggplot(m3_data,aes(y=CMA,x=p0/p1-1)) +
+  geom_vline(xintercept =0,linetype="dashed") +
+  geom_boxplot(fill="gold") +
+  geom_boxplot(colour="brown",data=~filter(.,Weight=="WEIGHT")) +
+  facet_wrap(~Type) +
+  scale_x_continuous(labels=scales::percent)+
+  labs(title="Modelled housing shortfall due to suppressed household formation",
+       subtitle = "Counterfactual using Montréal as control, three different model specifications",
+       y=NULL,
+       x="Housing shortfall / household formation suppression",
+       caption="StatCan Census 2016 PUMF (individuals)")
+```
+
+This shows how our successively refined models lead to adjustments in the counterfactual effect of CMA on household maintainer rates. We can see how each refinement of the model adjusts the rates of household suppression and associated housing shortfall relative to the counter-factual of Montréal. Adjusting additionally for ethnic background and immigration generation leads to noticeable shifts both up and down. In particular, Toronto's counter-factual estimates decrease significantly, along with estimates for Vancouver and Calgary. By contrast, Hamilton remains roughly the same.
+
+Overall, in terms of enabling people to form independent households, large swathes of Canada appear to be constrained relative to Montréal. The Québec City CMA alone consistently comes out with a negative housing shortfall, perhaps hinting that even Montréal may experience some pressures that suppress household formation. Nevertheless, as we discuss above, Montréal appears to offer a pretty decent counterfactual for the rest of Canada to aspire to. 
+
+Our estimates of constraints in Toronto and Vancouver are largely to be expected. That they begin to converge with other metro areas as we elaborate our model suggests more widespread constraints. The prominence of Calgary, in particular, is somewhat unexpected. We plan to return to this in another post where we will go beyond household maintainer rates and focus in on particular living arrangements. One hypothesis would be that this is due to Calgary, as well as Edmonton, having [a lot of roommate households in the key household formation age groups](https://doodles.mountainmath.ca/blog/2017/12/01/what-s-a-household/). This may be due to the particular dwelling stock, which [has about half the share of 1-bedroom dwelling units compared to Vancouver or Toronto](https://censusmapper.ca/maps/3237#11/51.0867/-114.2036) and lends itself to roommate households. Another potential issue could arise because of how the census codes the residence of students, which hits CMAs with a higher share of parents harder.
+
+## What does this mean?
+How should we make sense out of our Montréal Method estimates of housing shortfall related to constrained maintainer rates? To make them more interpretable, let's translate translate the percentages into hard numbers. How many more dwellings are required to make up the housing shortfall due to suppressed household formation? Once again, this is only measuring part of our shortfall, so we're assuming no change in migration patterns due to higher availability of housing.
+
+```{r total_shortfall}
+total_shortfall <- m3_data %>%
+  mutate(shortfall=p0/p1-1) %>%
+  group_by(CMA,Type) %>%
+  left_join(filter(.,Weight=="WEIGHT") %>% select(CMA,Type,total_shortfall=shortfall),
+            by=c("CMA","Type")) %>%
+  summarise(med=median(shortfall),
+            low=quantile(shortfall,0.2),
+            high=quantile(shortfall,0.8),
+            shortfall=first(total_shortfall),
+            .groups="drop") %>%
+  inner_join(hmr_data %>% 
+               filter(Age=="Total - Age", Name %in% selected_cmas) %>%
+               select(CMA=Name,GeoUID,Households=Value),
+             by="CMA") %>%
+  mutate_at(c("med","low","high","shortfall"), function(d)d*.$Households)
+
+canada_shortall <- total_shortfall %>% filter(CMA =="Canada")
+
+total_shortfall %>%
+  filter(CMA !="Canada") %>%
+  ggplot(aes(y=CMA,x=shortfall)) +
+  geom_bar(stat="identity",fill="brown") +
+  facet_wrap(~Type) +
+  geom_errorbar(aes(xmin=low,xmax=high)) +
+  scale_x_continuous(labels=scales::comma) +
+  labs(title="Number of housing units need",
+       subtitle = "Counterfactual using Montréal as control, three different model specifications",
+       y=NULL,
+       x="Housing shortfall / household formation suppression",
+       caption="StatCan Census 2016 PUMF (individuals)")
+```
+
+For Toronto, the Montréal Method estimates a housing shortfall of 250,000 to 400,000 dwellings, depending upon assumptions. For Vancouver, the shortfall range is narrower, from roughly 75,000 to 100,000 dwellings. We should stress again that this is only trying to estimate the housing shortage due to suppressed household formation, if we were to actually make up the dwelling shortfall this would almost certainly also alter migration patterns and interfere with these estimates.
+
+At the national level we don't have to worry about impacts of migration, if we are able to build the needed housing in all the right places. For all of Canada this housing shortfall comes out to around `r scales::comma(filter(canada_shortall,Type=="Model 2 (Age)")$shortfall/1000,suffix="k",accuracy=10)` units for our Model 2 and, if we are comfortable with our assumptions of adding culture into the model, `r scales::comma(filter(canada_shortall,Type=="Model 3 (Age and Eth/Imm)")$shortfall/1000,suffix="k",accuracy=10)` for our Model 3. 
+
+This includes the negative shortfall in Québec, which reminds us that maybe Montréal was already experiencing housing pressures in 2016 (which have intensified in the meantime) and perhaps isn't the only counterfactual we should consider, leading to possible under-estimates. Indeed, if we look back to the age-based household maintainer rate timelines for Montréal we can observe a drop in household maintainer rates in the 20 to 39 year old age groups in the 2016 census supporting this. Still, if nothing else, Montréal provides us a conservative estimate of what less constrained household formation could look like.
+
+How could our estimated housing shortfall be fixed? To provide one last means of interpretation, we can compare our numbers above to the prevailing pace of housing completions. If we scaled up to the development industry to *double* the number of new dwellings completed circa 2016 - without accounting for demolitions - how long would it take to address the shortfall in each metro area? 
+
+```{r construction_shortfall, warning=FALSE}
+completions <- selected_geouids$region %>%
+  lapply(function(id){
+    d<-get_cmhc(cmhc_timeseries_params(table_id = cmhc_table_list$`Scss Completions Time Series`,
+                                    region = cmhc_region_params_from_census(id)))
+    if (!is.null(d)) d <- d %>% mutate(GeoUID=id)
+    d
+  }) %>%
+  bind_rows() %>%
+  left_join(selected_geouids %>% select(GeoUID=region,Name=name),by="GeoUID") %>%
+  mutate(Year=factor(substr(X1,5,8)))
+
+
+completions %>%
+  filter(Year %in% c("2015","2016","2017")) %>%
+  mutate(GeoUID=ifelse(nchar(GeoUID)==5,substr(GeoUID,3,5),GeoUID)) %>%
+  group_by(Name,GeoUID,Year) %>%
+  summarise_if(is.numeric,sum) %>%
+  inner_join(total_shortfall,by=c("GeoUID")) %>%
+  ggplot(aes(x=shortfall/All,y=CMA,fill=Year)) +
+  geom_bar(stat="identity",position="dodge") +
+  geom_errorbar(aes(xmin=low/All,xmax=high/All),position = "dodge") +
+  guides(fill=guide_legend(reverse = TRUE)) +
+  facet_wrap(~Type) +
+  MetBrewer::scale_fill_met_d("Tam",direction = -1) +
+  scale_x_continuous(labels=scales::comma,breaks=seq(-20,20,5)) +
+  labs(title="Years needed to remove shortfall if housing completions doubled",
+       subtitle="(not accounting for demolitions)",
+       x="Years needed to remove shortfall",y=NULL,fill="Completions\nreference year",
+       caption="CMCH Scss, StatCan Census 2016 PUMF")
+```
+
+
+## How robust are these results?
+This is a good start, but how realistic is our Model 3, and what might a more realistic Model 4 look like? And how would that effect the estimates? 
+
+We still have some concerns about Model 3. In particular, people are different both within and between any cultural groupings; hence assumptions about cultural groupings are tricky to get right. It's difficult to adjust for possible differences in culture and living preferences between groups that also distribute themselves selectively across CMA. For example, people who move from places with large groups of co-ethnics to places with smaller groups may be distinct from those who stay in terms of their ideal living situations. This gets to a fundamental conundrum: the more realistic complexity we attempt to add to our model, the greater the risk we might make wrong assumptions about how that complexity actually works.
+
+## Possibly more realistic models
+Given that we've laid out these risks, we can at least think through this a little more systematically and point at some other important factors we might want to consider if we want to add further complexity. We don't have to worry about factors impacting just household maintainer rates as long as we think they don't also impact, or are impacted by CMA in some way, and we will omit those. For example, we know that Gender impacts household maintainer rates, but we don't believe CMA and Gender are strongly related, so for now we omit Gender from our model. We could model a set of important relationships as per below.
+
+```{r model4}
+ggplot(mv_vertices) +
+  geom_label(aes(x=x,y=y,label=Name)) +
+  geom_segment(data=mv_edges %>% filter(curvature==0),
+               aes(x=x,y=y,xend=xend,yend=yend,colour=colour),
+               size=1,
+               arrow=arrow(length=unit(0.25,"cm"))) +
+  geom_curve(data=mv_edges %>% filter(curvature==0.2), 
+             curvature=-0.2,
+               aes(x=x,y=y,xend=xend,yend=yend,colour=colour),
+               size=1,
+               arrow=arrow(length=unit(0.25,"cm"))) +
+  #theme_void() +
+  labs() +
+  scale_colour_identity() +
+  expand_limits(x=c(-0.2,2.2),y=c(-1.2,2)) +
+  model_theme +
+  labs(title="Factors impacting Household Maintainer Rates Model 4",
+       subtitle="")
+```
+
+This model aims to capture the main effects impacting the relationship between CMA and Household Maintainer Rates, but still remains incomplete. It is still missing several factors that impact or confound the relationship between CMA and Household Maintainer Rates. For example, parental wealth likely interferes with household formation of young adults (e.g. the "[gilded cage](https://journals.sagepub.com/doi/full/10.1177/0038038518798761)" effect) in ways that are not independent of CMA. The young adults in Vancouver and Toronto who don't have help from parents in meeting their housing needs may choose at an increased rate to relocate to other CMAs and form households there. This kind of effect of people self-selecting into CMAs based on affordability issues would be captured broadly under CMA effects (and might increase noise). 
+
+Though there are factors missing, we don't believe that they are necessarily correlated with the other factors, Age, Income, School/Work/Neither status, or Culture in our model. We'd certainly be interested in seeing how the factors we attempt to include might shift, e.g. the model hints at how adjusting for *culture* in our Model 3 may well soak up some income effects. Armed with a model like this we could use census data to estimate the effect of CMA on household maintainer rates. Two effects actually, the total effect, including the effect mediated through differences in the income distribution which we assume to be partially caused by CMA level variables, and the direct effect (in red) that is not mediated through CMA-induced differences in the income distribution. 
+
+But there's a further problem. While this model probably does a better job at capturing the complexities, we can't expect PUMF data to produce reasonable estimates. The PUMF's 1:40 subsample is simply not deep enough for the complexity of the model. To stand a fighting chance to estimate this model we might need to use the full census data at the RDC. Having access to the census in the RDC would also allow to explore further linkages in the data and add features of parents into the model that might interact with CMA, for example type of dwelling the parents live in. 
+
+## Upshot
+We develop and elaborate the Montréal Method for estimating constrained household formation. Taken together, we interpret our results from applying the Method as evidence that housing shortage is likely constraining household formation quite a bit, especially in Toronto, but also Vancouver and elsewhere across Canada. Montréal makes for a decent and fun counterfactual, enabling us to estimate housing shortage. While it might have some cultural idiosyncrasies that limit its applicability as counterfactual, Montréal's relatively stable and accessible (for Canada) vacancy rates; the fact that Halifax has similar overall household maintainer rates; and the fact that Montréal's maintainer rates were quite similar to Toronto and Vancouver in the 1970s, all suggest the  Montréal Method does its job ok.
+
+We open up many more questions with our analysis so far. Returning to history, why did household maintainer rates change so much outside of  Montréal, and how has this related to the housing market of other CMAs. While household maintainer rates remain useful, we may want to look at distinct lifecourse factors and situations to work this out in detail. For instance, we would like to spend more time observing the living arrangements of young adults at the ages 20 or 25 through 39 where the bulk of the household formation happens. Some transitions, e.g leaving home, tend to increase household formation, while others, e.g. coupling, reduce it. Connecting transitions to housing stock availability can offer deeper insight into the mechanisms by which household maintainer rates differ across regions, which can sometimes work in opposing ways. For example, Calgary has a lower rates of young adults living with their parents compared to Montreal, but a higher rate of young adults living as roommates. While these details are secondary to linking population to households, they offer important insights into the mechanisms behind household formation in different regions in Canada.
+
+Another possibly fruitful angle of attack to identify the CMA effects in a more robust way in the face of our models getting entangled in complex revealed (constrained) preferences is to explicitly introduce prevailing levels of rent as a mediator between CMA and household maintainer rates and try to identify the effect mediated through rents.
+
+We will explore some of this in a future blog post.
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-05-06-estimating-suppressed-household-formation/index.Rmarkdown) for anyone to replicate or adapt for their own purposes.
+
+
+
+
+# Appendix 
+## PUMF data
+Public use micro data (PUMF) is a (roughly) 1:40 representative subsample of individual level census responses, somewhat altered to preserve anonymity. This allows to generate flexible CMA level cross tabulations that we will need for more complex models, like the one including *Culture*. It is a good idea to do a cross-check to see how well the PUMF data lines up with the cross tabulation when just accounting for age to get a better understanding of the uncertainties and challenges when working with PUMF data.
+
+
+```{r}
+hmr_age_groups <- c("15 to 17 years" ,  
+                    "18 to 19 years" ,   "20 to 24 years" ,   "25 to 29 years" ,
+                    "30 to 34 years", "35 to 39 years",    "40 to 44 years" ,   "45 to 49 years",
+                    "50 to 54 years",    "55 to 59 years" , "60 to 64 years",    "65 to 69 years",
+                    "70 to 74 years",    "75 to 79 years",    "80 to 84 years", "85 years and over")
+
+hmr <- pumf_2016 %>%
+  filter(AGEGRP %in% hmr_age_groups) %>%
+  group_by(AGEGRP,PRIHM) %>%
+  summarise(across(matches("WEIGHT|WT\\d+"),sum),
+            .groups="drop") %>%
+  pivot_longer(matches("WEIGHT|WT\\d+"),names_to = "Weight",values_to = "Count") %>%
+  group_by(AGEGRP,Weight) %>%
+  mutate(Share=Count/sum(Count))
+
+hmr %>%
+  filter(PRIHM=="Person is primary maintainer") %>%
+  mutate(Source="PUMF") %>%
+#   bind_rows(hmr_data %>%
+#               filter(Name=="Canada") %>%
+#               filter(!grepl("Total",Age)) %>%
+#               select(AGEGRP=Age,Share) %>%
+#               mutate(Source="Xtab")
+# ) %>%
+ggplot(aes(y=AGEGRP,x=Share,fill=Source)) +
+  geom_boxplot(position="dodge",fill="gold") +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Household maintainer rates in Canada",
+       y=NULL,x="Household maintainer rate",
+       caption="StatCan Census 2016 PUMF")
+```
+
+To get a feel for how PUMF data compares to the full (25%) census data we compare the age-adjusted household maintainer rates by CMA estimated from the two different sources.
+
+```{r hmr_comparison_pumf}
+hmr_cma <- pumf_2016 %>%
+  filter(AGEGRP %in% hmr_age_groups) %>%
+  mutate(AGEGRP=fct_recode(AGEGRP,"15 to 19 years"="15 to 17 years",  "15 to 19 years"=  "18 to 19 years") %>% droplevels) %>%
+  group_by(AGEGRP,PRIHM,CMA) %>%
+  summarise(across(matches("WEIGHT|WT\\d+"),sum),
+            .groups="drop") %>%
+  pivot_longer(matches("WEIGHT|WT\\d+"),names_to = "Weight",values_to = "Count") %>%
+  bind_rows((.) %>% 
+              group_by(AGEGRP,PRIHM,Weight) %>% 
+              summarise(Count=sum(Count),.groups="drop") %>%
+              mutate(CMA="Canada")) %>%
+  group_by(AGEGRP,CMA,Weight) %>%
+  mutate(Share=Count/sum(Count)) %>%
+  ungroup() %>%
+  left_join(filter(.,CMA=="Canada") %>% 
+              group_by(AGEGRP,Weight) %>%
+              summarize(Total=sum(Count),.groups="drop"),
+            by=c("AGEGRP","Weight"))
+
+hmr_age_adjusted <- hmr_cma %>%
+  group_by(Name=CMA,PRIHM,Weight) %>%
+  summarise(Share=weighted.mean(Share,Total),
+            TotalPop=sum(Count),.groups="drop") %>%
+  group_by(Name) %>%
+  mutate(TotalPop=sum(TotalPop)) %>%
+  filter(PRIHM=="Person is primary maintainer",
+         Name %in% selected_cmas) %>%
+  select(-PRIHM) %>%
+  mutate(Source="PUMF") %>%
+  bind_rows(hmr_data %>%
+              filter(Name %in% selected_cmas) %>%
+              filter(!grepl("Total",Age)) %>%
+              left_join(hmr_data %>% 
+                          filter(Name=="Canada",!grepl("Total",Age)) %>% 
+                          select(Age,Total_CA=Total),by="Age") %>%
+              group_by(Name) %>%
+              summarize(Share=weighted.mean(Share,Total_CA)) %>%
+              mutate(Estimate="Age-adjusted") %>%
+              mutate(Source="Xtab")
+  ) %>%
+  mutate(Name=recode(as.character(Name),"Ottawa - Gatineau"="Ottawa – Gatineau")) %>%
+  mutate(Name=factor(Name,levels=filter(.,Weight=="WEIGHT",Source=="PUMF") %>% arrange(TotalPop) %>% pull(Name)))
+
+hmr_age_adjusted %>%
+  mutate(Source=factor(Source)) %>%
+  ggplot(aes(y=Name,x=Share,colour=Source)) +
+  geom_boxplot(fill="gold") +
+  geom_boxplot(data=~filter(.,Weight=="WEIGHT"|is.na(Weight)),
+               position="dodge", colour="brown",aes(group=interaction(Source,Name))) +
+  #geom_boxplot(data = ~filter(.,Weight=="WEIGHT"),colour="steelblue",position="dodge") +
+  scale_colour_manual(values=c("PUMF"="black","Xtab"="brown")) +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Age-adjusted household maintainer rates in Canada",
+       x="Age-adjusted household maintainer rate",y=NULL,
+       caption="StatCan Census 2016 PUMF")
+```
+
+Generally they line up well. Here we pooled the 15-17 and 17-19 age groups in the PUMF to match the ones in the cross tabulation and added in the estimate based on standard weights in red. We do not that especially with the smaller CMAs we see wider confidence intervals from the PUMF estimates and some deviation.
+
+
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
+
