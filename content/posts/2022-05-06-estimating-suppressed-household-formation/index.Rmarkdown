@@ -22,8 +22,6 @@ linktitle: ''
 type: "post"
 ---
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/05/07/estimating-suppressed-household-formation/" target="_blank">HomeFreeSociology</a>)</i></p>
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
@@ -56,15 +54,17 @@ selected_geouids <- list_census_regions("CA16") %>%
   filter(level=="CMA" & (name %in% selected_cmas) | name=="Canada") 
 ```
 
-## TL;DR
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/05/07/estimating-suppressed-household-formation/" target="_blank">HomeFreeSociology</a>)</i></p>
 
+
+
+## TL;DR
 We develop and elaborate a Montréal Method for estimating housing shortfalls related to constraints upon current residents who might wish to form independent households but are forced to share by local housing markets. Applying simple versions of the Montréal Method to Metro Areas across Canada suggests that Toronto has the biggest shortfall, which we estimate at 250,000 to 400,000 dwellings, depending upon assumptions. For Vancouver, the estimated shortfall range is narrower, from roughly 75,000 to 100,000 dwellings. But models suggest housing shortfalls remain widespread, and there is much room for further elaboration. Note: shortfalls estimated in this post only account for those due to suppressed household formation among residents and do not account for e.g. migration pressures, which means that overall housing shortfalls are likely much larger.
 
-## Intro
+## Introduction
+In a [previous post](https://doodles.mountainmath.ca/blog/2022/04/26/planning-for-scarcity/) we tried to explain what goes wrong with population and dwelling growth projections in planning. In this post we will examine household maintainer rates more closely, one of the two key places where implicit model assumptions perpetuate and amplify housing scarcity. We'll also lay out adjustments to consider that we'll call "The Montréal Method" for estimating housing needs based on suppressed household formation.
 
-In a [previous post](https://homefreesociology.com/2022/04/26/planning-for-scarcity/) we tried to explain what goes wrong with population and dwelling growth projections in planning. In this post we will examine household maintainer rates more closely, one of the two key places where implicit model assumptions perpetuate and amplify housing scarcity. We'll also lay out adjustments to consider that we'll call "The Montréal Method" for estimating housing needs based on suppressed household formation.
-
-Household maintainer rates, sometimes called headship rates, are the share of the population 15+, or within a specific age group, who are coded as ["primary household maintainer" in the census](https://www12.statcan.gc.ca/census-recensement/2016/ref/dict/households-menage020-eng.cfm). The concept draws upon an older & occasionally patriarchal notion of household head, where the census was interested in identifying who was "in charge" of the household, and updates it by merely identifying the first person listed who pays the bills. Often, of course, as with most couples, there are two or more people paying the bills. But only one gets identified as the "primary" household maintainer in order to help identify a single link between households and the people they contain. Correspondingly, household maintainer rates serve as a sort of missing link in how we fit populations into dwellings. This missing link also contains information about household size. And as we [noted previously](https://doodles.mountainmath.ca/blog/2022/04/26/planning-for-scarcity/) with respect to [Metro population projections](http://www.metrovancouver.org/services/regional-planning/PlanningPublications/Metro_Vancouver_Growth_Projections_Methodology_Report.pdf#page=12), assumptions about household maintainer rates have a significant impact on housing needs and demand estimates.
+Household maintainer rates, sometimes called headship rates, are the share of the population 15+, or within a specific age group, who are coded as ["primary household maintainer" in the census](https://www12.statcan.gc.ca/census-recensement/2016/ref/dict/households-menage020-eng.cfm). The concept draws upon an older & occasionally patriarchal notion of household head, where the census was interested in identifying who was "in charge" of the household, and updates it by merely identifying the first person listed who pays the bills. Often, of course, as with most couples, there are two or more people paying the bills. But only one gets identified as the "primary" household maintainer in order to help identify a single link between households and the people they contain. Correspondingly, household maintainer rates serve as a sort of missing link in how we fit populations into dwellings. This missing link also contains information about household size. And as we [noted previously](https://homefreesociology.com/2022/04/26/planning-for-scarcity/) with respect to [Metro population projections](http://www.metrovancouver.org/services/regional-planning/PlanningPublications/Metro_Vancouver_Growth_Projections_Methodology_Report.pdf#page=12), assumptions about household maintainer rates have a significant impact on housing needs and demand estimates.
 
 Often housing needs and demand projections assume household maintainer rates will follow past trends, but as explained in our previous post this assumption tends to enshrine and worsen past housing shortages. If in the past housing was scarce, and household maintainer rates have been suppressed by, e.g. delaying independent household formation of young adults, simply projecting past trends forward would bake these past shortages into plans for the future. In other words, normal planning processes, as with [Metro Vancouver's growth projections](http://www.metrovancouver.org/services/regional-planning/PlanningPublications/Metro_Vancouver_Growth_Projections_Methodology_Report.pdf), can serve to systematically enshrine housing shortages.
 
