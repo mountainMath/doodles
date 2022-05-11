@@ -181,7 +181,7 @@ There is surprisingly little difference from the choice of vintage of the zoning
 
 What stands out, just like [last time we ran this analysis for the 2011-2016 period](https://doodles.mountainmath.ca/blog/2017/03/06/rs-population-change/), that the Core areas don't grow much. Low-density zoning is deadbeat zoning, they take up lots of space but don't contribute to population growth. At least they are not losing population, adding suites and laneways manages to roughly balance out other demographic factors like declining household size. During the 2011-2016 cycle the core areas on the West side lost population and whereas the East side gained population. This time around it's reversed. Either way, the effects were small and we chalk this up to statistical noise and there isn't much of a difference.
 
-There does seem to be a difference when it comes to fringe areas, which is likely due to the Cambie Corridor. The other big driver of growth in the fringe areas is C-2 zoning, which generally only extends half a block and will inevitably be caught in the fringe areas. We will need a custom tabulation to entangle this.
+There does seem to be a difference when it comes to fringe areas, which is likely due to the Cambie Corridor. The other big driver of growth in the fringe areas is C-2 zoning, which generally only extends half a block and will inevitably be caught in the fringe areas. We will need a custom tabulation to disentangle this. 
 
 To underline that point, let's look at how much these various categories take up, after cutting out parks.
 
