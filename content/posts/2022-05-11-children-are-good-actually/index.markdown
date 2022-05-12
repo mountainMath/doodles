@@ -14,7 +14,7 @@ categories:
   - cancensus
   - cansim
 tags: []
-description: "Cities are changing, how do we know if we are headed in the right direction? Looking at the change in children gives us a simple uncontrovercial metric to assess that, most people can agree that children are good for cities."
+description: "Cities are changing, how do we know if we are headed in the right direction? Looking at the change in children gives us a simple uncontroversial metric to assess that, most people can agree that children are good for cities."
 featured: ''
 images: ["https://doodles.mountainmath.ca/blog/2022/05/11/children-are-good-actually/index_files/figure-html/children_change-1.png"]
 featuredalt: ""
@@ -184,13 +184,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-05-11 17:02:57 PDT"
+## [1] "2022-05-11 18:09:59 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [f6dd25d] 2022-05-11: typo, thanks Bert!
+## Head:     [29c1196] 2022-05-12: children are good
 ```
 
 ```
@@ -209,40 +209,33 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] ggblend_0.0.0.9000        VancouvR_0.1.7           
-##  [3] cansim_0.3.11             patchwork_1.1.1          
-##  [5] sf_1.0-7                  cancensus_0.5.1          
-##  [7] tongfen_0.3.5             mountainmathHelpers_0.1.4
-##  [9] forcats_0.5.1             stringr_1.4.0            
-## [11] dplyr_1.0.8               purrr_0.3.4              
-## [13] readr_2.1.2               tidyr_1.2.0              
-## [15] tibble_3.1.7              ggplot2_3.3.6            
-## [17] tidyverse_1.3.1          
+##  [1] cansim_0.3.11             patchwork_1.1.1          
+##  [3] sf_1.0-7                  cancensus_0.5.1          
+##  [5] tongfen_0.3.5             mountainmathHelpers_0.1.4
+##  [7] forcats_0.5.1             stringr_1.4.0            
+##  [9] dplyr_1.0.8               purrr_0.3.4              
+## [11] readr_2.1.2               tidyr_1.2.0              
+## [13] tibble_3.1.7              ggplot2_3.3.6            
+## [15] tidyverse_1.3.1          
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] fs_1.5.2           lubridate_1.8.0    bit64_4.0.5        RColorBrewer_1.1-3
-##  [5] httr_1.4.2         rmapzen_0.4.3      tools_4.2.0        backports_1.4.1   
-##  [9] bslib_0.3.1        rgdal_1.5-31       utf8_1.2.2         R6_2.5.1          
-## [13] KernSmooth_2.23-20 lazyeval_0.2.2     rgeos_0.5-9        DBI_1.1.2         
-## [17] colorspace_2.0-3   sp_1.4-7           withr_2.5.0        tidyselect_1.1.2  
-## [21] git2r_0.30.1       bit_4.0.4          curl_4.3.2         compiler_4.2.0    
-## [25] cli_3.3.0          rvest_1.0.2        geojsonsf_2.0.2    xml2_1.3.3        
-## [29] labeling_0.4.2     bookdown_0.26      triebeard_0.3.0    sass_0.4.1        
-## [33] scales_1.2.0       classInt_0.4-3     proxy_0.4-26       digest_0.6.29     
-## [37] foreign_0.8-82     rmarkdown_2.13     pkgconfig_2.0.3    htmltools_0.5.2   
-## [41] highr_0.9          dbplyr_2.1.1       fastmap_1.1.0      rlang_1.0.2       
-## [45] readxl_1.4.0       httpcode_0.3.0     rstudioapi_0.13    farver_2.1.0      
-## [49] jquerylib_0.1.4    generics_0.1.2     jsonlite_1.8.0     vroom_1.5.7       
-## [53] magrittr_2.0.3     s2_1.0.7           Rcpp_1.0.8.3       munsell_0.5.0     
-## [57] fansi_1.0.3        lifecycle_1.0.1    stringi_1.7.6      yaml_2.3.5        
-## [61] jqr_1.2.3          maptools_1.1-4     grid_4.2.0         parallel_4.2.0    
-## [65] crayon_1.5.1       geojsonio_0.9.4    lattice_0.20-45    haven_2.5.0       
-## [69] geojson_0.3.4      hms_1.1.1          knitr_1.38         pillar_1.7.0      
-## [73] codetools_0.2-18   crul_1.2.0         wk_0.6.0           reprex_2.0.1      
-## [77] glue_1.6.2         evaluate_0.15      blogdown_1.9       V8_4.1.0          
-## [81] modelr_0.1.8       vctrs_0.4.1        tzdb_0.3.0         urltools_1.7.3    
-## [85] cellranger_1.1.0   gtable_0.3.0       assertthat_0.2.1   xfun_0.30         
-## [89] broom_0.8.0        e1071_1.7-9        sanzo_0.1.0        class_7.3-20      
-## [93] units_0.8-0        ellipsis_0.3.2
+##  [1] httr_1.4.2         sass_0.4.1         bit64_4.0.5        vroom_1.5.7       
+##  [5] jsonlite_1.8.0     modelr_0.1.8       bslib_0.3.1        assertthat_0.2.1  
+##  [9] cellranger_1.1.0   yaml_2.3.5         pillar_1.7.0       backports_1.4.1   
+## [13] glue_1.6.2         digest_0.6.29      rvest_1.0.2        colorspace_2.0-3  
+## [17] htmltools_0.5.2    pkgconfig_2.0.3    broom_0.8.0        haven_2.5.0       
+## [21] bookdown_0.26      scales_1.2.0       tzdb_0.3.0         git2r_0.30.1      
+## [25] proxy_0.4-26       generics_0.1.2     ellipsis_0.3.2     withr_2.5.0       
+## [29] cli_3.3.0          magrittr_2.0.3     crayon_1.5.1       readxl_1.4.0      
+## [33] evaluate_0.15      fs_1.5.2           fansi_1.0.3        xml2_1.3.3        
+## [37] class_7.3-20       geojsonsf_2.0.2    blogdown_1.9       tools_4.2.0       
+## [41] hms_1.1.1          lifecycle_1.0.1    munsell_0.5.0      reprex_2.0.1      
+## [45] compiler_4.2.0     jquerylib_0.1.4    e1071_1.7-9        rlang_1.0.2       
+## [49] classInt_0.4-3     units_0.8-0        grid_4.2.0         rstudioapi_0.13   
+## [53] rmarkdown_2.13     gtable_0.3.0       DBI_1.1.2          curl_4.3.2        
+## [57] R6_2.5.1           lubridate_1.8.0    knitr_1.38         fastmap_1.1.0     
+## [61] bit_4.0.4          utf8_1.2.2         KernSmooth_2.23-20 stringi_1.7.6     
+## [65] parallel_4.2.0     Rcpp_1.0.8.3       vctrs_0.4.1        dbplyr_2.1.1      
+## [69] tidyselect_1.1.2   xfun_0.30
 ```
 </details>
