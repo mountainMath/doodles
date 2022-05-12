@@ -11,7 +11,7 @@ categories:
   - cancensus
   - density
 tags: []
-description: "With the new 2021 census data out it's time for some analysis on how Vancouver has grown. For this time we will examine the role of low-density zoning.."
+description: "With the new 2021 census data out it's time for some analysis on how Vancouver has grown. For this time we will examine the role of low-density zoning."
 featured: ''
 images: ["https://doodles.mountainmath.ca/blog/2022/02/11/deadbeat-zoning/index_files/figure-html/pop-growth-per-area-1.png"]
 featuredalt: ""
@@ -103,13 +103,13 @@ As usual, the code for this post, including the code to scrape the data out of t
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-05-11 08:32:30 PDT"
+## [1] "2022-05-11 08:35:12 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [9b564e4] 2022-05-07: weird behaviour of "into" vs "introduction" section header
+## Head:     [f6dd25d] 2022-05-11: typo, thanks Bert!
 ```
 
 ```

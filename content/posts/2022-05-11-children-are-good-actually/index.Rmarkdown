@@ -1,0 +1,778 @@
+---
+title: Children are good, actually
+author: Jens von Bergmann
+date: '2022-05-11'
+slug: children-are-good-actually
+categories:
+  - affordability
+  - Vancouver
+  - tongfen
+  - land use
+  - zoning
+  - Assessment Data
+  - CensusMapper
+  - cancensus
+  - cansim
+tags: []
+description: "Cities are changing, how do we know if we are headed in the right direction? Looking at the change in children gives us a simple uncontrovercial metric to assess that, most people can agree that children are good for cities."
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2022/05/11/children-are-good-actually/index_files/figure-html/children_change-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	fig.width = 8,
+	fig.height = 6,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE
+)
+library(tidyverse)
+library(mountainmathHelpers) # remotes::install_github("mountainmath/mountainmathHelpers")
+library(tongfen) 
+library(cancensus)
+library(sf)
+library(patchwork)
+library(cansim)
+
+vectors=c("0-4" = "v_CA21_14","5-9" = "v_CA21_32", "10-14" = "v_CA21_50",
+          "0-4" = "v_CA16_7","5-9" = "v_CA16_25","10-14" = "v_CA16_43",
+          "0-4" = "v_CA11F_8","5-9" = "v_CA11F_11","10-14" = "v_CA11F_14",
+          "0-4_m" = "v_CA06_4","0-4_f" = "v_CA06_23",
+                                  "5-9_m" = "v_CA06_5","5-9_f" = "v_CA06_24",
+                                  "10-14_m" = "v_CA06_6","10-14_f" = "v_CA06_25",
+          "0-4_m" = "v_CA01_7","0-4_f" = "v_CA01_26",
+                                  "5-9_m" = "v_CA01_8","5-9_f" = "v_CA01_27",
+                                  "10-14_m" = "v_CA01_9","10-14_f" = "v_CA01_28",
+          "0-4_m" = "v_CA1996_7","0-4_f" = "v_CA1996_31",
+                                  "5-9_m" = "v_CA1996_8","5-9_f" = "v_CA1996_32",
+                                  "10-14_m" = "v_CA1996_9","10-14_f" = "v_CA1996_33")
+
+new_names <- seq(1,length(vectors)) %>%
+  lapply(function(n){
+    paste0(names(vectors)[n]," - ",vectors[n] %>% str_extract("_CA\\d+") %>% gsub("_","",.))
+    }) %>%
+  unlist
+
+vetors_m <- setNames(as.character(vectors),  new_names)
+
+meta <- meta_for_ca_census_vectors(vetors_m) %>%
+  filter(geo_dataset!="CA1996") 
+
+
+prepare_data <- function(geo_data){
+  geo_data %>%
+    sf::st_drop_geometry() %>%
+    select(matches("TongfenID| - CA")) %>%
+    pivot_longer(matches(" - "),names_pattern  ="(.+) - (.+)",
+                 names_to=c("Age","Census"),values_to="Value") %>%
+    mutate(Age=gsub("_f|_m|_w","",Age)) %>%
+    group_by(TongfenID,Age,Census) %>%
+    summarise(Value=sum(Value,na.rm = TRUE),.groups="drop") %>%
+    bind_rows((.) %>% 
+                group_by(TongfenID,Census) %>% 
+                summarize(Value=sum(Value),.groups="drop") %>% 
+                mutate(Age="0-14")) %>%
+    bind_rows((.) %>% 
+                filter(Age %in% c("5-9","10-14")) %>%
+                group_by(TongfenID,Census) %>% 
+                summarize(Value=sum(Value),.groups="drop") %>% 
+                mutate(Age="5-14")) %>%
+    #pivot_wider(names_from = Age,values_from = Value) %>%
+    mutate(Year=str_extract(Census,"\\d+")) %>%
+    mutate(Year=ifelse(nchar(Year)==2,paste0("20",Year),Year)) %>%
+    group_by(TongfenID,Age) %>%
+    mutate(change=Value-lag(Value,order_by = Year)) %>%
+    mutate(change_pct=Value/lag(Value,order_by = Year)-1) %>%
+    mutate(Period=paste0(lag(Year,order_by = Year)," - ",Year)) %>%
+    bind_rows((.) %>% 
+                group_by(TongfenID,Age) %>%
+                mutate(change=Value-lag(Value,order_by = Year,n=4)) %>%
+                mutate(change_pct=Value/lag(Value,order_by = Year,n=4)-1) %>%
+                mutate(Period=paste0(lag(Year,order_by = Year,n=4)," - ",Year))) %>%
+    ungroup() %>%
+    filter(!is.na(Period),!grepl("^NA - ",Period))
+}
+
+
+cov_data <- get_census("CA21",regions=list(CSD="5915022"),geo_format = 'sf')
+crs <- lambert_conformal_conic_at(cov_data)
+```
+
+
+There are many useful metrics to understand neighbourhood change, [change in the income distribution](https://doodles.mountainmath.ca/blog/2018/10/28/understanding-income-distributions-across-geographies-and-time/), [change in the share of population in low income and change in dwelling units](https://doodles.mountainmath.ca/blog/2019/09/02/low-income-vs-new-dwellings/), [change in households who rent](https://doodles.mountainmath.ca/blog/2018/02/08/neighbourhood-level-census-data/), or just [overall population change](https://doodles.mountainmath.ca/blog/2019/06/15/census-custom-timelines/) and [how that relates to zoning](https://doodles.mountainmath.ca/blog/2022/02/11/deadbeat-zoning/). All these tell us something about how neighbourhoods change, the metric we want to focus on in this post is the [number of children under 15](https://doodles.mountainmath.ca/blog/2018/02/08/neighbourhood-level-census-data/).
+
+Children under 15 years of age tell us something about now demographic renewal works in neighbourhoods, about demographic sustainability. Some neighbourhoods have more children than others for a variety of reasons, ranging from preference to built form of housing. If a neighbourhood is dominated by 1-bedroom dwelling units there will be few children living there. What we are interested in in this post is how this changes over time, which neighbourhoods are gaining children and which ones are losing children? And why?
+
+There are various processes that impact how the number of children in an area changes over time. Children get born to (or adopted by) families living in an area, and families with children move in and out of neighbourhoods. We will look at these two processes separately in another post, in this one we focus on the "renewal" aspect and the change in the number of children under 15 in each region, which combines these two effects. But before that we remind ourselves just how mobile residents of cities are.
+
+
+## Residential mobility
+A little under half of the residents (5 years or older) of the City of Vancouver lived at a different address five year prior, making residential mobility is a significant driver of neighbourhood change. It's instructional to take a quick look what residential mobility looks like across the City of Vancouver.
+
+```{r}
+movers <- get_census("CA16",regions=list(CSD="5915022"),
+                     vectors=c(movers_base="v_CA16_6719",movers="v_CA16_6725"),
+                     level="CT",geo_format="sf")
+
+ggplot(movers,aes(fill=movers/movers_base)) +
+  geom_sf() + 
+  scale_fill_viridis_c(labels=scales::percent) +
+  geom_water() +
+  geom_roads() +
+  coord_sf(datum=NA) +
+  labs(title="Residential mobility",
+       fill="Share of movers\n2011-2016",
+       caption="StatCan census 2016")
+```
+
+There is significant variation in overall residential mobility, with the overall share of people that moved in the past five years ranging from just under 30% to over 70%, depending on the neighbourhood.
+
+The difference in mobility has many reasons. Some are demographic, for example young people move more frequently than older people, so areas that attract a younger demographic will see higher rates of movers. There are also physical factors at play, for example when larger apartment buildings get built everyone in the new building will have lived in a different address five years prior.
+
+But even the people that stay fixed at the same address between census periods change, they get older. These two processes, residential mobility and aging, and how they interplay with housing, determine how the age profile of a neighbourhood changes between census periods.
+
+## Children as an indicator of demographic renewal and sustainability
+[Overall population change](https://doodles.mountainmath.ca/blog/2019/06/15/census-custom-timelines/) shows us which areas are growing or declining in overall population, focusing in [just on children](https://censusmapper.ca/maps/2644?index=8#11/49.2481/-123.0919) separates out growth that is driven by other age groups, for example by [growth in older populations](https://censusmapper.ca/maps/1929?index=8). As people are living longer and the key demographic cohort of baby boomers is entering retirement age, children often get squeezed out. This process happens over the course of several census periods, we will look at the 20 year timeframe from 2001 to 2021.
+
+```{r children_change, fig.width=9}
+regions <- list(CSD=c("5915022","5915803"),CT=c("9330069.04","9330069.03","9330069.02","9330069.01","9330069.00"))
+geo_data <- get_tongfen_ca_census(regions,meta,level="CT",base_geo = "CA21",na.rm = TRUE) 
+data <- geo_data %>% prepare_data()
+
+plot_data <- geo_data %>% 
+  select(TongfenID) %>%
+  left_join(data %>% filter(Period=="2001 - 2021",Age=="0-14"),
+            by="TongfenID")  %>%
+  mutate(change_d=pretty_cut(change,breaks=c(-Inf,-1000,-500,-250,-100,-25,25,100,250,500,1000,Inf)))
+
+plot_colours <- setNames(RColorBrewer::brewer.pal(11,"PiYG"),plot_data$change_d %>% levels)
+
+plot_data %>%
+  sf::st_transform(lambert_conformal_conic_at(.)) %>%
+  ggplot(aes(fill=change_d)) +
+  geom_sf() +
+  scale_fill_manual(values=plot_colours) +
+  geom_water() +
+  geom_roads() +
+  geom_sf_text(aes(label=scales::comma(change)),size=3) +
+  coord_sf(datum=NA) +
+  labs(title="Change in children under 15 from 2001 to 2021",
+       fill="Change in 0-14",
+       x=NULL,y=NULL,
+       caption="StatCan Census 2001, 2021")
+```
+
+For technical reasons we need to include Musqueam 2 into this because they did not have a separate census tract in 2001 and got lumped in with the neighbouring City of Vancouver census tract, and for good measure we add in the Point Grey Peninsula to the west that's home to UBC, UEL and the UNA.
+
+This shows that our city has been quite divided, with some areas gaining a lot of children, and others losing children.
+
+We can split this up in several ways, first taking a look at the inter-census periods separately.
+
+
+```{r}
+plot_data <- geo_data %>% 
+  select(TongfenID) %>%
+  left_join(data %>% filter(Period!="2001 - 2021",Age=="0-14"),
+            by="TongfenID")  %>%
+  mutate(change_d=pretty_cut(change,breaks=c(-Inf,-500,-250,-100,-50,-10,10,50,100,250,500,Inf)))
+
+plot_colours <- setNames(RColorBrewer::brewer.pal(11,"PiYG"),plot_data$change_d %>% levels)
+
+
+plot_data %>%
+  sf::st_transform(lambert_conformal_conic_at(.)) %>%
+  ggplot(aes(fill=change_d)) +
+  geom_sf(size=0.1) +
+  scale_fill_manual(values=plot_colours) +
+  geom_water() +
+  geom_roads() +
+  facet_wrap(~Period) +
+  coord_sf(datum=NA) +
+  labs(title="Change in children under 15",
+       fill="Change in 0-14",
+       x=NULL,y=NULL,
+       caption="StatCan Census 2001, 2006, 2011, 2016, 2021")
+```
+
+That helps us see which areas show chronic census over census declines in the number of children, which ones saw sustained increases, and which were wavering.
+
+Another way to slice this is to look at each 5-year age group separately.
+
+```{r fig.height=10}
+plot_data <- geo_data %>% 
+  select(TongfenID) %>%
+  left_join(data %>% 
+              filter(Period=="2001 - 2021",Age %in% c("0-4","5-9","10-14")) %>%
+              mutate(Age=factor(Age,levels= c("0-4","5-9","10-14"))),
+            by="TongfenID")  %>%
+  mutate(change_d=pretty_cut(change,breaks=c(-Inf,-500,-250,-100,-50,-10,10,50,100,250,500,Inf)))
+
+plot_colours <- setNames(RColorBrewer::brewer.pal(11,"PiYG"),plot_data$change_d %>% levels)
+
+
+plot_data %>%
+  sf::st_transform(lambert_conformal_conic_at(.)) %>%
+  ggplot(aes(fill=change_d)) +
+  geom_sf(size=0.1) +
+  scale_fill_manual(values=plot_colours) +
+  #geom_sf_text(aes(label=scales::comma(change)),size=3) +
+  geom_water() +
+  geom_roads() +
+  facet_wrap(~Age,ncol=1) +
+  coord_sf(datum=NA) +
+  labs(title="Change in children under 15 from 2001 to 2021",
+       fill="Change",
+       x=NULL,y=NULL,
+       caption="StatCan Census 2001, 2021")
+```
+
+While there is a lot of similarity in growth across these age groups, it's noticeable how growth in 10-14 year olds is more geographically constrained.
+
+## Children are good, actually!
+When it comes to neighbourhood change we often ask if change is good or bad. And more often than not that's ambiguous. A changing physical housing stock is perceived as *bad* by people attached to the existing physical form and as *good* by people looking for housing options that the existing stock does not offer. Overall population (and housing) increase is sometimes viewed as *good*, sometimes as *bad*, and at other times conditioned on who moves into new housing, with some people questioning who new housing is for, signalling a desire to control who moves into new housing. Increase in overall income in a neighbourhood is sometimes seen as a positive sign of growth, sometimes negatively as a sign of gentrification. 
+
+But children take a somewhat unique position in that they are almost universally seen as *good*, and a decline in children is seen as *bad*.
+
+## What causes change in children?
+This leads to the question what kind of policies are impacting whether children row or decline in a neighbourhood. Looking at the images above an immediate candidate comes to mind. Housing. A key observation is that there are several processes that, assuming a the housing stock remains fixed, combine to work at reducing the number of children
+
+1. As Canada's population ages and the age distribution shifts a lower share of homes will be available for young families. We get more one or two person households in single family homes now that we used to, and people may choose not rent out secondary suites they may have if they don't need the income.
+2. Vancouver makes up the central part of the metro region, and central areas generally attract a lot of young (childless) professionals aged 25 to 34s. And with the outer parts of the region growing faster than the City of Vancouver (by design, that's what the Metro Vancouver Growth Strategy is calling for) the City is becoming increasingly more "central" and not just the number but also the share of these young professionals has been growing. Which again leaves less space for young families in their late 30s and 40s, which is amplified by overall demographic shifts in the region and Canada overall.
+3. BC has seen declining fertility rates of this time period and now has the lowest fertility rate in Canada, which is likely not independent of the other processes noted here.
+4. At the dame time, as people get richer they tend to consume more housing. Richer people are less likely to rent out a secondary suite (assuming they have one), and they are less likely to down-size or right-size their housing (having extra bedrooms is nice).
+
+The first two demographic processes are demographic and we van visualize their effect by comparing the 2021 age pyramid of the City of Vancouver against their 2001 shadow, contrasted by Metro Vancouver, British Columbia and all of Canada.
+
+```{r include=FALSE}
+age_pyramid_styling <- list(
+  scale_x_continuous(labels = scales::comma),
+  guides(fill=guide_legend(reverse = TRUE)),
+  scale_fill_brewer(palette = "Set1"),
+  theme(legend.position="bottom"))
+
+age_labels <- seq(0,95,5) %>%
+  lapply(function(d)paste0(d," to ",d+4," years"))  %>%
+  unlist %>%
+  c("100 years and over")
+
+age_regions <- list(CSD="5915022",CMA="59933",PR="59",C="01")
+
+age_2001 <- cancensusHelpers::get_age_data("CA01",regions=age_regions)
+
+ages_2021 <- find_census_vectors("Total - Age","CA21")  %>%
+  filter(label %in% age_labels,type!="Total")
+age_2021 <- bind_rows(get_census("CA21",regions=age_regions,
+                                 vectors=ages_2021 %>% filter(type=="Male") %>% pull(vector),labels="short") %>%
+                        select(GeoUID,`Region Name`,matches("v_CA21")),
+                      get_census("CA21",regions=age_regions,
+                                 vectors=ages_2021 %>% filter(type=="Female") %>% pull(vector),labels="short") %>%
+                        select(GeoUID,`Region Name`,matches("v_CA21"))) %>%
+  pivot_longer(unique(ages_2021$vector)) %>%
+  left_join(ages_2021 %>% select(name=vector,Age=label,Gender=type),by="name") %>%
+  filter(!is.na(value)) %>%
+  mutate(value=ifelse(Gender=="Male",-value,value)) %>%
+  mutate(a=str_extract(Age,"^\\d+") %>% as.integer) %>%
+  mutate(Age=cut(a,breaks=c(seq(0,85,5),Inf),
+                 labels=levels(age_2001$Age),
+                 right=FALSE, ordered_result=TRUE)) %>%
+  group_by(GeoUID,`Region Name`,Gender,Age) %>%
+  summarize(Population=sum(value),.groups="drop")
+  
+ages_combined <- bind_rows(age_2001 %>% mutate(Year="2001"),
+          age_2021 %>% mutate(Year="2021")) %>%
+  mutate(Name=case_when(GeoUID=="5915022"~"City of Vancouver",
+                        GeoUID=="59933" ~ "Metro Vancouver",
+                        GeoUID=="59" ~ "British Columbia",
+                        GeoUID=="01" ~ "Canada",
+                        TRUE ~ "Other")) %>%
+  mutate(Name=factor(Name,levels=c("City of Vancouver","Metro Vancouver","British Columbia","Canada")))
+
+totals_children <- ages_combined |>
+  filter(Age %in% c("0-4","5-9","10-14")) |>
+  group_by(Year,Name) |>
+  summarize(Population=sum(abs(Population)),.groups="drop") |>
+  mutate(Previous=lag(Population,order_by = Year)) %>%
+  mutate(Change=Population-Previous) %>%
+  mutate(Change_pct=Change/Previous) %>%
+  filter(Year==2021,Name=="City of Vancouver") 
+```
+
+```{r eval=FALSE, include=FALSE}
+ages_combined %>%
+  ggplot(aes(x=Population,y=Age,fill=Gender)) +
+  geom_bar(stat="identity") +
+  age_pyramid_styling +
+  facet_wrap(Name~Year)
+```
+
+
+```{r fig.height=8, fig.width=8}
+ages_combined %>% 
+  ggplot(aes(x=Population,y=Age,fill=Gender)) +
+  geom_bar(stat="identity", data=~filter(.,Year=="2021")) +
+  geom_bar(stat="identity", data=~filter(.,Year=="2001"),fill=NA,colour="black") +
+  age_pyramid_styling +
+  geom_text(data=tibble(Name="City of Vancouver"),x=-30000,y="10-14",label="2021",vjust=1.2,
+            inherit.aes = FALSE) +
+  geom_curve(data=~filter(.,Age=="25-29",Gender=="Male",Year=="2021",Name=="City of Vancouver"),
+             x=-30000,y="10-14",aes(xend=Population,yend=Age),
+             curvature = -0.3, arrow = arrow(length = unit(0.1,"inches"))) +
+  geom_text(data=tibble(Name="City of Vancouver"),x=-30000,y="55-59",label="2001",vjust=-0.2,
+            inherit.aes = FALSE) +
+  geom_curve(data=~filter(.,Age=="45-49",Gender=="Male",Year=="2001",Name=="City of Vancouver"),
+             x=-30000,y="55-59",aes(xend=Population,yend=Age),
+             curvature = 0.3, arrow = arrow(length = unit(0.1,"inches"))) +
+  facet_wrap(~fct_rev(Name),scales="free_x") +
+  labs(title="Age pyramid 2021 vs 2001 shadow",
+        caption="StatCan Census 2001, 2021")
+```
+
+Here we can observe several demographic trends combining. At the overall country level we can observe that Canada now has fewer people in their 40s than it did 20 years ago, this is part of the Gen-X demographic dip of people who were in their 20s in 2001, where can can identify the same dip (wedged between the Baby and Echo-Boomers). That Gen-X cohort did get boosted by immigration, but not enough to make up for the large number of boomers that have aged out of that age group between 2001 and 2021. We see very similar effects play out in British Columbia.
+
+At the Metro Vancouver level in-migration was strong enough so that all age groups have gained, but the Metro region was growing faster (by design) than the City of Vancouver where that Gen-X cohort (and their children) got squeezed out. At the same time we see that the 25 to 34 year old age group has gained in prominence in the City of Vancouver, speaking to the big in-migration draw of the city for young professionals.
+
+On net, for the City of Vancouver we have strong increases for population around 30, as well as the population 50 and above, squeezing out people in their 40s and children.
+
+The third demographic process does not just touch Vancouver, but also shows up in province-wide numbers. 
+
+```{r fig.height=5}
+fertility_data<-get_cansim("13-10-0418",default_month="01")  %>% 
+  filter(Characteristics=="Total fertility rate per female") %>%
+  mutate(Name=gsub(", place of residence of mother","",GEO)) %>%
+  filter(!grepl("Territo|Nuna|Yukon|Northw",Name))
+
+fertility_colours <- setNames(c(RColorBrewer::brewer.pal(length(unique(fertility_data$Name))-1,"Set3"),"black"),
+                              c(setdiff(unique(fertility_data$Name),"Canada"),"Canada"))
+
+fertility_colours<-fertility_colours[fertility_data %>% filter(Date==max(Date)) %>% arrange(-val_norm) %>% pull(Name)]
+
+ggplot(fertility_data,aes(x=Date,y=val_norm,colour=Name)) +
+  geom_line() +
+  geom_point(shape=21) +
+  #theme_dark() +
+  scale_x_date(breaks=as.Date(paste0(seq(1990,2020,5),"-01-01")),date_labels = "%Y") +
+  scale_colour_manual(values=fertility_colours) +
+  labs(title="Fertility rates in Canada",
+       colour="Province",
+       x=NULL,y="Total fertility rate per female",
+       caption="StatCan Table 13-10-0418") 
+```
+
+In the early 90s BC's fertility rate was close to the Canadian average. After an initial dip the Canadian fertility rate recovered again around 2008, but at that point BC's rate had already dropped significantly and showed a much smaller recovery. After 2008 the rates further declined, a trend that is driven by BC's large CMAs [with Victoria and Vancouver having a total fertility rate of 0.95 and 1.09, respectively](https://www.saobserver.net/news/kelowna-delivering-canadas-sixth-lowest-fertility-rates/), which is due to a range of demographic factors, but likely also at least partially impacted by the [strong evidence of delayed household formation due to unavailability of housing in Vancouver](https://doodles.mountainmath.ca/blog/2022/05/06/estimating-suppressed-household-formation/).
+
+These demographic processes combine with, and are partially caused by, the economic process to squeeze out families. But there is a way out: Add housing. If we add housing, we can make up for the demographic and economic shifts and provide space for families, and their children.
+
+At least in theory. To investigate this in more detail we can look at the change in the number of children at a finer geographic resolution.
+
+```{r}
+#regions <- list(CSD=c("5915022","5915803"),CT=c("9330069.04","9330069.03","9330069.02","9330069.01","9330069.00"))
+geo_data <- get_tongfen_ca_census(regions,meta,level="DA",base_geo = "CA21",na.rm = TRUE) %>%
+  st_transform(crs)
+data <- geo_data %>% prepare_data()
+
+census_plot_data <- geo_data %>% 
+  select(TongfenID) %>%
+  left_join(data %>% filter(Period=="2001 - 2021",Age=="0-14"),
+            by="TongfenID")  %>%
+  mutate(change_d=pretty_cut(change,breaks=c(-Inf,-500,-250,-100,-50,-10,10,50,100,250,500,Inf)))
+
+census_plot_colours <- setNames(RColorBrewer::brewer.pal(11,"PiYG"),census_plot_data$change_d %>% levels)
+
+census_plot_data %>%
+  sf::st_transform(lambert_conformal_conic_at(.)) %>%
+  ggplot(aes(fill=change_d)) +
+  geom_sf(size=0.1) +
+  scale_fill_manual(values=census_plot_colours) +
+  geom_water() +
+  geom_roads() +
+  #geom_sf_text(aes(label=scales::comma(change)),size=3) +
+  coord_sf(datum=NA) +
+  labs(title="Change in children under 15 from 2001 to 2021",
+       fill="Change in 0-14",
+       x=NULL,y=NULL,
+       caption="StatCan Census 2001, 2021")
+```
+
+This shows us at a more granular level where children have grown and where they haven't, and how that might relate to housing. Olympic Village and Yaletown light up, both areas where we have added housing. Similarly the River District, properties along the Cambie Corridor, Joyce Collingwood. And the little triangle at Arbutus and 33rd that got rezoned around 2003 pops out, as well as some other spot developments across the city. We also see some change along arterials where we have added housing above commercial spaces. And of course the UBC area, where the UNA saw an explosion in housing over this period.
+
+## Housing
+```{r}
+library(sf)
+zoning_2001 <- read_sf("https://s3.ca-central-1.amazonaws.com/mountainmath/cmhc/cov_zoning_2001.geojson") %>%
+  st_transform(crs)
+zoning_1998 <- read_sf("https://s3.ca-central-1.amazonaws.com/mountainmath/cmhc/cov_zoning_1998.geojson") %>%
+  st_transform(crs)
+zoning_2020 <- read_sf("https://s3.ca-central-1.amazonaws.com/mountainmath/cmhc/cov_zoning_2020.geojson") %>%
+  st_transform(crs)
+
+zoning_change_colours <- c("TRUE"=as.character(plot_colours[9]),
+                           "FALSE"=as.character(plot_colours[3]))
+
+sf_use_s2(FALSE)
+amended_cd1 <- simpleCache({},"cov_amended_cd-1")
+
+zoning <- zoning_2020 %>%
+  st_make_valid() %>%
+  st_join(zoning_2001 %>% 
+            select(z_2001=z,zc_2001=zc) %>%
+            st_make_valid(),
+          largest = TRUE) %>%
+  st_join(zoning_1998 %>% 
+            select(z_1998=z,zc_1998=zc) %>%
+            st_make_valid(),
+          largest = TRUE)
+
+to_remove <- c(59,404,65)
+
+zoning_c2_colours <- c("Zoning has changed"="#4DAC26",
+                       "C-2 zoning"="#B8E186",
+                       "Zoning has not changed"="#DE77AE")
+
+zone_plot_data <- zoning %>%
+  select(z_2020=z,zc_2020=zc,z_2001,zc_2001,z_1998,zc_1998,s,oz) %>%
+  mutate(z_2001=trimws(z_2001) %>% unlist) %>%
+  mutate(z_1998=trimws(z_1998) %>% unlist) %>%
+  left_join(amended_cd1 %>% select(z_2020=z,amendedDate=Date),by="z_2020") %>%
+  mutate(cd_code = ifelse(substr(z_2020,1,4)=="CD-1",gsub("CD-1 \\(|\\)","",z_2020),NA)) %>%
+  mutate(cd_code_n = ifelse(substr(z_2020,1,4)=="CD-1",as.numeric(str_extract(cd_code,"\\d+")),cd_code)) %>%
+  mutate(z_2020=ifelse(substr(z_2020,1,4)=="CD-1","CD-1",z_2020)) %>%
+  mutate(z_2020=ifelse(substr(z_2020,1,3)=="DD/","DD",z_2020)) %>%
+  mutate(z_change=z_2020!=z_2001 | 
+           (z_2020=="CD-1" & !(zc_2020 %in% c("Commercial","Recreational/Civic")) &
+              (cd_code_n>405 | (!is.na(amendedDate) & amendedDate>as.Date("2001-01-01"))) &
+              !(cd_code_n %in% to_remove)),
+         zc_change=zc_2020!=zc_2001) %>%
+  mutate(z_change2=z_2020!=z_1998 | 
+           (z_2020=="CD-1" & !(zc_2020 %in% c("Commercial","Recreational/Civic")) &
+              (cd_code_n>376 | (!is.na(amendedDate) & amendedDate>as.Date("2001-01-01"))) & 
+              !(cd_code_n %in% to_remove)),
+         zc_change2=zc_2020!=zc_1998) %>%
+  mutate(change=z_change & zc_change,
+         change2=z_change2 & zc_change2) %>%
+  mutate(c2=grepl("^C-2",z_2020)) %>%
+  mutate(change_no_c2=change & 
+           !(zc_2020 %in% c("Recreational/Civic","Commercial")) &
+           !(z_2020 %in% c("RT-7","RT-10","RT-11")) 
+  ) %>%
+  mutate(change=change_no_c2 | c2) %>%
+  mutate(zoning_change_metric=case_when(change_no_c2 ~ "Zoning has changed",
+                                        c2 ~ "C-2 zoning",
+                                        TRUE ~ "Zoning has not changed")) %>%
+  mutate(zoning_change_metric=factor(zoning_change_metric,levels=names(zoning_c2_colours)))
+```
+
+Which brings us to the question of where we added housing in this timeframe. We can approach this from two angles, one is looking for housing built after 2001, and the other is to look at zoning changes since 2001. We will go both routes, each has it's own advantages and disadvantages. Looking at housing being built since 2001 we will catch a lot of 1:1 replacements of single-detached houses. Looking at zoning we just capture where housing has been allowed to go, not where it actually went. Except that in Vancouver zoning is tight, essentially no multi-family housing (the only way we add housing in appreciable ways) gets built without a rezoning or at least conditional approval by the director of planning. And the areas that conditionally allow adding multi-family housing are also quite limited.
+
+For this part of the analysis we will focus on the City of Vancouver and disregard Musqueam 2 and the UBC area as we don't have historical zoning or (openly available) building age data for those regions.
+
+### Zoning
+Let's start with zoning. We have already looked at how [zoning relates to overall population growth in Vancouver](https://doodles.mountainmath.ca/blog/2022/02/11/deadbeat-zoning/), but now we will refine this looking more specifically at change in zoning and how that relates to children. The idea is that it's not so much the current zoning that determines how cities change, but if the zoning allows adding housing. Which in Vancouver mostly boils down to looking at where zoning has changed.
+
+Drawing on our [Metro Vancouver Zoning Project](https://zoning.sociology.ubc.ca), in particular the [historic zoning of the City of Vancouver](https://mountainmath.ca/cov_zoning_history) we show all areas that have been rezoned to allow more housing since 2001. We also scraped the CD district schedule to include CD districts that have been amended since 2001, as for example has been the case with the "triangle" at Arbutus and 33rd to enable denser housing.
+
+```{r fig.height=9}
+zone_plot_data %>%
+  ggplot(aes(fill=zoning_change_metric)) +
+  geom_sf(size=0) +
+  geom_water() +
+  geom_roads() +
+  coord_sf(datum=NA) +
+  scale_fill_manual(values=zoning_c2_colours) +
+  theme(legend.position = "bottom") +
+  labs(title="Residential zoning changes 2001-2020",
+       subtitle="Including CD-1 amended since 2001 and C-2 zoning",
+       fill=NULL,
+       caption="Metro Vancouver Zoning Project")
+```
+
+If this map looks rather scarce, then that's because it is. The only actual rezoning that is not a spot-zoning in this time period is the RM-7 at Renfrew-Collingwood, but looking at the change in children map it does not seem to have resulted in a net increase in children. We will revisit this when looking at buildings by age.
+
+## Building age
+Another way to look at this is by building age, and our interactive map of Vancouver properties [allows us to specify dynamic age cutoffs to investigate this](https://mountainmath.ca/map/assessment?filter=years_2001&layer=14). However, most new buildings are unproductive 1:1 replacements of single family homes, so it's more useful to [look what happens when we filter them out](https://mountainmath.ca/map/assessment?filter=[years_2001,nlu_S110]&zoom=13&lat=49.2586&lng=-123.1222&layer=5&mapBase=2). Our land use data on these online maps are a little bit outdated, so we will make some fresh maps here.
+
+```{r}
+library(VancouvR)
+get_parcel_age_landuse_data <- function(crs){
+  land_use <- get_metro_vancouver_land_use_data() %>%
+    st_transform(crs)
+  parcels <- get_cov_data("property-parcel-polygons",format = "geojson")%>%
+    st_transform(crs)
+  age_data <- get_cov_data("property-tax-report",where="tax_assessment_year='2022'",
+                           select="pid,land_coordinate,legal_type,year_built")
+  
+  zoning_data <- get_cov_data("zoning-districts-and-labels",format = "geojson") %>%
+    select(zoning_classification,zoning_category,zoning_district,cd_1_number)
+
+  sf_use_s2(FALSE)
+  
+  parcels_lu <- parcels %>% 
+    filter(!is.na(tax_coord)) %>%
+    st_transform(crs) %>%
+    group_by(tax_coord) %>%
+    summarise() %>%
+    st_make_valid() %>%
+    st_join(land_use %>% st_transform(crs) %>% st_make_valid,largest=TRUE) %>%
+    st_join(zoning_data %>% st_transform(crs) %>% st_make_valid,largest=TRUE)
+  
+  parcel_age_landuse_data <- parcels_lu %>%
+    left_join(age_data %>% group_by(land_coordinate) %>% 
+                summarize(legal_type=first(legal_type),
+                          year_built=mean(as.integer(year_built)) %>% floor() %>% as.character),
+              by=c("tax_coord"="land_coordinate"))
+}
+
+residential_uses <- c("Residential - Townhouse",
+                      "Mixed Residential (Low-rise Apartment) Commercial",
+                      "Residential - Low-rise Apartment",
+                      "Undeveloped and Unclassified",
+                      "Residential - Mid/High-rise Apartment",
+                      "Mixed Residential (Mid/High-Rise Apartment) Commercial",
+                      "Residential - Institutional and Non-Market Housing")
+
+parcel_age_landuse_data <- simpleCache(get_parcel_age_landuse_data(crs),
+                                       "parcel_age_landuse_data.Rda",
+                                       refresh = FALSE)
+```
+
+However, even the newer Metro Vancouver Land Use data is already out of date and might miss some recent rezonings, so we also fold in the zoning data to make sure we can capture recent rezonings. This process would be a lot easier if we could just use the more detailed BC Assessment Roll Data, but unfortunately our province still believes that provincial housing data should not be openly available but be sold for revenue generation or available under strict NDAs, which is not worth the trouble for a blog post like this.
+
+```{r fig.height=9}
+age_plot_data <- parcel_age_landuse_data %>%
+  st_join(zone_plot_data %>% select(z_2020,zc_2020),largest = TRUE) %>%
+  mutate(new_multi=(Descriptio %in% residential_uses) & (year_built>=2001) | 
+           (year_built>2016 & zoning_category=="CD")) %>%
+  filter(Descriptio %in% c("Residential - Single Detached",residential_uses))
+
+ggplot(age_plot_data) +
+  geom_sf(data=cov_data,fill=scales::muted(zoning_change_colours[["FALSE"]])) +
+  geom_sf(size=0,aes(fill=new_multi)) +
+  geom_water() +
+  geom_roads() +
+  scale_fill_manual(values=zoning_change_colours,
+                    labels=c("FALSE"="No new multi-family",
+                             "TRUE"="New multi-family")) +
+  theme(legend.position = "bottom") +
+  coord_sf(datum = NA) +
+  labs(title="Multi-family builings built 2001 or later",
+       fill=NULL,
+       caption="CoV Open Data, Metro Vancouver Land Use data")
+```
+
+This gives a much more pinpointed view as to which property parcels saw new multi-family development. They don't match up perfectly with rezonings, but the correspondence is quite good. The addition of new multi-family housing in C-2 zones, as well as Renfrew-Collingwood's RM-7, is quite sporadic though, as one would expect when comparing the effects of rezonings to the conditional zoning under C-2 and RM-7.
+
+
+```{r}
+meta2 <- meta %>% tongfen:::add_census_ca_base_variables()
+geo_data <- get_tongfen_ca_census(regions = list(CSD="5915022"),meta2,
+                                  level="DA",base_geo = "CA21",na.rm = TRUE) %>%
+  st_transform(crs)
+data <- geo_data %>% 
+  prepare_data() %>%
+  left_join(geo_data %>% 
+              st_drop_geometry() %>%
+              select(TongfenID,matches("Households")) %>%
+              pivot_longer(matches("Households"), names_pattern="(.+)_(CA\\d{2})",
+            names_to=c("x","Census"),values_to="Households") %>%
+              select(-x) %>%
+              group_by(TongfenID) %>%
+              mutate(`Household change`=Households-lag(Households,order_by=Census)),
+            by=c("TongfenID","Census"))
+
+census_plot_data <- geo_data %>% 
+  select(TongfenID) %>%
+  left_join(data %>% filter(Period=="2001 - 2021",Age=="0-14"),
+            by="TongfenID")  %>%
+  mutate(change_d=pretty_cut(change,breaks=c(-Inf,-500,-250,-100,-50,-10,10,50,100,250,500,Inf)))
+
+census_plot_colours <- setNames(RColorBrewer::brewer.pal(11,"PiYG"),census_plot_data$change_d %>% levels)
+
+
+
+combined_data <- census_plot_data %>%
+  st_join(zone_plot_data %>% 
+            filter(change) %>% 
+            select(zoning_change=change,zoning_change_no_c2=change_no_c2,zoning_change_metric,
+                   z_2020,z_2001),
+          largest = TRUE) %>%
+  mutate(zoning_change_metric=coalesce(zoning_change_metric,"Zoning has not changed")) %>%
+  mutate(zoning_change_metric=factor(zoning_change_metric,levels=names(zoning_c2_colours))) %>%
+  st_join(age_plot_data %>% filter(new_multi) %>% select(new_multi),largest = TRUE) %>%
+  mutate(zoning_change=coalesce(zoning_change,FALSE)) %>%
+  mutate(new_multi=coalesce(new_multi,FALSE)) %>%
+  mutate(significant_change=change>50 & change_pct>0.1) 
+```
+
+
+```{r eval=FALSE, include=FALSE}
+combined_data %>%
+  st_drop_geometry() %>%
+  filter(Age=="0-14",Period=="2001 - 2021") %>%
+  mutate(metric=zoning_change | new_multi) %>%
+  ggplot(aes(y=change,fill=new_multi)) +
+  geom_boxplot() +
+  scale_fill_manual(values=sanzo::duos$c047,
+                    labels=c("TRUE"="New multi-family","FALSE"="No new multi-family")) +
+  facet_wrap(~zoning_change,
+             labeller = as_labeller(c("FALSE"="Zoning has not changes","TRUE"="Zoning has changed"))) +
+  labs(title="New multifamily buildings, zoning change and change in children",
+       y="Change in children",
+       fill=NULL,
+       caption="CoV Open Data; StatCan Census 2001, 2021; Metro Vancouver Zoning Project")
+```
+
+
+Visual inspection suggests that the change in children map lines up quite well with the change in zoning or the new multi-family building maps. Time to quantify this a little more. As a first step we can take the zoning map and new multi-family buildings map to label each census area in the change of children map by whether parts of it saw a zoning change or new multi-family developments. This process labels the dissemination areas in Vancouver as follows.
+
+```{r fig.height=5}
+combined_data  %>%
+  mutate(mf=ifelse(new_multi,"New multi-family","No new multi-family")) %>%
+  mutate(category=paste0(zoning_change_metric," - ",mf)) %>%
+  filter(Age=="0-14",Period=="2001 - 2021") %>%
+#  group_by(new_multi,children_gain=change>0) %>%
+#  count()
+  ggplot(aes(fill=category)) +
+  scale_fill_brewer(palette = "Paired",direction = -1) +
+  #MetBrewer::scale_fill_met_d("Austria") +
+  geom_sf() +
+  geom_water() +
+  geom_roads() +
+  coord_sf(datum=NA) +
+  labs(title="Interplay of zoning change and new multi-family housing",
+       fill=NULL,
+       caption="CoV Open Data; StatCan Census 2001, 2021; Metro Vancouver Zoning Project")
+```
+
+Comparing to the previous to maps we note that the areas don't resemble the zoning changes or new developments in great detail, they are much larger. But those are the regions we are dealt by the census, and they can't be changed without going through the work of pulling custom tabulations. But this should be good enough to give us a rough idea, we can use these labels to group the regions and count up the change in children in each group.
+
+```{r fig.height=5}
+combined_data %>%
+  mutate(area=as.integer(st_area(.))/10000) %>%
+  st_drop_geometry() %>%
+  filter(Age=="0-14",Period=="2001 - 2021") %>%
+  group_by(new_multi,zoning_change_metric) %>% 
+  summarise(change=sum(change),area=sum(area),.groups="drop") %>%
+  ggplot(aes(y=change,fill=new_multi,x=zoning_change_metric)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=sanzo::duos$c070,
+                    labels=c("TRUE"="New multi-family","FALSE"="No new multi-family")) +
+  labs(title="New multifamily buildings, zoning change and change in children",
+       y="Change in children",
+       fill=NULL, x=NULL,
+       caption="CoV Open Data; StatCan Census 2001, 2021; Metro Vancouver Zoning Project")
+```
+
+This suggests that, using our categories, Vancouver adds children primarily via rezonings, and while conditional C-2 zoning may generate new multi-family housing, it does not seem to add children. This is worth investigating a little further, there is the same data as boxplot normalized by area of each dissemination area.
+
+```{r fig.height=5}
+combined_data %>%
+  mutate(area=as.integer(st_area(.))/10000) %>%
+  st_drop_geometry() %>%
+  filter(Age=="0-14",Period=="2001 - 2021") %>%
+  #group_by(new_multi,zoning_change_metric) %>% 
+  #summarise(change=sum(change),.groups="drop") %>%
+  ggplot(aes(y=change/area,fill=new_multi,x=zoning_change_metric)) +
+  geom_boxplot() +
+  scale_fill_manual(values=sanzo::duos$c070,
+                    labels=c("TRUE"="New multi-family","FALSE"="No new multi-family")) +
+  labs(title="New multifamily buildings, zoning change and change in children",
+       y="Change in children per hectar",
+       fill=NULL, x=NULL,
+       caption="CoV Open Data; StatCan Census 2001, 2021; Metro Vancouver Zoning Project")
+```
+
+Here C-2 comes out much more ambiguous, with some area containing C-2 zoning gaining children and some dropping children. Typically C-2 areas will only make up small parts of dissemination blocks, with the surrounding areas adding on their own loss or gain of children, which is probably closer to what we see in C-2 areas that have not seen new multi-family development, which on average amounted to a loss in children.
+
+```{r eval=FALSE, include=FALSE}
+library(mapdeck)
+md_data <- combined_data  %>%
+  mutate(category=case_when(zoning_change & new_multi ~ "Zoning has changed, new multi-family",
+                            zoning_change & !new_multi ~ "Zoning has changed, no new multi-family",
+                            !zoning_change & new_multi ~ "Zoning has not changed, new multi-family",
+                            TRUE ~ "Zoning has not changed, no new multi-family")) %>%
+  filter(Age=="0-14",Period=="2001 - 2021") %>%
+  filter(grepl("^C-2",z_2020))
+mapdeck(token = getOption("mapbox_token"), style = mapdeck_style('dark')) %>%
+  add_sf(data = md_data %>% sf::st_transform(4326), 
+    tooltip = "change",
+    fill_colour="new_multi",
+    legend=TRUE,
+    layer = "my_layer") 
+```
+
+
+The census also has information on the number of households in each region, so we can compare the change in households to the change in children, coloured by the presence of zoning change (or new multi-family housing) in each region.
+
+```{r fig.height=5, fig.width=9}
+library(ggblend)
+pd <- combined_data %>%
+  st_drop_geometry() %>%
+  filter(Age=="0-14",Period=="2001 - 2021") %>%
+  mutate(Children=change/change_pct %>% coalesce(0))
+
+model.lm <- lm(change~`Household change`+Children + 0, data=pd)
+children_drop <- -model.lm$coefficients['Children']
+children_gain <- model.lm$coefficients['`Household change`']
+r2 <- summary(model.lm)$adj.r.squared
+
+g1<-pd%>%
+  ggplot(aes(y=change,colour=zoning_change_metric,x=`Household change`)) +
+  geom_point(shape=21) |> stack_blends("lighten", blend("multiply", alpha = 0.35))+
+  theme(legend.position = "bottom") +
+  scale_colour_manual(values=zoning_c2_colours,
+                    labels=c("TRUE"="New multi-family","FALSE"="No new multi-family")) +
+  labs(#title="Zoning change and change in households vs children",
+       #caption="CoV Open Data; StatCan Census 2001, 2021; Metro Vancouver Zoning Project",
+       y="Change in children",
+       colour=NULL, x="Change in households")
+g2 <- pd %>%
+  ggplot(aes(y=change,colour=new_multi,x=`Household change`)) +
+  geom_point(shape=21) |> stack_blends("lighten", blend("multiply", alpha = 0.35))+
+  theme(legend.position = "bottom") +
+  scale_colour_manual(values=sanzo::duos$c070,
+                    labels=c("TRUE"="New multi-family","FALSE"="No new multi-family")) +
+  labs(#title="Zoning change and change in households vs children",
+       #caption="CoV Open Data; StatCan Census 2001, 2021; Metro Vancouver Zoning Project",
+       y="Change in children",
+       colour=NULL, x="Change in households")
+
+g1+g2 + 
+  plot_annotation(title="Zoning change and change in households vs children",
+                        caption="CoV Open Data; StatCan Census 2001, 2021; Metro Vancouver Zoning Project")
+```
+
+This again shows that children generally scale with the number of households. Fitting a linear model that also includes the starting number of children in each region we get that by 2021 each region roughly lost `r scales::percent(children_drop)` of their 2001 children, offset by gaining `r round(children_gain,2)` per net new household gained 2001-2021, explaining about `r scales::percent(r2)` of the variation.
+
+## Upshot
+Cities are changing. No matter if their physical form changes or not. City councillors and city planners direct how change in the city happens. There are many competing priorities of how we want our city to change, in this post we are singularly focused on understanding change in terms of the population of children under 15 years old.
+
+Taking this as a metric, council and planners have steered most of the city into decline and funnelled all growth in children into small areas where they allowed new multi-family development that adds enough housing to counter-act the decline elsewhere in the city. 
+
+City-wide the decline has been small with children under 15 dropping `r scales::percent(-totals_children$Change_pct)`, but the geographic disparities had ripple effects throughout the city with school enrolment dropping in declining neighbourhoods contrasted by overfull schools and pressure on amenities in the growing parts. This trend and the mechanisms behind it [have been clear for a long time now](https://doodles.mountainmath.ca/blog/2017/09/05/young-families/), yet council and planners have [actively designed Vancouver to grow slower than the overall region, making the city increasingly exclusive](https://doodles.mountainmath.ca/blog/2019/08/01/on-vancouver-population-projections/), with the predictable consequence of squeezing out families with children.
+
+Over the years councils have introduced several measures aimed to counter-act these trends. The legalization of secondary suites, the introduction of laneway houses and legalization of duplex fall into this category. But these efforts were too timid to halt the decline of children in the low-density neighbourhoods, with council making compromises like forcing laneway homes to be unnecessarily small, and reducing the overall floor space a duplex can achieve in order to limit uptake to appease voices that were more concerned about "neighbourhood character" than about declining children.
+
+Other measures include mandated minimum shares of two and three bedroom units in multi-family developments, which led to an increase in children in areas where new multi-family housing was allowed. And at the same time produced the geographic disparities that created challenges for many families in the city.
+
+Just to be clear, there is nothing special about the the development being multi-family vs single family in order to add children, other than multi-family developments are the only way Vancouver has added significant amounts of housing. Adding single-family housing would also work, except we haven't, on net, done that in significant ways. Focusing on adding multi-family housing concentrated in a few select areas of the city, as Vancouver is done, is of course a choice. A different option would be to [reduce minimum lot and frontage requirements](https://doodles.mountainmath.ca/blog/2021/07/25/lots-of-opportunity-estimating-the-zoning-tax-in-vancouver/) and allow higher FSR to densify single-family areas with denser freehold housing, or with six-plexes as has been proposed by the mayor, maybe sprinkled with low-rise apartment buildings when the opportunity arises. But this would have to be done in a way that allows for faster change than what we have seen with suites, laneways and duplexes. And it remains to be seen if Vancouver is courageous enough to embrace families over their fear of change in low-density areas.
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-05-11-children-are-good-actually/index.Rmarkdown) for anyone to reproduce or adapt.
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
