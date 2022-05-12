@@ -25,7 +25,7 @@ type: "post"
 
 
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/05/07/estimating-suppressed-household-formation/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/05/06/estimating-suppressed-household-formation/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 
@@ -234,13 +234,13 @@ Generally they line up well. Here we pooled the 15-17 and 17-19 age groups in th
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-05-06 17:19:48 PDT"
+## [1] "2022-05-12 14:11:24 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [f861069] 2022-05-06: suppressed household formation post
+## Head:     [69a5324] 2022-05-12: sp, thanks Nathan
 ```
 
 ```
@@ -261,7 +261,7 @@ Generally they line up well. Here we pooled the 15-17 and 17-19 age groups in th
 ## other attached packages:
 ##  [1] cmhc_0.1.0         cancensus_0.5.1    statcanXtabs_0.1.1 forcats_0.5.1     
 ##  [5] stringr_1.4.0      dplyr_1.0.8        purrr_0.3.4        readr_2.1.2       
-##  [9] tidyr_1.2.0        tibble_3.1.6       ggplot2_3.3.5      tidyverse_1.3.1   
+##  [9] tidyr_1.2.0        tibble_3.1.7       ggplot2_3.3.6      tidyverse_1.3.1   
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] lubridate_1.8.0           assertthat_0.2.1         
