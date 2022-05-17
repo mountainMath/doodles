@@ -1,0 +1,515 @@
+---
+title: On Broadway
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
+date: '2022-05-17'
+slug: on-broadway
+categories:
+  - zoning
+  - Vancouver
+  - Transportation
+  - affordability
+  - density
+tags: []
+description: "The Broadway Plan is coming before council, time for a review of what's being proposed, which parts are good and which might need work, and how that fits into the historical context."
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2022/05/17/on_broadway/index_files/figure-html/broadway_zoning_history-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/05/17/on-broadway/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE
+)
+library(tidyverse)
+library(cancensus)
+library(tongfen)
+library(sf)
+library(mountainmathHelpers)
+```
+
+```{r}
+broadway_stations <- read_sf('{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"name":"Arbutus St."},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -123.15287590026854,
+          49.26388393212549
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"name":"Granville St."},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -123.13854217529297,
+          49.26360387602533
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"name":"Oak St."},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -123.12661170959474,
+          49.2633798300008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"name":"Cambie"},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -123.11485290527344,
+          49.26326780660707
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"name":"Main St"},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -123.10086250305174,
+          49.263043759056686
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"name":"Great Northern Way"},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -123.09073448181152,
+          49.26696444432468
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"name":"VCC-Clark"},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -123.07910442352294,
+          49.26587228473242
+        ]
+      }
+    }
+  ]
+}')
+broadway_area <- read_sf('{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -123.07738780975342,
+              49.269708738654316
+            ],
+            [
+              -123.1094455718994,
+              49.270324783748265
+            ],
+            [
+              -123.13755512237547,
+              49.27068880677885
+            ],
+            [
+              -123.15755367279054,
+              49.270912819616406
+            ],
+            [
+              -123.15793991088866,
+              49.257358212058115
+            ],
+            [
+              -123.15300464630127,
+              49.25730219355831
+            ],
+            [
+              -123.13197612762451,
+              49.25710612830833
+            ],
+            [
+              -123.12729835510255,
+              49.25713413767744
+            ],
+            [
+              -123.10974597930908,
+              49.256770014639194
+            ],
+            [
+              -123.0919361114502,
+              49.256461908431774
+            ],
+            [
+              -123.07781696319579,
+              49.25626583984384
+            ],
+            [
+              -123.07781696319579,
+              49.25654593758817
+            ],
+            [
+              -123.07764530181885,
+              49.256713995471806
+            ],
+            [
+              -123.07755947113037,
+              49.258142464379425
+            ],
+            [
+              -123.07738780975342,
+              49.269708738654316
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}')
+
+broadway_cts_2001 <- c("9330049.02","9330049.01","9330050.03","9330050.04","9330037.01","9330038.00","9330039.01","9330039.02","9330040.01","9330040.02","9330041.01","9330048.00","9330047.02","9330046.00","9330041.02")
+broadway_cts_2021 <- c("9330048.01","9330048.02","9330049.02","9330047.02","9330046.00","9330041.02","9330041.01","9330040.02","9330040.01","9330049.03","9330049.04","9330039.02","9330039.01","9330049.05","9330049.06","9330050.03","9330050.04","9330038.00","9330037.01")
+
+#setdiff(broadway_cts_2021,broadway_cts_2001)
+#setdiff(broadway_cts_2001,broadway_cts_2021)
+
+broadway_cts <- c(broadway_cts_2001,broadway_cts_2021) %>% unique
+```
+
+
+We have finally found some time to take a closer look at the [Broadway Plan](https://vancouver.ca/home-property-development/broadway-plan.aspx). There are many good things to say about the plan, it adds housing in an amenity and job rich area about to get a new subway line. It promises to not just undo the downzoning the city imposed on parts of the area in the 1970s but enables a bit more housing to make up for lost time.
+
+The plan also tacks heavily against the displacement risk to renters in the established rental apartment areas by both 1) limiting the redevelopment potential in those areas and 2) increasing the strength of tenant relocation and right of return policies, a hard-learned lesson from the redevelopment activity around Metrotown in neighbouring Burnaby. In short, overall there's a lot to like.
+
+In this post we want to accomplish several somewhat diverse goals
+
+1. Provide some code to improve the data analysis in the plan that uses census data,
+2. Place the Broadway plan more firmly into context of historical zoning changes in that corridor, and
+3. Interrogate the decision to limit development potential in the existing low-density areas, which we have argued in the past [make for ideal sites to concentrate development becaues of their low displacement implications](https://doodles.mountainmath.ca/blog/2019/02/21/planned-displacement/).
+
+
+## The Broadway Corridor
+The Broadway Plan document chooses to use census tracts as the basis for census data for the Broadway Plan, and to track changes in the corridor since 2001. This is a fairly coarse geography choice since census tracts are rather large and extend quite a bit beyond the outlined area. Dissemination area data is available for all censuses since 2001 and is much better suited to approximate the corridor. If only data on population, households or dwellings is required, then dissemination block data can give even better estimates.
+
+
+
+```{r}
+meta <- c("Population","Households","Dwellings") %>%
+  lapply(function(m)
+    meta_for_additive_variables(paste0("CA",substr(seq(2001,2021,5),3,4)),m)) %>%
+  bind_rows()
+
+sf::sf_use_s2(FALSE)
+
+tongfen_db <- get_tongfen_ca_census(regions=list(CSD="5915022"),meta=meta,level="DB") %>%
+  st_filter(broadway_area) %>%
+  mutate(ia=st_area(st_intersection(.,broadway_area)),
+         a=st_area(.)) %>%
+  mutate(r=as.numeric(ia)/as.numeric(a))
+
+tongfen_da <- get_tongfen_ca_census(regions=list(CSD="5915022"),meta=meta,level="DA") %>%
+  st_filter(broadway_area) %>%
+  mutate(ia=st_area(st_intersection(.,broadway_area)),
+         a=st_area(.)) %>%
+  mutate(r=as.numeric(ia)/as.numeric(a))
+
+tongfen_ct <- get_tongfen_ca_census(regions=list(CSD="5915022"),meta=meta,level="CT") %>%
+  st_filter(broadway_area) %>%
+  mutate(ia=st_area(st_intersection(.,broadway_area)),
+         a=st_area(.)) %>%
+  mutate(r=as.numeric(ia)/as.numeric(a))
+
+combined_data <- bind_rows(
+  tongfen_db %>% filter(r>0.7) %>% mutate(level="DB"),
+  tongfen_da %>% filter(r>0.25) %>% mutate(level="DA"),
+  tongfen_ct %>% filter(r>0.25) %>% mutate(level="CT"))
+```
+
+
+```{r combind_census_data, fig.height=10, fig.width=8}
+combined_data %>%
+ggplot() +
+  geom_water() +
+  geom_sf(size=0.25) +
+  geom_sf(data = broadway_area,fill=NA,colour="brown",linetype="dashed",size=1) +
+  geom_sf(data=broadway_stations,fill="brown",colour="black",shape=21,size=2,inherit.aes = FALSE) +
+  facet_wrap(~level,ncol=1) +
+  coord_sf(datum=NA) +
+  labs(title="Harmonized geographies across the 2001 through 2021 censuses",
+       subtitle="Based on three different levels of geography, CT, DA and DB",
+       caption="StatCan Census 2001-2021")
+```
+
+We will get different census estimates for the Broadway Corridor depending on which of these we choose. The Census Tract based geography is quite coarse and will likely skew the estimates, the other two are probably better choices. To understand the difference let's take a quick look at population estimates.
+
+```{r fig.height=4}
+combined_data %>%
+  st_drop_geometry() %>%
+  pivot_longer(matches("_CA\\d{2}"),names_pattern=c("(.+)_CA(\\d{2})"),
+               names_to=c("Metric","Year"),values_to="Count") %>%
+  mutate(Year=paste0("20",Year)) %>%
+  group_by(Metric,Year,level) %>%
+  summarise(Count=sum(Count),.groups="drop") %>%
+  filter(Metric=="Population") %>%
+  ggplot(aes(x=Year,y=Count,fill=level)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=sanzo::trios$c157) +
+  labs(title="Population in the Broadway Corridor",
+       fill="Approximation level",
+       x=NULL,y="Number of people",
+       caption="StatCan Census 2001-2021")
+```
+
+As we would expect, the number of people in the Broadway Corridor depends on the level of geography we chose to approximate the region, and the differences are noticeable. Close observers will note that in addition to the Broadway Plan area, the CT level includes additional parts of Kitsilano and Olympic Village, while the DA level mostly adds Olympic Village, largely accounting for differences in estimates and the larger jump in DA level post-Olympics. If we want to understand the population in a particular year instead of comparing it on a stable region across years we can do better and approximate the region by using the census geography for just that year instead of resorting to using a harmonized geography.
+
+However, these differences matter less when looking at rates, or at change over time as the following graph on the growth during the inter-census periods between 2001 and 2021 demonstrates.
+
+```{r fig.height=4}
+combined_data %>%
+  st_drop_geometry() %>%
+  pivot_longer(matches("_CA\\d{2}"),names_pattern=c("(.+)_CA(\\d{2})"),
+               names_to=c("Metric","Year"),values_to="Count") %>%
+  mutate(Year=paste0("20",Year)) %>%
+  group_by(Metric,Year,level) %>%
+  summarise(Count=sum(Count),.groups="drop") %>%
+  group_by(Metric,level) %>%
+  mutate(Change=Count/lag(Count,order_by = Year)-1,
+         Period=paste0(lag(Year,order_by = Year),"-",Year)) %>%
+  filter(Year!="2001",Metric=="Population") %>%
+  #scale_y_continuous(labels=scales::percent) +
+  ggplot(aes(x=Period,y=Change,fill=level)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_manual(values=sanzo::trios$c157) +
+  labs(title="Population change in the Broadway Corridor",
+       fill="Approximation level",
+       x=NULL,y="Percentage change",
+       caption="StatCan Census 2001-2021")
+```
+
+These estimates are quite close and indicate that the damage from using a coarse Census Tract based approximation is probably not too large. But the inclusion of Olympic Village, in particular, likely boosts growth estimates in recent years.
+
+
+
+
+```{r renters_2016, eval=FALSE, fig.height=3, fig.width=12, include=FALSE}
+tenure_vars <- c(renter="v_CA16_4838",owner="v_CA16_4837",band="v_CA16_4839",total_tenure="v_CA16_4836")
+intersecting_cts_2016 <- get_intersecting_geometries("CA16",broadway_area,level = "CT")
+
+da_data_2016 <- get_census("CA16",regions=intersecting_cts_2016,level="DA",geo_format = 'sf',
+                           vectors = tenure_vars) %>%
+  st_filter(broadway_area) %>%
+  mutate(ia=st_area(st_intersection(.,broadway_area)),
+         a=st_area(.)) %>%
+  mutate(r=as.numeric(ia)/as.numeric(a)) %>%
+  mutate(renter_share=renter/total_tenure)
+
+da_data_2016 %>%
+  filter(r>0.25) %>%
+  mutate(area=as.numeric(st_area(.))/10000) %>%
+  mutate(Population=ifelse(Population>1,Population,NA)) %>%
+  mutate(pop_density = Population/area) %>%
+  mutate(pop_density_d = pretty_cut(pop_density,c(-Inf,50,100,250,500,Inf))) %>%
+  ggplot() +
+  geom_water() +
+  geom_sf(aes(fill=renter_share)) +
+  geom_vector_tiles(type="landuse",fill="limegreen",
+                    transform = function(d)
+                      d[d$kind %in% c("park","garden","grassland","nature_reserve","wetland")]) +
+  #scale_fill_brewer(palette = "Purples",na.value="darkgrey") +
+  geom_sf(data = broadway_area,fill=NA,colour="brown",linetype="dashed",size=1) +
+  geom_sf(data=broadway_stations,fill="brown",colour="black",shape=21,size=2,inherit.aes = FALSE) +
+  coord_sf(datum=NA) +
+  labs(title="Renters",
+       fill="Share of renters",
+       caption="StatCan Census 2016")
+```
+
+
+
+
+## Historical zoning
+
+Using maps we've assembled from archival research for the [Metro Vancouver Zoning Project](https://zoning.sociology.ubc.ca/), we can put together an historical comparison of how zoning along the Broadway Corridor has changed. This won't catch all the change, and as we'll discuss in a minute, that's an important caveat! Nor have we fully back-coded our historical data to match with our most recent data, refining and harmonizing what our zoning codes are actually allowing. But we can still get a glimpse of some of the changes that have occurred just by looking at the maps. 
+
+From the start, the Broadway Plan area mixed industrial uses to the North, with Apartment and Commercial districts in the middle (especially along Broadway), and Low-Density Single Family and Duplex Zoning to the South. The overall story emphasizes a history of experimentation with this mix, encouraged by de-industrialization but also constrained by reactionary moves to downzone and pull back, preserving single-family, duplex, and low-rise areas from change.
+```{r}
+zoning_years <- c("1931", "1943", "1956",  "1963", 
+                 "1974", "1976",  "1990", "1993", "1998", "2001", "2020")
+
+zc_recodes <- c("First Shaughnessy"="Single/Duplex",
+                "Low Rise"="Low-Rise",
+                "High Rise"="High-Rise",
+                "Parking"="Unclassified",
+                "Two-Family"="Single/Duplex",
+                "One-Family"="Single/Duplex",
+                "Other"="Unclassified",
+                "N/A"="Unclassified",
+                "Multiple Dwelling"="Apartment")
+zoning_category_translation <- c("Two-Family"="Single/Duplex",
+                             "Industrical"="Industrial",
+                             "Other"="Unknown",
+                             "Commercial"="Commercial",
+                             "Multiple Dwelling"="Apartment",
+                             "Comprehensive Development"="Comprehensive Development",
+                             "Agricultural"="Agricultural",
+                             "One-Family"="Single/Duplex",
+                             "Apartment"="Apartment",
+                             "N/A"="Unknown",
+                             "Parking"="Unknown",
+                             "High Rise"="High-Rise",
+                             "Low Rise"="Low-Rise",
+                             "First Shaughnessy"="Single/Duplex")
+zone_cat_colours <- c("Single/Duplex"="#FFFF00", 
+                      "Townhouse"="#FFE302", 
+                      "Low-Rise"="#FFC805", 
+                      "Apartment"="#FAA755",
+                      "High-Rise"="#FF920A",
+                      "Mixed Low-Rise"="#FF00FF",
+                      "Mixed High-Rise"="#FF0A94",
+                      "Commercial"="#FF0000", 
+                      "Comprehensive Development"="#40E0D0", 
+                      "Industrial"="#0015FF", 
+                      "Recreational/Civic"="#00cc00",
+                      "Agricultural"="#008800",
+                      "Unclassified"="#666666",
+                      "IRI"="#444444")
+
+
+cov_zoning_history <- zoning_years %>%
+  lapply(function(year){
+    url <- paste0('https://s3.ca-central-1.amazonaws.com/mountainmath/cmhc/cov_zoning_',year,'.geojson')
+    read_sf(url) %>%
+      mutate(Year=year)
+    }) %>% 
+  bind_rows() %>%
+  mutate(zzc=recode(zc,!!!zoning_category_translation))
+
+
+```
+
+
+```{r broadway_zoning_history, fig.height=6, fig.width=8}
+pd<-cov_zoning_history %>%
+  st_make_valid() %>%
+  st_intersection(broadway_area) %>%
+  mutate(zzc=ifelse(!is.na(z) & substr(z,1,4) %in% c("CD-1","FCCD"),"Comprehensive Development",zzc))
+
+ggplot(pd,aes(fill=zzc)) +
+  geom_sf() +
+  scale_fill_manual(values=zone_cat_colours[names(zone_cat_colours) %in% unique(cov_zoning_history$zzc)]) +
+  facet_wrap(~Year,ncol=3) +
+  #geom_sf(data = broadway_area,fill=NA,colour="brown",linetype="dashed",size=1,inherit.aes = FALSE) +
+  #geom_sf(data=broadway_stations,fill="brown",colour="black",shape=21,size=2,inherit.aes = FALSE) +
+  theme(legend.position = "bottom") +
+  coord_sf(datum=NA) +
+  labs(title="Historical zoning in the Broadway Corridor planning area",
+       fill=NULL,
+       caption="Metro Vancouver Zoning Project")
+```
+
+### Industrial Expansion and Contraction
+
+The biggest visible change probably concerns Industrial zoning. There was an initial expansion, from the [modernization of the zoning by-law in 1956](https://bylaws.vancouver.ca/consolidated/3575.PDF) to 1963, when [Industrial zoning](https://bylaws.vancouver.ca/zoning/zoning-by-law-district-schedule-i-1.pdf) swept into the formerly residential zone to the NE of Cambie and Broadway. Only Jonathan Rogers Park remained zoned residential, though a few old houses were grandparented in and have now stuck around long enough to be [considered heritage](https://council.vancouver.ca/20220518/documents/pspc1appendixA.PDF#page=61). 
+
+After this initial expansion, we can see a gradual contraction of Industrial zones along False Creek. The contraction occurred in line with broader North American trends toward urban de-industrialization. Vancouver was notable mostly for its success in shifting so much former industrial land over to a mixture of residential and commercial use. South False Creek was probably the biggest example of this as a coordinated process along the Broadway Corridor, with the area given its own zone between 1974 and 1976, and supported across multiple levels of government as an experiment in residential mixing (with decidedly [mixed results](https://vancouver.ca/files/cov/false-creek-south-fact-sheet.pdf#page=3)). But this area isn't actually included in Broadway land use planning, so we'll set it aside. One of the last big industrial areas to turn over to residential in the Broadway land use planning area was an old brewery on the western edge, tucked between 10th and 12th, which became [Arbutus Walk](https://www.arbutuswalkliving.com/) in the 1990s.
+
+### Expanding Apartment Options
+
+Mid-Century planners looked to enable an update and expansion to Vancouver's increasingly built-out apartment districts after the modernization of the Zoning Code in 1956. This was roughly in line with planner Harland Bartholomew's expectations that the initial zoning plan would only last for [about thirty years](https://homefreesociology.com/2021/02/04/bartholomews-dot-destiny/). Mid-century planners gradually edged the low-rise apartment RM-3 districts outward through the 1960s and early 1970s. This was coupled with an effort to enable towers as a new built form throughout old RM-3 zones via a change to maximum heights in 1961. Correspondingly, towers began to pop up in Kitsilano, Fairview, and Mount Pleasant. 
+
+### Reactionary Downzoning
+
+The 1970s brought in a new party strongly opposed to the proliferation of these new towers: TEAM. They took over council in 1973, installed a new planner, and began downzoning, especially across Kitsilano and Mount Pleasant, shifting high-rise RM-3 lands down to low-rise RM-4 districts. Only the RM-3 surrounding Granville remained. As a result, many of the old towers built from the mid-1960s to the early 1970s could no longer be re-built today, ranging from the apartment buildings near 2nd & Vine in Kitsilano to the Senior's Housing built for the Lutheran Church across from City Hall at Yukon & 10th (the latter also featured as Stop Four in our [Virtual Zoning Tour](https://homefreesociology.com/2021/03/05/virtual-vancouver-zoning-tour/)). In effect, the reactionary downzoning of the 1970s actively forbid the kinds of heights only now being re-enabled by the Broadway Plan today. 
+
+We see the old TEAM's housing legacy, on the whole, as decidedly mixed; balancing downzoning of denser forms with support for low-rise variety and adding housing to former industrial lands (see [Gordon Price & Sam Sullivan](https://viewpointvancouver.ca/2022/01/20/revising-history-with-sam-sullivan-the-team-era/) for a less charitable view). But regardless of the old TEAM's legacy, if you think we've got more than enough housing now, then the newly resurrected [TEAM for a Livable Vancouver Party](https://dailyhive.com/vancouver/colleen-hardwick-team-mayoral-candidate) might be for you. If you don't think we've got enough housing today, well... we'd probably have a lot more older and more affordable housing now if we hadn't downzoned so much of the Broadway Corridor fifty years ago. 
+
+Looking forward, we can and should start building the housing we think people will want some thirty years into the future. That's what the Broadway Plan aims to start enabling. As a reminder, we also want there to be a "some thirty years into the future" for people to live in, which the Broadway Skytrain expansion will help insure to the extent it gets people where they need to go without greenhouse gas emission. And we need people to live near the Skytrain for that to work. 
+
+
+## Proposed zoning changes
+While the plan at this stage does not provide the legal text for zoning changes, it does lay out in some detail how it envisions zoning to change in various areas. These changes are the last point we'll address.
+
+
+### Conditional rules
+It's not clear from the plan how much the actual zoning rules will rely on conditional vs outright zoning. And if the plan envisions to rezone the area, or if it's just left as a guiding document and every single development will require a council decision to move forward like in the Cambie corridor.
+
+For Multiplexes and Townhouses (11.2), as well as Low-rise Apartments (11.3), the proposed rules in [section 11](https://council.vancouver.ca/20220518/documents/pspc1appendixA.PDF#page=276) of the Broadway Plan do seem to be sufficiently clear in the density that's allowed, a clear improvement over general practice in Vancouver to regulate multi-family housing via conditional zoning (or rezoning) only. However, when it comes to Mid to High-Rise Apartments (11.4), Mixed-use High-rise (11.6), Mixed-use Residential (11.7), Office (11.8), Industrial/Employment (11.9), or Transit Integration (11.10) areas no clear guidance on height and FSR is given. Others, like the Mixed-use Low-rise (11.5), while clearly intended for housing purposes refers to existing zoning documents that only allow housing conditionally. This continued over-reliance on conditional zoning and planner discretion in the process will server to further feed into Vancouver's climate of speculation and developer concentration that planners have fostered for many decades now.
+
+### Inclusionary zoning
+
+The plan has fairly aggressive inclusionary zoning requirements, which we are guessing have been tested by the housing economics group to ensure that projects are marginally viable. However, there seem to be no contingencies built into the plan to allow for market prices and rents to fall. If that were to happen (an outcome many would welcome), the projects allowed in the plan will most likely become unviable and development will pause until prices climb back up. We believe this is a major shortcoming of the plan. Even if falling market prices and rents aren't a direct goal of the plan, maybe because of its limited geographic scope, it should be explicitly allowed by the plan. The plan should probably be amended to allow for the possibility of falling prices and rents. It's worth noting that another way to insure we continue to build through any downturns, of course, might be to [get government involved in building](https://www.policynote.ca/financing-public-housing/), but this, too, remains beyond the Plan.
+
+## Low density areas
+A final part of the plan worth interrogating is how it deals with the low-density areas within the corridor. These are the remaining areas in yellow in our historical map. We support the move to protect and slow down development in the existing rental apartment areas, but a more balanced approach would offset these protections by [allowing more density in the areas with minimal displacement risk](https://doodles.mountainmath.ca/blog/2019/02/21/planned-displacement/). Even more disappointing is how these zones that allow higher and lower density apartments are delineated. They don't follow planning patterns like proximity to subway stations, or jobs and amenities. Instead they're simply based on continuing forward existing exclusionary and fairly arbitrary historic zoning patterns. In that sense they are largely backward-looking rather than forward-looking, baking in exclusionary decisions made by planners long-dead. 
+
+Just to illustrate this problem, consider Fairview South - Area C.
+![FSOC](/images/FSOC.png)
+
+Planners think the FSOB area just to the north is good for up to 6.5 FSR, with 20 storey towers conditionally allowed on some sites, but the highlighted FSOC areas only allow for a maximum of 6 storeys 2.7 FSR rental buildings. As an example, let's take a look at the existing built form around the leftmost of the two FSOC areas looking north toward the FSOB.
+
+![FSOC map view](/images/FSOC_left2.png)
+
+We notice that just across from the FSOC area on the north side of 14th Ave there are existing 13 storey buildings. These combine a rental building constructed in 1972 (thanks 1960s upzoning!) with an additional infill rental building [enabled in 2017 via spot-zoning](https://cd1-bylaws.vancouver.ca/CD-1(661).pdf). But now, 50 years and a subway line later, planners think only six storey rental buildings make sense across the street. It's really hard to interpret this as anything but deference to decisions made by planners many decades ago of where to draw the fairly arbitrary lines delineating higher density from lower density zones, an act that seems more akin to religion than to planning.
+
+
+
+## Upshot
+While this post devotes quite a bit of space to what we feel are some of the weak points in the Broadway Plan, overall it is a vast improvement over the status quo. While it can't undo all the damage done by the downzoning of much of the corridor in the 1970s, it does revert back to allowing buildings that could be built before the downzoning and adds more options. Allowing more people to live in a jobs and amenity rich area close to a new subway line is good. 
+
+Protecting existing renters is good too, and we are happy to see that planners are avoiding some of the mistakes that were made in Metrotown.
+
+The plan also takes a cautious step toward more predictable outright zoning, at least for the lower density parts of the plan, which is welcome. 
+
+We are hoping that our concerns around the ability to dynamically adapt inclusionary requirements to changing market conditions can be incorporated at the bylaw stage of the plan, planners should include contingencies that allow for falling market prices or rents.
+
+Our concerns about low-density areas, and how the delineation between planning areas are chosen, are painful reminders of how planning can become too focused on historical (right or wrong) paradigms and stay disconnected from the physical and economic realities. Hopefully the Vancouver Plan can do a better job at re-imagining our city from a forward-pointing rather than backward-looking perspective, and undo some of the arbitrary zoning divisions in the current Broadway Plan.
+ 
+To sum up, one thing the Broadway Plan does well is tack against exclusions of existing renters by "the invisible hand of the market." One improvement would be to also tack against "the invisible hand of planners past," keeping our eyes more firmly fixed on securing a more inclusive future. 
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-05-17-on-broadway/index.Rmarkdown) for anyone to replicate or adapt for their own purposes.
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
+
