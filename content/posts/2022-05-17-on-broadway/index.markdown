@@ -14,7 +14,7 @@ categories:
 tags: []
 description: "The Broadway Plan is coming before council, time for a review of what's being proposed, which parts are good and which might need work, and how that fits into the historical context."
 featured: ''
-images: ["https://doodles.mountainmath.ca/blog/2022/05/17/on_broadway/index_files/figure-html/broadway_zoning_history-1.png"]
+images: ["https://doodles.mountainmath.ca/blog/2022/05/17/on-broadway/index_files/figure-html/broadway_zoning_history-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -143,13 +143,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-05-17 13:39:56 PDT"
+## [1] "2022-05-17 13:45:38 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [73d0f85] 2022-05-12: fix link to Nathan's post, thanks David!
+## Head:     [14741e8] 2022-05-17: broadway post
 ```
 
 ```
