@@ -26,6 +26,8 @@ type: "post"
 
 This is the first in a series of posts where we will explore what's gone wrong with planning for growth, how misguided planning and policy-making has exacerbated our housing shortage, and ways to start fixing things.
 
+The [second post in this series tries to estimate suppressed household formation](https://doodles.mountainmath.ca/blog/2022/05/06/estimating-suppressed-household-formation/).
+
 
 ## Planning vs controlling
 Growth mostly happens along the intersection between markets and regulation. We are all for ramping up non-market housing, which is badly needed, but most housing creation [and exchange](https://homefreesociology.com/2021/08/13/commodity-and-keeping-it-in-the-family/) in Canada occurs within market contexts. Yet housing markets are heavily structured by regulation. Municipal zoning and code, provincial land and tenancy, and federal mortgage, interest, and taxation policies all create the framework within which housing markets operate. We're especially interested in local level planning and its relationship to growth. At the local level, we want to highlight two (idealized) regimes in which the nexus between markets and regulation can operate.
@@ -76,5 +78,5 @@ Which brings us to the final version of our graph, where we add in municipal app
 
 The question which scenario should be adopted is a political question, ultimately reflecting our values. As such, demographic and economic modelling should be telling us what the likely outcomes of various housing approvals might look like rather than [feeding us a stale number](https://doodles.mountainmath.ca/blog/2020/05/25/projections-and-self-fulfilling-prophecies/) reflecting a dispassionate assessment of need. Which is the future Vancouver we want? How inclusive will it be? How do household maintainer rates and migration patterns differ between a scenario that emphasizes the preservation of low-density neighbourhoods with some towers going up in various pockets vs a scenario that opens up our low density areas to mutliplexes and lowrise rental apartments? Who gets pushed out? Who gets to stay? And which of these scenarios aligns best with values for what the Vancouver of the future should look like?
 
-This is the first in a series of posts, the next one will work through the household maintainer model and try to understand how Vancouver's past choices have impacted Vancouver's current household maintainer rates.
+This is the first in a series of posts, the [next one will work through the household maintainer model and try to understand how Vancouver's past choices have impacted Vancouver's current household maintainer rates](https://doodles.mountainmath.ca/blog/2022/05/06/estimating-suppressed-household-formation/).
 
