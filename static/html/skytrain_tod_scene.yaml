@@ -297,8 +297,13 @@ scene:
 sources:
     osm:
         type: TopoJSON
-        url:  //vector.mapzen.com/osm/all/{z}/{x}/{y}.topojson?api_key=vector-tiles-o7hC53g
+        url: //mountainmath.ca/tiles/{z}/{x}/{y}.topojson
+        tile_size: 512
         max_zoom: 15
+    # osm:
+    #     type: TopoJSON
+    #     url:  //vector.mapzen.com/osm/all/{z}/{x}/{y}.topojson?api_key=vector-tiles-o7hC53g
+    #     max_zoom: 15
     skytrain:
         type: GeoJSON
         url:  /data/skytrain_polys.json
