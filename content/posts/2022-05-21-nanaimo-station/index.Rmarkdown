@@ -1,0 +1,388 @@
+---
+title: Nanaimo Station
+author: Jens von Bergmann
+date: '2022-05-21'
+slug: nanaimo-station
+categories:
+  - zoning
+  - Vancouver
+  - Transportation
+  - cancensus
+  - density
+  - tongfen
+tags: []
+description: "Vancouver has been squandering opportunities around existing Skytrain stations. We take a closer look at the Nanaimo Station area."
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2022/05/21/nanaimo-station/index_files/figure-html/nanaimo_zoning-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 8,
+	cache = TRUE
+)
+library(tidyverse)
+library(sf)
+library(tongfen)
+library(cancensus)
+library(mountainmathHelpers)
+```
+
+With a [new redevelopment proposal around Vancouver's Nanaimo Skytrain station hitting the news](https://dailyhive.com/vancouver/skytrain-nanaimo-station-transit-oriented-development-proposal), and [a local journalist feigning ignorance about zoning around skytrain stations](https://twitter.com/GoldinYVR/status/1527075936381784064), maybe it's time for a quick post on zoning and population growth around the Nanaimo station.
+
+
+```{r}
+nanaimo_station <- cancensus::COV_SKYTRAIN_STATIONS %>%
+  filter(station=="NANAIMO")
+twentyninth_staion <- cancensus::COV_SKYTRAIN_STATIONS %>%
+  filter(station=="29TH AVENUE")
+
+crs <- lambert_conformal_conic_at(nanaimo_station)
+
+nanaimo_station <- nanaimo_station %>% st_transform(crs)
+twentyninth_staion <- twentyninth_staion %>% st_transform(crs)
+
+station_points <- bind_rows(nanaimo_station,twentyninth_staion) %>% st_centroid()
+```
+
+To start out, let's take a look at the zoning around Nanaimo Station.
+
+```{r nanaimo_zoning, fig.height=6,fig.width=4.5}
+nanaimo_zoning <- simpleCache({
+  read_sf('https://s3.ca-central-1.amazonaws.com/mountainmath/cmhc/metro_van_zoning_parcel.geojson.gz') %>%
+    st_transform(crs) %>%
+    st_filter(nanaimo_station)
+},"nanaimo_zoning")
+
+zone_cat_colours <- c("Single/Duplex"="#FFFF00", 
+                      "Townhouse"="#FFE302", 
+                      "Low-Rise"="#FFC805", 
+                      "Apartment"="#FAA755",
+                      "High-Rise"="#FF920A",
+                      "Mixed Low-Rise"="#FF00FF",
+                      "Mixed High-Rise"="#FF0A94",
+                      "Commercial"="#FF0000", 
+                      "Comprehensive Development"="#40E0D0", 
+                      "Industrial"="#0015FF", 
+                      "Recreational/Civic"="#00cc00",
+                      "Agricultural"="#008800",
+                      "Unclassified"="#666666",
+                      "IRI"="#444444")
+nanaimo_zoning %>%
+  st_intersection(nanaimo_station) %>%
+ggplot(aes(fill=zc)) +
+  geom_sf(size=0.1) +
+  scale_fill_manual(values=zone_cat_colours[names(zone_cat_colours) %in% unique(nanaimo_zoning$zc)]) +
+  geom_sf(data=nanaimo_station,fill=NA,colour="black",size=1) +
+  geom_sf(data=station_points,fill=NA,colour="black",size=2) +
+  coord_sf(datum=NA) +
+  theme(legend.position = "bottom") +
+  guides(fill=guide_legend(ncol = 3)) +
+  labs(title="Zoning around Nanaimo Station",
+       fill=NULL,
+       caption="Metro Vancouver Zoning Project")
+```
+
+We marked the Nanaimo Station at the centre and the 29th Avenue station to the south-east just outside of the 800m radius circle. The area is dominated by single family and duplex zoning, with a couple of half-blocks of low rise and some mixed-use low rise zoning along Kingsway and sprinkled across a couple of of other lots, as well as some Comprehensive Development parcels to round things off. The Skytrain corridor is visible as a the diagonal low-density (RS-zoned) line.
+
+The Skytrain has been operational for almost 40 years now, let's take a look how zoning has changed over time, utilizing the data from the [Metro Vancouver Zoning Project](https://zoning.sociology.ubc.ca) where we have also assembled a [timeline of zoning in the City of Vancouver, taking snapshots at several years](https://mountainmath.ca/cov_zoning_history). For this we will start with 1976, well before the Skytrain arrived, and continue with 1990, 5 years after the station opened, and several snapshots in the following years until now.
+
+```{r fig.height=7}
+get_zoning_for_year <- function(year,zoning_crs=crs){
+  url=paste0("https://s3.ca-central-1.amazonaws.com/mountainmath/cmhc/cov_zoning_",year,".geojson")
+  read_sf(url) %>%
+    st_transform(zoning_crs) %>%
+    st_make_valid() %>%
+    mutate(Year=year)
+}
+
+
+zoning_history <- c("1976","1990","1993","1998","2001","2020") %>%
+  lapply(get_zoning_for_year) %>%
+  bind_rows()
+
+
+zoning_history_nanaimo <- zoning_history %>%
+  st_filter(nanaimo_station) %>%
+  st_intersection(nanaimo_station) %>%
+  mutate(zc=recode(zc,
+                   "Two-Family"="Single/Duplex" ,                
+                   "One-Family"="Single/Duplex",
+                   "Mixed Low-Rise"="Commercial")) %>%
+  mutate(zc=ifelse(grepl("^CD-1",z) & Year=="2020", "Comprehensive Development",zc))
+
+zoning_history_nanaimo %>%
+  group_by(Year,zc) %>%
+  summarise(.groups="drop") %>%
+  ggplot(aes(fill=zc)) +
+  geom_sf(size=0) +
+  scale_fill_manual(values=zone_cat_colours[names(zone_cat_colours) %in% unique(zoning_history_nanaimo$zc)]) +
+  theme(legend.position = "bottom") +
+  geom_sf(data = nanaimo_zoning %>% st_intersection(nanaimo_station) %>% filter(zc=="Recreational/Civic"),
+          inherit.aes = FALSE, colour=NA, fill=zone_cat_colours["Recreational/Civic"]) +
+  geom_roads(transform = function(d)filter(d,kind %in% c("major_road","minor_road","highway"))) +
+  geom_water() +
+  geom_sf(data=nanaimo_station,fill=NA,colour="black",size=1) +
+  geom_sf(data=station_points,fill=NA,colour="black",size=2) +
+  coord_sf(datum=NA) +
+  facet_wrap(~Year) +
+  labs(title="Zoning history around Nanaimo Station",
+       fill=NULL,
+       caption="Metro Vancouver Zoning Project")
+```
+
+We see that not much has changed over the years. The industrial parcel right by the station got lost between 1976 and 1990 and some CD-1 parcels came in. Then things were mostly stable until a little RM-7 and RM-9 low-rise zoning, plus some more CD-1, appeared between 2001 and 2020. But almost all of the low-density yellow area remained untouched, despite the rapid transit line.
+
+## Population
+```{r}
+years <- seq(2001,2021,5)
+
+cts_2021 <- get_intersecting_geometries("CA21",nanaimo_station,level="CT")
+cts_2001 <- get_intersecting_geometries("CA01",nanaimo_station,level="CT")
+
+
+city_metro <- years %>%
+  as.character() %>%
+  lapply(function(y){
+    get_census(paste0("CA",substr(y,3,4)),regions=list(CSD="5915022",CMA="59933")) %>%
+      mutate(Name=case_when(GeoUID=="5915022" ~ "City of Vancouver",
+                            GeoUID=="59933" ~ "Metro Vancouver",
+                            TRUE ~ "Other")) %>%
+      select(Name,Population,Dwellings) %>%
+      mutate(Year=y)
+  }) %>%
+  bind_rows()
+
+meta <- years %>%
+  lapply(function(y){
+      meta_for_additive_variables(paste0("CA",substr(y,3,4)),c("Population","Dwellings"))
+  }) %>%
+  bind_rows()
+
+sf_use_s2(FALSE)
+pop_data <- get_tongfen_ca_census(regions=list(CSD="5915022"),meta,level="DB") %>%
+  st_transform(crs)
+```
+
+Time to take a look at the impact on population and dwellings in the area. For this we turn to the census, but census regions don't perfectly line up with our 800m station catchment, and census regions change over time. To get stable and robust estimates over time we will first harmonize our census regions to construct a common geography based on 2001 though 2021 Dissemination Blocks, which we have automated with our [TongFen package](https://mountainmath.github.io/tongfen/articles/tongfen_ca.html), and then select the ones with majority overlap with our station buffer.
+
+Here is what this looks like, including the harmonized dissemination blocks with partial overlap.
+
+```{r fig.height=6, fig.width=6}
+pop_data %>%
+  st_filter(nanaimo_station) %>%
+  mutate(a=st_area(.) %>% as.numeric) %>%
+  mutate(ai=st_area(st_intersection(.,nanaimo_station)) %>% as.numeric) %>%
+  ggplot(aes(fill=ai/a)) +
+  geom_sf() +
+  geom_water() +
+  geom_roads(transform = function(d)filter(d,kind %in% c("major_road","minor_road","highway"))) +
+  geom_sf(data=nanaimo_station,fill=NA,colour="black",size=2) +
+  geom_sf(data=station_points,fill=NA,colour="black",size=2) +
+  scale_fill_viridis_c(labels=scales::percent) +
+  coord_sf(datum=NA) +
+  labs(title="Harmonized Disseminatino Blocks near Nanaimo Station",
+       fill="Share of area\nwithin 800m\nstation radius",
+       caption="StatCan Census 2001-2021")
+```
+
+We coloured the regions by their overlap percentage. To keep things simple we select the ones with majority (50% or more) overlap. Which gets us to the following "census catchment" region that we will use to track change in population and dwellings over time.
+
+
+```{r fig.height=6, fig.width=6}
+station_data <- pop_data %>%
+  st_filter(nanaimo_station) %>%
+  mutate(a=st_area(.) %>% as.numeric) %>%
+  mutate(ai=st_area(st_intersection(.,nanaimo_station)) %>% as.numeric) %>%
+  filter(ai/a>0.5) 
+
+ggplot(station_data) +
+  geom_sf(fill="darkgreen") +
+  geom_water() +
+  geom_roads(transform = function(d)filter(d,kind %in% c("major_road","minor_road","highway"))) +
+  geom_sf(data=nanaimo_station,fill=NA,colour="black",size=2) +
+  geom_sf(data=station_points,fill=NA,colour="black",size=2) +
+  scale_fill_viridis_c(labels=scales::percent) +
+  coord_sf(datum=NA) +
+  labs(title="Harmonized Disseminatino Blocks included in analysis",
+       fill="Share of area\nwithin 800m\nstation radius",
+       caption="StatCan Census 2001-2021")
+```
+
+Armed with that we can now check in on how the population and dwellings have changed in this census catchment area of the Nanaimo Station. For context we also add the corresponding changes for the city overall and the metro region.
+
+```{r}
+plot_data <- station_data %>% 
+  pivot_longer(matches("Population|Dwellings"),names_pattern=c("^(.+)_CA(\\d{2})$"),
+                       names_to=c("Metric","Year"),values_to="value") %>%
+  mutate(Year=paste0("20",Year))
+
+summary_data <-  plot_data %>%
+  st_drop_geometry() %>%
+  group_by(Metric,Year) %>%
+  summarise(value=sum(value),.groups="drop") %>%
+  mutate(Name="Nanaimo Station") %>%
+  bind_rows(city_metro %>% 
+              pivot_longer(matches("Population|Dwellings"),names_to = "Metric")) %>%
+  group_by(Name,Metric) %>%
+  mutate(lag_value=lag(value,order_by = Year),
+         Period=paste0(lag(Year,order_by = Year),"-",Year)) %>%
+  mutate(Change=value-lag_value,
+         Change_pct=value/lag_value-1)
+
+summary_data %>%
+  filter(substr(Period,1,3)!="NA-") %>%
+  ggplot(aes(x=Period,y=Change_pct,fill=Name)) +
+  geom_bar(stat="identity",position = "dodge") +
+  facet_wrap(~Metric) +
+  MetBrewer::scale_fill_met_d("Egypt") +
+  scale_y_continuous(labels=scales::percent) +
+  theme(legend.position = "bottom") +
+  labs(title="Population and dwelling growth comparison",
+       x=NULL,y="Percent change between censues",fill="Region",
+       caption="StatCan Census 2001-2021")
+```
+
+Here we observe familiar patterns.Metro Vancouver has been [growing faster than the city](https://doodles.mountainmath.ca/blog/2020/05/25/projections-and-self-fulfilling-prophecies/), making the city more exclusive relative to the region, as [dictated by regional planning](https://doodles.mountainmath.ca/blog/2019/08/01/on-vancouver-population-projections/). The 2001-2006 dwelling growth captures the change in census methods capturing the re-classification of suited detached homes into two "duplex" units, which is especially prominent in the Nanaimo Station region that is dominated by single family homes, and which contrasts the population growth. Regular readers of this blog will recognize this change in census methods as the issue still [getting exploited by anti-housers](https://doodles.mountainmath.ca/blog/2020/01/27/mythical-oversupply/) who misrepresent this as dwelling growth exceeding population growth and evidence of the absence of a shortage of housing.
+
+Generally we see that the population around the Nanaimo Station has been growing comparatively slowly, except for the 2016 to 2021 period. To better understand what has been going on there we will take a look at population and dwelling growth at the block level.
+
+
+```{r fig.height=6}
+db_change_data <- plot_data %>%
+  group_by(TongfenID,Metric) %>%
+  mutate(lag_value=lag(value,order_by = Year),
+         Period=paste0(lag(Year,order_by = Year),"-",Year)) %>%
+  mutate(Change=value-lag_value,
+         Change_pct=value/lag_value-1) %>%
+  filter(substr(Period,1,3)!="NA-") %>%
+  #mutate(Change_pct=coalesce(Change_pct,0)) %>%
+  mutate(Change_pctd=pretty_cut(Change_pct,breaks=c(-Inf,-0.05,-0.025,0.025,0.05,0.1,0.25,0.5,1,Inf),
+                                format = scales::percent)) %>%
+  mutate(Change_d=pretty_cut(Change,breaks=c(-Inf,-25,-5,5,25,50,100,200,500,Inf),
+                                format = scales::comma))
+
+db_change_pct_colours <- setNames(
+  c(RColorBrewer::brewer.pal(3,"YlOrRd")[2:3] %>% rev(),RColorBrewer::brewer.pal(7,"YlGn")),
+  levels(db_change_data$Change_pctd))
+db_change_colours <- setNames(
+  c(RColorBrewer::brewer.pal(3,"YlOrRd")[2:3] %>% rev(),RColorBrewer::brewer.pal(7,"YlGn")),
+  levels(db_change_data$Change_d))
+
+ggplot(db_change_data) +
+  geom_sf(aes(fill=Change_d)) +
+  facet_grid(Metric~Period) +
+  geom_water() +
+  geom_sf(data=nanaimo_station,fill=NA,colour="black",size=1) +
+  geom_sf(data=station_points,fill=NA,colour="black",size=2) +
+  scale_fill_manual(values=db_change_colours) +
+  geom_roads(transform = function(d)filter(d,kind %in% c("major_road","minor_road","highway"))) +
+  coord_sf(datum=NA) +
+  theme(legend.position = "bottom") +
+  labs(title="Nanaimo Station harmonized Dissemination Blocks",
+       fill=NULL,
+       caption="StatCan Census 2001-2021")
+```
+
+Here we see the initial boost in dwellings in single family areas, as well as several separate blocks with dwelling boosts, one between 2006 and 2011 on the north side of Kingsway west of Nanaimo where a low-rise mixed use building got built, and another one across the street where a large new development (with the T&T) came between 2016 and 2021.
+```{r}
+current_homes <- summary_data %>% filter(Year=="2021",Metric=="Dwellings",Name=="Nanaimo Station") %>% pull(value)
+```
+
+The new development proposal asks to turn 18 single family lots into 861 new homes for a net increase in roughly 835 additional homes to the area (depending on how many have suites), a `r scales::percent(835/current_homes)` increase in the total number of homes in the area. Which would single-handedly be the larges increase in dwellings between any of the four inter-census periods of the past 20 years, enabling lots more people to make use of this transit investment.
+
+
+
+## Upshot
+Vancouver planners have been neglecting past transit investments, with the new Broadway Line coming in the province is not leaving things to chance and have directly intervened to ensure that Vancouver does not waste this massive infrastructure investment by keeping exclusionary zoning in place that keeps people away from billion dollar transit investments.
+
+Here is a more comprehensive look at Vancouver's existing transit stations, ordered roughly by how wasteful the landuse is in the 800m around them. Nanaimo station is unsurprisingly the worst offender, but there are quite a few others that are not far behind.
+
+```{r fig.height=10, fig.width=9.5}
+weights <- c("Single/Duplex"=10,
+             "Townhouse"=7,
+             "Low-Rise"=5,
+             "High-Rise"=2,
+             "Mixed Low-Rise"=4,
+             "Mixed High-Rise"=2,
+             "Commercial"=2,
+             "Comprehensive Development"=3,
+             "Industrial"=5, 
+             "Recreational/Civic"=1)
+
+skytrain_zoning <- simpleCache({
+  read_sf('https://s3.ca-central-1.amazonaws.com/mountainmath/cmhc/metro_van_zoning_parcel.geojson.gz')
+}, "metro_van_zoning_parcel") %>%
+  st_transform(crs) %>%
+  st_intersection(COV_SKYTRAIN_STATIONS %>%
+                    st_transform(crs) %>%
+                    mutate(Name=station %>% gsub('\\\\n|/n','',.))) 
+  
+
+station_levels <- skytrain_zoning %>% 
+  mutate(w=as.numeric(weights[zc]) %>% coalesce(0)) %>%
+  mutate(a=st_area(.) %>% as.numeric) %>%
+  group_by(Name) %>%
+  summarize(area=sum(a*w),.groups="drop") %>%
+  arrange(-area) %>%
+  pull(Name)
+
+skytrain_zoning <- skytrain_zoning %>%
+  mutate(Name=factor(Name,levels=station_levels))
+
+used_zones <- intersect(names(zone_cat_colours),skytrain_zoning$zc %>% unique)
+
+water <- mountainmathHelpers::get_vector_tiles(st_bbox(skytrain_zoning))$water %>% 
+  rmapzen::as_sf() %>%
+  st_transform(crs) %>%
+  st_intersection(COV_SKYTRAIN_STATIONS %>%
+                    st_transform(crs) %>%
+                    mutate(Name=station %>% gsub('\\\\n|/n','',.))) %>%
+  mutate(Name=factor(Name,levels=station_levels))
+
+spd <- skytrain_zoning %>%
+  bind_rows(water %>% mutate(zc="Water")) %>%
+  filter(Name!="GRANVILLE") %>%
+  facet_transform_geos_by_group(Name) 
+
+spd %>%
+  filter(zc!="Water") %>%
+ggplot(aes(fill=fct_rev(zc))) +
+  geom_sf(colour=NA) +
+  scale_fill_manual(values=zone_cat_colours, limits=used_zones) +
+  geom_sf(data=spd %>% filter(zc=="Water"),colour=NA,fill="lightblue") +
+  facet_wrap("Name") +
+  theme(legend.position = "bottom") +
+  coord_sf(datum=NA) +
+  labs(title='Vancouver skytrain station zoning',
+       fill=NULL,
+       caption = 'Metro Vancouver Zoning Project')
+```
+
+I would not be surprised at all if we are going to see provincial intervention to force higher land use around these stations. There is a [planing process underway for the Rupert and Renfrew Station Area](https://vancouver.ca/home-property-development/rupert-and-renfrew-station-area-plan.aspx), which is still deep in the engagement process. The Vancouver Plan might in theory be a vehicle for the city to act decisively first and remove the necessity for provincial intervention, but realistically speaking we are sill several years off before the Vancouver Plan and the subsequent area plans are passed and zoning is changed. The [Broadway Plan will serve as a test](https://vancouver.ca/home-property-development/broadway-plan.aspx) to see if Vancouver is able to achieve higher land use around stations on their own. The plan has been in the works for four years now, the coming weeks will tell if council is serious about this, but even then, [the Broadway Plan may well fall short of achieving its goals](https://doodles.mountainmath.ca/blog/2022/05/17/on-broadway/).
+
+Allowing more people to live near the Nanaimo Station, if council allows this proposal to go forward, will be a good start. But we really have to wonder why council after council have not touched the sea of yellow low-density areas around such a key infrastructure investment. And even this current proposal only touches a mere 18 single family lots.
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-05-21-nanaimo-station/index.Rmarkdown) for anyone to reproduce or adapt.
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
+
