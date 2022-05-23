@@ -23,7 +23,7 @@ type: "post"
 
 
 
-With a [new redevelopment proposal around Vancouver's Nanaimo Skytrain station hitting the news](https://dailyhive.com/vancouver/skytrain-nanaimo-station-transit-oriented-development-proposal), and [a local journalist feigning ignorance about zoning around skytrain stations](https://twitter.com/GoldinYVR/status/1527075936381784064), maybe it's time for a quick post on zoning and population growth around the Nanaimo station.
+With a [new redevelopment proposal around Vancouver's Nanaimo Skytrain station hitting the news](https://dailyhive.com/vancouver/skytrain-nanaimo-station-transit-oriented-development-proposal), and [a local journalist feigning ignorance about zoning around skytrain stations](https://twitter.com/GoldinYVR/status/1527075936381784064), maybe it's time for a quick post on zoning and population growth around the Nanaimo Station.
 
 
 
@@ -70,14 +70,39 @@ Here we see the initial boost in dwellings in single family areas, as well as se
 
 The new development proposal asks to turn 18 single family lots into 861 new homes for a net increase in roughly 835 additional homes to the area (depending on how many have suites), a 16% increase in the total number of homes in the area. Which would single-handedly be the larges increase in dwellings between any of the four inter-census periods of the past 20 years, enabling lots more people to make use of this transit investment.
 
+## Longer timelines
+The 2001 to 2021 timeline above is too short to cover the entire time since the Nanaimo station opened. Before 2001 StatCan did not release data at the dissemination block level, which is why we stopped there. Even dissemination areas did not exist before 2001, the finest geography was the discontinued *enumeration areas*, which don't lend themselves well to TongFen with later data. But for Vancouver we do have a [custom cross tabulation that codes data from all the censuses all the way back to 1971 to 2016 dissemination area geographies](https://doodles.mountainmath.ca/blog/2019/06/15/census-custom-timelines/). This allows us to push this back to 1971, at the expense of basing this on dissemination area geographies (and using TongFen to push it forward to 2021). Let's take a look at how good our geographic match with the Nanaimo Station catchment area is when using the coarser dissemination area geography.
 
+
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-1.png" width="768" />
+
+We see how the areas we are matching now are larger, using the same criterion as before and only including areas with at least 50% overlap we arrive at the following geography that we have consistent data on.
+
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-1.png" width="768" />
+
+It's not as good a match as before, but now we have population data all the way back to 1971 and can track the population growth across this timeline.
+
+
+
+
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-12-1.png" width="768" />
+
+Here we converted to annual rate of change because we have periods of different lengths, the first period spans 10 years instead of 5. The Nanaimo Station area did not follow the overall drop in population that Vancouver experienced in the 70s, but since 1981 it grew slower than the city average, with the exception of the 1996-2001 period. We note that even in the final 2016 to 2021 period the growth was slower than that for the overall city, which is different from the result we got higher up where we used dissemination block based estimates, with the main difference being that our dissemination area based estimates exclude the new development on the south side of Kingsway (with the T&T).
+
+The only growth period 1996-2001 is interesting, it is connected to the opening of the station 11 to 16 years prior, but given Vancouver's pattern of extremely slow and unresponsive housing delivery this is certainly plausible. A closer look at the geographic breakdown of the inter-census population change might shed a light on this.
+
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-13-1.png" width="768" />
+
+Looking in particular at the 1996 to 2001 period there does indeed seem to be some growth near the station, but the largest population growth is further away from the station to the north and north-west. 
+
+The net effect over the entire time period remains disappointing, with the City of Vancouver population growth running significantly higher than the growth in the Nanaimo Station area.
 
 ## Upshot
 Vancouver planners have been neglecting past transit investments, with the new Broadway Line coming in the province is not leaving things to chance and have directly intervened to ensure that Vancouver does not waste this massive infrastructure investment by keeping exclusionary zoning in place that keeps people away from billion dollar transit investments.
 
-Here is a more comprehensive look at Vancouver's existing transit stations, ordered roughly by how wasteful the landuse is in the 800m around them. Nanaimo station is unsurprisingly the worst offender, but there are quite a few others that are not far behind.
+Here is a more comprehensive look at Vancouver's existing transit stations, ordered roughly by how wasteful the landuse is in the 800m around them. Nanaimo Station is unsurprisingly the worst offender, but there are quite a few others that are not far behind.
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-1.png" width="912" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-14-1.png" width="912" />
 
 I would not be surprised at all if we are going to see provincial intervention to force higher land use around these stations. There is a [planing process underway for the Rupert and Renfrew Station Area](https://vancouver.ca/home-property-development/rupert-and-renfrew-station-area-plan.aspx), which is still deep in the engagement process. The Vancouver Plan might in theory be a vehicle for the city to act decisively first and remove the necessity for provincial intervention, but realistically speaking we are sill several years off before the Vancouver Plan and the subsequent area plans are passed and zoning is changed. The [Broadway Plan will serve as a test](https://vancouver.ca/home-property-development/broadway-plan.aspx) to see if Vancouver is able to achieve higher land use around stations on their own. The plan has been in the works for four years now, the coming weeks will tell if council is serious about this, but even then, [the Broadway Plan may well fall short of achieving its goals](https://doodles.mountainmath.ca/blog/2022/05/17/on-broadway/).
 
@@ -88,13 +113,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-05-21 22:39:17 PDT"
+## [1] "2022-05-22 19:00:15 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [e6f8cc1] 2022-05-21: mode share background tiles
+## Head:     [258f8a1] 2022-05-22: nanaimo station
 ```
 
 ```

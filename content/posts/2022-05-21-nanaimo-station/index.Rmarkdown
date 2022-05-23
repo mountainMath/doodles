@@ -36,7 +36,7 @@ library(cancensus)
 library(mountainmathHelpers)
 ```
 
-With a [new redevelopment proposal around Vancouver's Nanaimo Skytrain station hitting the news](https://dailyhive.com/vancouver/skytrain-nanaimo-station-transit-oriented-development-proposal), and [a local journalist feigning ignorance about zoning around skytrain stations](https://twitter.com/GoldinYVR/status/1527075936381784064), maybe it's time for a quick post on zoning and population growth around the Nanaimo station.
+With a [new redevelopment proposal around Vancouver's Nanaimo Skytrain station hitting the news](https://dailyhive.com/vancouver/skytrain-nanaimo-station-transit-oriented-development-proposal), and [a local journalist feigning ignorance about zoning around skytrain stations](https://twitter.com/GoldinYVR/status/1527075936381784064), maybe it's time for a quick post on zoning and population growth around the Nanaimo Station.
 
 
 ```{r}
@@ -189,7 +189,7 @@ pop_data %>%
   geom_sf(data=station_points,fill=NA,colour="black",size=2) +
   scale_fill_viridis_c(labels=scales::percent) +
   coord_sf(datum=NA) +
-  labs(title="Harmonized Disseminatino Blocks near Nanaimo Station",
+  labs(title="Harmonized Dissemination Blocks near Nanaimo Station",
        fill="Share of area\nwithin 800m\nstation radius",
        caption="StatCan Census 2001-2021")
 ```
@@ -212,8 +212,7 @@ ggplot(station_data) +
   geom_sf(data=station_points,fill=NA,colour="black",size=2) +
   scale_fill_viridis_c(labels=scales::percent) +
   coord_sf(datum=NA) +
-  labs(title="Harmonized Disseminatino Blocks included in analysis",
-       fill="Share of area\nwithin 800m\nstation radius",
+  labs(title="Harmonized Dissemination Blocks included in analysis",
        caption="StatCan Census 2001-2021")
 ```
 
@@ -299,12 +298,154 @@ current_homes <- summary_data %>% filter(Year=="2021",Metric=="Dwellings",Name==
 
 The new development proposal asks to turn 18 single family lots into 861 new homes for a net increase in roughly 835 additional homes to the area (depending on how many have suites), a `r scales::percent(835/current_homes)` increase in the total number of homes in the area. Which would single-handedly be the larges increase in dwellings between any of the four inter-census periods of the past 20 years, enabling lots more people to make use of this transit investment.
 
+## Longer timelines
+The 2001 to 2021 timeline above is too short to cover the entire time since the Nanaimo station opened. Before 2001 StatCan did not release data at the dissemination block level, which is why we stopped there. Even dissemination areas did not exist before 2001, the finest geography was the discontinued *enumeration areas*, which don't lend themselves well to TongFen with later data. But for Vancouver we do have a [custom cross tabulation that codes data from all the censuses all the way back to 1971 to 2016 dissemination area geographies](https://doodles.mountainmath.ca/blog/2019/06/15/census-custom-timelines/). This allows us to push this back to 1971, at the expense of basing this on dissemination area geographies (and using TongFen to push it forward to 2021). Let's take a look at how good our geographic match with the Nanaimo Station catchment area is when using the coarser dissemination area geography.
 
+
+```{r}
+xtab_vectors <- c(Population_1971="v_CA1971x16_1",
+                  Population_1981="v_CA1981x16_1",
+                  Population_1986="v_CA1986x16_1",
+                  Population_1991="v_CA1991x16_1",
+                  Population_1996="v_CA1996x16_1",
+                  Population_2001="v_CA2001x16_1",
+                  Population_2006="v_CA2006x16_1",
+                  Population_2011="v_CA2011x16_1",
+                  Population_2016="v_CA16_401")
+
+meta <- meta_for_additive_variables("CA16",xtab_vectors) %>%
+  bind_rows(meta_for_additive_variables("CA21",c(Population_2021="v_CA21_1")))
+
+d<-get_tongfen_ca_census(regions=list(CSD="5915022"),meta,level="DA") %>%
+  st_transform(crs)
+
+d %>%
+  st_filter(nanaimo_station) %>%
+  mutate(a=st_area(.) %>% as.numeric) %>%
+  mutate(ai=st_area(st_intersection(.,nanaimo_station)) %>% as.numeric) %>%
+  #filter(ai/a>0.5) %>%
+  ggplot(aes(fill=ai/a)) +
+  geom_sf() +
+  geom_water() +
+  geom_roads(transform = function(d)filter(d,kind %in% c("major_road","minor_road","highway"))) +
+  geom_sf(data=nanaimo_station,fill=NA,colour="black",size=2) +
+  geom_sf(data=station_points,fill=NA,colour="black",size=2) +
+  scale_fill_viridis_c(labels=scales::percent) +
+  coord_sf(datum=NA) +
+  labs(title="Harmonized Dissemination Areas near Nanaimo Station",
+       fill="Share of area\nwithin 800m\nstation radius",
+       caption="StatCan Census 2016-2021")
+```
+
+We see how the areas we are matching now are larger, using the same criterion as before and only including areas with at least 50% overlap we arrive at the following geography that we have consistent data on.
+
+```{r}
+d %>%
+  st_filter(nanaimo_station) %>%
+  mutate(a=st_area(.) %>% as.numeric) %>%
+  mutate(ai=st_area(st_intersection(.,nanaimo_station)) %>% as.numeric) %>%
+  filter(ai/a>0.5) %>%
+  ggplot() +
+  geom_sf(fill="darkgreen") +
+  geom_water() +
+  geom_roads(transform = function(d)filter(d,kind %in% c("major_road","minor_road","highway"))) +
+  geom_sf(data=nanaimo_station,fill=NA,colour="black",size=2) +
+  geom_sf(data=station_points,fill=NA,colour="black",size=2) +
+  scale_fill_viridis_c(labels=scales::percent) +
+  coord_sf(datum=NA) +
+  labs(title="Harmonized Disseminatino Areas included in analysis",
+       caption="StatCan Census 2016-2021")
+```
+
+It's not as good a match as before, but now we have population data all the way back to 1971 and can track the population growth across this timeline.
+
+```{r}
+xtab_plot_data <- d %>%
+  st_filter(nanaimo_station) %>%
+  mutate(a=st_area(.) %>% as.numeric) %>%
+  mutate(ai=st_area(st_intersection(.,nanaimo_station)) %>% as.numeric) %>%
+  filter(ai/a>0.5) %>%
+  mutate(Name="Nanaimo Area") %>%
+  bind_rows(d %>% mutate(Name="City of Vancouver")) %>%
+  st_drop_geometry() %>%
+  pivot_longer(matches("Population_\\d{4}"),names_pattern = "^.+_(\\d{4})$",
+               names_to="Year",values_to="Population") %>%
+  group_by(Name,Year) %>%
+  summarize(across(Population,sum),.groups="drop") 
+```
+
+
+```{r}
+xtab_plot_data %>%
+  group_by(Name) %>%
+  mutate(lag_Population=lag(Population,order_by = Year),
+         Period=paste0(lag(Year,order_by = Year),"-",Year),
+         gap=as.integer(Year)-as.integer(lag(Year,order_by = Year))) %>%
+  mutate(Change=Population-lag_Population,
+         Change_pct=(Population/lag_Population-1),
+         Change_pct_annual=abs(Change_pct)^(1/gap)*sign(Change_pct)) %>%
+  filter(Year!=first(Year)) %>%
+  ggplot(aes(x=Period,y=Change_pct,fill=Name)) +
+  geom_bar(stat="identity",position = "dodge") +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels=scales::percent,breaks=seq(-0.1,0.1,0.025)) +
+  scale_fill_manual(values=sanzo::duos$c033) +
+  labs(title="Population growth 1971-2021",
+       y="Average annual population growth",
+       x=NULL, fill=NULL,
+       subtitle="Dissemination Area based approximation of Nanaimo Station area",
+       caption="StatCan Census 1971-2021 (xtab DOI: 10.5683/SP/YAA5B)")
+```
+
+Here we converted to annual rate of change because we have periods of different lengths, the first period spans 10 years instead of 5. The Nanaimo Station area did not follow the overall drop in population that Vancouver experienced in the 70s, but since 1981 it grew slower than the city average, with the exception of the 1996-2001 period. We note that even in the final 2016 to 2021 period the growth was slower than that for the overall city, which is different from the result we got higher up where we used dissemination block based estimates, with the main difference being that our dissemination area based estimates exclude the new development on the south side of Kingsway (with the T&T).
+
+The only growth period 1996-2001 is interesting, it is connected to the opening of the station 11 to 16 years prior, but given Vancouver's pattern of extremely slow and unresponsive housing delivery this is certainly plausible. A closer look at the geographic breakdown of the inter-census population change might shed a light on this.
+
+```{r fig.height=9, fig.width=8}
+da_change_data <- d %>%
+  st_filter(nanaimo_station) %>%
+  mutate(a=st_area(.) %>% as.numeric) %>%
+  mutate(ai=st_area(st_intersection(.,nanaimo_station)) %>% as.numeric) %>%
+  filter(ai/a>0.5) %>%
+  pivot_longer(matches("Population_\\d{4}"),names_pattern = "^.+_(\\d{4})$",
+               names_to="Year",values_to="Population") %>%
+  group_by(TongfenID) %>%
+  mutate(lag_Population=lag(Population,order_by = Year),
+         Period=paste0(lag(Year,order_by = Year),"-",Year),
+         gap=as.integer(Year)-as.integer(lag(Year,order_by = Year))) %>%
+  mutate(Change=Population-lag_Population,
+         Change_pct=(Population/lag_Population-1),
+         Change_pct_annual=abs(Change_pct)^(1/gap)*sign(Change_pct)) %>%
+  filter(Year!=first(Year)) %>%
+  mutate(Change_d=pretty_cut(Change,c(-Inf,-150,-100,-50,-10,10,50,100,150,Inf)))
+
+da_change_colours <- setNames(
+  RColorBrewer::brewer.pal(9,"PiYG"),
+  levels(da_change_data$Change_d))
+
+ggplot(da_change_data) +
+  geom_sf(aes(fill=Change_d)) +
+  facet_wrap(~Period) +
+  geom_water() +
+  geom_sf(data=nanaimo_station,fill=NA,colour="black",size=1) +
+  geom_sf(data=station_points,fill=NA,colour="black",size=2) +
+  scale_fill_manual(values=da_change_colours) +
+  geom_roads(transform = function(d)filter(d,kind %in% c("major_road","minor_road","highway"))) +
+  coord_sf(datum=NA) +
+  theme(legend.position = "bottom") +
+  labs(title="Nanaimo Station harmonized Dissemination Blocks",
+       fill=NULL,
+       caption="StatCan Census 2001-2021")
+```
+
+Looking in particular at the 1996 to 2001 period there does indeed seem to be some growth near the station, but the largest population growth is further away from the station to the north and north-west. 
+
+The net effect over the entire time period remains disappointing, with the City of Vancouver population growth running significantly higher than the growth in the Nanaimo Station area.
 
 ## Upshot
 Vancouver planners have been neglecting past transit investments, with the new Broadway Line coming in the province is not leaving things to chance and have directly intervened to ensure that Vancouver does not waste this massive infrastructure investment by keeping exclusionary zoning in place that keeps people away from billion dollar transit investments.
 
-Here is a more comprehensive look at Vancouver's existing transit stations, ordered roughly by how wasteful the landuse is in the 800m around them. Nanaimo station is unsurprisingly the worst offender, but there are quite a few others that are not far behind.
+Here is a more comprehensive look at Vancouver's existing transit stations, ordered roughly by how wasteful the landuse is in the 800m around them. Nanaimo Station is unsurprisingly the worst offender, but there are quite a few others that are not far behind.
 
 ```{r fig.height=10, fig.width=9.5}
 weights <- c("Single/Duplex"=10,
