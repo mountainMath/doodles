@@ -113,13 +113,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-05-22 19:00:15 PDT"
+## [1] "2022-05-23 15:30:17 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [258f8a1] 2022-05-22: nanaimo station
+## Head:     [25f46e1] 2022-05-23: update with da level timeline back to 1971
 ```
 
 ```
@@ -150,19 +150,20 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ##  [1] Rcpp_1.0.8.3       lubridate_1.8.0    class_7.3-20       assertthat_0.2.1  
 ##  [5] digest_0.6.29      utf8_1.2.2         R6_2.5.1           cellranger_1.1.0  
 ##  [9] backports_1.4.1    reprex_2.0.1       evaluate_0.15      e1071_1.7-9       
-## [13] httr_1.4.2         blogdown_1.9       pillar_1.7.0       rlang_1.0.2       
-## [17] readxl_1.4.0       rstudioapi_0.13    jquerylib_0.1.4    rmarkdown_2.13    
-## [21] munsell_0.5.0      proxy_0.4-26       broom_0.8.0        compiler_4.2.0    
-## [25] modelr_0.1.8       xfun_0.30          pkgconfig_2.0.3    htmltools_0.5.2   
-## [29] tidyselect_1.1.2   bookdown_0.26      fansi_1.0.3        crayon_1.5.1      
-## [33] tzdb_0.3.0         dbplyr_2.1.1       withr_2.5.0        grid_4.2.0        
-## [37] jsonlite_1.8.0     gtable_0.3.0       lifecycle_1.0.1    DBI_1.1.2         
-## [41] git2r_0.30.1       magrittr_2.0.3     units_0.8-0        scales_1.2.0      
-## [45] KernSmooth_2.23-20 cli_3.3.0          stringi_1.7.6      fs_1.5.2          
-## [49] xml2_1.3.3         bslib_0.3.1        ellipsis_0.3.2     generics_0.1.2    
-## [53] vctrs_0.4.1        tools_4.2.0        glue_1.6.2         hms_1.1.1         
-## [57] fastmap_1.1.0      yaml_2.3.5         colorspace_2.0-3   classInt_0.4-3    
-## [61] rvest_1.0.2        knitr_1.38         haven_2.5.0        sass_0.4.1
+## [13] highr_0.9          httr_1.4.2         blogdown_1.9       pillar_1.7.0      
+## [17] rlang_1.0.2        readxl_1.4.0       rstudioapi_0.13    jquerylib_0.1.4   
+## [21] rmarkdown_2.13     munsell_0.5.0      proxy_0.4-26       broom_0.8.0       
+## [25] compiler_4.2.0     modelr_0.1.8       xfun_0.30          pkgconfig_2.0.3   
+## [29] htmltools_0.5.2    tidyselect_1.1.2   bookdown_0.26      codetools_0.2-18  
+## [33] fansi_1.0.3        crayon_1.5.1       tzdb_0.3.0         dbplyr_2.1.1      
+## [37] withr_2.5.0        grid_4.2.0         jsonlite_1.8.0     gtable_0.3.0      
+## [41] lifecycle_1.0.1    DBI_1.1.2          git2r_0.30.1       magrittr_2.0.3    
+## [45] units_0.8-0        scales_1.2.0       KernSmooth_2.23-20 cli_3.3.0         
+## [49] stringi_1.7.6      farver_2.1.0       fs_1.5.2           xml2_1.3.3        
+## [53] bslib_0.3.1        ellipsis_0.3.2     generics_0.1.2     vctrs_0.4.1       
+## [57] tools_4.2.0        glue_1.6.2         hms_1.1.1          fastmap_1.1.0     
+## [61] yaml_2.3.5         colorspace_2.0-3   classInt_0.4-3     rvest_1.0.2       
+## [65] knitr_1.38         haven_2.5.0        sass_0.4.1
 ```
 </details>
 

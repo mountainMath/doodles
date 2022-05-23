@@ -60,7 +60,7 @@ nanaimo_zoning <- simpleCache({
   read_sf('https://s3.ca-central-1.amazonaws.com/mountainmath/cmhc/metro_van_zoning_parcel.geojson.gz') %>%
     st_transform(crs) %>%
     st_filter(nanaimo_station)
-},"nanaimo_zoning")
+},"nanaimo_zoning",refresh=FALSE) 
 
 zone_cat_colours <- c("Single/Duplex"="#FFFF00", 
                       "Townhouse"="#FFE302", 
@@ -461,14 +461,14 @@ weights <- c("Single/Duplex"=10,
 
 skytrain_zoning <- simpleCache({
   read_sf('https://s3.ca-central-1.amazonaws.com/mountainmath/cmhc/metro_van_zoning_parcel.geojson.gz')
-}, "metro_van_zoning_parcel") %>%
+}, "metro_van_zoning_parcel",refresh=FALSE) %>% 
   st_transform(crs) %>%
   st_intersection(COV_SKYTRAIN_STATIONS %>%
                     st_transform(crs) %>%
                     mutate(Name=station %>% gsub('\\\\n|/n','',.))) 
   
 
-station_levels <- skytrain_zoning %>% 
+station_levels <- skytrain_zoning %>%  
   mutate(w=as.numeric(weights[zc]) %>% coalesce(0)) %>%
   mutate(a=st_area(.) %>% as.numeric) %>%
   group_by(Name) %>%
@@ -494,7 +494,7 @@ spd <- skytrain_zoning %>%
   filter(Name!="GRANVILLE") %>%
   facet_transform_geos_by_group(Name) 
 
-spd %>%
+spd %>% 
   filter(zc!="Water") %>%
 ggplot(aes(fill=fct_rev(zc))) +
   geom_sf(colour=NA) +
