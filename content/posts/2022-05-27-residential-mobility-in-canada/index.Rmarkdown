@@ -1,0 +1,716 @@
+---
+title: Residential mobility in Canada
+author: Jens von Bergmann
+date: '2022-05-27'
+slug: residential-mobility-in-canada
+categories:
+  - cancensus
+  - rental
+  - PUMF
+  - Vancouver
+  - Toronto
+tags: []
+description: "Residential mobility is essential for family formation, accommodating life changes, and the economy. A look at residential mobility in Canada over time."
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2022/05/27/residential-mobility-in-canada/index_files/figure-html/adjusted_age_tenure-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	fig.width = 8.5,
+	cache = TRUE
+)
+library(tidyverse)
+library(cancensus)
+library(mountainmathHelpers)
+```
+
+This [excellent NYTimes article on mobility in the US coming out today](https://www.nytimes.com/2022/05/27/upshot/housing-market-slow-moving.html) nudged me into doing a quick post on residential mobility in Canada. While there are lots of similarities between Canada and the US, there are some important differences when it comes to residential mobility. A while back [Nathan Lauster compared residential mobility between the two countries](https://homefreesociology.com/2019/11/24/why-do-people-move-new-data-mysteries-and-fundamental-rights/) and noticed that the declining trend in US residential mobility is much more muted in Canada, and may have reversed by the 2016 census, the last year for which we currently have data in Canada. (The 2021 data is slated to come out on October 26, 2022.) Nathan's post also takes a closer look at what has changed in the US and why residential mobility declined by examining the reasons people give for moving. And Yes, it's housing related reasons that are driving the decline in moving.
+
+The NYTimes article places this into a longer timeline, showing that this trend started well before the 2000-2001 year which Nathan used as a starting point. While we are waiting for the 2021 data we want to take this as an opportunity to push the Canadian data back a bit further to see how Canada's residential mobility has evolved. And also look into how this varies across the country and depending on tenure and age.
+
+
+## One-year mobility
+The NYTimes article looks at 1-year mobility, which is a useful metric because few people move more than once within a year and thus gives a good measure of residential mobility. Unfortunately, this is not available prior to the 1991 census. 
+
+```{r}
+regions_long <- list_census_regions("CA16") %>% 
+  filter(level=="CMA") %>% 
+  slice_max(order_by = pop,n=8) %>%
+  bind_rows(list_census_regions("CA16") %>%  filter(level=="C"))
+regions <- regions_long %>%
+  as_census_region_list()
+
+years <- setNames(seq(1996,2016,5),c("CA1996","CA01","CA06","CA11","CA16"))
+
+core_vars <- c("Non-migrants","Intraprovincial migrants","Interprovincial migrants","External migrants")
+
+
+mov_data_1991 <- bind_rows(
+  read_csv("https://www12.statcan.gc.ca/English/census91/data/profiles/File.cfm?S=0&LANG=E&A=R&PID=30&GID=58311&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0&OFT=CSV",skip=2,col_names = c("label","Value"), col_types = cols(.default="c")) %>%
+    mutate(Name="Canada"),
+  read_csv("https://www12.statcan.gc.ca/English/census91/data/profiles/File.cfm?S=0&LANG=E&A=R&PID=225&GID=57142&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0&OFT=CSV",skip=2,col_names = c("label","Value"), col_types = cols(.default="c")) %>%
+    mutate(Name="Vancouver"),
+  read_csv("https://www12.statcan.gc.ca/English/census91/data/profiles/File.cfm?S=0&LANG=E&A=R&PID=225&GID=57058&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0&OFT=CSV",skip=2,col_names = c("label","Value"), col_types = cols(.default="c")) %>%
+    mutate(Name="Toronto"),
+  read_csv("https://www12.statcan.gc.ca/English/census91/data/profiles/File.cfm?S=0&LANG=E&A=R&PID=225&GID=57014&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0&OFT=CSV",skip=2,col_names = c("label","Value"), col_types = cols(.default="c")) %>%
+    mutate(Name="Montréal"),
+  read_csv("https://www12.statcan.gc.ca/English/census91/data/profiles/File.cfm?S=0&LANG=E&A=R&PID=225&GID=57117&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0&OFT=CSV",skip=2,col_names = c("label","Value"), col_types = cols(.default="c")) %>%
+    mutate(Name="Calgary"),
+  read_csv("https://www12.statcan.gc.ca/English/census91/data/profiles/File.cfm?S=0&LANG=E&A=R&PID=225&GID=57026&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0&OFT=CSV",skip=2,col_names = c("label","Value"), col_types = cols(.default="c")) %>%
+    mutate(Name="Ottawa - Gatineau"),
+  read_csv("https://www12.statcan.gc.ca/English/census91/data/profiles/File.cfm?S=0&LANG=E&A=R&PID=225&GID=57122&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0&OFT=CSV",skip=2,col_names = c("label","Value"), col_types = cols(.default="c")) %>%
+    mutate(Name="Edmonton"),
+  read_csv("https://www12.statcan.gc.ca/English/census91/data/profiles/File.cfm?S=0&LANG=E&A=R&PID=225&GID=56998&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0&OFT=CSV",skip=2,col_names = c("label","Value"), col_types = cols(.default="c")) %>%
+    mutate(Name="Québec"),
+  read_csv("https://www12.statcan.gc.ca/English/census91/data/profiles/File.cfm?S=0&LANG=E&A=R&PID=225&GID=57098&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0&OFT=CSV",skip=2,col_names = c("label","Value"), col_types = cols(.default="c")) %>%
+    mutate(Name="Winnipeg")
+  ) %>%
+  filter(grepl(paste0(seq(1001,1006),collapse = "|"),label)) %>%
+  mutate(Status=ifelse(grepl("Total",label),"Total",gsub(", one year mobility status|, 1 year mobility status|\\d+ *","",label))) %>%
+  select(Name,Status,Value) %>%
+  mutate(Value=as.numeric(Value)) %>%
+  left_join((.) %>% filter(Status=="Total") %>% select(Name,Total=Value),by="Name") %>%
+  mutate(Year="1991") %>%
+  filter(Status!="Total")
+
+
+mov_data <- names(years) %>%
+  lapply(function(ds){
+    vs <- list_census_vectors(ds) %>%
+      filter(grepl("Mobility",label,ignore.case = TRUE),type=="Total") %>%
+      filter(grepl("1 year",label)) %>%
+      mutate(name="Total") %>%
+      child_census_vectors(keep_parent = TRUE) %>%
+      mutate(name=coalesce(name,label))
+    
+    vecs <- setNames(vs$vector,vs$name)
+    get_census(ds,regions=regions,vectors=vecs) %>%
+      mutate(Year=as.character(years[ds])) %>%
+      pivot_longer(setdiff(names(vecs),"Total"),names_to="Status",values_to = "Value")
+  }) %>%
+  bind_rows() %>%
+  left_join(regions_long %>% select(GeoUID=region,Name=name),by="GeoUID") %>%
+  select(Year,Name,Status,Value,Total) %>%
+  bind_rows(mov_data_1991) %>%
+  mutate(Name=factor(Name,levels=arrange(regions_long,-pop)$name)) %>%
+  mutate(Share=Value/Total) 
+
+
+mov_colours <- c("Intraprovincial movers"="#888888",
+                 setNames(MetBrewer::met.brewer("Juarez",4),core_vars))
+
+mov_data %>%
+  filter(Status %in% c("Intraprovincial movers",core_vars)) %>%
+  mutate(Status=factor(Status,levels=c("Intraprovincial movers",core_vars) %>% rev)) %>%
+  ggplot(aes(x=Year,y=Share,fill=Status,group=Status)) +
+  geom_bar(stat="identity") +
+  #geom_line(data=filter(mov_data,Status=="Movers")) +
+  facet_wrap(~Name) +
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_manual(values=mov_colours) +
+  theme(legend.position = "bottom") +
+  labs(title="Residential mobility vs one year prior",
+       fill="Mobility status",
+       x=NULL,y="Share of population",
+       caption = "StatCan Census 1991-2016")
+```
+
+Overall this paints a picture of declining residential mobility across Canada, with hints of a recovery during the year before 2016. But the level of residential mobility, as well as the shape and makeup of the decline, varies across the different CMAs broken out here. For the initial 1990-1991 movers data we don't have a breakdown for people moving within the same municipality ("Non-migrants") and people moving from elsewhere within the province ("Intraprovinical migrants"). Additionally, we need to be aware that some metro area have expanded over this time period, as have municipal boundaries -- most notably the City of Toronto between 1996 and 2001. That complicates interpreting these timelines.
+
+As Nathan already observed on his blog, most moves are local, and the reduction of mobility is mostly driven by local moves. To better zoom into this we can plot the data as a line graph, which does reveal some divergence from this pattern for some regions.
+
+```{r}
+mov_data %>%
+  filter(Status %in% c("Intraprovincial movers",core_vars,"Movers")) %>%
+  bind_rows(filter(.,Year>="1996", Status %in% c("Non-migrants","Intraprovincial migrants")) %>% 
+              group_by(Year,Name) %>% 
+              summarize(Share=sum(Share),.groups="drop") %>%
+              mutate(Status="Intraprovincial movers")) %>%
+  mutate(Status=factor(Status,levels=c("Intraprovincial movers",core_vars,"Movers") %>% rev)) %>%
+  ggplot(aes(x=Year,y=Share,colour=Status,group=Status)) +
+  geom_line() +
+  #geom_line(data=filter(mov_data,Status=="Movers")) +
+  facet_wrap(~Name) +
+  scale_y_continuous(labels=scales::percent) +
+  scale_colour_manual(values=c(mov_colours,"Movers"="black")) +
+  theme(legend.position = "bottom") +
+  labs(title="Residential mobility vs one year prior",
+       colour="Mobility status",
+       x=NULL,y="Share of population",
+       caption = "StatCan Census 1991-2016")
+```
+
+In this post we want to dive a little bit deeper into residential mobility, looking at longer timelines, and understand how this relates to age and tenure.
+
+```{r}
+get_pumf_cma_timeline <- function(){
+  
+  pumf_base_path <- file.path(getOption("canpumf.cache_path"))
+  #dir(pumf_base_path)
+  
+  age_labels <- c(
+    "1"=  "0 to 4 years",
+    "2" = "5 to 6 years",
+    "3"=  "7 to 9 years",
+    "4"=  "10 to 11 years",
+    "5"=  "12 to 14 years",
+    "6"=  "15 to 17 years",
+    "7"=  "18 to 19 years",
+    "8"=  "20 to 24 years",
+    "9"=  "25 to 29 years",
+    "10"=  "30 to 34 years",
+    "11"=  "35 to 39 years",
+    "12"=  "40 to 44 years",
+    "13"=  "45 to 49 years",
+    "14"=  "50 to 54 years",
+    "15"=  "55 to 59 years",
+    "16"=  "60 to 64 years",
+    "17"=  "65 to 69 years",
+    "18"= "70 to 74 years",
+    "19"=  "75 to 79 years",
+    "20"=  "80 to 84 years",
+    "21"=  "85 years and over",
+    "98"="Not available",
+    "22"="Not available",
+    "88"="Not available"
+  )
+
+  mov_labels <- c(
+    "1"=  "Non-movers",
+    "2" = "Non-migrants",
+    "3"=  "Different CSD, same census division",
+    "4"=  "Different CD, same province",
+    "5"=  "Interprovincial migrants",
+    "6"=  "External migrants",
+    "7"= "Not stated",
+    "8"=  "Not available",
+    "9"=  "Not applicable",
+    "0"=  "Not available"
+  )
+  mov_labels2 <- c(
+    "1"=  "Non-movers",
+    "2" = "Non-migrants",
+    "3"=  "Different CSD, same census division",
+    "4"=  "Different CD, same province",
+    "5"=  "Intraprovincial migrants",
+    "6"=  "Interprovincial migrants",
+    "7"= "Not available (Province previous year)",
+    "8"=  "External migrants",
+    "0"=  "Not applicable"
+  )
+  
+  mov_labels_1991 <- c(
+    "1"=  "Non-movers",
+    "2" = "Intraprovincial movers",
+    "3"=  "Interprovincial migrants",
+    "4"=  "External migrants",
+    "9"=  "Not applicable"
+  )
+  
+  tenur_labels <- c(
+    "1"="Owned",
+    "2"="Rented",
+    "8"="Not available",
+    "9"="Not applicable",
+    "0"="Not applicable"
+  )
+  
+  
+  pumf_data <- dir(pumf_base_path,"individual.csv") %>%
+    lapply(function(n){
+      year=str_extract(n,"\\d{4}")
+      #print(year)
+      d<-read_csv(file.path(pumf_base_path,n),col_types=cols(.default = "c")) %>%
+        mutate(Year=year)
+      if ("cmap" %in% names(d)) d <- d %>% rename(cma=cmap)
+      if ("tenurp" %in% names(d)) d <- d %>% rename(tenur=tenurp)
+      if ("mob1p" %in% names(d)) d <- d %>% rename(mob1=mob1p)
+      if ("mob5p" %in% names(d)) d <- d %>% rename(mob5=mob5p)
+      if ("res66" %in% names(d)) d <- d %>% rename(mob5=res66)
+      if ("cmapust" %in% names(d)) d <- d %>% rename(cma=cmapust)
+      if ("cmapumfp" %in% names(d)) d <- d %>% rename(cma=cmapumfp)
+      if ("weightp" %in% names(d)) d <- d %>% rename(weight=weightp)
+      if ("hmainp" %in% names(d)) d <- d %>% rename(hmain=hmainp)
+      if ("prmainp" %in% names(d)) d <- d %>% rename(prmain=prmainp)
+      if ("agep" %in% names(d)) d <- d %>% rename(age=agep)
+      if ("hhldclas" %in% names(d)) d<- d %>% rename(hhclass=hhldclas)
+      if ("hhclassp" %in% names(d)) d<- d %>% rename(hhclass=hhclassp)
+      if ("hhclass" %in% names(d)) d<- d %>% filter(hhclass=='1') # private households only
+      if (!("weight" %in% names(d))) d <- d %>% mutate(weight="1") # early years don't have weights
+      if ("hhldrel" %in% names(d)) d <- d %>% rename(hhdlrel=hhldrel)
+      # set household maintainer flag
+      if ("hhdlrel" %in% names(d)) {
+        d <- d %>% 
+          filter(hhdlrel!=0) %>%
+          mutate(PRIHM=hhdlrel==1)
+      } else if ("prihm" %in% names(d)) {
+        d <- d %>% 
+          filter(prihm!=9) %>%
+          mutate(PRIHM=prihm==1)
+      } else if ("prmain" %in% names(d)) {
+        d <- d %>% 
+          filter(prmain!=9) %>%
+          mutate(PRIHM=prmain==1)
+      } else if ("hmain" %in% names(d)) {
+        d <- d %>% 
+          filter(hmain!=0) %>%
+          mutate(PRIHM=hmain==1)
+      } else {
+        stop(n)
+      }
+      
+      if ("cmacode" %in% names(d)) d<- d %>% 
+        mutate(cma=recode(cmacode,"8"="462","21" = "535")) 
+      
+      if ("age" %in% names(d))  d<- d %>%
+        mutate(age=as.integer(age)) %>%
+        mutate(agegrp=case_when(age <5~"1",
+                                age<7~"2",
+                                age<10~"3",
+                                age<12~"4",
+                                age<15~"5",
+                                age<18~"6",
+                                age<20~"7",
+                                age<25~"8",
+                                age<30~"9",
+                                age<35~"10",
+                                age<40~"11",
+                                age<45~"12",
+                                age<50~"13",
+                                age<55~"14",
+                                age<60~"15",
+                                age<65~"16",
+                                age<70~"17",
+                                age<75~"18",
+                                age<80~"19",
+                                age<85~"20",
+                                age<90~"21",
+                                TRUE ~ "98"))
+      
+      if (!("mob1" %in% names(d))) d <- d %>% mutate(mob1="0")
+      if (!("tenur" %in% names(d))) d <- d %>% mutate(tenur="0")
+      
+      d<-d %>% select(cma,mob1,mob5,tenur,agegrp,Year,PRIHM,weight) %>%
+        mutate(weight=as.numeric(weight))
+      
+      if (year=="1976") {
+        d <- d %>% 
+          mutate(MOB1=recode(mob1,!!!mov_labels2))%>% 
+          mutate(MOB5=recode(mob5,!!!mov_labels2))
+      } else if (year=="1991"){
+        d <- d %>% 
+          mutate(MOB1=recode(mob1,!!!mov_labels_1991)) %>% 
+          mutate(MOB5=recode(mob5,!!!mov_labels))
+      } else {
+        d <- d %>% 
+          mutate(MOB1=recode(mob1,!!!mov_labels)) %>% 
+          mutate(MOB5=recode(mob5,!!!mov_labels))
+      }
+    }) %>%
+    bind_rows() %>%
+    mutate(TENUR=tenur_labels[tenur] %>% as.character)
+  
+
+  pumf_2016 <- foreign::read.spss(getOption("census_2016_pumf_i.sav")) %>%
+    as_tibble()
+  
+  pumf_2016_d <- pumf_2016 %>% mutate(PRIHM=(PRIHM=="Person is primary maintainer")) %>%
+    mutate(TENUR=recode(as.character(Tenur),"Owned by a member of the household"="Owned",
+                                     "Rented or Band housing"="Rented")) %>%
+    select(CMA,PRIHM,AGEGRP,TENUR,MOB1,MOB5=Mob5,weight=WEIGHT) %>%
+    mutate(agegrp=as.integer(AGEGRP) %>% as.character) %>%
+    mutate(Year="2016")
+  
+  cmas <- list_census_regions("CA16") %>% 
+    filter(level=="CMA") %>% 
+    select(GeoUID=region,name) %>% 
+    mutate(shortGeoUID=substr(GeoUID,nchar(GeoUID)-2,nchar(GeoUID)))
+  
+  cma_codes <- setNames(cmas$name,cmas$shortGeoUID)
+  
+  # cma_codes <- c(
+  #   "462" ="Montreal",
+  #   "535"=  "Toronto",
+  #   "933"="Vancouver"  
+  # )
+  
+  
+  pd <- pumf_data %>% 
+    #filter(cma %in% names(cma_codes)) %>%
+    mutate(CMA=recode(cma,!!!cma_codes)) %>%
+    bind_rows(pumf_2016_d) %>%
+    mutate(CMA=recode(CMA,"Montreal"="Montréal",
+                      "Ottawa – Gatineau"="Ottawa - Gatineau")) %>%
+    #filter(CMA %in% c("Vancouver","Toronto","Montreal","Montréal")) %>%
+    #filter(as.integer(agegrp)>=5,as.integer(agegrp)<22) %>%
+    mutate(Age=recode(agegrp,!!!age_labels)) %>%
+    mutate(Age=factor(Age,levels=unique(as.character(age_labels)))) %>%
+    group_by(CMA,Age,MOB1,MOB5,PRIHM,TENUR,Year) %>%
+    summarize(across("weight",sum),.groups="drop")
+
+  pd 
+  
+}
+
+
+pumf_cma_timeline <- mountainmathHelpers::simpleCache(get_pumf_cma_timeline(),
+                                                      "pumf_cma_mov_timeline.Rda",
+                                                      path=here::here("data"),
+                                                      refresh = FALSE)
+```
+
+
+
+```{r eval=FALSE, include=FALSE}
+mob_levels <- c("Intraprovincial movers","Non-migrants","Different CSD, same census division","Different CD, same province",
+                "Interprovincial migrants","External migrants")
+
+
+mob_colours <- setNames(c("darkgrey",MetBrewer::met.brewer("Juarez",5) %>% as.character),mob_levels)
+
+
+pumf_cma_timeline %>%
+  filter(MOB1!="Not applicable",MOB1!="Not available") %>%
+  group_by(Year,MOB1) %>%
+  summarise(Value=sum(weight),.groups="drop") %>%
+  group_by(Year) %>%
+  mutate(Share=Value/sum(Value)) %>%
+  filter(MOB1 %in% mob_levels) %>%
+  mutate(MOB1=factor(MOB1,levels=mob_levels %>% rev)) %>%
+  ggplot(aes(x=Year,y=Share,fill=MOB1,group=MOB1)) +
+  scale_fill_manual(values=mob_colours) +
+  geom_bar(stat="identity")
+```
+
+
+
+
+## Five-year mobility
+If we want to go further back in time we have to content ourselves with looking at 5-year mobility data, so the share of the population who lived at a different address 5 years prior. This is available in electronic form back to 1971.
+
+```{r}
+mob5_levels <- c(
+  "Non-migrants",
+  "Different CSD, same census division",
+  "Different CD, same province",
+  "Not available (Province previous year)",
+  "Interprovincial migrants",
+  "External migrants"
+)
+mob5_colours <- setNames(MetBrewer::met.brewer("Juarez",6) %>% as.character,mob5_levels)
+pumf_cma_timeline %>%
+  group_by(Year,MOB5) %>%
+  filter(MOB5!="Not applicable",MOB5!="Not available",MOB5!="Not stated") %>%
+  summarise(Value=sum(weight),.groups="drop") %>%
+  group_by(Year) %>%
+  mutate(Share=Value/sum(Value)) %>%
+  filter(MOB5!="Non-movers") %>%
+  mutate(Status=factor(MOB5,levels = mob5_levels %>% rev)) %>%
+  ggplot(aes(x=Year,y=Share,fill=Status,group=Status)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_manual(values=mob5_colours) +
+  labs(title="Residential mobility vs five years prior",
+       x=NULL,y="Share of the population",
+       fill="Mobility status",
+       caption="StatCan Census 1971-2017 PUMF (individuals)")
+```
+
+Here we have some finer categories, splitting up intraprovincial migrants into those staying in the same census district and those coming from a different census district in the same province. 
+
+But how does this look like across different parts of the country? We only have information for Montréal and Toronto all the way back to 1971, more metro areas get added to the PUMF in successive censuses.
+
+```{r}
+cmas <- regions_long %>% slice_max(order_by = pop,n=6) %>% arrange(-pop) %>% pull(name)
+pumf_cma_timeline %>%
+  bind_rows(mutate(.,CMA="Canada")) %>%
+  filter(CMA %in% cmas) %>%
+  mutate(CMA=factor(CMA,levels=cmas)) %>%
+  group_by(Year,MOB5,CMA) %>%
+  filter(MOB5!="Not applicable",MOB5!="Not available",MOB5!="Not stated") %>%
+  summarise(Value=sum(weight),.groups="drop") %>%
+  group_by(Year,CMA) %>%
+  mutate(Share=Value/sum(Value)) %>%
+  filter(MOB5!="Non-movers") %>%
+  mutate(Status=factor(MOB5,levels = mob5_levels %>% rev)) %>%
+  ggplot(aes(x=Year,y=Share,fill=Status,group=Status)) +
+  geom_bar(stat="identity") +
+  facet_wrap(~CMA) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 60,hjust=1)) +
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_manual(values=mob5_colours) +
+  labs(title="Residential mobility vs five years prior",
+       x=NULL,y="Share of the population",
+       fill="Mobility status",
+       caption="StatCan Census 1971-2017 PUMF (individuals)")
+```
+
+In addition to the caveats we already mentioned above, that some metro areas as well as some municipal boundaries have changed over time, the relationship of metro areas and the cities within to census district also varies, with for Vancouver the census district and metro area coinciding, but for Toronto the City boundaries coinciding with their census district starting with 2001. That can lead to some artificial changes among the categories.
+
+Each of these regions shows an overall declining trend in residential mobility. We will look at how this interacts with tenure and age to better understand what is driving this.
+
+## Tenure
+We know that renters move more frequently than owners. This happens for many reasons, which are worth getting into in more detail, but we will leave this for another post.
+
+```{r}
+mob5_colours_pure <- mob5_colours[c("Non-migrants","Different CSD, same census division",
+                                    "Different CD, same province",
+                                    "Interprovincial migrants","External migrants")]
+
+pumf_cma_timeline %>%
+  bind_rows(mutate(.,CMA="Canada")) %>%
+  filter(CMA %in% cmas) %>%
+  mutate(CMA=factor(CMA,levels=cmas)) %>%
+  group_by(Year,MOB5,CMA,TENUR) %>%
+  filter(MOB5!="Not applicable",MOB5!="Not available",MOB5!="Not stated") %>%
+  filter(TENUR!="Not applicable",TENUR!="Not available") %>%
+  summarise(Value=sum(weight),.groups="drop") %>%
+  group_by(Year,CMA,TENUR) %>%
+  mutate(Share=Value/sum(Value)) %>%
+  filter(MOB5!="Non-movers") %>%
+  mutate(Status=factor(MOB5,levels = mob5_levels %>% rev)) %>%
+  ggplot(aes(x=Year,y=Share,fill=Status,group=Status)) +
+  geom_bar(stat="identity") +
+  facet_grid(TENUR~CMA) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 60,hjust=1))+
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_manual(values=mob5_colours_pure) +
+  labs(title="Residential mobility vs five years prior",
+       x=NULL,y="Share of the population",
+       fill=NULL,
+       caption="StatCan Census 1971-2017 PUMF (individuals)")
+```
+
+Comparing the mobility rates we indeed see large differences by tenure that dominate the differences across metro areas. Renters move much more frequently, but the decline in mobility is visible in both categories. 
+
+## Age
+```{r fig.height=7}
+pumf_cma_timeline %>%
+  bind_rows(mutate(.,CMA="Canada")) %>%
+  filter(CMA %in% "Canada") %>%
+  mutate(CMA=factor(CMA,levels=cmas)) %>%
+  group_by(Year,MOB5,CMA,Age) %>%
+  filter(MOB5!="Not applicable",MOB5!="Not available",MOB5!="Not stated") %>%
+  filter(Age!="Not applicable",Age!="Not available") %>%
+  summarise(Value=sum(weight),.groups="drop") %>%
+  group_by(Year,CMA,Age) %>%
+  mutate(Share=Value/sum(Value)) %>%
+  filter(MOB5!="Non-movers") %>%
+  mutate(Status=factor(MOB5,levels = mob5_levels %>% rev)) %>%
+  ggplot(aes(x=Year,y=Share,fill=Status,group=Status)) +
+  geom_bar(stat="identity") +
+  facet_wrap(~Age,ncol=4) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 60,hjust=1)) +
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_manual(values=mob5_colours_pure) +
+  labs(title="Residential mobility vs five years prior",
+       x=NULL,y="Share of the population",
+       fill=NULL,
+       caption="StatCan Census 1971-2017 PUMF (individuals)")
+```
+
+Again we see a fairly consistent decline in mobility across age groups. Especially the 20-24 year old age group stands out, and the older age groups also show a clear drop in residential mobility.
+
+Dropping the mobility status take a look how this differs across metro areas.
+
+```{r fig.height=6}
+pumf_cma_timeline %>%
+  bind_rows(mutate(.,CMA="Canada")) %>%
+  filter(CMA %in% cmas) %>%
+  mutate(CMA=factor(CMA,levels=cmas)) %>%
+  group_by(Year,MOB5,CMA,Age) %>%
+  filter(MOB5!="Not applicable",MOB5!="Not available",MOB5!="Not stated") %>%
+  filter(Age!="Not applicable",Age!="Not available") %>%
+  summarise(Value=sum(weight),.groups="drop") %>%
+  group_by(Year,CMA,Age) %>%
+  mutate(Share=Value/sum(Value)) %>%
+  filter(MOB5!="Non-movers") %>%
+  group_by(Year,CMA,Age) %>%
+  summarise(Share=sum(Share),.groups="drop") %>%
+  ggplot(aes(x=Year,y=Share,group=CMA,colour=CMA)) +
+  geom_line() +
+  facet_wrap(~Age,ncol=4) +
+  scale_color_manual(values=MetBrewer::met.brewer("Juarez",6)) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 60,hjust=1)) +
+  guides(colour=guide_legend(nrow = 1)) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Residential mobility vs five years prior",
+       x=NULL,y="Share of the population",
+       colour=NULL,
+       caption="StatCan Census 1971-2017 PUMF (individuals)")
+```
+
+The trends are fairly consisted, although e.g. Montréal is showing lower drops than other metro areas, hinting that some of this effect may be due to [suppressed household formation that we have observed in a previous post](https://doodles.mountainmath.ca/blog/2022/05/06/estimating-suppressed-household-formation/).
+
+## Putting it all together
+Looking at the difference across age and tenure we can ask ourselves how much of the overall drop in residential mobility are explained by these two. This lets us remove the effect of change in tenure and age distribution across time and across geographies, using the 2016 overall Canadian distribution as a counterfactual demographic distribution.
+
+
+```{r adjusted_age_tenure}
+base_data <- pumf_cma_timeline %>%
+  bind_rows(mutate(.,CMA="Canada")) %>%
+  filter(CMA %in% cmas) %>%
+  mutate(CMA=factor(CMA,levels=cmas)) %>%
+  filter(MOB5!="Not applicable",MOB5!="Not available",MOB5!="Not stated") %>%
+  filter(Age!="Not applicable",Age!="Not available") %>%
+  mutate(MOB=ifelse(MOB5=="Non-movers","Non-movers","Movers"))
+
+age_adjusted <- base_data %>%
+  group_by(Year,MOB,CMA,Age) %>%
+  summarise(Value=sum(weight),.groups="drop") %>%
+  group_by(Year,CMA,Age) %>%
+  mutate(Total=sum(Value),
+         Share=Value/Total) %>%
+  left_join(filter(.,CMA=="Canada",Year=="2016") %>% 
+              group_by(Age) %>%
+              summarise(Count=sum(Value),.groups="drop"),
+            by=c("Age")) %>%
+  group_by(Year,CMA,MOB) %>%
+  summarise(`Age adjusted`=weighted.mean(Share,w=Count),
+            Crude=weighted.mean(Share,w=Total),
+            Value=sum(Value),
+            .groups="drop") %>%
+  pivot_longer(matches("Crude|Adjusted"),names_to="Metric",values_to = "Share")
+
+
+
+base_data %>%
+  filter(TENUR!="Not applicable",TENUR!="Not available") %>%
+  group_by(Year,MOB,CMA,Age,TENUR) %>%
+  summarise(Value=sum(weight),.groups="drop") %>%
+  group_by(Year,CMA,Age,TENUR) %>%
+  mutate(Total=sum(Value),
+         Share=Value/Total) %>%
+  left_join(filter(.,CMA=="Canada",Year=="2016") %>% 
+              group_by(Age,TENUR) %>%
+              summarise(Count=sum(Value),.groups="drop"),
+            by=c("Age","TENUR")) %>%
+  group_by(Year,CMA,MOB) %>%
+  summarise(Share=weighted.mean(Share,w=Count),
+            Value=sum(Value),
+            .groups="drop") %>%
+  mutate(Metric="Age and tenure adjusted") %>%
+  bind_rows(age_adjusted) %>%
+  filter(MOB!="Non-movers") %>%
+  mutate(Metric=factor(Metric,levels=c("Crude","Age adjusted","Age and tenure adjusted"))) %>%
+  ggplot(aes(x=Year,y=Share,group=CMA,colour=CMA)) +
+  geom_line() +
+  facet_wrap(~Metric) +
+  scale_color_manual(values=MetBrewer::met.brewer("Juarez",6)) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 60,hjust=1)) +
+  guides(colour=guide_legend(nrow = 1)) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Residential mobility vs five years prior",
+       subtitle="Using 2016 overall Canadian demographics for adjustment",
+       x=NULL,y="Share of the population",
+       colour=NULL,
+       fill="Mobility status",
+       caption="StatCan Census 1971-2017 PUMF (individuals)")
+```
+
+This shows that some, but not all of the effect of the declining mobility is explained by shifts in demographics and housing tenure. But some differences remain, in particular it's remarkable how low Montréal's residential mobility is, especially when accounting for tenure. Which also hints that tenure itself is probably less of a driving factor of mobility, but that there are other factors apart from age that are a common cause of tenure and mobility. And the model adjusting for age and tenure should probably be treated with caution.
+
+One last remaining question is that of the role of external migration. That does not quite fit into the concept of mobility for the purposes of this post since external migrants don't corresponds to moves of people in Canada but rather moves into Canada. We can remove external migrants and see how that changes things.
+
+```{r adjusted_age_tenure_external}
+base_data <- pumf_cma_timeline %>%
+  bind_rows(mutate(.,CMA="Canada")) %>%
+  filter(CMA %in% cmas) %>%
+  mutate(CMA=factor(CMA,levels=cmas)) %>%
+  filter(MOB5!="Not applicable",MOB5!="Not available",MOB5!="Not stated",MOB5!="External migrants") %>%
+  filter(Age!="Not applicable",Age!="Not available") %>%
+  mutate(MOB=ifelse(MOB5=="Non-movers","Non-movers","Movers"))
+
+age_adjusted <- base_data %>%
+  group_by(Year,MOB,CMA,Age) %>%
+  summarise(Value=sum(weight),.groups="drop") %>%
+  group_by(Year,CMA,Age) %>%
+  mutate(Total=sum(Value),
+         Share=Value/Total) %>%
+  left_join(filter(.,CMA=="Canada",Year=="2016") %>% 
+              group_by(Age) %>%
+              summarise(Count=sum(Value),.groups="drop"),
+            by=c("Age")) %>%
+  group_by(Year,CMA,MOB) %>%
+  summarise(`Age adjusted`=weighted.mean(Share,w=Count),
+            Crude=weighted.mean(Share,w=Total),
+            Value=sum(Value),
+            .groups="drop") %>%
+  pivot_longer(matches("Crude|Adjusted"),names_to="Metric",values_to = "Share")
+
+
+
+base_data %>%
+  filter(TENUR!="Not applicable",TENUR!="Not available") %>%
+  group_by(Year,MOB,CMA,Age,TENUR) %>%
+  summarise(Value=sum(weight),.groups="drop") %>%
+  group_by(Year,CMA,Age,TENUR) %>%
+  mutate(Total=sum(Value),
+         Share=Value/Total) %>%
+  left_join(filter(.,CMA=="Canada",Year=="2016") %>% 
+              group_by(Age,TENUR) %>%
+              summarise(Count=sum(Value),.groups="drop"),
+            by=c("Age","TENUR")) %>%
+  group_by(Year,CMA,MOB) %>%
+  summarise(Share=weighted.mean(Share,w=Count),
+            Value=sum(Value),
+            .groups="drop") %>%
+  mutate(Metric="Age and tenure adjusted") %>%
+  bind_rows(age_adjusted) %>%
+  filter(MOB!="Non-movers") %>%
+  mutate(Metric=factor(Metric,levels=c("Crude","Age adjusted","Age and tenure adjusted"))) %>%
+  ggplot(aes(x=Year,y=Share,group=CMA,colour=CMA)) +
+  geom_line() +
+  facet_wrap(~Metric) +
+  scale_color_manual(values=MetBrewer::met.brewer("Juarez",6)) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 60,hjust=1)) +
+  guides(colour=guide_legend(nrow = 1)) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Residential mobility vs five years prior, excluding external migrants",
+       subtitle="Using 2016 overall Canadian demographics for adjustment",
+       x=NULL,y="Share of the population",
+       colour=NULL,
+       fill="Mobility status",
+       caption="StatCan Census 1971-2017 PUMF (individuals)")
+```
+
+This does somewhat depress the mobility rates of regions that see a lot of external migration, but the general pattern is quite similar.
+
+## Upshot
+Moving is an important factor in our economy and our housing system. In our housing discussions, for example during the ongoing public hearing of the Broadway Plan, many people have a very naive understanding of how residential mobility works. There is often an implicit assumption that new buildings have to be matched with newcomers. We know this is by and large not how things work, [the majority of people who move into new housing already lived in the region](https://homefreesociology.com/2019/12/08/who-lives-in-new-housing/). Similarly, the vast majority of people who move move into old housing. One very obvious way to see this is that [almost half of the population in the City of Vancouver lived at a different address five years prior](https://doodles.mountainmath.ca/blog/2022/05/11/children-are-good-actually/). Which it highlights the absurdity of people questioning who new housing is for. New housing only makes up a tiny portion of destinations for movers, it's perfectly ok if it only suites a small portion of those people moving.
+
+Trends in mobility are interesting because they have implication for the broader economy. If people can't easily move, they may not be able to change jobs to one that better fits the skills and pays more, and on the flip side employers will have a harder time recruiting talent to increase their productivity. People may get stuck in housing situations for longer than they want, resulting in [suppressed household formation](https://doodles.mountainmath.ca/blog/2022/05/06/estimating-suppressed-household-formation/). Adjusting for changes in demographics can help better understand these trends, and alleviate underlying causes of reduced mobility.
+
+Another important direction is to understand the reasons for moving. In Canada we are only now getting decent data on why people move, with the [CHS giving us a way to understand reasons for moving, in particular forced vs choice moves ](https://doodles.mountainmath.ca/blog/2021/03/29/forced-out-in-canada-new-data-from-chs/). This view allows us to shine a light onto the two sides of residential mobility, which can be bad if people are looking for stability and can't find it because they are forced to move, or it can be good if it enables choice moves closer to work, family and friends, or amenities, or to adapt to changing family needs. We are looking forward to the next round of the CHS data getting released.
+
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-05-27-residential-mobility-in-canada/index.Rmarkdown) for anyone to reproduce or adapt.
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
+
+
