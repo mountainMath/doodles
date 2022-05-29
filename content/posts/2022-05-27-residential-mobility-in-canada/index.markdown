@@ -96,7 +96,7 @@ One last remaining question is that of the role of external migration. That does
 This does somewhat depress the mobility rates of regions that see a lot of external migration, but the general pattern is quite similar.
 
 ## Upshot
-Moving is an important factor in our economy and our housing system. In our housing discussions, for example during the ongoing public hearing of the Broadway Plan, many people have a very naive understanding of how residential mobility works. There is often an implicit assumption that new buildings have to be matched with newcomers. We know this is by and large not how things work, [the majority of people who move into new housing already lived in the region](https://homefreesociology.com/2019/12/08/who-lives-in-new-housing/). Similarly, the vast majority of people who move move into old housing. One very obvious way to see this is that [almost half of the population in the City of Vancouver lived at a different address five years prior](https://doodles.mountainmath.ca/blog/2022/05/11/children-are-good-actually/). Which it highlights the absurdity of people questioning who new housing is for. New housing only makes up a tiny portion of destinations for movers, it's perfectly ok if it only suites a small portion of those people moving.
+Moving is an important factor in our economy and our housing system. In our housing discussions, for example during the ongoing public hearing of the Broadway Plan, many people have a very naive understanding of how residential mobility works. There is often an implicit assumption that new buildings have to be matched with newcomers. We know this is by and large not how things work, [the majority of people who move into new housing already lived in the region](https://homefreesociology.com/2019/12/08/who-lives-in-new-housing/). Similarly, the vast majority of people who move move into old housing. One very obvious way to see this is that [almost half of the population in the City of Vancouver lived at a different address five years prior](https://doodles.mountainmath.ca/blog/2022/05/11/children-are-good-actually/). Which highlights the absurdity of people questioning who new housing is for. New housing only makes up a tiny portion of destinations for movers, it's perfectly ok if it only suites a small portion of those people moving. That's not to say we should not strive to create non-market housing whenever possible, we absolutely should. (Raise my property taxes to pay for it!) But denying new housing because e.g. median incomes can't afford it misunderstands how housing and mobility work and is counter-productive.
 
 Trends in mobility are interesting because they have implication for the broader economy. If people can't easily move, they may not be able to change jobs to one that better fits the skills and pays more, and on the flip side employers will have a harder time recruiting talent to increase their productivity. People may get stuck in housing situations for longer than they want, resulting in [suppressed household formation](https://doodles.mountainmath.ca/blog/2022/05/06/estimating-suppressed-household-formation/). Adjusting for changes in demographics can help better understand these trends, and alleviate underlying causes of reduced mobility.
 
@@ -108,13 +108,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-05-27 22:28:47 PDT"
+## [1] "2022-05-28 21:20:07 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [8fa6bc3] 2022-05-23: update RT zoning to single/duplex
+## Head:     [5ad8861] 2022-05-28: residential mobility
 ```
 
 ```
