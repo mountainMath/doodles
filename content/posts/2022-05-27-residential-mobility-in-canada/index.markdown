@@ -102,19 +102,20 @@ Trends in mobility are interesting because they have implication for the broader
 
 Another important direction is to understand the reasons for moving. In Canada we are only now getting decent data on why people move, with the [CHS giving us a way to understand reasons for moving, in particular forced vs choice moves ](https://doodles.mountainmath.ca/blog/2021/03/29/forced-out-in-canada-new-data-from-chs/). This view allows us to shine a light onto the two sides of residential mobility, which can be bad if people are looking for stability and can't find it because they are forced to move, or it can be good if it enables choice moves closer to work, family and friends, or amenities, or to adapt to changing family needs. We are looking forward to the next round of the CHS data getting released.
 
+A good discussion on declining residential mobility in the US and its implications and drivers can be found [in a nice recent sudy by Dowell Myers at al](https://www.tandfonline.com/doi/abs/10.1080/02673037.2021.1929860?journalCode=chos20), broken down in [easily digestible form in a twitter thread](https://twitter.com/profdowellmyers/status/1409304130758209540).
 
 As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-05-27-residential-mobility-in-canada/index.Rmarkdown) for anyone to reproduce or adapt.
 
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-05-28 21:20:07 PDT"
+## [1] "2022-05-30 09:56:23 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [5ad8861] 2022-05-28: residential mobility
+## Head:     [8b0def3] 2022-05-29: add sentence on non-market housing
 ```
 
 ```
