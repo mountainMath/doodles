@@ -421,7 +421,7 @@ get_boc_series_group("chartered_bank_interest") |>
   expand_limits(y=0) +
   scale_y_continuous(labels=scales::percent) +
   theme(legend.position = "bottom") +
-  labs(title="Classification of buyers with mortgages from federally regulated financial institutions",
+  labs(title="Chartered bank interest rates", 
        x=NULL,y="Interest rate",colour=NULL,
        caption="Bank of Canada series group chartered_bank_interest")
 
