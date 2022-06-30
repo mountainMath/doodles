@@ -377,7 +377,6 @@ plot_data <- simpleCache(
   filter(!is.na(Region))
 ```
 
-Title: A short post on the long history of real estate investment in Canada
 
 
 The newest trend in the search for reasons for rising home prices is to look toward investors. The Bank of Canada released [a report](https://www.bankofcanada.ca/2022/01/staff-analytical-note-2022-1/) showing that the share of investors has risen over time. For this they took mortgage data from federally regulated financial institutions and matched them with credit history to determine if some of the buyers already owned property before they bought (during roughly the past 10 years) and kept it after they bought. 
@@ -423,7 +422,7 @@ get_boc_series_group("chartered_bank_interest") |>
   scale_y_continuous(labels=scales::percent) +
   theme(legend.position = "bottom") +
   labs(title="Classification of buyers with mortgages from federally regulated financial institutions",
-       x=NULL,y="Share of buyers",colour=NULL,
+       x=NULL,y="Interest rate",colour=NULL,
        caption="Bank of Canada series group chartered_bank_interest")
 
 ```
