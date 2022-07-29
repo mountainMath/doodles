@@ -79,13 +79,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-06-30 13:12:43 PDT"
+## [1] "2022-06-30 13:13:53 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [c2b0cde] 2022-06-30: fixes
+## Head:     [38cd45b] 2022-06-30: fix plot title
 ```
 
 ```

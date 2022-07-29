@@ -424,7 +424,6 @@ get_boc_series_group("chartered_bank_interest") |>
   labs(title="Chartered bank interest rates", 
        x=NULL,y="Interest rate",colour=NULL,
        caption="Bank of Canada series group chartered_bank_interest")
-
 ```
 
 We note how the mortgage rate high point for the 3 and 5 year mortgages correspond to a drop in both first time buyers as well as investor buyers, with first time buyers recovering again after a slight drop from the plateau while investors only pick up after mortgage rates hit new lows.

@@ -1,0 +1,795 @@
+---
+title: Tumbling turnover
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
+date: '2022-07-29'
+slug: tumbling-turnover
+categories:
+  - rental
+  - cmhc
+  - cancensus
+  - CANSIM
+  - affordability
+  - mobility
+  - PUMF
+tags: []
+description: "Digging deeper into Canadian residential mobility, tracking changes in mobility over time, and comparing data sources."
+featured: ''
+images: ["https://doodles.mountainmath.ca/posts/2022-07-29-tumbling-turnover_files/figure-html/residential-mobility-trend-comparison-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/07/29/tumbling-turnover/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 150,
+	fig.width = 8,
+	fig.height = 6,
+	cache = TRUE
+)
+
+library(tidyverse)
+library(cmhc)
+library(cancensus)
+library(ggblend)
+library(mountainmathHelpers)
+library(canpumf)
+```
+
+We're increasingly gathering lots of different measures of residential mobility in Canada. Which is great! Especially insofar as we want up-to-date information about demographic response through the pandemic. Here we want to add the CMHC Rental Market Survey (RMS) to the mix, comparing to Census and CHS (Housing Survey) results. Adding it in reveals a general decline in tenant mobility only recently (and partially) reversed. But it also raises a mystery worth solving about divergent CHS results and points toward the value of triangulation.
+
+## The CMHC Rental Market Survey
+
+In CMHC's [Rental Market Survey](https://www.cmhc-schl.gc.ca/en/professionals/housing-markets-data-and-research/market-reports/rental-market-reports-major-centres) there are several bits of information that tell us about residential mobility, namely the vacancy rate, the availability rate, and the turnover rate.
+
+The vacancy rate tells us what share of units are currently not rented and are looking to get rented out. This measures how easy it is for tenants to find new accommodation. A very related metric is the availability rate (now discontinued), which on top of the vacancy rate also considers units where that are still rented out but the current tenant has given notice and it has not yet been rented out to a new tenant.
+
+```{r}
+availability_rate_for <- function(geo_uid){
+  availability_rate <- c("April","October") |>
+    lapply(function(season)
+      get_cmhc(survey="Rms",series="Availability Rate",dimension="Bedroom Type",
+               breakdown="Historical Time Periods",  geo_uid=geo_uid,
+               filters = list("season"=season))) |>
+    bind_rows()
+}
+
+vacancy_rate_for <- function(geo_uid){
+  availability_rate <- c("April","October") |>
+    lapply(function(season)
+      get_cmhc(survey="Rms",series="Vacancy Rate",dimension="Bedroom Type",
+               breakdown="Historical Time Periods",  geo_uid=geo_uid,
+               filters = list("season"=season))) |>
+    bind_rows()
+}
+
+av_rates_for <- function(geo_uids) {
+  lapply(geo_uids,function(g)bind_rows(availability_rate_for(g),vacancy_rate_for(g))) |>
+    bind_rows()
+}
+```
+
+
+```{r fig.height=4.5}
+regions <- list_census_regions("CA16") |>
+  filter(level=="CSD", CMA_UID=="59933") |>
+  slice_max(order_by = pop, n=4)
+
+data <- av_rates_for(regions$region) |>
+  left_join(regions |> select(GeoUID=region,Name=name),by="GeoUID")
+
+data |>
+  filter(`Bedroom Type`=="Total") |>
+  ggplot(aes(x=Date,y=Value/100,colour=Series)) +
+  geom_point(aes(shape=Quality)) +
+  geom_line() +
+  scale_y_continuous(labels=scales::percent) +
+  facet_wrap(~Name) +
+  labs(title="Turnover and availability rates in select Metro Vancouver municipalities",
+       x=NULL,y=NULL,
+       caption="CMHC Rms")
+```
+
+Vacancy rates, in particular, are familiar to most analysts, and [we've written about them](https://homefreesociology.com/2019/06/12/simple-metrics-for-deciding-if-you-have-enough-housing/) [a lot](https://doodles.mountainmath.ca/blog/2022/02/18/vacancy-rates-and-rent-change-2021-update/). They're particularly good at tracking whether we have [enough rental apartment stock](https://www.lincolninst.edu/sites/default/files/pubfiles/empty-house-next-door-full.pdf#page=14). 
+
+Spoiler: we do not. And more broadly the primary and secondary rental market are to a large extend fungible as [we have noted before when comparing vacancy rates across these markets](https://doodles.mountainmath.ca/blog/2022/02/18/vacancy-rates-and-rent-change-2021-update/), even if the primary market generally provides better renter protection and services. Which means that secondary market rentals are also helpful in filling this gap, all housing helps.
+
+## Turnover rates
+
+The turnover rate measures [how many new tenants](https://assets.cmhc-schl.gc.ca/sites/cmhc/professional/housing-markets-data-and-research/market-reports/rental-market-report/rental-market-report-2021-en.pdf?rev=a5a0eaac-6f70-4058-8aa3-e6d307685910#page=155) have moved into a unit during the past year. It is expressed as the total number of new tenants moved in during the past year divided by the total number of units. This measures residential mobility in the primary rental market.
+
+CMHC started measuring this in 2016 and has reported it for every Rental Market Survey (RMS) since then. Unfortunately we aren't aware of a single clean data source for turnover rates, so we turn to Excel files for the 2019 through 2021 Market Rental Reports and scrape it from the tables in the PDF reports for the years 2016 through 2018. This only yields high-level data for metro areas. It would be good if CMHC could put this data out in more easily accessible form, preferably as part of the Housing Market Information Portal.
+
+```{r}
+get_turnover_data <- function(){
+  options(timeout=200)
+  get_cmhc_header <- function(path,table="Table 1.0",skip=5){
+    readxl::read_xlsx(path,n_max=10,skip=skip,col_names = FALSE,sheet = table, col_types = "text") |>
+      slice(1:2) |>
+      t() |>
+      as.data.frame() |>
+      as_tibble() |>
+      fill(V1) |>
+      mutate(V3=ifelse(is.na(V1),NA,ifelse(is.na(V2),NA,"Value"))) |>
+      mutate(V3=ifelse(is.na(V3) & !is.na(lag(V3)),"Quality",V3)) |>
+      mutate(V3=ifelse(is.na(V3) & !is.na(lag(V3)),"Trend",V3)) |>
+      fill(V2) |>
+      t() |>
+      as.data.frame() |>
+      summarize_all(function(d)paste0(na.omit(d),collapse = " - ")) |>
+      as.character() %>%
+      gsub("\r\n"," ",.)
+  }
+  
+  parse_cmhc_sheet <- function(path,table="Table 1.0",skip=5,extra_step=0){
+    h<-get_cmhc_header(path,table,skip)
+    
+    d<-readxl::read_xlsx(path,skip=skip+2+extra_step,col_names = h,sheet = table, col_types = "text")
+    
+    endpoint <- which(is.na(d$Centre)) |> first()
+    
+    if (!is.na(endpoint)) d <- d |> slice(1:(endpoint-1)) 
+    
+    d <- d |> 
+      pivot_longer(-Centre,names_pattern="(.+) - (.+) - (.+)",names_to=c("Metric","Year",".value")) |>
+      mutate(Year=str_extract(Year,"\\d{2}$") %>% paste0("20",.)) |>
+      mutate(Value=gsub("\\$|,","",Value) %>% as.numeric())
+    
+    d
+  }
+  
+  # from https://www.cmhc-schl.gc.ca/en/professionals/housing-markets-data-and-research/housing-data/data-tables/rental-market/rental-market-report-data-tables
+  
+  
+  url <- "https://assets.cmhc-schl.gc.ca/sites/cmhc/professional/housing-markets-data-and-research/housing-data-tables/rental-market/rental-market-report-data-tables/2021/rmr-canada-2021-en.xlsx?rev=eb256c0c-4701-4ce3-8d15-d117b82862ba"
+  tmp <- tempfile(fileext = ".xlsx")
+  download.file(url,tmp)
+  turnover_data1 <- parse_cmhc_sheet(tmp)
+  
+  url2 <- "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/rental-market-data/rmr-data-tables/2020/rmr-canada-2020-en.xlsx?rev=48b47ec4-767f-47b2-a3a1-927e720156c9"
+  tmp2 <- tempfile(fileext = ".xlsx")
+  download.file(url2,tmp2)
+  turnover_data2 <- parse_cmhc_sheet(tmp2)
+  
+  url3 <- "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/rental-market-data/rmr-data-tables/2019/rmr-canada-2019-en.xlsx?rev=26b433cd-038b-4679-b2a1-624199b462e9"
+  tmp3 <- tempfile(fileext = ".xlsx")
+  download.file(url3,tmp3)
+  turnover_data3 <- parse_cmhc_sheet(tmp3,skip=3,extra_step = 1)
+  
+  
+  # header for pdf turnover data
+  h <- get_cmhc_header(tmp) 
+  turnover <- which(grepl("Turnover",h))
+  h <- c(h[1:turnover[1]-1],
+         h[turnover] %>% gsub("Turnover","Availability",.),
+         h[turnover],
+         h[seq((turnover[5]+1),length(h))])
+  
+  get_pdf_turnover_data_stream <- function(url,page=5,year="2016",h) {
+    tabulizer::extract_tables(url,pages = page,method = "stream") |>
+      lapply(function(t) {
+        d<- t |> 
+          as.data.frame() |>
+          as_tibble() |>
+          slice(-seq(1,16)) |>
+          mutate(X2=paste0(X2," ",X3)) |>
+          select(-X3)
+        dd <- as.data.frame(strsplit(d$X2," "))
+        select_if(function(f)length(unique(f))>1 || (unique(f)!=""))
+        
+        if (year=="2016") {
+          hh <- setdiff(h,"Turnover Rates (%) - Oct-21 - Trend") 
+          d<- d |> setNames(hh)
+        } else if (year=="2018") {
+          hh <- setdiff(h,c("Availability Rates (%) - Oct-21 - Trend","Availability Rates (%) - Oct-21 - Quality")) 
+          d<- d |> setNames(hh)
+        } else {
+          d <- d |> setNames(h)
+        }
+        d |>
+          pivot_longer(-Centre,names_pattern="(.+) - (.+) - (.+)",names_to=c("Metric","Year",".value")) |>
+          mutate(Year=str_extract(Year,"\\d{2}$") %>% paste0("20",.)) |>
+          mutate(Year=recode(Year,"2020"=as.character(as.integer(year)-1),"2021"=as.character(year))) |>
+          mutate(Value=gsub("\\$|,","",Value) %>% as.numeric())
+      }) |>
+      bind_rows()
+  }
+  
+  
+  get_pdf_turnover_data <- function(url,page=5,year="2016",h,area=NULL) {
+    if (!is.null(area)) {
+      tt <- tabulizer::extract_tables(url,pages = page,method = "lattice",area = area)
+    } else {
+      tt <- tabulizer::extract_tables(url,pages = page,method = "lattice")
+    }
+    tt |>
+      lapply(function(t) {
+        d<- t |> 
+          as_tibble() |>
+          slice(-seq(1,3)) |> 
+          select_if(function(f)length(unique(f))>1 || (unique(f)!=""))
+        
+        if (year=="2016") {
+          if (ncol(d)==22)  hh <- setdiff(h,c("Turnover Rates (%) - Oct-20 - Quality",
+                                              "Turnover Rates (%) - Oct-20 - Trend",
+                                              "Turnover Rates (%) - Oct-21 - Trend"))
+          else hh <- setdiff(h,"Turnover Rates (%) - Oct-21 - Trend") 
+          d<- d |> setNames(hh)
+        } else if (year=="2018") {
+          if (ncol(d)==25) {
+            d$V25[16] <- d$V24[16]
+            d$V24[16] <- d$V23[16]
+            d$V23[16] <- d$V22[16]
+            d$V22[16] <- d$V21[16]
+            d<- d |> select(-V10,-V11,-V21)
+          }
+          hh <- setdiff(h,c("Availability Rates (%) - Oct-21 - Trend","Availability Rates (%) - Oct-21 - Quality")) 
+          d<- d |> setNames(hh)
+        } else {
+          d <- d |> setNames(h)
+        }
+        d |>
+          pivot_longer(-Centre,names_pattern="(.+) - (.+) - (.+)",names_to=c("Metric","Year",".value")) |>
+          mutate(Year=str_extract(Year,"\\d{2}$") %>% paste0("20",.)) |>
+          mutate(Year=recode(Year,"2020"=as.character(as.integer(year)-1),"2021"=as.character(year))) |>
+          mutate(Value=gsub("\\$|,","",Value) %>% as.numeric())
+      }) |>
+      bind_rows()
+  }
+  
+  
+  turnover_data4 <- get_pdf_turnover_data("https://eppdscrmssa01.blob.core.windows.net/cmhcprodcontainer/sf/project/archive/housing_markets/rentalmarketreportcanadahighlights/64667_2018_a01.pdf",page=seq(7,8),year="2018",h,
+                                          a=list(c(top=61.10621,left=37.76754,bottom=564.24048,right=567.88377),
+                                                 c(top=62.69339,left=37.76754,bottom=383.30261,right=572.64529)))
+  # turnover_data5 <- get_pdf_turnover_data("https://eppdscrmssa01.blob.core.windows.net/cmhcprodcontainer/sf/project/archive/housing_markets/rentalmarketreportcanadahighlights/64667_2017_a01.pdf",page=seq(7,8),year="2017",h)
+  turnover_data6 <- get_pdf_turnover_data("https://eppdscrmssa01.blob.core.windows.net/cmhcprodcontainer/sf/project/archive/housing_markets/rentalmarketreportcanadahighlights/64667_2016_a01.pdf",page=seq(5,6),year="2016",h)
+  
+  
+  turnover_data1 |>
+    bind_rows(turnover_data3) |>
+    bind_rows(turnover_data4 |> filter(Year=="2017")) |>
+    bind_rows(turnover_data6 |> filter(Year=="2016")) |>
+    mutate(Centre=recode(Centre,"Ottawa-Gatineau CMA (Ont. Part)"="Ottawa-Gatineau CMA (Ont. part)"))
+}
+turnover_data <-  simpleCache(get_turnover_data(),"cmhc_turnover.Rds",path = here::here("data")) |>
+  filter(Metric=="Turnover Rates (%)")
+
+year_colours <- setNames(as.character(MetBrewer::met.brewer("Homer2",6)),as.character(seq(2016,2021)))
+```
+
+
+Taking a comprehensive look at the CMA level data, ordered by mean turnover rate over our six years, we see a wide spread in turnover rate across CMAs and across years.
+
+```{r fig.height=7}
+turnover_data |>
+  filter(!is.na(Value)) |>
+  group_by(Centre) |>
+  mutate(mean=mean(Value,na.rm=TRUE)) %>%
+  mutate(Centre=factor(Centre,levels=arrange(.,mean) |> pull(Centre) |> unique())) |>
+  ggplot(aes(y=Centre,x=Value/100,colour=Year)) +
+  geom_point(aes(shape=Quality)) +
+  scale_x_continuous(labels=scales::percent) +
+  scale_shape_discrete(labels=cmhc:::cmhc_quality_labels) +
+  scale_colour_manual(values=year_colours) +
+  labs(title="Rental apartment turnover rate",
+       x="Rate of new tenants over past year",
+       y=NULL,
+       caption="CMHC RMS")
+```
+
+Unsurprisingly, tight rental markets like Toronto and Vancouver come out with very low turnover rates, indicating the lack of housing choices. This is in line with data from the Canadian Housing Survey [showing a low propensity of choice moves for overall (primary and secondary market) renters in these regions](https://doodles.mountainmath.ca/blog/2021/03/29/forced-out-in-canada-new-data-from-chs/). This is likely amplified by long term renters benefiting from rent control, which enables choice stability but also discourages choice mobility by accumulating a [moving penalty](https://doodles.mountainmath.ca/blog/2018/11/28/moving-penalty/) due to market rents increasing significantly faster than in-place rent-controlled rents. Provinces with more stringent rent control - at least on the books - include BC, MB, ON, QC, and PEI ([handy abbreviated guide here](https://loanscanada.ca/rent/rent-control-laws-rules-and-regulations-across-canada/)).
+
+Of course, 2020 was a special year in this regard, with moratoria on evictions and rent freezes widespread through the early months of the pandemic. We might expect many tenants to have largely hunkered down in place. On the other hand, we might expect other tenants to have moved, following disruptions to workplace and lifestyle. Indeed, we have [preliminary evidence](https://homefreesociology.com/2021/11/29/first-peek-at-population-and-household-data-during-covid-caveats/) that young adults moved back in with their parents during the early months of the pandemic. More recently, pandemic protections for tenants have expired at the same time that rental markets appear to have [tightened again](https://doodles.mountainmath.ca/blog/2022/02/18/vacancy-rates-and-rent-change-2021-update/). 
+
+Looking more closely at turnover rates allows us to peek at how they've evolved over time, both up to and through the pandemic. Eyeballing the graph it looks like turnover rates were higher in the early years and lower later, with 2021 possibly breaking from this trend. To understand this in more detail we zoom in on several CMAs and plot the trend over time, treating 2021 separately. 
+
+```{r fig.height=4.5}
+
+plot_data_rms <- turnover_data |>
+  filter(!is.na(Value)) |>
+  group_by(Centre) |>
+  mutate(mean=mean(Value,na.rm=TRUE)) %>%
+  mutate(Centre=factor(Centre,levels=arrange(., mean) |> pull(Centre) |> unique())) |>
+  filter(grepl("Vancouver|Toronto|Calgary|Montr|Edmonton|Halifax",Centre)) |>
+  mutate(Region=gsub(" CMA","",Centre),
+         Share=Value/100) %>%
+  mutate(Region=factor(Region,levels=filter(.,Year=="2020") |> arrange(Share) |> pull(Region)))
+
+region_colours <- setNames(MetBrewer::met.brewer("Austria",6),levels(plot_data_rms$Region))
+
+
+plot_data_rms |>
+  ggplot(aes(x=Year,y=Share,colour=Region,group=Region)) +
+  geom_point(aes(shape=Quality)) * (blend("lighten") + blend("multiply", alpha = 0.65)) +
+  scale_y_continuous(labels=scales::percent) +
+  scale_shape_discrete(labels=cmhc:::cmhc_quality_labels) +
+  scale_colour_manual(values=region_colours) +
+  guides(colour=guide_legend(reverse = TRUE)) +
+  expand_limits(y=0) +
+  geom_smooth(method="lm",se=FALSE, formula = y~x,
+              data=~filter(.,Year!="2021")) +
+  geom_line(#data=~filter(.,Year %in% c("2020","2021")),
+            linetype="dashed") +
+  labs(title="Rental apartment turnover rate",
+       y="Rate of new tenants over past year",
+       x=NULL,
+       caption="CMHC RMS")
+```
+
+Overall, trends for Calgary, Vancouver and Montreal seem largely unaffected by the pandemic, but Toronto, Halifax and Edmonton show significant recent increases in mobility. Is this evidence of recent differences in residential sorting processes across metro areas?
+
+There are several plausible factors that can impact turnover rates, ranging from physical like unit mix and location, to demographics like age and share of students, non-permanent residents and recent immigrants which tend to have higher mobility rates. Moreover, mobility rates may be impacted by the mixture of primary and secondary rental market housing stock, with people with higher mobility rates sorting into the less stable secondary market and people looking for more stability more willing to pay the premium of renting in the primary sector.
+
+That said, none of these factors seem obviously consistent with the data shown above. More work might be needed to sort out what's going on. We should probably start by checking on how turnover data stacks up to our other measures of residential mobility for tenants.
+
+## Cross check with other data sources
+```{r}
+source_colours <- setNames(c(sanzo::trios$c157[1],sanzo::trios$c157,"steelblue"),c("2016 Rms","2018 Rms","2016 Census","2018 CHS","2021 CHS"))
+```
+
+To better understand the primary rental apartment mobility rates we can compare them to two other data sources that (roughly) intersect our time frame, the 2016 census and the 2018 Canadian Housing Survey (CHS). We start with the census, which [we just recently used](https://doodles.mountainmath.ca/blog/2022/05/27/residential-mobility-in-canada/) to understand overall mobility rates, and how they depend on CMA, age and tenure.
+
+Importantly, our mobility rates are constructed differently as we switch data sources. In our numerator, we shift from all new tenants moving through primary rental apartment stock within the past year to examining currently resident tenant households of similar structures (see below) who've moved in the last year. So the Census and the CHS capture a similar, but slightly different group of tenant households, but record no more than a single move per household. In our denominator, we shift from dividing by total primary rental apartment stock (i.e. including vacant apartments) to dividing by total currently resident tenant households of similar structures (i.e. excluding vacant apartments). In short, these are slightly different measures. But if carried out correctly, they ought to line up pretty well with one another.
+
+### Census data
+```{r}
+pumf_2016_h <- foreign::read.spss(getOption("census_2016_pumf_h.sav")) %>%
+    as_tibble() 
+
+pumf_2016 <- foreign::read.spss(getOption("census_2016_pumf_i.sav")) %>%
+    as_tibble()
+```
+To find similar structures to those recorded as primary rental apartments in the CMHC survey, we will focus on households in non-subsidized apartment rentals that aren't part of a condominium development. In absence of suitable cross tabulations we default to using PUMF data. Wanting to filter by dwelling type forces us to use the hierarchical PUMF, and even there we don't have the ability to distinguish people in "duplex" apartments from non-stratified apartments that are closer to what the Rms might capture.
+
+Before we do this we want to get an overview how mobility rates depend on different types of housing.
+
+```{r fig.height=4.5}
+plot_data_census <- pumf_2016_h |>
+  filter(TENUR!="Not available") |>
+  mutate(CMA=fct_recode(CMA,"Montréal"="Montr�al")) |>
+  filter(grepl("Vancouver|Toronto|Calgary|Montr|Edmonton|Halifax",CMA)) |>
+  mutate(Type=case_when(SUBSIDY=="A subsidized dwelling"  ~ "Subsidized renter",
+                        TENUR=="Owned by a member of the household" & CONDO=="Condominium" ~ "Condo owner",
+                        TENUR=="Owned by a member of the household" ~ "Non-condo owner",
+                        DTYPE=="Apartment" & CONDO=="Condominium" ~ "Condo renter",
+                         DTYPE=="Apartment" ~ "Non-condo apartment renter",
+                        TRUE ~ "Other renter")) |>
+  filter(!(Mob1 %in% c("Not available",  "Not applicable"))) |>
+  filter(PRIHM=="Person is primary household maintainer") |>
+  filter(SUBSIDY!="Not available") |>
+  filter(!duplicated(HH_ID)) |>
+  group_by(CMA,Type,moved=Mob1!="Non-movers") |>
+  summarise(Count=sum(WEIGHT),Cases=n(),.groups="drop") |>
+  group_by(Region=CMA,Type) |>
+  mutate(Share=Count/sum(Count),Total=sum(Cases)) |>
+  filter(moved)
+
+plot_data_census |>
+  ungroup() %>%
+  mutate(Region=factor(Region,levels=filter(.,Type=="Non-condo apartment renter") |> arrange(Share) |> pull(Region))) |>
+  mutate(Tenure=ifelse(grepl("owner",Type),"Owner","Renter")) %>%
+  mutate(Type=factor(Type,levels=filter(.,Region=="Vancouver")|>arrange(Share)|>pull(Type))) |>
+  #mutate(Type=gsub(" owner| renter","",Type)) |>
+  ggplot(aes(y=Type,x=Share)) +
+  geom_bar(stat="identity",fill=source_colours["2016 Census"]) +
+  facet_wrap(~Region) +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Share of household who moved in past year",
+       x=NULL,y=NULL,
+       caption="StatCan 2016 Census PUMF (hierarchichal)")
+  
+```
+
+These are pretty interesting results in their own right. They show a clear hierarchy of tenures in relation to residential mobility. It stands to reason that non-condo renter rates are somewhat higher than what the RMS finds in the purpose-built rental stock because it also includes secondary suite rentals. We can compare the data from the Census, which was held in May 2016, to the RMS data from October 2016, understanding the problem with counting secondary suites in the census data; counting possible multiple turnovers in the RMS data; and dropping tenants recorded as resident elsewhere in the Census. The census will also count renters in newly built units, which should show 100% mobility rates, whereas the RMS turnover rate will exclude those.
+
+```{r fig.height=4}
+plot_data_census |>
+  filter(Type=="Non-condo apartment renter") |>
+  mutate(Source="2016 Census") |>
+  bind_rows(plot_data_rms |> filter(Year=="2016") |> mutate(Region=gsub(" CMA","",Centre), Share=Value/100, Source="2016 Rms")) |>
+  filter(Region!="Halifax") |>
+  ggplot(aes(y=Region,x=Share,fill=Source)) +
+  geom_bar(stat="identity", position = "dodge") +
+  scale_fill_manual(values=source_colours[c("2016 Rms","2016 Census")]) +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Census 1-year non-subsidized non-condo apartment mobility vs RMS turnover rates",
+       x="1-year mobility / turnover rate", y=NULL,
+       caption="StatCan 2016 Census PUMF (hierarchical), CMHC RMS")
+```
+
+This shows that for Vancouver, Toronto and Montreal the census comes out with higher mobility rates while Edmonton and Calgary show lower rates compared to the RMS (Rental Market Survey). With Calgary and Edmonton showing very high mobility in the census of upward of 30%, it is quite reasonable to assume that the difference may be driven by multiple turnovers within a year, using the naive heuristic that if about one third of the units turned over at least once, then a little under one third of the units that turned over turned over more than once, with total turnover roughly matching the RMS numbers.
+
+On the other hand, the higher census mobility rates in Vancouver and Toronto may well be explained by secondary suite rentals slipping into the non-condo apartment mix. In summary, the turnover rates of the two data sources are plausibly consistent.
+
+### CHS data
+Let's take a look at the CHS data. The definitions are a little different here than in the census data: apartments don't include secondary suites in this case and subsidized units are tied to the type of housing and can't be cash subsidies like in the census. We also get information on whether tenancies are "arm's length" between tenant and landlord (e.g. not one family member renting to another).
+```{r}
+base_path <- getOption("chs_pumf_2018_path")
+
+var_labels <- read_pumf_var_labels(base_path)
+val_labels <- read_pumf_val_labels(base_path)
+
+chs_pumf <- read_pumf_data(base_path,guess_numeric = FALSE) %>%
+  convert_pumf_numeric_columns(numeric_columns = "PFWEIGHT")
+
+chs_theme <- list(
+  theme_bw(),
+  labs(caption="2018 CHS PUMF")
+)
+
+chs_pumf_names <- chs_pumf |> label_pumf_data()
+```
+
+
+
+```{r}
+valid_lengths <- c("Less than 1 year ago",  "1 year to less than 2 years ago",
+                   "2 years to less than 3 years ago","3 years to less than 4 years ago",
+                   "4 years to less than 5 years ago", "5 years to less than 10 years ago",
+                   "10 or more years ago or always lived here")
+plot_data_chs <- chs_pumf_names |>
+  filter(`Previous accommodations - when move to current dwelling occurred` %in% valid_lengths) |>
+  filter(!(`Shelter costs for renters - subsidized housing` %in% c("Don't know", "Refusal", "Not stated"))) |>
+  #filter(`Shelter costs for renters - landlord (type)`=="A private company or individual") |>
+  mutate(Recent=`Previous accommodations - when move to current dwelling occurred`=="Less than 1 year ago") |>
+  mutate(Apartment=`Dwelling type` %in% c("Apartment in a building that has five or more storeys",
+                                            "Apartment in a building that has fewer than five storeys")) |>
+  mutate(Type=case_when(`Shelter costs for renters - subsidized housing`=="Yes" ~ "Subsidized renter",
+                        `Dwelling characteristics - condominium unit`=="Yes" & Tenure=="Yes" & Apartment ~ "Condo apartment owner",
+                        Tenure=="Yes" ~ "Non-condo owner",
+                        `Shelter costs for renters - landlord (type)`=="A relative, an employer or other" ~ "Non-arms length",
+                        `Dwelling characteristics - condominium unit`=="Yes" & Apartment ~ "Condo apartment renter",
+                        Apartment ~ "Non-condo apartment renter",
+                        TRUE ~ "Other renter")) |>
+  group_by(Region=`Geographic grouping`, Recent, Type) |>
+  summarise(Count=sum(`Household weight`),Cases=n(),.groups="drop") |>
+  group_by(Region,Type) |>
+  mutate(Share=Count/sum(Count),Total=sum(Cases)) |>
+  filter(Recent) 
+
+plot_data_chs |>  
+  #filter(Total>25) |>
+  filter(grepl("Vancouver|Toronto|Calgary|Montr|Edmonton|Halifax",Region) & !grepl(" - ",Region)) %>%
+  mutate(Type=factor(Type,levels=filter(.,Region=="Vancouver") |> arrange(Share) |> pull(Type))) |>
+  ggplot(aes(y=Type,x=Share)) +
+  geom_bar(stat="identity",fill=source_colours["2018 CHS"]) +
+  facet_wrap(~Region) +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Households who moved in the previous year",
+       x="1-year mobility rate",y=NULL,
+       caption="2018 CHS")
+```
+
+Again, we notice a strong dependence on the type of unit, but it's less clear-cut across CMA. Three other things stand out. First it's remarkable that in Toronto mobility in subsidized units is extraordinarily low. Second, Vancouver stands out with a high share of people moving into non-arms length rentals, which we define here as rentals not rented by "a government" or "a private company or individual", but instead by "a relative, an employer or other". Third, and most notable in context, overall mobility rates look quite a bit lower than what we would expect from looking at the census.
+
+
+
+```{r fig.height=4}
+plot_data_chs |>
+  filter(Type=="Non-condo apartment renter") |>
+  filter(grepl("Vancouver|Toronto|Calgary|Montr|Edmonton|Halifax",Region),!grepl(" - ",Region)) |>
+  mutate(Source="2018 CHS") |>
+  bind_rows(plot_data_rms |> filter(Year=="2018") |> mutate(Source="2018 Rms")) |>
+  mutate(Region=factor(Region,levels=levels(plot_data_rms$Region))) |>
+  ggplot(aes(y=Region,x=Share,fill=Source)) +
+  geom_bar(stat="identity", position = "dodge") +
+  scale_fill_manual(values=source_colours[c("2018 Rms","2018 CHS")]) +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="CHS 1-year non-subsidized non-condo apartment mobility vs RMS turnover rates",
+       x="1-year mobility / turnover rate", y=NULL,
+       caption="StatCan 2016 Census PUMF (hierarchical), CMHC RMS")
+```
+
+This is a bit baffling, the differences are quite large, the CHS shows implausibly low mobility rates. We can plot all three data sources on the same graph.
+
+```{r fig.height=4.5}
+plot_data_rms |>
+  mutate(Region=gsub(" CMA","",Centre),
+         Share=Value/100) |>
+  mutate(Date=as.Date(paste0(Year,"-10-01")), Source="Rms") |>
+  bind_rows(plot_data_chs |> filter(Type=="Non-condo apartment renter") |> mutate(Date=as.Date("2019-01-15"), Source="CHS")) |>
+  bind_rows(plot_data_census |> filter(Type=="Non-condo apartment renter") |> mutate(Date=as.Date("2016-05-15"), Source="Census")) |>
+  filter(grepl("Vancouver|Toronto|Calgary|Montr|Edmonton|Halifax",Region),!grepl(" - ",Region)) |>
+  mutate(Region=factor(Region,levels=levels(plot_data_rms$Region))) |>
+  ggplot(aes(x=Date,y=Share,colour=Region,group=interaction(Region,Source))) +
+  geom_point(aes(shape=Source)) +
+  geom_smooth(method="lm",se=FALSE, formula = y~x,
+              data=~filter(.,Year!="2021")) +
+  geom_line(#data=~filter(.,Year %in% c("2020","2021")),
+            linetype="dashed") +
+  scale_colour_manual(values=region_colours) +
+  scale_y_continuous(labels=scales::percent) + #,trans="log",breaks=c(0.05,0.1,0.2,0.3,0.4,0.5)) +
+  guides(colour=guide_legend(reverse = TRUE)) +
+  expand_limits(y=0) +
+  labs(title="Comparison of 1-year mobility/turnover rates",
+       subtitle='Census non-subsidized non-condo "Apartment" Rentals\nCHS non-subsidized non-condo Apartment (>5 and <= 5 storey) Rentals\nRms turnover rates',
+       x=NULL,y="1-year mobility/turnover rates",
+       caption="StatCan 2016 Census PUMF (hierarchical); CMHC Rms, StatCan 2018 CHS PUMF")
+```
+
+Again, the CHS mobility rates are implausibly low. Even though Census to CHS drops match the trend line from RMS over time, they look too low relative to those trend lines. What's going on? It's a mystery!
+
+## Cross-checks with 5-year mobility and overall mobility rates
+Let's check in on 5-year mobility rates and cross-check with the Census. These should be less sensitive to short-term variation, and also plausibly to undersampling recent movers. Here we can even add in the just-released 2021 CHS comparison (though we can't yet match it up to Census 2021).
+
+```{r}
+mov5_chs <- cansim::get_cansim("46-10-0061") |>
+  filter(`Indicators related to moving`=="Moved in the past 5 years",
+         Statistics == "Percentage of households") |>
+  mutate(Source=paste0(REF_DATE," CHS")) |>
+  select(GeoUID,GEO,Source,Share=val_norm)
+
+mov5_chs_pumf <- chs_pumf_names |>
+    filter(`Previous accommodations - when move to current dwelling occurred` %in% valid_lengths) |>
+  #filter(!(`Shelter costs for renters - subsidized housing` %in% c("Don't know", "Refusal", "Not stated"))) |>
+  #filter(`Shelter costs for renters - landlord (type)`=="A private company or individual") |>
+  mutate(Mover=`Previous accommodations - when move to current dwelling occurred` %in% c("Less than 1 year ago" ,
+                                                                                         "1 year to less than 2 years ago",
+                                                                                         "2 years to less than 3 years ago",
+                                                                                         "3 years to less than 4 years ago" ,
+                                                                                         "4 years to less than 5 years ago")) |>
+  mutate(Apartment=`Dwelling type` %in% c("Apartment in a building that has five or more storeys",
+                                            "Apartment in a building that has fewer than five storeys")) |>
+  mutate(Type=case_when(`Shelter costs for renters - subsidized housing`=="Yes" ~ "Subsidized renter",
+                        `Dwelling characteristics - condominium unit`=="Yes" & Tenure=="Yes" & Apartment ~ "Condo apartment owner",
+                        Tenure=="Yes" ~ "Non-condo owner",
+                        `Shelter costs for renters - landlord (type)`=="A relative, an employer or other" ~ "Non-arms length",
+                        `Dwelling characteristics - condominium unit`=="Yes" & Apartment ~ "Condo apartment renter",
+                        Apartment ~ "Non-condo apartment renter",
+                        TRUE ~ "Other renter")) |>
+  group_by(GEO=`Province of residence`, Mover) |>
+  summarise(Count=sum(`Household weight`),Cases=n(),.groups="drop") |>
+  group_by(GEO) |>
+  mutate(Share=Count/sum(Count),Total=sum(Cases)) |>
+  filter(Mover) 
+
+
+mov5_census <- pumf_2016 |>
+  #filter(PR %in% mov5_chs$GEO) |>
+  filter(PRIHM=="Person is primary maintainer") |>
+  mutate(Mover=Mob5 != "Non-movers") |>
+  group_by(GEO=PR,Mover) |>
+  summarise(Count=sum(WEIGHT),Cases=n(),.groups="drop") |>
+  group_by(GEO) |>
+  mutate(Share=Count/sum(Count),Total=sum(Cases)) |>
+  ungroup() |>
+  filter(Mover)
+  
+
+bind_rows(mov5_census |> mutate(Source="2016 Census"),
+          mov5_chs |> filter(GEO !="Canada (provinces only)"),
+          mov5_chs_pumf |> mutate(Source="2018 CHS PUMF")) |>
+  filter(!(GEO %in% c("Canada","Yukon","Northwest Territories","Nunavut","Northern Canada","Territories")))|>
+  ggplot(aes(x=Share,y=GEO,fill=Source)) +
+  scale_fill_manual(values=c(source_colours[c("2016 Census","2018 CHS","2021 CHS")],c("2018 CHS PUMF"="brown"))) +
+  geom_bar(stat="identity",position = "dodge") +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Households at different residence 5 years prior",
+       x="Share",y=NULL,
+       caption="StatCan 2016 Census PUMF (individuals); StatCan CHS 2018 PUMF, StatCan Table 46-10-0061")
+```
+
+There's differences here, but none are especially notable, and they could be explained by sampling and/or historical variation. Census 5-year mobility rates match relatively well both with StatCan tabulated results from the CHS for both 2018 and 2021, and with the Public Use Microdata File (PUMF) results. In other words, we don't appear to be missing or undersampling movers across the 5-year survey frame.
+
+Let's go back to the Census to CHS comparison for 1-year mobility rates. Below we can really see just how stark the differences are between Census results and CHS.
+
+```{r}
+mov1_chs_pumf <- chs_pumf_names |>
+  filter(`Previous accommodations - when move to current dwelling occurred` %in% valid_lengths) |>
+  #filter(!(`Shelter costs for renters - subsidized housing` %in% c("Don't know", "Refusal", "Not stated"))) |>
+  #filter(`Shelter costs for renters - landlord (type)`=="A private company or individual") |>
+  mutate(Mover=`Previous accommodations - when move to current dwelling occurred` %in% c("Less than 1 year ago")) |>
+  mutate(Apartment=`Dwelling type` %in% c("Apartment in a building that has five or more storeys",
+                                            "Apartment in a building that has fewer than five storeys")) |>
+  mutate(Type=case_when(`Shelter costs for renters - subsidized housing`=="Yes" ~ "Subsidized renter",
+                        `Dwelling characteristics - condominium unit`=="Yes" & Tenure=="Yes" & Apartment ~ "Condo apartment owner",
+                        Tenure=="Yes" ~ "Non-condo owner",
+                        `Shelter costs for renters - landlord (type)`=="A relative, an employer or other" ~ "Non-arms length",
+                        `Dwelling characteristics - condominium unit`=="Yes" & Apartment ~ "Condo apartment renter",
+                        Apartment ~ "Non-condo apartment renter",
+                        TRUE ~ "Other renter")) |>
+  group_by(GEO=`Geographic grouping`, Mover) |>
+  summarise(Count=sum(`Household weight`),Cases=n(),.groups="drop") |>
+  group_by(GEO) |>
+  mutate(Share=Count/sum(Count),Total=sum(Cases)) |>
+  filter(Mover) 
+
+
+mov1_census <- pumf_2016 |>
+  filter(CMA %in% unique(mov1_chs_pumf$GEO)) |>
+  filter(PRIHM=="Person is primary maintainer") |>
+  mutate(Mover=MOB1 != "Non-movers") |>
+  group_by(GEO=CMA,Mover) |>
+  summarise(Count=sum(WEIGHT),Cases=n(),.groups="drop") |>
+  group_by(GEO) |>
+  mutate(Share=Count/sum(Count),Total=sum(Cases)) |>
+  ungroup() |>
+  filter(Mover) 
+  
+
+bind_rows(mov1_census |> mutate(Source="2016 Census"),
+          mov1_chs_pumf |> mutate(Source="2018 CHS PUMF")) |>
+  filter(GEO %in% unique(mov1_census$GEO))|>
+  ggplot(aes(x=Share,y=GEO,fill=Source)) +
+  scale_fill_manual(values=c(source_colours[c("2016 Census")],c("2018 CHS PUMF"="brown"))) +
+  geom_bar(stat="identity",position = "dodge") +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Households at different residence 1 year prior",
+       x="Share",y=NULL,
+       caption="StatCan 2016 Census PUMF (individuals); StatCan CHS PUMF")
+```
+
+Clearly there's an issue emerging only for recent movers, those moving within the past year in the CHS data. Are they being undersampled? This seems possible... but there's another intriguing potential explanation. 
+
+Data collection for the CHS was carried out between November 2018 and March 2019. This is different from the Census, which was carried out from May through July of 2016. Is it possible that spreading data collection across two years mattered? Let's compare questions asked.
+
+The [2016 Census long-form questionnaire](https://www12.statcan.gc.ca/nhs-enm/2016/ref/questionnaires/questions-eng.cfm) asks about where people lived on a specific date one year or five years prior to when data collection begins (May 10th, 2015), e.g.
+
+
+Question identifier 22: Where did this person live 1 year ago, that is, on May 10, 2015?
+
+
+The [2018 CHS questionnaire](https://www23.statcan.gc.ca/imdb/p3Instr.pl?Function=assembleInstr&a=1&&lang=en&Item_Id=1197668#qb119973) asks about most recent move. 
+
+Question identifier: PAC_Q05
+
+When did you move to your current dwelling?
+
+Would you say:
+
+    01: Less than 1 year ago
+    02: 1 year to less than 2 years ago
+    03: 2 years to less than 3 years ago
+    04: 3 years to less than 4 years ago
+    05: 4 years to less than 5 years ago
+    06: 5 years to less than 10 years ago
+    07: 10 or more years ago
+    08: Always lived here
+
+
+There are at least two ways these different questions could result in different estimates of the timing of a recent move for the same person. Given that Census data collection runs from May through July, they may be picking up between 12-14 months of moving risk in their estimates of one-year mover rates. By contrast, the CHS question specifies exactly one year as its cut-off for estimating one-year mover rates. But the CHS data collection also crosses a threshold from one year to the next. This makes it entirely possible that people benchmark their move not from the time of survey, but what year they moved. So those moving in, say, June of 2018, but surveyed in February of 2019, might declare their move as occurring "1 year to less than 2 years ago" - because it occurred last year - rather than "Less than 1 year ago," which is what we'd want them to choose to get our one-year mover rates. In short, the different questions and procedures of the Census might be systematically overestimating one-year mover rates while the CHS underestimates them.
+
+If some respondents benchmarked their responses to calendar year in the CHS instead of estimating backward in months from survey date, it could systematically push the reported timing of their last moves backward. Do we see this kind of movement in the CHS data? Since the CHS breaks down the timing of most recent move in yearly intervals, we can take a look! 
+
+By way of a primer, we might expect our one-year mobility rates to remain constant for each year prior to the survey, assuming people had the same risk of moving for each year in their past. Or, more accurately given the selectivity of movers (movers tend to move more often), we might expect that mobility rates tend to be highest for the most time period, which catch the most frequent movers, then decline for moves further in the past, where frequent movers are less represented. But if enough people are benchmarking to calendar year for past moves instead of indexing by month, then our estimated mobility rates will systematically shift those people backward, growing higher if we go back further, until the effect of frequent movers takes over. 
+
+```{r}
+mov5_chs_pumf <- chs_pumf_names |>
+  filter(`Previous accommodations - when move to current dwelling occurred` %in% valid_lengths) |>
+  group_by(GEO=`Geographic grouping`,Mover=`Previous accommodations - when move to current dwelling occurred`) |>
+  summarise(Count=sum(`Household weight`),Cases=n(),.groups="drop") |>
+  group_by(GEO) |>
+  mutate(Sum=sum(Count),Share=(Count/Sum)) |>
+  filter(!(Mover %in% c("5 years to less than 10 years ago",
+                        "10 or more years ago or always lived here"))) 
+  
+  
+mov5_chs_pumf |>
+  filter(GEO %in% unique(levels(pumf_2016$CMA)))|>
+  ggplot(aes(x=Share,y=GEO,fill=Mover)) +
+  #scale_fill_manual(values=c(source_colours[c("2016 Census")],c("2018 CHS PUMF"="brown"))) +
+  geom_bar(stat="identity",position = "dodge") +
+  scale_x_continuous(labels=scales::percent) +
+  scale_fill_manual(values=MetBrewer::met.brewer("Tam",6)[1:5]) +
+  labs(title="Moving rates over different timeframes",
+       x="Share of households moving",y=NULL,
+       fill="Time of last move",
+       caption="StatCan 2018 CHS PUMF")
+```
+
+Sure enough, our one-year mobility rates climb the further back we go, mostly peaking somewhere in the middle. In many regions it looks like the 1-2 year mobility picks up the slack left by the 0-1 year mobility shares, providing some possible supporting evidence that there may be issues with how people benchmark their responses to the CHS timing of last move survey question. Definitely worth looking into further.
+
+Another way to look at this is to convert the data to 1-year equivalent mobility rates based on aggregate movers up to $n$ years back. This attempts to account for frequent movers and is a cleaner way to view mobility rates.
+
+```{r}
+mov5_chs_pumf <- chs_pumf_names |>
+  filter(`Previous accommodations - when move to current dwelling occurred` %in% valid_lengths) |>
+  group_by(GEO=`Geographic grouping`,Mover=`Previous accommodations - when move to current dwelling occurred`) |>
+  summarise(Count=sum(`Household weight`),Cases=n(),.groups="drop") |>
+  mutate(years=substr(Mover,1,2) %>% gsub("Le","0",.) |> as.integer()) |>
+  mutate(years=years+1) |>
+  mutate(years=ifelse(years==6,10,years)) |>
+  group_by(GEO) |>
+  arrange(years) |>
+  mutate(Total=cumsum(Count)) |>
+  mutate(Sum=sum(Count),Share=(Count/Sum),Risk=Total/Sum,Adjusted=1-(1-Risk)^(1/years)) |>
+  mutate(label=ifelse(years==1,"Less than 1 year ago",paste0("Less than ",years," years ago"))) |>
+  filter(!(Mover %in% c(#"5 years to less than 10 years ago",
+                        "10 or more years ago or always lived here"))) %>%
+  mutate(label=factor(label,arrange(.,years) |> pull(label) |> unique()))
+
+  
+mov5_chs_pumf |>
+  filter(GEO %in% unique(levels(pumf_2016$CMA)))|>
+  ggplot(aes(x=Adjusted,y=GEO,fill=label)) +
+  #scale_fill_manual(values=c(source_colours[c("2016 Census")],c("2018 CHS PUMF"="brown"))) +
+  geom_bar(stat="identity",position = "dodge") +
+  scale_x_continuous(labels=scales::percent) +
+  scale_fill_manual(values=MetBrewer::met.brewer("Tam",6)) +
+  labs(title="Mobility rates over different timeframes",
+       x="1-year equivalent mobility rates",y=NULL,
+       fill="Timespan",
+       caption="StatCan 2018 CHS PUMF")
+```
+
+Again we see similar patterns, and the "Less than 2 years ago" bracket looks in line with the other brackets, again suggesting that the 0-1 and 1-2 year mobility rates are impacted by how people understand the question. This is of course overplayed with possible changes in overall mobility, where e.g. Halifax looks fairly stable of this timeframe and some other regions showing drops in (estimated) mobility rates. We also observe a drop in the much larger range (up to 10 years ago) bracket, which likely reflects the effect of frequent movers.
+
+One takeaway from this is that maybe Canadian Housing Survey results should be "adjusted" for comparability. 1-year mobility rates using 1-year equivalent mobility rates (as per above) based on the cumulative movers in the past two years might be an acceptable proxy for actual 1-year mobility rates. We can try that out by plugging those into our previous graph comparing mobility rates over time.
+
+
+```{r residential-mobility-trend-comparison, fig.heigh=4.5}
+plot_data_chs2 <- chs_pumf_names |>
+  filter(`Previous accommodations - when move to current dwelling occurred` %in% valid_lengths) |>
+  filter(!(`Shelter costs for renters - subsidized housing` %in% c("Don't know", "Refusal", "Not stated"))) |>
+  #filter(`Shelter costs for renters - landlord (type)`=="A private company or individual") |>
+  mutate(Recent=`Previous accommodations - when move to current dwelling occurred` %in% c("Less than 1 year ago","1 year to less than 2 years ago")) |>
+  mutate(Apartment=`Dwelling type` %in% c("Apartment in a building that has five or more storeys",
+                                            "Apartment in a building that has fewer than five storeys")) |>
+  mutate(Type=case_when(`Shelter costs for renters - subsidized housing`=="Yes" ~ "Subsidized renter",
+                        `Dwelling characteristics - condominium unit`=="Yes" & Tenure=="Yes" & Apartment ~ "Condo apartment owner",
+                        Tenure=="Yes" ~ "Non-condo owner",
+                        `Shelter costs for renters - landlord (type)`=="A relative, an employer or other" ~ "Non-arms length",
+                        `Dwelling characteristics - condominium unit`=="Yes" & Apartment ~ "Condo apartment renter",
+                        Apartment ~ "Non-condo apartment renter",
+                        TRUE ~ "Other renter")) |>
+  group_by(Region=`Geographic grouping`, Recent, Type) |>
+  summarise(Count=sum(`Household weight`),Cases=n(),.groups="drop") |>
+  group_by(Region,Type) |>
+  mutate(Share=Count/sum(Count),Total=sum(Cases)) |>
+  filter(Recent) |>
+  mutate(Share=1-(1-Share)^(1/2))
+
+plot_data_rms |>
+  mutate(Region=gsub(" CMA","",Centre),
+         Share=Value/100) |>
+  mutate(Date=as.Date(paste0(Year,"-10-01")), Source="Rms") |>
+  bind_rows(plot_data_chs2 |> filter(Type=="Non-condo apartment renter") |> mutate(Date=as.Date("2019-01-15"), Source="CHS (adjusted)")) |>
+  bind_rows(plot_data_census |> filter(Type=="Non-condo apartment renter") |> mutate(Date=as.Date("2016-05-15"), Source="Census")) |>
+  filter(grepl("Vancouver|Toronto|Calgary|Montr|Edmonton|Halifax",Region),!grepl(" - ",Region)) |>
+  mutate(Region=factor(Region,levels=levels(plot_data_rms$Region))) |>
+  ggplot(aes(x=Date,y=Share,colour=Region,group=interaction(Region,Source))) +
+  geom_point(aes(shape=Source)) +
+  geom_smooth(method="lm",se=FALSE, formula = y~x,
+              data=~filter(.,Year!="2021")) +
+  geom_line(#data=~filter(.,Year %in% c("2020","2021")),
+            linetype="dashed") +
+  scale_colour_manual(values=region_colours) +
+  scale_y_continuous(labels=scales::percent) + #,trans="log",breaks=c(0.05,0.1,0.2,0.3,0.4,0.5)) +
+  guides(colour=guide_legend(reverse = TRUE)) +
+  expand_limits(y=0) +
+  labs(title="Comparison of 1-year mobility/turnover rates",
+       subtitle='Census non-subsidized non-condo "Apartment" Rentals\nCHS non-subsidized non-condo Apartment (>5 and <= 5 storey) Rentals\nRms turnover rates',
+       x=NULL,y="1-year mobility/turnover rates",
+       caption="StatCan 2016 Census PUMF (hierarchical); CMHC Rms, StatCan 2018 CHS PUMF")
+```
+
+Better! There are still noticeable differences between the sources, especially for Edmonton and Calgary which see much lower "adjusted" mobility rates in the CHS than in the RMS, but this moves us in the right direction for enabling comparisons across data sources.
+
+## Takeaways
+
+Are different questions and procedures (along with trends over time) enough to account for the different estimates of one-year mobility rates between Census and CHS? Maybe. We don't know. But returning to the CMHC's Rental Market Survey Data we can see that its results more closely line up with the Census. And that's part of why we're so glad to have another source of data on mobility!
+
+Our last takeaway returns us to the trends at hand. Including turnover data, we can clearly see a pattern operating across data sources where tenant mobility in purpose-built apartments seems to be generally on the decline, with evidence of some recent bounceback. As we've [noted in the past](https://homefreesociology.com/2021/03/29/forced-out-in-canada-new-data-from-chs/), declines are only good insofar as they reflects declines in forced moves, but they're mostly bad insofar as they reflect declines in choice moves. Protections against eviction generally increased through the pandemic, just as vacancy rates rose in many big cities. Both of which should lead to more choices. Unfortunately, these trends have since reversed in many places. That leaves our worrisome longer-term evidence of tumbling turnovers, which we've also seen linked to [negative trends in the USA](https://twitter.com/ProfDowellMyers/status/1409304130758209540). Worth keeping an eye on!
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-07-29-tumbling-turnover.Rmarkdown).
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
