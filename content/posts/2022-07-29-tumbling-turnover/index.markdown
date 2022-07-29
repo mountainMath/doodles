@@ -16,7 +16,7 @@ categories:
 tags: []
 description: "Digging deeper into Canadian residential mobility, tracking changes in mobility over time, and comparing data sources."
 featured: ''
-images: ["https://doodles.mountainmath.ca/posts/2022-07-29-tumbling-turnover_files/figure-html/residential-mobility-trend-comparison-1.png"]
+images: ["https://doodles.mountainmath.ca/blog/2022/07/29/tumbling-turnover/index_files/figure-html/residential-mobility-trend-comparison-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -187,13 +187,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-07-29 15:20:47 PDT"
+## [1] "2022-07-29 15:26:14 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [38cd45b] 2022-06-30: fix plot title
+## Head:     [90f6a8a] 2022-07-29: turnover post
 ```
 
 ```
@@ -221,29 +221,26 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## [13] ggplot2_3.3.6             tidyverse_1.3.2          
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] httr_1.4.3          sass_0.4.2          jsonlite_1.8.0     
-##  [4] splines_4.2.1       modelr_0.1.8        bslib_0.4.0        
-##  [7] assertthat_0.2.1    highr_0.9           googlesheets4_1.0.0
-## [10] cellranger_1.1.0    yaml_2.3.5          pillar_1.8.0       
-## [13] backports_1.4.1     lattice_0.20-45     glue_1.6.2         
-## [16] digest_0.6.29       rvest_1.0.2         colorspace_2.0-3   
-## [19] htmltools_0.5.3     Matrix_1.4-1        pkgconfig_2.0.3    
-## [22] broom_1.0.0         haven_2.5.0         bookdown_0.27      
-## [25] scales_1.2.0        tzdb_0.3.0          git2r_0.30.1       
-## [28] googledrive_2.0.0   mgcv_1.8-40         generics_0.1.3     
-## [31] farver_2.1.1        ellipsis_0.3.2      cachem_1.0.6       
-## [34] withr_2.5.0         MetBrewer_0.2.0     cli_3.3.0          
-## [37] magrittr_2.0.3      crayon_1.5.1        readxl_1.4.0       
-## [40] evaluate_0.15       fs_1.5.2            fansi_1.0.3        
-## [43] nlme_3.1-158        xml2_1.3.3          blogdown_1.10      
-## [46] tools_4.2.1         hms_1.1.1           gargle_1.2.0       
-## [49] lifecycle_1.0.1     munsell_0.5.0       reprex_2.0.1       
-## [52] compiler_4.2.1      jquerylib_0.1.4     rlang_1.0.4        
-## [55] grid_4.2.1          rstudioapi_0.13     labeling_0.4.2     
-## [58] rmarkdown_2.14      codetools_0.2-18    gtable_0.3.0       
-## [61] DBI_1.1.3           R6_2.5.1            lubridate_1.8.0    
-## [64] knitr_1.39          fastmap_1.1.0       utf8_1.2.2         
-## [67] stringi_1.7.8       vctrs_0.4.1         dbplyr_2.2.1       
-## [70] tidyselect_1.1.2    xfun_0.31
+##  [1] lubridate_1.8.0     assertthat_0.2.1    digest_0.6.29      
+##  [4] utf8_1.2.2          R6_2.5.1            cellranger_1.1.0   
+##  [7] backports_1.4.1     reprex_2.0.1        evaluate_0.15      
+## [10] httr_1.4.3          blogdown_1.10       pillar_1.8.0       
+## [13] rlang_1.0.4         googlesheets4_1.0.0 readxl_1.4.0       
+## [16] rstudioapi_0.13     jquerylib_0.1.4     rmarkdown_2.14     
+## [19] googledrive_2.0.0   munsell_0.5.0       broom_1.0.0        
+## [22] compiler_4.2.1      modelr_0.1.8        xfun_0.31          
+## [25] pkgconfig_2.0.3     htmltools_0.5.3     tidyselect_1.1.2   
+## [28] bookdown_0.27       fansi_1.0.3         crayon_1.5.1       
+## [31] tzdb_0.3.0          dbplyr_2.2.1        withr_2.5.0        
+## [34] grid_4.2.1          jsonlite_1.8.0      gtable_0.3.0       
+## [37] lifecycle_1.0.1     DBI_1.1.3           git2r_0.30.1       
+## [40] magrittr_2.0.3      scales_1.2.0        cli_3.3.0          
+## [43] stringi_1.7.8       cachem_1.0.6        fs_1.5.2           
+## [46] xml2_1.3.3          bslib_0.4.0         ellipsis_0.3.2     
+## [49] generics_0.1.3      vctrs_0.4.1         tools_4.2.1        
+## [52] glue_1.6.2          hms_1.1.1           fastmap_1.1.0      
+## [55] yaml_2.3.5          colorspace_2.0-3    gargle_1.2.0       
+## [58] rvest_1.0.2         knitr_1.39          haven_2.5.0        
+## [61] sass_0.4.2
 ```
 </details>
