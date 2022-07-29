@@ -490,7 +490,7 @@ plot_data_chs |>
 
 This is a bit baffling, the differences are quite large, the CHS shows implausibly low mobility rates. We can plot all three data sources on the same graph.
 
-```{r fig.height=4.5}
+```{r fig.height=5}
 plot_data_rms |>
   mutate(Region=gsub(" CMA","",Centre),
          Share=Value/100) |>
@@ -725,7 +725,7 @@ Again we see similar patterns, and the "Less than 2 years ago" bracket looks in 
 One takeaway from this is that maybe Canadian Housing Survey results should be "adjusted" for comparability. 1-year mobility rates using 1-year equivalent mobility rates (as per above) based on the cumulative movers in the past two years might be an acceptable proxy for actual 1-year mobility rates. We can try that out by plugging those into our previous graph comparing mobility rates over time.
 
 
-```{r residential-mobility-trend-comparison, fig.heigh=4.5}
+```{r residential-mobility-trend-comparison, fig.height=5}
 plot_data_chs2 <- chs_pumf_names |>
   filter(`Previous accommodations - when move to current dwelling occurred` %in% valid_lengths) |>
   filter(!(`Shelter costs for renters - subsidized housing` %in% c("Don't know", "Refusal", "Not stated"))) |>
