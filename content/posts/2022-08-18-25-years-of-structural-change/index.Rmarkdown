@@ -1,0 +1,431 @@
+---
+title: 25 Years of Structural Change
+authors: 
+  - Nathan Lauster
+  - Jens von Bergmann
+date: '2022-08-18'
+slug: 25-years-of-structural-change
+categories:
+  - cancensus
+  - Vancouver
+  - Toronto
+  - land use
+  - density
+  - dotdensity
+tags: []
+description: "Taking the long view on changes in our dwelling stock by structural type."
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2022/08/18/25-years-of-structural-change/index_files/figure-html/structural-change-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/08/18/structural-change/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 150,
+	fig.width = 8,
+	fig.height = 6,
+	cache = TRUE
+)
+
+library(tidyverse)
+library(cancensus)
+library(sf)
+library(patchwork)
+# remotes::install_github("mountainmath/cityDensities")
+library(cityDensities)
+# remotes::install_github("mountainmath/dotdensity")
+library(dotdensity)
+# remotes::install_github("mountainmath/mountainmathHelpers")
+library(mountainmathHelpers)
+```
+
+How are big Canadian Metros growing? Can we see different patterns? Here we want to provide a brief look back at the last 25 years, exploring change over time from 1996 to our most recent Census in 2021. This is also a test of R skills for one of us, who began this post as a learning exercise drawing upon [Jens](https://github.com/mountainMath)' excellent [CanCensus package](https://cran.r-project.org/web/packages/cancensus/vignettes/cancensus.html) and recent data updates. 
+
+Here we're simply going to compare housing stock by dwelling type in 1996 and 2021 for Canada's big three metro areas (Toronto, Montréal, Vancouver) and Calgary (effectively tied with Ottawa & Edmonton for [fourth place](https://en.wikipedia.org/wiki/List_of_census_metropolitan_areas_and_agglomerations_in_Canada)). What this allows for is a peek at how the housing stock of these metro areas has changed as they've grown. There are caveats to this quick look, of course. The two most prominent being that the definitions of housing structure and the boundaries of metro areas may have changed. We have written before about the [change to Census methods](https://doodles.mountainmath.ca/blog/2020/01/27/mythical-oversupply/) and the problems this creates for [analysis of housing stock](https://homefreesociology.com/2022/02/01/no-shortage-in-housing-bs/) (in particular we picked up a lot more secondary suites as Duplexes after 2006). 
+
+The Toronto, Vancouver and Calgary CMA boundaries have stayed the same across those 25 years, but the boundaries of Metro Montréal have changed significantly (more about the [CMA concept here](https://www150.statcan.gc.ca/n1/pub/92f0138m/92f0138m2019002-eng.htm)). As we will be taking differences of dwelling counts between these years it's important to harmonize these boundaries, and we choose the 2021 CMA boundaries for that by simply intersecting 1996 CSDs with the 2021 CMA boundaries and keeping those with large overlap. That leaves us with some very minor mismatch where CSD boundaries have changed over the years which should not skew our results in meaningful ways. Keeping this in mind, let's take a peek!
+
+
+```{r}
+## Reference List of CSDs within Montreal CMA
+Mon_CSD_21 <- list_census_regions('CA21') %>% filter(level=="CSD", CMA_UID %in% c("24462"))
+Mon_CSD_96 <- list_census_regions('CA1996') %>% filter(level=="CSD", CMA_UID %in% c("24462"))
+
+mon_difference <- setdiff(Mon_CSD_21$region,Mon_CSD_96$region)
+
+g1 <-get_census("CA21",regions=list(CMA="24462"),geo_format='sf')
+
+g_list <- get_intersecting_geometries("CA1996","CSD",g1)
+```
+
+```{r eval=FALSE, include=FALSE}
+g2 <- get_census("CA1996",regions=g_list,geo_format='sf') %>%
+  mutate(a=st_area(.)) %>%
+  mutate(b=st_area(st_intersection(.,g1)))
+
+bind_rows(g1 |> mutate(Year="2021"),
+          g2 |> filter(as.numeric(b)/as.numeric(a)>0.8) |> mutate(Year="1996")) |>
+  ggplot(aes(fill=Year))+
+  geom_sf(alpha=0.5)
+```
+
+
+```{r eval=FALSE, include=FALSE}
+g1 <-get_census("CA21",regions=list(CMA="59933"),geo_format='sf')
+g2 <-get_census("CA1996",regions=list(CMA="59933"),geo_format='sf')
+
+bind_rows(g1 |> mutate(Year="2021"),
+          g2 |> mutate(Year="1996")) |>
+  ggplot(aes(fill=Year))+
+  geom_sf(alpha=0.5)
+```
+
+
+
+```{r households-by-type}
+## Grab Data for 2021 and 1996
+## Specify vectors after vector look-up
+
+census_regions <- list(CMA=c("35535","24462","59933","48825"))
+
+region_data <- list_census_regions("CA21") |> 
+  filter(region %in% census_regions$CMA) %>%
+  mutate(CMA=factor(name,levels=arrange(.,pop)$name)) |>
+  select(GeoUID=region,CMA)
+
+structural_types_2021 <- c(Total="v_CA21_434",
+                           Detached="v_CA21_435",
+                           Duplex="v_CA21_438",
+                           Semi="v_CA21_436",
+                           Row="v_CA21_437",
+                           "Low-Rise"="v_CA21_439",
+                           "Mid/High-Rise"="v_CA21_440",
+                           Other="v_CA21_441",
+                           Movable="v_CA21_442")
+structural_types_1996 <- c(Total="v_CA1996_107",
+                           Detached="v_CA1996_108",
+                           Duplex="v_CA1996_111",
+                           Semi="v_CA1996_109",
+                           Row="v_CA1996_110",
+                           "Low-Rise"="v_CA1996_113",
+                           "Mid/High-Rise"="v_CA1996_112",
+                           Other="v_CA1996_114",
+                           Movable="v_CA1996_115")
+
+structure_colours <- setNames(c("#FF66CC","#9900CC","#CC00CC","#6600FF",
+                                "#66CCFF","#66CC00","#FFFF66","#FFCC33"),
+                              names(structural_types_2021)[-1])
+
+
+census_data_2021 <- get_census(dataset='CA21', 
+                               regions=census_regions,
+                               vectors=structural_types_2021,
+                               level='CMA') %>% 
+  mutate(Year=2021)
+
+montreal_1996 <- get_census(dataset='CA1996',
+                               regions=g_list,
+                               vectors=structural_types_1996, 
+                               level='CSD') |>
+  summarize(across(names(structural_types_1996),sum,na.rm=TRUE)) |>
+  mutate(GeoUID="24462")
+
+census_data_1996 <- get_census(dataset='CA1996',
+                               regions=census_regions,
+                               vectors=structural_types_1996, 
+                               level='CMA') %>% 
+  filter(GeoUID!="24462") |>
+  bind_rows(montreal_1996) |>
+  mutate(Year=1996)
+
+
+all_data <- bind_rows(census_data_2021,census_data_1996) |>
+  select(GeoUID,Year,names(structural_types_2021)) |>
+  pivot_longer(names(structural_types_2021), names_to="Dwelling",values_to = "Value") |>
+  mutate(Dwelling=factor(Dwelling,levels=names(structural_types_2021))) |>
+  left_join(region_data, by="GeoUID")
+
+all_data %>% 
+  filter(Dwelling!="Total") |>
+  ggplot(aes(x=CMA, y=Value/100000, fill=Dwelling)) + 
+  geom_bar(position="stack", stat="identity") + 
+  scale_fill_manual(values=structure_colours) + 
+  labs(fill=NULL,
+       title="Structure Type 4 Big Metros 1996 & 2021",
+       y="Number of households (100,000s)",x="Region",
+       caption="StatCan Census 1996, 2021") +
+  facet_wrap(~Year)
+```
+
+We can see that all four of our metro areas grew quite a bit between 1996 and 2021, adding hundreds of thousands of households. But they varied in the different kinds of dwelling type or structure new households occupied. Let's shift our stacked bar chart so that we get percent of households occupying each type.
+
+```{r households-by-type-shares}
+
+all_data %>% 
+  filter(Dwelling!="Total") |>
+  ggplot(aes(x=CMA, y=Value/100000, fill=Dwelling)) + 
+  geom_bar(position="fill", stat="identity") + 
+  scale_fill_manual(values=structure_colours) + 
+  scale_y_continuous(labels=scales::percent) +
+  labs(fill=NULL,
+       title="Structure Type 4 Big Metros 1996 & 2021",
+       y="Percent of Households",x="Region",
+       caption="StatCan Census 1996, 2021") +
+  facet_wrap(~Year)
+```
+
+Here we can more clearly see the different compositions of each Metro area. In particular, we can see that Calgary consistently has the largest proportion of households living in single-family detached houses, while Montréal remains predominantly low-rise and Toronto dominates the high-rise category. Vancouver increasingly appears somewhere between Toronto & Montréal in terms of its balance between low-rise and high-rise. 
+
+Of particular interest, between 1996 and 2021 Vancouver surpassed both Toronto and Montréal to become the large North American metro area least dominated by single-family detached houses. But it did so in no small part by transforming (and having the Census reclassify) many of its single-family houses as duplexes, i.e. houses containing separate basement suites. As argued in [Nathan's book](https://homefreesociology.com/2016/11/02/media-coverage-of-my-book/), this renovation of existing single-family housing stock remains the "sneakiest" way Vancouver has added to its density. But Vancouver has also continued to more visibly add low-rise and high-rise apartments.
+
+Let's look more directly at how new households have been added across each of our big metros across the last quarter century. Below we simply subtract occupied housing stock in 1996 from occupied housing stock in 2021, leaving us with net change in each category.
+
+```{r  structural-change}
+all_data %>% 
+  filter(Dwelling!="Total") |>
+  group_by(CMA,Dwelling)  |>
+  mutate(Change=Value-lag(Value,order_by = Year)) |>
+  filter(Year=="2021") |>
+  ggplot(aes(x=CMA, y=Change/100000, fill=Dwelling)) + 
+  geom_bar(position="stack", stat="identity") + 
+  scale_fill_manual(values=structure_colours) + 
+  labs(fill=NULL,
+       title="Change in Structure Type 4 Big Metros 1996-2021",
+       y="Change in households (100,000s)",x="Region",
+       caption="StatCan Census 1996, 2021") +
+  facet_wrap(~Year)
+```
+
+
+We can see that Calgary has mostly been adding more single-family detached houses to accommodate its new households, continuing to sprawl outward. While Montréal also added a lot more single-family detached houses, some of this addition simply reflected its expanded boundaries, and it also added a relatively balanced mix of duplexes, low-rises, and high-rises. Toronto also sprawled further outward with many single-family detached houses, but also added a lot more row houses and high-rises. Meanwhile, Vancouver actually *lost* single-family detached houses. Some of these were simply re-categorized as duplexes, either rebuilt or simply recognized as such by the Census after the widespread legalization (or at least [general acceptance](https://homefreesociology.com/2021/06/09/basement-confidential-vancouvers-informal-housing-stock/)) of secondary suites across the region. But the decline in single-family detached houses in Vancouver also reflects a very strong set of barriers against further suburban sprawl in the region. In particular, the [Agricultural Land Reserve](https://www2.gov.bc.ca/gov/content/industry/agriculture-seafood/agricultural-land-and-environment/agricultural-land-reserve/the-agricultural-land-reserve) has prevented the further transformation of farmland to new subdivisions. As a result, most new growth has been spread across more dense forms of urban infill. Generally speaking, a success in terms of sustainability! 
+
+Let's track this a different way, by looking at the spread of built-up area within and surrounding each big CMA. This data comes from satellite imagery, coded and shared for public use. We've [played around with it before](https://doodles.mountainmath.ca/blog/2021/08/21/satellites-sprawl-and-city-six-packs/). Below we match satellite imagery coding built-up area to 2021 CMA boundaries as determined by Statistics Canada, which is what we used for the comparative graphs above. 
+
+
+```{r built-up-area-change}
+s<-get_GHS_30_built_data() 
+
+get_ghs_shares <- function(sv,ds=5){
+  ghs_names <- c("BU_2014","BU_2000","BU_1990","BU_1975")
+  d<- stars::st_as_stars(sv,downsample=ds)
+  v=d$GHS_BUILT_LDSMT_GLOBE_R2018A_3857_30_V2_0.vrt%>% as.vector() %>% na.omit()
+  ghs_built_counts <- ghs_names %>%
+    lapply(function(n)sum(v==n)) %>%
+    setNames(ghs_names)
+
+  total=ghs_built_counts %>% as_tibble() %>%
+    pivot_longer(everything()) %>%
+    mutate(total=sum(value)) %>%
+    mutate(share=value/sum(value)) 
+}
+
+make_map <- function(sv,ds=5,show_shares = FALSE,overlay=NULL,overlay_size=NULL){
+  ghs_names <- c("BU_2014","BU_2000","BU_1990","BU_1975")
+  ghs_built_names <- c("Water","NoData","Land",ghs_names)
+  ghs_built_labels <- setNames(c("Water","No Data","Undeveloped","2000 to 2014","1990 to 2000",
+                                 "1975 to 1990","Before 1975"),ghs_built_names)
+
+  ghs_built_colours <- setNames(c("white","white","darkgray",RColorBrewer::brewer.pal(5,"PuRd")[seq(5,2)]),
+                                ghs_built_names)
+
+  if (show_shares) {
+    total <- get_ghs_shares(sv,ds) %>%
+      mutate(label=paste0(ghs_built_labels[name],": ",scales::percent(share,accuracy = 1)))
+    ghs_built_labels <- setNames(total$label,total$name)
+  } 
+  
+  g<-ggplot() +
+    stars::geom_stars(data=sv,downsample=ds)
+  if (!is.null(overlay)) {
+    g <- g + geom_sf(data= overlay %>% select() %>% sf::st_transform(sf::st_crs(sv)), size=overlay_size,fill=NA)
+  }
+    #coord_fixed() +
+   g + scale_fill_manual(values=ghs_built_colours,
+                      labels=ghs_built_labels[ghs_names],
+                      breaks=factor(ghs_names),
+                      drop = FALSE) +
+    #theme_bw() +
+    theme(legend.position = "bottom") +
+    coord_sf(datum=NA) +
+    labs(#title="Build up area by epoch",
+         #caption="MountainMath, Data: GHS_BUILT_30",
+         x=NULL,y=NULL,fill=NULL)
+}
+
+
+make_city_map <- function(city_name,s,buffer=30,ds=5,show_shares = FALSE,overlay=NULL,overlay_size=NULL){
+  if (is.character(city_name)) {
+    city <- get_city_buffer(city_name,buffer)
+  } else if ('sf' %in% class(city_name)){
+    c <- sf::st_coordinates(city_name) %>% as_tibble()
+    proj4string <- paste0("+proj=lcc +lat_1=",c$Y-1," +lat_2=",c$Y+1," +lat_0=",c$Y,
+                          " +lon_0=",c$X," +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+    city <- city_name %>%
+      sf::st_transform(proj4string) %>%
+      sf::st_buffer(buffer*1000) %>%
+      sf::st_transform(4236)
+    city_name <- city_name$name
+  } else {
+    c <-as_tibble(city_name$coords) %>% mutate(name=c("X","Y")) %>% pivot_wider()
+    proj4string <- paste0("+proj=lcc +lat_1=",c$Y-1," +lat_2=",c$Y+1," +lat_0=",c$Y,
+                          " +lon_0=",c$X," +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+
+    city <- sf::st_point(city_name$coords) %>%
+      sf::st_sfc(crs=4236) %>%
+      sf::st_transform(proj4string) %>%
+      sf::st_buffer(buffer*1000) %>%
+      sf::st_transform(4236)
+    city_name <- city_name$name
+  }
+  sv <- s[city %>% sf::st_transform(sf::st_crs(s))]
+  
+  if (!is.null(names(city_name))) city_name <- names(city_name)
+  
+  nn <- paste0(city_name," (",buffer,"km radius)")
+  
+  make_map(sv,ds,show_shares,overlay=overlay,overlay_size=overlay_size) +
+    geom_blank(data=tibble(name=nn)) +
+    facet_wrap(~name)
+}
+
+
+
+ghs_names <- c("BU_2014","BU_2000","BU_1990","BU_1975")
+ghs_built_names <- c("Water","NoData","Land",ghs_names)
+ghs_built_labels <- setNames(c("Water","No Data","Undeveloped","2000 to 2014","1990 to 2000",
+                               "1975 to 1990","Before 1975"),ghs_built_names)
+
+ghs_built_colours <- setNames(c("white","white","darkgray",RColorBrewer::brewer.pal(5,"PuRd")[seq(5,2)]),
+                              ghs_built_names)
+```
+
+
+```{r canada-big4-cities, fig.height=9, fig.width=8}
+city_names <- c("Toronto","Montréal","Vancouver","Calgary") 
+
+geo_data <- city_names |>
+  lapply(function(n) {
+    get_census(dataset='CA21', 
+               regions=list_census_regions("CA21") |> filter(level=="CMA",name==n) |> as_census_region_list(),
+               geo_format = 'sf') |>
+      mutate(name=n)
+  }) |>
+  bind_rows() |>
+  select(name)
+
+city_list <- geo_data |> 
+  sf::st_centroid()
+
+radius_list <- city_names |>
+  lapply(function(n){
+    d<-st_distance(city_list |> filter(name==n),
+                geo_data |> filter(name==n) |> sf::st_cast("POINT")) |>
+      as.numeric() |>
+      max()
+    d <- ceiling(d/1000/5)*5
+  }) |>
+  setNames(city_names)
+
+
+city_maps <- city_names %>%
+  lapply(function(n){
+    make_city_map(city_list |> filter(name==n),s,
+                  as.numeric(radius_list[n]),2,
+                  overlay=geo_data |> filter(name==n),
+                  overlay_size=0.5)
+  })
+
+((city_maps[[1]] + city_maps[[2]]) /
+    (city_maps[[3]] + city_maps[[4]]) & 
+    theme(legend.position = "bottom")) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title="Built-out area of Canadian metropolitan areas by epoch",
+                  caption="MountainMath, Data: GHSL Built 30")
+```
+
+We can see larger sections of dark red, indicating recent built-up land, all around the outskirts of Toronto and Calgary. We can also see that the built up area of Toronto spills over its CMA boundaries along the shores of Lake Ontario into neighbouring Hamilton and Oshawa CMAs, while Calgary is near to spilling over its CMA boundary to the South toward Okotoks. The pattern of sprawling growth is more muted in Montréal, but we can see how outlying built-up areas might be integrating with the City, creating an expanded Metropolitan area. Vancouver demonstrates what looks like the least outward growth in built-up area, corresponding well with the dwelling type data from the Census. Those parts of the CMA boundaries still in gray are largely all protected by Vancouver's various regulations, especially its Agricultural Land Reserve to the South and East, but also topography and parks or reserves to the North. The nearby CMA of Abbottsford is also visible outside of Vancouver CMA boundaries to the SE, and current [commute patterns](https://doodles.mountainmath.ca/blog/2020/01/06/flow-maps/) would force inclusion of Abbotsford-Mission into the Vancouver CMA if it wasn't it's own CMA already. Similar constraints prevent Toronto CMA expanding and swallowing or eating into neighbouring CMAs.
+
+[Technical restrictions of CMAs](https://www150.statcan.gc.ca/n1/pub/92f0138m/92f0138m2019002-eng.htm) to "expand" into already established CMAs raise the question if we need an additional definition of "functional CMAs" that only look at current commute patterns and contemplate what CMA boundaries would look like if we took a clean approach that ignores precedents of historically established CMAs. We might come back to this in a future post.
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-08-18-25-years-of-structural-change.Rmarkdown).
+
+
+
+## Appendix
+
+Finally, just because we can, we want to take a quick look at the geographic distribution of households by structural type of dwelling in Metro Vancouver using a dot density map. This is kinda cool, because apartment areas can be pulled out from lower-density detached house and related zoning. But we can also glimpse some townhouse neighbourhoods and even a mobile home park or two! Enjoy! 
+
+```{r}
+crs <- get_census("CA21",regions=list(CMA="59933"),geo_format = 'sf') |> lambert_conformal_conic_at()
+
+geo_data <- simpleCache({
+  van_parks_scools <- read_sf("https://s3.ca-central-1.amazonaws.com/mountainmath/cmhc/cov_parks_schools.geojson") |>
+    st_transform(crs) |>
+    st_make_valid() |>
+    st_union() |>
+    st_make_valid()
+  
+  get_census("CA21",regions=list(CMA="59933"),level="DB",geo_format = "sf") |>
+    filter(Households>0) |>
+    st_transform(crs) |>
+    st_make_valid() |>
+    st_difference(van_parks_scools)
+}, "yvr_db_schools_parks_removed.Rda")
+
+data <- get_census("CA21",regions=list(CMA="59933"),level="DA",vectors=structural_types_2021)
+
+dots_data <- proportional_re_aggregate(geo_data |> rmapshaper::ms_simplify(keep=0.5),
+                                       data, 
+                                       geo_match = c("DA_UID"="GeoUID"),
+                                       categories=names(structure_colours),
+                                       base = "Households") |>
+  st_transform(4326) |>
+  compute_dots(categories=names(structure_colours),scale=10)
+```
+
+```{r yvr_structural_dots, fig.width=12, fig.height=10}
+structure_colours <- setNames(c("#FFF000","#FD8320","#F90D1B","#FEBC20",
+                                "#08E8DE","#66FF00","#1974D2","#BF40BF"),
+                              names(structural_types_2021)[-1])
+
+ggplot(dots_data) +
+  geom_roads(transform=function(d)filter(d,kind %in% c("highway", "major_road")),size=0.1,color="grey") +
+  geom_water(fill = "#202040", colour = NA) +
+  geom_sf(size=0.1,aes(colour=Category),alpha=0.5) +
+  scale_colour_manual(values=structure_colours) +
+  coord_bbox(metro_van_bbox("tight")) +
+  guides(colour = guide_legend(override.aes = list(size=3))) +
+  theme(legend.position="bottom",
+        text = element_text(colour="white"),
+        legend.background = element_rect(fill = 'black'),
+        legend.key = element_rect(fill = 'black'),
+        panel.background = element_rect(fill = 'black'),
+        plot.background = element_rect(fill = 'black')) +
+  labs(colour="1 dot = 10 households",title="Metro Vancouver households by structural type",
+       caption="StatCan Census 2021")
+```
+
+
+
+
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
