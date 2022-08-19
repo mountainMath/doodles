@@ -22,7 +22,7 @@ linktitle: ''
 type: "post"
 ---
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/08/18/structural-change/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/08/19/25-years-of-structural-change/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 
@@ -90,13 +90,13 @@ Finally, just because we can, we want to take a quick look at the geographic dis
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-08-18 19:55:32 PDT"
+## [1] "2022-08-18 20:39:27 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [d7d135b] 2022-07-29: tweak images
+## Head:     [4525453] 2022-08-19: structural change post
 ```
 
 ```
@@ -127,27 +127,26 @@ Finally, just because we can, we want to take a quick look at the geographic dis
 ## loaded via a namespace (and not attached):
 ##  [1] httr_1.4.4          sass_0.4.2          jsonlite_1.8.0     
 ##  [4] modelr_0.1.8        bslib_0.4.0         assertthat_0.2.1   
-##  [7] highr_0.9           googlesheets4_1.0.0 cellranger_1.1.0   
-## [10] yaml_2.3.5          pillar_1.8.0        backports_1.4.1    
-## [13] glue_1.6.2          digest_0.6.29       rvest_1.0.2        
-## [16] colorspace_2.0-3    htmltools_0.5.3     pkgconfig_2.0.3    
-## [19] broom_1.0.0         haven_2.5.0         bookdown_0.27      
-## [22] scales_1.2.0        tzdb_0.3.0          git2r_0.30.1       
-## [25] proxy_0.4-27        googledrive_2.0.0   farver_2.1.1       
-## [28] generics_0.1.3      ellipsis_0.3.2      cachem_1.0.6       
-## [31] withr_2.5.0         cli_3.3.0           magrittr_2.0.3     
-## [34] crayon_1.5.1        readxl_1.4.0        evaluate_0.15      
-## [37] fs_1.5.2            fansi_1.0.3         xml2_1.3.3         
-## [40] class_7.3-20        blogdown_1.10       tools_4.2.1        
-## [43] hms_1.1.1           gargle_1.2.0        lifecycle_1.0.1    
-## [46] munsell_0.5.0       reprex_2.0.1        compiler_4.2.1     
-## [49] jquerylib_0.1.4     e1071_1.7-11        classInt_0.4-7     
-## [52] units_0.8-0         grid_4.2.1          rstudioapi_0.13    
-## [55] labeling_0.4.2      rmarkdown_2.14      codetools_0.2-18   
-## [58] gtable_0.3.0        DBI_1.1.3           R6_2.5.1           
-## [61] lubridate_1.8.0     knitr_1.39          fastmap_1.1.0      
-## [64] utf8_1.2.2          KernSmooth_2.23-20  stringi_1.7.8      
-## [67] Rcpp_1.0.9          vctrs_0.4.1         dbplyr_2.2.1       
-## [70] tidyselect_1.1.2    xfun_0.31
+##  [7] googlesheets4_1.0.0 cellranger_1.1.0    yaml_2.3.5         
+## [10] pillar_1.8.0        backports_1.4.1     glue_1.6.2         
+## [13] digest_0.6.29       rvest_1.0.2         colorspace_2.0-3   
+## [16] htmltools_0.5.3     pkgconfig_2.0.3     broom_1.0.0        
+## [19] haven_2.5.0         bookdown_0.27       scales_1.2.0       
+## [22] tzdb_0.3.0          git2r_0.30.1        proxy_0.4-27       
+## [25] googledrive_2.0.0   generics_0.1.3      ellipsis_0.3.2     
+## [28] cachem_1.0.6        withr_2.5.0         cli_3.3.0          
+## [31] magrittr_2.0.3      crayon_1.5.1        readxl_1.4.0       
+## [34] evaluate_0.15       fs_1.5.2            fansi_1.0.3        
+## [37] xml2_1.3.3          class_7.3-20        blogdown_1.10      
+## [40] tools_4.2.1         hms_1.1.1           gargle_1.2.0       
+## [43] lifecycle_1.0.1     munsell_0.5.0       reprex_2.0.1       
+## [46] compiler_4.2.1      jquerylib_0.1.4     e1071_1.7-11       
+## [49] classInt_0.4-7      units_0.8-0         grid_4.2.1         
+## [52] rstudioapi_0.13     rmarkdown_2.14      gtable_0.3.0       
+## [55] DBI_1.1.3           R6_2.5.1            lubridate_1.8.0    
+## [58] knitr_1.39          fastmap_1.1.0       utf8_1.2.2         
+## [61] KernSmooth_2.23-20  stringi_1.7.8       Rcpp_1.0.9         
+## [64] vctrs_0.4.1         dbplyr_2.2.1        tidyselect_1.1.2   
+## [67] xfun_0.31
 ```
 </details>
