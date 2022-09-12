@@ -779,7 +779,7 @@ Are different questions and procedures (along with trends over time) enough to a
 
 Our last takeaway returns us to the trends at hand. Including turnover data, we can clearly see a pattern operating across data sources where tenant mobility in purpose-built apartments seems to be generally on the decline, with evidence of some recent bounceback. As we've [noted in the past](https://homefreesociology.com/2021/03/29/forced-out-in-canada-new-data-from-chs/), declines are only good insofar as they reflects declines in forced moves, but they're mostly bad insofar as they reflect declines in choice moves. Protections against eviction generally increased through the pandemic, just as vacancy rates rose in many big cities. Both of which should lead to more choices. Unfortunately, these trends have since reversed in many places. That leaves our worrisome longer-term evidence of tumbling turnovers, which we've also seen linked to [negative trends in the USA](https://twitter.com/ProfDowellMyers/status/1409304130758209540). Worth keeping an eye on!
 
-As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-07-29-tumbling-turnover.Rmarkdown).
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-07-29-tumbling-turnover/index.Rmarkdown).
 
 <details><summary>Reproducibility receipt</summary>
 ```{r cache=FALSE}

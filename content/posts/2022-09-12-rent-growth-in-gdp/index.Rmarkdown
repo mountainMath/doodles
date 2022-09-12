@@ -1,0 +1,187 @@
+---
+title: Rent growth in GDP
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
+date: '2022-09-12'
+slug: rent-growth-in-gdp
+categories:
+  - affordability
+  - cansim
+  - rental
+tags: []
+description: "People in BC spend a lot of money on rent (and imputed rent), and that's a problem. The way to decrease this \"Real Estate Industry\" share of GDP is to build more housing."
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2022/09/12/rent-growth-in-gdp/index_files/figure-html/gdp_rent_capita-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/09/12/rent-growth-in-gdp/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 150,
+	fig.width = 8,
+	fig.height = 6,
+	cache = TRUE
+)
+library(tidyverse)
+library(cansim)
+
+inflation <- get_cansim_vector("v41690973") |>
+  select(Date,CPI=val_norm)
+
+cpi_shift <- filter(inflation,Date==as.Date("2012-07-01"))$CPI/filter(inflation,Date==as.Date("2022-07-01"))$CPI
+```
+
+
+Every now and then the topic of the GDP share of the "Real Estate Industry" comes up, often linked to the suggestion that an economy has become too dependent upon real estate. But this usually involves a fundamental misreading of the data. As people who pay attention know, the NAICS sector [53] "Real Estate Industry" of the expenditure based GDP produced by StatCan [is mostly just rent and imputed rent](https://doodles.mountainmath.ca/blog/2018/02/01/real-estate-industry/).
+
+Imputed rent, as a reminder, is simply how much owner-occupiers would be paying themselves to live in their residences if their roles were split into tenant and landlord components. We can estimate this based on how much the dwelling would fetch if rented out at prevailing market rents. There are technical details as to why and how this is done, and what makes them challenging, all of which we'll save for another post, but they are reasonably accurate enough for our purposes in this post. What they point toward is that the relative size of the "Real Estate Industry" is largely just a measure of rent as share of GDP. 
+
+To start we take a look at just the rent and imputed rent part of the GDP by province. We can also talk about this rent portion as Housing Consumption. 
+
+```{r gdp_rent_share}
+gdp_data <- get_cansim("36-10-0402",default_month = 1) |>
+  filter(Value=="Chained (2012) dollars",
+         `North American Industry Classification System (NAICS)` %in% c("All industries [T001]","Owner-occupied dwellings [5311A]","Lessors of real estate [5311]")) |>
+  select(GeoUID,GEO,Date,REF_DATE,name=`North American Industry Classification System (NAICS)`,value=val_norm) %>%
+  bind_rows(group_by(.,Date,REF_DATE,name) |> 
+              summarise(value=sum(value,na.rm=TRUE),.groups="drop") |> 
+              mutate(GeoUID="01",GEO="Canada")) |>
+  pivot_wider() |>
+  mutate(Shelter=(`Lessors of real estate [5311]`+`Owner-occupied dwellings [5311A]`)) |>
+  mutate(Other=`All industries [T001]`-Shelter) |>
+  mutate(Share=Shelter/`All industries [T001]`) |>
+  add_provincial_abbreviations() 
+
+plot_data <- gdp_data |>
+  filter(as.integer(GeoUID)<60) %>%
+  mutate(GEO.abb=factor(GEO.abb,levels=filter(.,REF_DATE==max(REF_DATE)) |> arrange(Share) |> pull(GEO.abb))) |>
+  filter(!is.na(Share))
+
+prov_colours <- setNames(c(MetBrewer::met.brewer("Redon",10),"black"),c(setdiff(levels(plot_data$GEO.abb),"CAN"),"CAN"))[levels(plot_data$GEO.abb)]
+
+plot_data |>
+  ggplot(aes(x=Date,y=Share,colour=fct_rev(GEO.abb))) +
+  geom_line() +
+  scale_y_continuous(labels=scales::percent,breaks = seq(0,1,0.02)) +
+  scale_colour_manual(values=prov_colours,guide='none') +
+  ggrepel::geom_text_repel(data=~filter(.,REF_DATE==max(REF_DATE)),
+                           aes(label=GEO.abb),
+                           direction = "y",
+                           size=4,
+                           segment.linetype = "dotted",
+                           segment.color = "black",
+                           xlim = c(as.Date("2022-07-01"),as.Date("2024-01-01")),
+                           hjust=0) +
+  #expand_limits(y=0.05) +
+  coord_cartesian(clip="off",xlim=c(min(gdp_data$Date),as.Date("2023-01-01"))) +
+  labs(title="Housing consumption share of GDP in Canadian provinces",
+       y="Share of GDP going toward rent and imputed rent",x=NULL,
+       caption="StatCan Table 36-10-0402")
+```
+
+The share of GDP going toward housing consumption has been rising in all provinces since the early to mid 2000s, with BC consistently taking the top spot and the gap to the Canadian mean widening. Nova Scotia takes the second spot throughout, and this shows that there are two things going on at once. A province can have a high share of GDP going toward housing consumption because they spend a lot of money on rent (and imputed rent), or because GDP is low. To disentangle this a little we can look at housing consumption per capita instead of as a percent of total GDP.
+
+
+```{r gdp_rent_capita}
+pop <- get_cansim_sqlite("17-10-0005") |>
+  filter(`Age group`=="All ages",
+         Sex=="Both sexes") |>
+  collect_and_normalize(disconnect = TRUE) |>
+  mutate(GeoUID=ifelse(GeoUID=="11124","01",GeoUID))
+
+plot_data <- gdp_data |>
+  left_join(pop |> select(REF_DATE,GeoUID,Population=val_norm),by=c("GeoUID","REF_DATE")) |>
+  filter(as.integer(GeoUID)<60) %>%
+  mutate(Shelter_per_cap=Shelter/Population) %>%
+  mutate(GEO.abb=factor(GEO.abb,levels=filter(.,REF_DATE==max(REF_DATE)) |> 
+                          arrange(Shelter_per_cap) |> pull(GEO.abb))) |>
+  filter(!is.na(Shelter_per_cap))
+
+
+# prov_colours2 <- setNames(c(MetBrewer::met.brewer("Redon",10),"black"),c(setdiff(levels(plot_data$GEO.abb),"CAN"),"CAN"))[levels(plot_data$GEO.abb)]
+
+plot_data |>
+  ggplot(aes(x=Date,y=Shelter_per_cap/cpi_shift,colour=fct_rev(GEO.abb))) +
+  geom_line() +
+  scale_y_continuous(labels=scales::dollar,breaks=seq(0,20000,1000)) +
+  scale_colour_manual(values=prov_colours,guide='none') +
+  ggrepel::geom_text_repel(data=~filter(.,REF_DATE==max(REF_DATE)),
+                           aes(label=GEO.abb),
+                           direction = "y",
+                           size=4,
+                           segment.linetype = "dotted",
+                           segment.color = "black",
+                           xlim = c(as.Date("2022-07-01"),as.Date("2024-01-01")),
+                           hjust=0) +
+  #expand_limits(y=0.05) +
+  coord_cartesian(clip="off",xlim=c(min(gdp_data$Date),as.Date("2023-01-01"))) +
+  labs(title="Per capita housing consumption in Canadian provinces",
+       y="Annual rent and imputed rent per capita (2021 chained dollars)",x=NULL,
+       caption="StatCan Tables 17-10-0005, 36-10-0402; Vector v41690973")
+```
+
+This shows the extraordinary rise of the dollar value of housing consumption in BC. Nova Scotia, by contrast, closely tracks the Canadian average. So these two provinces had a high share of GDP going toward housing consumption for very different reasons. In BC people spend a lot of money on rent (and imputed rent), boosting the numerator, while in Nova Scotia the GDP per capita is relatively low, minimizing our denominator.
+
+This gets us to the question of why people in BC spend a lot of money on rent and imputed rent. Is it because people achieve extraordinary housing outcomes, living in large or very luxurious housing units? Or is it simply because high rent reflects too many people bidding for too little housing? In the first case, we'd expect things like the floor space of housing consumption to be much higher in BC. In the second, we'd expect it to be roughly the same, or smaller (bound, perhaps, primarily by regulatory constraints on [minimum dwelling size](https://vancouver.ca/files/cov/council-memo-02-24-2022-current-policy-and-regulation-on-dwelling-unit-sizes.pdf)). 
+
+Robust Canada-wide metrics on housing quality and size are relatively hard to come by, but the Canadian Housing Statistics Program is now publishing average and median living areas in three Canadian Provinces, with hopefully more to come. So that gives us one view into this question.
+
+```{r living_area}
+living_area<-get_cansim_sqlite("46-10-0028") |>
+  filter(nchar(GeoUID)==2,
+         #`Property type`!="Total, all property types",
+         `Period of construction`=="Total, all periods of construction",
+         Estimates %in% c("Median total living area","Average total living area")) |>
+  collect_and_normalize(disconnect = TRUE)
+
+living_area |>
+  filter(!is.na(val_norm)) |>
+  ggplot(aes(x=GEO,y=val_norm,fill= Estimates)) +
+  geom_bar(stat="identity",position="dodge") +
+  labs(title="Living area of individual (non-purpose-built rental) housing units",
+       y="Living area (sf)",x=NULL,fill=NULL,
+       caption="StatCan Table 46-10-0028") +
+  scale_y_continuous(labels=scales::comma) +
+  facet_wrap(~`Property type`) +
+  scale_fill_manual(values=sanzo::duos$c091) +
+  theme(legend.position="bottom")
+```
+
+```{r}
+ratio <- plot_data |> filter(REF_DATE==max(REF_DATE),GEO.abb %in% c("BC","CAN")) |>
+  select(name=GEO.abb,value=Shelter_per_cap) |>
+  pivot_wider() |>
+  mutate(ratio=BC/CAN) |>
+  pull(ratio)
+```
+Among these three provinces it does not appear that BC residents have substantially larger homes, with maybe the exception of single detached homes. Indeed, BC is often accused of having apartments that are too small. Overall, while there are some very nice homes in BC, it seems unreasonable that explains more than a small portion of the `r scales::percent(ratio-1)` higher housing consumption per capita BC residents pay over the Canadian average. It's really hard to conclude that BC's high housing consumption cost is due to anything but high rents.  
+
+## Takeaway
+So what does all of that mean? Housing consumption makes up a very high share of GDP in BC because rents are so high. People have to spend a lot of money on rent and don't have that much money left over for other things. For the individual that restricts their quality of life. For the province overall it leads to reduced economic growth with money being spent on rent instead of other consumption goods that can help grow the economy. 
+
+So what should be done about that? It's simple really, [we know very well how overall housing availability impacts rents](https://doodles.mountainmath.ca/blog/2022/02/18/vacancy-rates-and-rent-change-2021-update/). It may seem like a paradox, but to lower the GDP share of the "Real Estate Industry" we really need to build a lot more housing. 
+
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-09-12-rent-growth-in-gdp/index.Rmarkdown).
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>

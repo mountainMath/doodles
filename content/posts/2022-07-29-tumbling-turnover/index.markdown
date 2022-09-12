@@ -182,24 +182,24 @@ Are different questions and procedures (along with trends over time) enough to a
 
 Our last takeaway returns us to the trends at hand. Including turnover data, we can clearly see a pattern operating across data sources where tenant mobility in purpose-built apartments seems to be generally on the decline, with evidence of some recent bounceback. As we've [noted in the past](https://homefreesociology.com/2021/03/29/forced-out-in-canada-new-data-from-chs/), declines are only good insofar as they reflects declines in forced moves, but they're mostly bad insofar as they reflect declines in choice moves. Protections against eviction generally increased through the pandemic, just as vacancy rates rose in many big cities. Both of which should lead to more choices. Unfortunately, these trends have since reversed in many places. That leaves our worrisome longer-term evidence of tumbling turnovers, which we've also seen linked to [negative trends in the USA](https://twitter.com/ProfDowellMyers/status/1409304130758209540). Worth keeping an eye on!
 
-As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-07-29-tumbling-turnover.Rmarkdown).
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-07-29-tumbling-turnover/index.Rmarkdown).
 
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-07-29 15:46:00 PDT"
+## [1] "2022-09-12 12:26:27 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [807b1bc] 2022-07-29: fix key image
+## Head:     [162f6c3] 2022-08-19: fix link to nathan's blog
 ```
 
 ```
 ## R version 4.2.1 (2022-06-23)
 ## Platform: aarch64-apple-darwin20 (64-bit)
-## Running under: macOS Monterey 12.5
+## Running under: macOS Monterey 12.5.1
 ## 
 ## Matrix products: default
 ## BLAS:   /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/lib/libRblas.0.dylib
@@ -213,37 +213,34 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## 
 ## other attached packages:
 ##  [1] canpumf_0.1.6             mountainmathHelpers_0.1.4
-##  [3] ggblend_0.0.0.9000        cancensus_0.5.1          
-##  [5] cmhc_0.2.0                forcats_0.5.1            
-##  [7] stringr_1.4.0             dplyr_1.0.9              
+##  [3] ggblend_0.0.0.9000        cancensus_0.5.3          
+##  [5] cmhc_0.2.1                forcats_0.5.1            
+##  [7] stringr_1.4.1             dplyr_1.0.9              
 ##  [9] purrr_0.3.4               readr_2.1.2              
 ## [11] tidyr_1.2.0               tibble_3.1.8             
 ## [13] ggplot2_3.3.6             tidyverse_1.3.2          
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] httr_1.4.3          sass_0.4.2          jsonlite_1.8.0     
-##  [4] splines_4.2.1       modelr_0.1.8        bslib_0.4.0        
-##  [7] assertthat_0.2.1    highr_0.9           googlesheets4_1.0.0
-## [10] cellranger_1.1.0    yaml_2.3.5          pillar_1.8.0       
-## [13] backports_1.4.1     lattice_0.20-45     glue_1.6.2         
-## [16] digest_0.6.29       rvest_1.0.2         colorspace_2.0-3   
-## [19] htmltools_0.5.3     Matrix_1.4-1        pkgconfig_2.0.3    
-## [22] broom_1.0.0         haven_2.5.0         bookdown_0.27      
-## [25] scales_1.2.0        tzdb_0.3.0          git2r_0.30.1       
-## [28] googledrive_2.0.0   mgcv_1.8-40         generics_0.1.3     
-## [31] farver_2.1.1        ellipsis_0.3.2      cachem_1.0.6       
-## [34] withr_2.5.0         cli_3.3.0           magrittr_2.0.3     
-## [37] crayon_1.5.1        readxl_1.4.0        evaluate_0.15      
-## [40] fs_1.5.2            fansi_1.0.3         nlme_3.1-158       
-## [43] xml2_1.3.3          blogdown_1.10       tools_4.2.1        
-## [46] hms_1.1.1           gargle_1.2.0        lifecycle_1.0.1    
-## [49] munsell_0.5.0       reprex_2.0.1        compiler_4.2.1     
-## [52] jquerylib_0.1.4     rlang_1.0.4         grid_4.2.1         
-## [55] rstudioapi_0.13     labeling_0.4.2      rmarkdown_2.14     
-## [58] gtable_0.3.0        codetools_0.2-18    DBI_1.1.3          
-## [61] R6_2.5.1            lubridate_1.8.0     knitr_1.39         
-## [64] fastmap_1.1.0       utf8_1.2.2          stringi_1.7.8      
-## [67] vctrs_0.4.1         dbplyr_2.2.1        tidyselect_1.1.2   
-## [70] xfun_0.31
+##  [1] lubridate_1.8.0     assertthat_0.2.1    digest_0.6.29      
+##  [4] utf8_1.2.2          R6_2.5.1            cellranger_1.1.0   
+##  [7] backports_1.4.1     reprex_2.0.1        evaluate_0.15      
+## [10] httr_1.4.4          blogdown_1.10       pillar_1.8.1       
+## [13] rlang_1.0.4         googlesheets4_1.0.0 readxl_1.4.0       
+## [16] rstudioapi_0.14     jquerylib_0.1.4     rmarkdown_2.14     
+## [19] googledrive_2.0.0   munsell_0.5.0       broom_1.0.0        
+## [22] compiler_4.2.1      modelr_0.1.8        xfun_0.31          
+## [25] pkgconfig_2.0.3     htmltools_0.5.3     tidyselect_1.1.2   
+## [28] bookdown_0.27       fansi_1.0.3         crayon_1.5.1       
+## [31] tzdb_0.3.0          dbplyr_2.2.1        withr_2.5.0        
+## [34] grid_4.2.1          jsonlite_1.8.0      gtable_0.3.0       
+## [37] lifecycle_1.0.1     DBI_1.1.3           git2r_0.30.1       
+## [40] magrittr_2.0.3      scales_1.2.0        cli_3.3.0          
+## [43] stringi_1.7.8       cachem_1.0.6        fs_1.5.2           
+## [46] xml2_1.3.3          bslib_0.4.0         ellipsis_0.3.2     
+## [49] generics_0.1.3      vctrs_0.4.1         tools_4.2.1        
+## [52] glue_1.6.2          hms_1.1.2           fastmap_1.1.0      
+## [55] yaml_2.3.5          colorspace_2.0-3    gargle_1.2.0       
+## [58] rvest_1.0.3         knitr_1.39          haven_2.5.0        
+## [61] sass_0.4.2
 ```
 </details>
