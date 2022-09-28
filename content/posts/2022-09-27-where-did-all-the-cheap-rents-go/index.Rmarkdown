@@ -11,9 +11,11 @@ categories:
 tags: []
 description: 'An investigation into the 320k "lost" units renting below $750.'
 featured: ''
-featuredalt: ''
-featuredpath: ''
+images: ["https://doodles.mountainmath.ca/blog/2022/09/27/where-did-all-the-cheap-rents-go/index_files/figure-html/cheap-rent-region-change-1.png"]
+featuredalt: ""
+featuredpath: ""
 linktitle: ''
+type: "post"
 ---
 
 <p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/09/28/where-did-all-the-cheap-rents-go/" target="_blank">HomeFreeSociology</a>)</i></p>
@@ -37,7 +39,7 @@ library(cansim)
 library(cancensus)
 ```
 
-It can be really useful to count things, but sometimes numbers end up causing confusion and misunderstanding rather than helping. Often this has to do with how the number is presented and attached to claims. Other times it has to do with problematic procedures used to obtain the number. Here we want to explore these problems more in detail concerning a claim that ["Canada lost 322,000 affordable homes" between 2011 and 2016](https://www.theglobeandmail.com/real-estate/vancouver/article-even-as-housing-plans-progress-truly-affordable-housing-is-being-lost/). This stat is generally made in reference to "private" rentals, and is contrasted to the number of non-market units built between 2011 and 2016, pegged at 60k units. 
+It can be really useful to count things, but sometimes numbers end up causing confusion and misunderstanding rather than helping. Often this has to do with how the number is presented and attached to claims. Other times it has to do with problematic procedures used to obtain the number. Here we want to explore these problems more in detail concerning a claim that ["Canada lost 322,000 affordable homes" between 2011 and 2016](https://www.theglobeandmail.com/real-estate/vancouver/article-even-as-housing-plans-progress-truly-affordable-housing-is-being-lost/). This stat is generally made in reference to "private" rentals, and is contrasted to the number of non-market units built between 2011 and 2016, pegged at 60k units.
 
 At its best, the claim has been used to advocate for more non-profit housing. This is a great thing to advocate for, and something we support. At its worst, the claim has been made to look like a popular NIMBY talking point: that development of new housing, including non-profit, is directly resulting in the loss of older more affordable housing stock, resulting in worse overall affordability. While this can occur in specific cases (especially when we only allow new apartment buildings to be developed on top of old apartment buildings), as a general claim it's wrong and misleading on multiple levels. So let's walk through where the number is coming from and how it's being presented.
 
@@ -425,7 +427,7 @@ The relative lack of movement in this metric fits pretty well with the observabl
 ## The Geography of Cheap Rent
 Let's take a look at the geography of cheap rent. Where are the tenant households with shelter cost below $750, and where are we seeing the most losses of these kinds of rental contracts? We can pull this data from the cross tabulation we have used above. To reduce clutter we will break out the 20 biggest Metro Areas (CMAs) in Canada, and lump everything else together.
 
-```{r}
+```{r cheap-rent-region}
 d_2021 <- con_2021 |>
   filter(`Household type including census family structure (16)`=="Total - Household type including census family structure",
                   `Statistics (3C)`=="Number of private households",
@@ -530,7 +532,7 @@ We see that cheap rent is most common outside of Metropolitan Canada (as represe
 
 We can look at this more directly by showing the loss of renter households with shelter cost less that $750 in each region and inter-census period.
 
-```{r}
+```{r cheap-rent-region-change}
 plot_data |>
   bind_rows(rest_data) |>
   group_by(Name) |>
@@ -672,7 +674,7 @@ plot_data |>
 The zigzag (or double hump) pattern here is fascinating, with concentrations in both the early Millennial (born 1986-1991) and late Boomer (born 1956-1966). This may reflect simple demographics (these were larger cohorts than the intervening Gen Xers), but may also be picking up on other patterns, with variation in both quality and geographic distribution of low rent tenancies by age (keeping in mind that most of these renters are in more rural parts of Canada and bigger metros in Quebec). We'll circle back to look at these patterns in a moment, but first let's take a look at what was renting for less than $750 in 2016 by number of bedrooms.
 
 
-```{r}
+```{r fig.height=4.5}
 pumf_2016 %>% 
   filter(SHELCO<750) |>
   filter(TENUR=="Rented or Band housing",PRIHM=="Person is primary maintainer") |>
@@ -697,7 +699,7 @@ pumf_2016 %>%
 No surprise, mostly 1BR and 2BR dwellings. We can also look at the type of dwelling households paying less than $750 in rent tend to live in.
 
 
-```{r}
+```{r fig.height=4}
 pumf_2016_h %>% 
   filter(SHELCO<=700,
          TENUR=="Rented or Band housing",PRIHM=="Person is primary household maintainer") |>

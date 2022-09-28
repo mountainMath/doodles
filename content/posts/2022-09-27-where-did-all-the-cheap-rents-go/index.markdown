@@ -11,16 +11,18 @@ categories:
 tags: []
 description: 'An investigation into the 320k "lost" units renting below $750.'
 featured: ''
-featuredalt: ''
-featuredpath: ''
+images: ["https://doodles.mountainmath.ca/blog/2022/09/27/where-did-all-the-cheap-rents-go/index_files/figure-html/cheap-rent-region-change-1.png"]
+featuredalt: ""
+featuredpath: ""
 linktitle: ''
+type: "post"
 ---
 
 <p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/09/28/where-did-all-the-cheap-rents-go/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 
-It can be really useful to count things, but sometimes numbers end up causing confusion and misunderstanding rather than helping. Often this has to do with how the number is presented and attached to claims. Other times it has to do with problematic procedures used to obtain the number. Here we want to explore these problems more in detail concerning a claim that ["Canada lost 322,000 affordable homes" between 2011 and 2016](https://www.theglobeandmail.com/real-estate/vancouver/article-even-as-housing-plans-progress-truly-affordable-housing-is-being-lost/). This stat is generally made in reference to "private" rentals, and is contrasted to the number of non-market units built between 2011 and 2016, pegged at 60k units. 
+It can be really useful to count things, but sometimes numbers end up causing confusion and misunderstanding rather than helping. Often this has to do with how the number is presented and attached to claims. Other times it has to do with problematic procedures used to obtain the number. Here we want to explore these problems more in detail concerning a claim that ["Canada lost 322,000 affordable homes" between 2011 and 2016](https://www.theglobeandmail.com/real-estate/vancouver/article-even-as-housing-plans-progress-truly-affordable-housing-is-being-lost/). This stat is generally made in reference to "private" rentals, and is contrasted to the number of non-market units built between 2011 and 2016, pegged at 60k units.
 
 At its best, the claim has been used to advocate for more non-profit housing. This is a great thing to advocate for, and something we support. At its worst, the claim has been made to look like a popular NIMBY talking point: that development of new housing, including non-profit, is directly resulting in the loss of older more affordable housing stock, resulting in worse overall affordability. While this can occur in specific cases (especially when we only allow new apartment buildings to be developed on top of old apartment buildings), as a general claim it's wrong and misleading on multiple levels. So let's walk through where the number is coming from and how it's being presented.
 
@@ -81,13 +83,13 @@ The relative lack of movement in this metric fits pretty well with the observabl
 ## The Geography of Cheap Rent
 Let's take a look at the geography of cheap rent. Where are the tenant households with shelter cost below $750, and where are we seeing the most losses of these kinds of rental contracts? We can pull this data from the cross tabulation we have used above. To reduce clutter we will break out the 20 biggest Metro Areas (CMAs) in Canada, and lump everything else together.
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-7-1.png" width="1200" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/cheap-rent-region-1.png" width="1200" />
 
 We see that cheap rent is most common outside of Metropolitan Canada (as represented by the top 20 CMAs), though Montréal also still retains a lot of tenant households paying less than $750 in rent. Correspondingly, Montréal and more rural parts of Canada are also where we've seen the biggest recent declines in low-rent households. Strange, then, that the focus on [reporting](https://www.theglobeandmail.com/real-estate/vancouver/article-even-as-housing-plans-progress-truly-affordable-housing-is-being-lost/) about these losses often shifts to Vancouver or Toronto, where there are very few such rental contracts remaining. This speaks to a broader problem with the potential for any headline number for Canada to mislead insofar as it combines data from very different housing markets across the country.
 
 We can look at this more directly by showing the loss of renter households with shelter cost less that $750 in each region and inter-census period.
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-1.png" width="1200" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/cheap-rent-region-change-1.png" width="1200" />
 
 
 This again highlights that most of the losses were in Montréal and regions outside of the main metro areas. The number of households with shelter cost below $750 in Calgary and Edmonton increasing 2016-2021 shows that this isn't necessarily a one-way street. Units renting below $750 at any given point in time aren't separate from the rest of the housing market, and their asking rents can go up or down depending upon what's going on elsewhere in the market.
@@ -100,7 +102,7 @@ Let's dig a little deeper, drawing upon public use micro file (PUMF) data. Unfor
 
 
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-1.png" width="1200" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-1.png" width="1200" />
 
 
 We can see that most rents are (perhaps not surprisingly) at the upper end of the distribution, with $700 a month being the most common. This suggests that there's nothing intrinsically separating market housing renting under $750 from the rest of the housing market. There's nothing "natural" about its affordability except that its on the low end of the overall distribution of rents. As the overall distribution shifts rightward, its affordable tail at the left end gets smaller and smaller. 
@@ -110,18 +112,18 @@ Other noticeable issues include the difference in results when using the individ
 Let's use our flexibility to break down tenancies with rents below $750 by age of primary household maintainer.
 
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-11-1.png" width="1200" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-1.png" width="1200" />
 
 
 The zigzag (or double hump) pattern here is fascinating, with concentrations in both the early Millennial (born 1986-1991) and late Boomer (born 1956-1966). This may reflect simple demographics (these were larger cohorts than the intervening Gen Xers), but may also be picking up on other patterns, with variation in both quality and geographic distribution of low rent tenancies by age (keeping in mind that most of these renters are in more rural parts of Canada and bigger metros in Quebec). We'll circle back to look at these patterns in a moment, but first let's take a look at what was renting for less than $750 in 2016 by number of bedrooms.
 
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-12-1.png" width="1200" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-1.png" width="1200" />
 
 No surprise, mostly 1BR and 2BR dwellings. We can also look at the type of dwelling households paying less than $750 in rent tend to live in.
 
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-13-1.png" width="1200" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-11-1.png" width="1200" />
 
 
 The vast majority of low rent situations seem to involve non-condo apartments, representing both purpose-built rental buildings and secondary suites in homes. Once again, it's worth keeping in mind that these are mostly showing up in Quebec and more rural parts of Canada.
@@ -129,7 +131,7 @@ The vast majority of low rent situations seem to involve non-condo apartments, r
 Checking by period of construction of the building we see that most of these households live in buildings constructed between 1946 and 1980 or 1990.
 
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-14-1.png" width="1200" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-12-1.png" width="1200" />
 
 Most low rent situations involve older buildings. But this age distribution also generally fits the age-distribution of our purpose-built rental stock in Canada, largely constructed during a mid-Twentieth Century build-out prior to the rise of the condominium (where we see far fewer being rented out at below $750). Aging stock is also more likely to be in poor condition, drawing a clear connection between rents and quality of housing. A fair amount of preventive maintenance is needed to keep old buildings habitable, and the more they fall into disrepair, the cheaper their rents tend to go relative to surrounding alternatives. There's nothing "natural" about keeping older housing inhabitable.
 
@@ -138,14 +140,14 @@ Most low rent situations involve older buildings. But this age distribution also
 Let's exploit the flexibility of our microdata to return to our exploration of those on the other side of the low rent affordability issue: households with incomes below $30k. As we noted before, some of the particularly high ratios, where it seems like tenants are paying extraordinary portions of their incomes on rents, may be accounted for by time lags between reporting incomes and rents. This can especially be an issue for recent immigrants and new graduates who might have landed both a good job and new apartment prior to the census, but lack income records from the year prior to the census. We can help account for this by pulling out recent movers (those moving in the last year). What do their shelter cost to income ratios look like if we actually separate non-movers from recent movers? 
 
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-15-1.png" width="1200" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-13-1.png" width="1200" />
 
 We can see that when we separate them out, non-movers in the past year with low household incomes (<$30,000) reported for the year prior are mostly concentrated in the range of those paying between 30% to 50% of their income on rent. By contrast, the highest category for movers with low incomes is those paying 100% or more of their income on rent. This likely reflects the lag effect, where movers current incomes (at least within Canada) are likely much higher when they fill out Census forms about their rents, than in the year prior, when the Census attempts to assign their income. 
 
 Computing the ratio of households that moved in the past year for each shelter cost to income band makes this relationship even more clear. The time lag between reported incomes and reported rents likely produces a real upward bias in shelter cost to income ratios. We can partly account for this bias by separating out mobility, but it's imperfect, and analysts drawing upon this metric - including for the construction of [Core Housing Needs measures](https://www.cmhc-schl.gc.ca/en/professionals/housing-markets-data-and-research/housing-research/core-housing-need)! - should really keep this bias in mind. 
 
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-16-1.png" width="1200" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-14-1.png" width="1200" />
 
 
 ## Rents in the Primary Rental Market
@@ -153,7 +155,7 @@ Computing the ratio of households that moved in the past year for each shelter c
 
 Let's draw in one more source of data to keep triangulating our exploration of low rents. In particular, let's look at the primary rental market. This gets surveyed annually by CMHC through their [Rental Market Survey (RMS)](https://www.cmhc-schl.gc.ca/en/professionals/housing-markets-data-and-research/housing-data/data-tables/rental-market/rental-market-report-data-tables) and looking at rent bands by quartile gives some indication how this market has changed. Deeper access to CMHC data could answer the question how rent has changed in individual buildings, and how many of these have gotten torn down or received deep renovations. But publicly available data can give a broad overview.
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-18-1.png" width="1200" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-16-1.png" width="1200" />
 
 Our broadest overview of the primary rental market shows that the percentile bands of rent levels have continuously increased between 2006 and 2021. If we assume that the rents are evenly distributed between these 25th and 50th percentile we can estimate what share of the rental stock rented below $750 in 2011 and 2016, and folding in data on the total stock of purpose built rental housing we can estimate the loss of such units.
 
@@ -165,7 +167,7 @@ In the purpose-built market the RMS estimated a total of around 842,864 units re
 
 As noted above, housing markets are decidedly regional, so it might be useful to see how this pans out across different metropolitan areas.
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-20-1.png" width="1200" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-18-1.png" width="1200" />
 
 Matching our census-based analysis, the RMS data shows that Montréal has a high share of purpose-built rental units renting below $750 both in 2011 and 2016, whereas e.g. Toronto doesn't. We can also see that in Winnipeg and Halifax about half of the units were renting below $750 in 2011, dropping to 25% in 2016 and likely very few left by 2021, whereas in Montréal about 75% of units were renting below $750 in 2011, with still a little over 50% renting below that cutoff in 2016 and over a quarter in 2021.
 
@@ -173,13 +175,13 @@ But how should one interpret this? That's where things get tricky. RMS data alon
 
 Analyzing this in more detail unfortunately goes beyond the scope of this post, but we do want to quickly highlight how bedroom mix and change in overall purpose-built rental units vary across metro areas.
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-21-1.png" width="1200" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-19-1.png" width="1200" />
 
 Montreal and Québec have a relatively high share of of 2 and 3 bedroom units, which makes their high share of units renting below $750 even more impressive. They also have a high share of overall purpose-built rental units in their CMAs, and they have been adding on that over the years. Toronto and Vancouver, on the other hand, have been relatively flat in their overall stock of purpose-built rental units due to a mixture of modest additions and some loss due to conversion and demolitions.
 
 To round this off we can narrow down to look specifically at the rent distribution of 2-bedroom purpose-built rental units across metro regions.
 
-<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-22-1.png" width="1200" />
+<img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-20-1.png" width="1200" />
 
 Only Montréal has a good share of their 2-bedroom purpose-built rental units renting below $750, with a little over 25% of them still renting below that cutoff in 2021. In Toronto and Vancouver 2-bedroom apartments renting below $750 have been exceedingly rare since at least 2006.
 
@@ -207,13 +209,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-09-27 19:36:10 PDT"
+## [1] "2022-09-27 19:54:05 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [eb6ae9b] 2022-09-12: rent gdp post
+## Head:     [374c7aa] 2022-09-28: cheap rents post
 ```
 
 ```
@@ -241,32 +243,27 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## [13] ggplot2_3.3.6             tidyverse_1.3.2          
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] fs_1.5.2            lubridate_1.8.0     bit64_4.0.5        
-##  [4] httr_1.4.4          rprojroot_2.0.3     tools_4.2.1        
-##  [7] backports_1.4.1     bslib_0.4.0         utf8_1.2.2         
-## [10] R6_2.5.1            DBI_1.1.3           colorspace_2.0-3   
-## [13] withr_2.5.0         tidyselect_1.1.2    git2r_0.30.1       
-## [16] bit_4.0.4           curl_4.3.2          compiler_4.2.1     
-## [19] cli_3.4.0           rvest_1.0.3         xml2_1.3.3         
-## [22] labeling_0.4.2      bookdown_0.27       sass_0.4.2         
-## [25] scales_1.2.1        digest_0.6.29       foreign_0.8-82     
-## [28] rmarkdown_2.14      pkgconfig_2.0.3     htmltools_0.5.3    
-## [31] dbplyr_2.2.1        fastmap_1.1.0       highr_0.9          
-## [34] rlang_1.0.5         readxl_1.4.0        rstudioapi_0.14    
-## [37] RSQLite_2.2.15      jquerylib_0.1.4     generics_0.1.3     
-## [40] farver_2.1.1        jsonlite_1.8.0      vroom_1.5.7        
-## [43] googlesheets4_1.0.0 magrittr_2.0.3      Rcpp_1.0.9         
-## [46] munsell_0.5.0       fansi_1.0.3         MetBrewer_0.2.0    
-## [49] lifecycle_1.0.2     stringi_1.7.8       yaml_2.3.5         
-## [52] grid_4.2.1          blob_1.2.3          parallel_4.2.1     
-## [55] crayon_1.5.1        haven_2.5.0         hms_1.1.2          
-## [58] knitr_1.39          pillar_1.8.1        codetools_0.2-18   
-## [61] reprex_2.0.1        glue_1.6.2          evaluate_0.15      
-## [64] blogdown_1.10       modelr_0.1.8        vctrs_0.4.1        
-## [67] tzdb_0.3.0          cellranger_1.1.0    gtable_0.3.1       
-## [70] assertthat_0.2.1    cachem_1.0.6        xfun_0.33          
-## [73] broom_1.0.0         sanzo_0.1.0         googledrive_2.0.0  
-## [76] gargle_1.2.0        memoise_2.0.1       ellipsis_0.3.2     
-## [79] here_1.0.1
+##  [1] lubridate_1.8.0     assertthat_0.2.1    digest_0.6.29      
+##  [4] utf8_1.2.2          R6_2.5.1            cellranger_1.1.0   
+##  [7] backports_1.4.1     reprex_2.0.1        evaluate_0.15      
+## [10] highr_0.9           httr_1.4.4          blogdown_1.10      
+## [13] pillar_1.8.1        rlang_1.0.5         googlesheets4_1.0.0
+## [16] readxl_1.4.0        rstudioapi_0.14     jquerylib_0.1.4    
+## [19] sanzo_0.1.0         rmarkdown_2.14      labeling_0.4.2     
+## [22] googledrive_2.0.0   munsell_0.5.0       broom_1.0.0        
+## [25] compiler_4.2.1      modelr_0.1.8        xfun_0.33          
+## [28] pkgconfig_2.0.3     htmltools_0.5.3     tidyselect_1.1.2   
+## [31] bookdown_0.27       codetools_0.2-18    fansi_1.0.3        
+## [34] crayon_1.5.1        tzdb_0.3.0          dbplyr_2.2.1       
+## [37] withr_2.5.0         grid_4.2.1          jsonlite_1.8.0     
+## [40] gtable_0.3.1        lifecycle_1.0.2     DBI_1.1.3          
+## [43] git2r_0.30.1        magrittr_2.0.3      scales_1.2.1       
+## [46] cli_3.4.0           stringi_1.7.8       cachem_1.0.6       
+## [49] farver_2.1.1        fs_1.5.2            xml2_1.3.3         
+## [52] bslib_0.4.0         ellipsis_0.3.2      generics_0.1.3     
+## [55] vctrs_0.4.1         tools_4.2.1         glue_1.6.2         
+## [58] hms_1.1.2           fastmap_1.1.0       yaml_2.3.5         
+## [61] colorspace_2.0-3    gargle_1.2.0        rvest_1.0.3        
+## [64] knitr_1.39          haven_2.5.0         sass_0.4.2
 ```
 </details>
