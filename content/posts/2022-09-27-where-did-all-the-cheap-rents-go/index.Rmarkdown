@@ -1,0 +1,1134 @@
+---
+title: Where did all the cheap rents go?
+author: Jens von Bergmann
+date: '2022-09-27'
+slug: where-did-all-the-cheap-rents-go
+categories:
+  - affordability
+  - cansim
+  - cmhc
+  - rental
+tags: []
+description: 'An investigation into the 320k "lost" units renting below $750.'
+featured: ''
+featuredalt: ''
+featuredpath: ''
+linktitle: ''
+---
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/09/28/where-did-all-the-cheap-rents-go/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 150,
+	fig.width = 8,
+	fig.height = 6,
+	cache = TRUE
+)
+
+library(tidyverse)
+library(statcanXtabs)
+library(mountainmathHelpers)
+library(cmhc)
+library(cansim)
+library(cancensus)
+```
+
+It can be really useful to count things, but sometimes numbers end up causing confusion and misunderstanding rather than helping. Often this has to do with how the number is presented and attached to claims. Other times it has to do with problematic procedures used to obtain the number. Here we want to explore these problems more in detail concerning a claim that ["Canada lost 322,000 affordable homes" between 2011 and 2016](https://www.theglobeandmail.com/real-estate/vancouver/article-even-as-housing-plans-progress-truly-affordable-housing-is-being-lost/). This stat is generally made in reference to "private" rentals, and is contrasted to the number of non-market units built between 2011 and 2016, pegged at 60k units. 
+
+At its best, the claim has been used to advocate for more non-profit housing. This is a great thing to advocate for, and something we support. At its worst, the claim has been made to look like a popular NIMBY talking point: that development of new housing, including non-profit, is directly resulting in the loss of older more affordable housing stock, resulting in worse overall affordability. While this can occur in specific cases (especially when we only allow new apartment buildings to be developed on top of old apartment buildings), as a general claim it's wrong and misleading on multiple levels. So let's walk through where the number is coming from and how it's being presented.
+
+The headline number is based on [an estimation by Steve Pomeroy](https://www.focus-consult.com/why-canada-needs-a-non-market-rental-acquisition-strategy/):
+
+>    The erosion of “naturally occurring affordable housing” (NOAH) units is the most serious threat to Canada’s supply of affordable housing. Between 2011 and 2016 the number of private rental units affordable to households earning less than $30,000 per year (rents below $750) declined by 322,600 units — a trend that appears to be continuing.
+
+We will temporarily set aside the problematic term "naturally occurring affordable housing," except to link to this [critical history of the term](https://cityobservatory.org/the-myth-of-naturally-occurring-affordable-housing/) and note that left to nature, [housing invariably decays](https://www.loveproperty.com/gallerylist/65542/homes-that-lost-the-fight-with-mother-nature) (something that can also be [observed in parts of Vancouver where zoning bylaws force unproductive land use](https://vimeo.com/151753760)). Let's dive into the number. In the report referenced, this stat is only broadly sourced to the 2016 Census and 2011 NHS with no indication how it was estimated. But [this document outlines one way that does line up with the headline number](https://pub-hamilton.escribemeetings.com/filestream.ashx?DocumentId=256198). It takes a [data table from the 2016 census that enumerates non-subsidized rental households paying below $750 in rent and utilities](https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/Rp-eng.cfm?TABID=2&LANG=E&APATH=3&DETAIL=0&DIM=0&FL=A&FREE=0&GC=0&GK=0&GRP=1&PID=110571&PRID=10&PTYPE=109445&S=0&SHOWALL=0&SUB=0&Temporal=2017&THEME=121&VID=0&VNAMEE=&VNAMEF=), and a [data table from the 2011 NHS](https://www12.statcan.gc.ca/nhs-enm/2011/dp-pd/dt-td/Rp-eng.cfm?LANG=E&APATH=7&DETAIL=0&DIM=0&FL=S&FREE=0&GC=0&GID=0&GK=0&GRP=0&PID=106661&PRID=0&PTYPE=105277&S=0&SHOWALL=0&SUB=0&Temporal=2013&THEME=94&VID=0&VNAMEE=Shelter%20cost%20groups%20%2811%29&VNAMEF=Tranches%20de%20coûts%20d%27habitation%20%2811%29) with slightly different cutoffs where the $750 cutoff was estimated by linear interpolation between the rent cutoffs in the table.
+
+Using linear interpolation assumes that shelter costs are uniformly distributed in the $600-$800 range, which is tenuous at best. Shelter costs will skew high within this band, which would under-estimate the "loss". At the same time one has to ask why nominal shelter cost levels should be used for this instead of adjusting for inflation or income growth.
+
+```{r}
+options(timeout=4000)
+
+con_2016 <- get_sqlite_xtab("98-400-X2016228","https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=110571&OFT=CSV")
+
+con_2021 <- get_cansim_sqlite("98-10-0253")
+
+shelter_cost_to_income_groups <- c(
+  "Less than 15%",                                                                               
+  "15% to less than 30%",                                                                        
+  "30% to less than 50%",                                                                        
+  "50% or more",                                                                                 
+  "50% to less than 100%",                                                                       
+  "Not applicable (private households with a household total income less than or equal to zero)",
+  "Not applicable"
+)
+
+shelter_cost_to_income_groups_pure <- c(
+  "Less than 15%",                                                                               
+  "15% to less than 30%",                                                                        
+  "30% to less than 50%",                                                                        
+  "50% to less than 100%",
+  "100% or more",
+  "Not applicable"
+)
+
+
+sc_cats <-  c("Less than 15%","15% to less than 30%","30% to less than 50%","50% to less than 100%","50% or more")
+sc_cats2 <-  c("Less than 15%","15% to less than 30%","30% to less than 50%","50% to less than 100%","100% or more")
+sc_cats3 <- c("30% to less than 50%","50% to less than 100%")
+
+income_cats <- c("Under $10,000","$10,000 to $19,999","$20,000 to $29,999")#,"$30,000 to $39,999")
+
+d_2021 <- con_2021 |>
+  filter(GeoUID=="11124",
+         `Statistics (3C)`=="Number of private households",
+         `Shelter-cost-to-income ratio (9)`=="Total - Shelter-cost-to-income ratio",
+         `Household total income groups (14)`=="Total - Total income of household",
+         `Tenure including presence of mortgage payments and subsidized housing (7)`%in% c("Subsidized housing","Not subsidized housing"),
+         `Household type including census family structure (16)`=="Total - Household type including census family structure",
+         `Shelter cost (12)` %in% c("Less than $500","$500 to $749")) |>
+  collect_and_normalize() |>
+  select(`Shelter cost`=`Shelter cost (12)`,Tenure=`Tenure including presence of mortgage payments and subsidized housing (7)`,Value=VALUE) |>
+  group_by(Tenure) |>
+  summarize(value=sum(Value),.groups="drop")
+
+d_2016 <- con_2016 |>
+  filter(`GEO_CODE (POR)`=="01",
+         `Shelter-cost-to-income ratio`=="Total - Shelter-cost-to-income ratio",
+         `Household total income groups`=="Total - Total income of household",
+         `Household type including census family structure`=="Total - Household type including census family structure",
+         `Shelter cost` %in% c("Less than $500","$500 to $749")) |>
+  collect_and_normalize_xtab() |>
+  select(`Shelter cost`,Tenure=`Tenure including presence of mortgage payments and subsidized housing`,Value) |>
+  filter(Tenure %in% c("Subsidized housing","Not subsidized housing")) |>
+  group_by(Tenure) |>
+  summarize(value=sum(Value),.groups="drop")
+
+d2_2016 <- con_2016 |>
+  filter(`GEO_CODE (POR)`=="01",
+         `Shelter-cost-to-income ratio`=="Total - Shelter-cost-to-income ratio",
+         `Household total income groups`=="Total - Total income of household",
+         `Household type including census family structure`=="Total - Household type including census family structure",
+         `Shelter cost` %in% c("Less than $500","$500 to $749","$750 to $999")) |>
+  collect_and_normalize_xtab() |>
+  select(`Shelter cost`,Tenure=`Tenure including presence of mortgage payments and subsidized housing`,Value) |>
+  filter(Tenure %in% c("Subsidized housing","Not subsidized housing")) |>
+  mutate(value=ifelse(`Shelter cost`=="$750 to $999",Value*(802.37-750)/250,Value)) |>
+  group_by(Tenure) |>
+  summarize(value=sum(Value),.groups="drop")
+
+d_2011 <- simpleCache({
+  con_2011 <- get_sqlite_xtab("99-014-X2011031","https://www12.statcan.gc.ca/nhs-enm/2011/dp-pd/dt-td/OpenDataDownload.cfm?PID=106661", format="python_xml")
+  
+  d_2011 <- con_2011 |>
+    filter(GeoUID=="01",
+           `B13_HHtype ID`=="1",
+           `B13_HhIncGroups ID`=="1",
+           `B13_ShelterCostIncRatio_Groups ID`=="1",
+           B13_ShelterCost_Groups %in% c("Less than $400","$400 to $599","$600 to $799"),
+           B13_TenurPresMortgSubsidy %in% c("Subsidized housing", "Not subsidized housing"))  |>
+    collect_and_normalize_xtab(disconnect=TRUE) |>
+    select(`Shelter cost`=B13_ShelterCost_Groups,Tenure=B13_TenurPresMortgSubsidy,Value) |>
+    mutate(value=ifelse(`Shelter cost`=="$600 to $799",Value*(750-600)/200,Value)) |>
+    mutate(value2=ifelse(`Shelter cost`=="$600 to $799",Value*(701.05-600)/200,Value)) |>
+    group_by(Tenure)  |>
+    summarize(value=sum(value),
+              value2=sum(value2),.groups="drop")
+},"2011_shelter_cost_xtab.Rda",path=here::here("data"))
+
+d_2006 <- simpleCache({
+  con_2006 <- get_sqlite_xtab("97-554-XCB2006053","https://www12.statcan.gc.ca/census-recensement/2006/dp-pd/tbt/OpenDataDownload.cfm?PID=93657", format="python_xml")
+  
+  d_2006 <- con_2006 |>
+    filter(GeoUID=="01",
+           `DIM1 ID`=="1",
+           `DIM2 ID`=="1",
+           `DIM0 ID`=="1",
+           `B06_HhIncGrps ID`=="1",
+           B06_GrossRent %in% c("Less than $400","$400 to $499","$500 to $599","$600 to $699",
+                                "$700 to $799"))  |>
+    collect_and_normalize_xtab(disconnect=TRUE) |>
+    select(`Shelter cost`=B06_GrossRent,Value) |>
+    mutate(value=ifelse(`Shelter cost`=="$700 to $799",Value*0.5,Value)) |>
+    summarize(value=sum(value),.groups="drop")
+},"2006_shelter_cost_xtab.Rda",path=here::here("data"))
+
+d_2001 <- simpleCache({
+  con_2001 <- get_sqlite_xtab("97F0021XCB2001011","https://www12.statcan.gc.ca/English/census01/products/standard/themes/OpenDataDownload.cfm?PID=58910", format="python_xml")
+  
+  d_2001 <- con_2001 |>
+    filter(GeoUID=="01",
+           `Rpair ID`=="1",
+           `B01_GrosRtHhinc ID`=="1",
+           `B01_HHType ID`=="1",
+           `B01_HhIncr ID`=="1",
+           B01_GrosRtr %in% c("Less than $100","$  100 - $199","$  200 - $299",
+                              "$  300 - $399","$  400 - $499","$  500 - $599","$  600 - $699",
+                                "$  700 - $799"))  |>
+    collect_and_normalize_xtab(disconnect=TRUE) |>
+    select(`Shelter cost`=B01_GrosRtr,Value) |>
+    mutate(value=ifelse(`Shelter cost`=="$  700 - $799",Value*0.5,Value)) |>
+    summarize(value=sum(value),.groups="drop")
+},"2001_shelter_cost_xtab.Rda",path=here::here("data"))
+
+d_1996 <- read_csv("https://www12.statcan.gc.ca/English/census96/data/tables/File.cfm?S=0&LANG=E&A=R&PID=20364&GID=187300&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0&OFT=CSV",skip = 5,col_types = cols(.default = "c")) |>
+  select(`Shelter cost`=`Gross Rent (13)`,Value=`Total - Household income [3]`) |>
+  filter(`Shelter cost` %in% c("Less than $100","$100 - $199","$200 - $299",
+                              "$300 - $399","$400 - $499","$500 - $599","$600 - $699",
+                                "$700 - $799")) |>
+  mutate(Value=as.numeric(Value)) |>
+  mutate(value=ifelse(`Shelter cost`=="$700 - $799",Value*0.5,Value)) |>
+  summarize(value=sum(value),.groups="drop")
+
+all_rental_750 <- bind_rows(
+  d_1996 |> mutate(Year=1996),
+  d_2001 |> mutate(Year=2001),
+  d_2006 |> mutate(Year=2006), 
+  d_2011 |> mutate(Year=2011), 
+  d_2016 |> mutate(Year=2016),
+  d_2021 |> mutate(Year=2021)
+) |>
+  group_by(Year) |>
+  summarize(value=sum(value))
+
+base_2011 <- d_2011 |>
+  filter(Tenure=="Not subsidized housing") |>
+  pull(value)
+
+rent_diff <- bind_rows(d_2011 |> mutate(Year=2011), d_2016 |> mutate(Year=2016),d_2021 |> mutate(Year=2021)) |>
+  group_by(Tenure) |>
+  mutate(diff=value-lag(value,order_by = Year),
+         Period=paste0(lag(Year,order_by = Year),"-",Year)) |>
+  filter(Year!=first(Year)) |>
+  select(Tenure,name=Period,value=diff) |>
+  pivot_wider() |>
+  filter(Tenure=="Not subsidized housing") 
+
+rent_diff_2011_2016=rent_diff$`2011-2016`
+rent_diff2_2011_2016=filter(d2_2016,Tenure=="Not subsidized housing")$value-filter(d_2011,Tenure=="Not subsidized housing")$value
+rent_diff3_2011_2016=filter(d_2016,Tenure=="Not subsidized housing")$value-filter(d_2011,Tenure=="Not subsidized housing")$value2
+rent_diff_2016_2021=rent_diff$`2016-2021`
+
+```
+
+Setting these questions aside, a quick cross-check with this method shows a net loss of `r scales::comma(-rent_diff_2011_2016,accuracy=100)` households in non-subsidized rental housing paying $750 or less on rent and utilities, matching the number cited in the research report (assuming the report truncated instead of rounded to the nearest 100). We will assume that this is how the number was constructed, as the estimated difference between 2011 to 2016 in households not living in subsidized housing or receiving rent subsidies paying at most $750 in rent and utilities. (If one were to adjust for inflation, using $701 as the starting rents in 2011, then the loss would amount to `r scales::comma(-rent_diff3_2011_2016,accuracy=100)` households, adjusting in the other direction using $802 in 2016 this method comes out with a gain of `r scales::comma(rent_diff2_2011_2016,accuracy=100)` units, which is absurd and highlights the issue of using linear interpolation, in this case to estimate households below the $802 cutoff in the $750-$1000 band.)
+
+
+Now with the newest 2021 census data, we don't need to interpolate using standard tables and can read off that between 2016 and 2021 another `r scales::comma(-rent_diff_2016_2021,accuracy=100)` fewer non-subsidized renter households were paying less than $750 in rent and utilities. So we can extend the claim forward. We can also push the claim back to 1996, although at the cost of grouping subsidized and non-subsidized rental housing and losing households with zero income in 2006 and earlier, to see a longer timeline of the number of units renting below $750.
+
+```{r}
+all_rental_750 |>
+  ggplot(aes(x=factor(Year),y=value)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Tenant households reporting rents below $750 in Canada (subsidized and market rental)",
+       subtitle="(only households with income greater than zero in 2006 and earlier)",
+       x=NULL,y="Number of households",
+       caption="StatCan Census 1996 through 2021\nTables 93F0030XDB96022, 97F0021XCB2001011, 97-554-XCB2006053, 98-10-0253, 98-400-X2016228, 99-014-X2011031")
+```
+
+In short, the number of tenant households in subsidized or market rental & paying rents below $750 has been declining for quite some time now.
+
+## How should we interpret this 320k statistic?
+The research note that introduced this loss of "322,600 units" interprets it in the following way:
+
+>    These losses are driven chiefly by the financialization of rental housing – an asset class attracting investment from both large capital funds, as well as smaller investors, both seeking to capitalize on dramatically rising rents). A further contributor is the intensification and redevelopment of sites with older low-moderate rent properties.  
+
+Unfortunately no argument is made to fully define or support these claims. And they're pretty big claims involving a variety of potential processes and lots of room for confusion. Perhaps the biggest generator of confusion is that rents in Canada are generally not tied to units. Instead they're mostly tied to rental contracts between landlords and tenant households. Here these rents are reported by tenant households. Rental contracts can provide stability and protect tenants from rent increases - especially in places like BC that have rent control. But they disappear when tenants move, resulting in turnover for units and new contracts offered to new tenants. And [tenants move a lot](https://homefreesociology.com/2022/07/29/tumbling-turnover/). 
+
+Overall, the decline in households reporting rents below $750 generally doesn't reflect a loss of units, but rather turnover in rental contracts. Labeling our number properly as tied to tenancies, as we attempt to do above, may help ward off a lot of confusion. When tenants move out, landlords tend to set new rents for their units. In a remarkably predictable dynamic, these [rents go up when vacancy rates are low, and go down when vacancy rates are high](https://doodles.mountainmath.ca/blog/2022/02/18/vacancy-rates-and-rent-change-2021-update/). Landlords setting higher rents on units that have turned over in conditions of scarcity probably explains most of the decline in rental contracts paying below $750 in rent. You could term this process "financialization" if you want to, but it's not clear how it helps explain the underlying dynamic. "Filtering" is likely a better name for the process, reflecting how units tend to "filter down," becoming cheaper as they age in places where housing is abundant, but can instead ["filter up,"](https://www.researchgate.net/profile/Tsur-Somerville-2/publication/239823323_Dynamics_of_the_Affordable_Housing_Stock_Microdata_Analysis_of_Filtering/links/53ea282c0cf2fb1b9b6766e3/Dynamics-of-the-Affordable-Housing-Stock-Microdata-Analysis-of-Filtering.pdf) becoming more expensive, in places where housing is scarce.
+
+But let's get back to the number.
+
+```{r}
+d_2011 <- simpleCache({
+  con_2011 <- get_sqlite_xtab("99-014-X2011031","https://www12.statcan.gc.ca/nhs-enm/2011/dp-pd/dt-td/OpenDataDownload.cfm?PID=106661", format="python_xml")
+  d_2011 <- con_2011 |> 
+    filter(GeoUID=="01",
+           `B13_HHtype ID`=="1",
+           `B13_HhIncGroups` %in% income_cats,
+           #`B13_ShelterCostIncRatio_Groups ID`=="1",
+           `B13_ShelterCost_Groups ID`=="1",
+           B13_ShelterCostIncRatio_Groups %in% sc_cats,
+           #B13_ShelterCost_Groups %in% c("Less than $400","$400 to $599","$600 to $799","$800 to $999"),
+           B13_TenurPresMortgSubsidy %in% c("Not subsidized housing","Subsidized housing"))  |>
+    collect_and_normalize_xtab(disconnect=TRUE) |>
+    select(SCI=B13_ShelterCostIncRatio_Groups,
+           Tenure=B13_TenurPresMortgSubsidy,
+           Income=B13_HhIncGroups,Value)
+},"2011_shelter_cost_xtab2.Rda",path=here::here("data"))
+
+d_2006 <- simpleCache({
+  con_2006 <- get_sqlite_xtab("97-554-XCB2006053","https://www12.statcan.gc.ca/census-recensement/2006/dp-pd/tbt/OpenDataDownload.cfm?PID=93657", format="python_xml")
+  
+  d_2006 <- con_2006 |>
+    filter(GeoUID=="01",
+           `DIM1 ID`=="1",
+           `DIM2 ID`=="1",
+           `DIM0 ID` %in% c("2","3","4"),
+           `B06_HhIncGrps`%in% income_cats,
+           `B06_GrossRent ID`=="1")  |>
+    collect_and_normalize_xtab(disconnect=TRUE) |>
+    select(Income=B06_HhIncGrps,SCI=DIM0,Value) |>
+    mutate(SCI=recode(SCI,
+                      "Spending less than 30% of household income on housing costs"="Less than 30%",
+                      "Spending 30% to 99% of household income on housing costs"="30% to less than 100%",
+                      "Spending 30% or more of household income on housing costs"="30% or more"))
+},"2006_shelter_cost_xtab2.Rda",path=here::here("data"))
+
+
+d_2001 <- simpleCache({
+  con_2001 <- get_sqlite_xtab("97F0021XCB2001011","https://www12.statcan.gc.ca/English/census01/products/standard/themes/OpenDataDownload.cfm?PID=58910", format="python_xml")
+  
+  d_2001 <- con_2001 |>
+    filter(GeoUID=="01",
+           `Rpair ID`=="1",
+           `B01_GrosRtHhinc ID`  %in% c("2","3","4"),
+           `B01_HHType ID`=="1",
+           `B01_HhIncr`%in% c("Under $10,000","$  10,000 - $19,999","$  20,000 - $29,999"),
+           `B01_GrosRtr ID` =='1')  |>
+    collect_and_normalize_xtab(disconnect=TRUE) |>
+    select(SCI=B01_GrosRtHhinc,Income=B01_HhIncr,Value) |>
+    mutate(SCI=recode(SCI,
+                      "Spending less than 30% of household income on housing costs"="Less than 30%",
+                      "Spending 30% to 99% of household income on housing costs"="30% to less than 100%",
+                      "Spending 30% or more of household income on housing costs"="30% or more"),
+           Income=recode(Income,
+                         "$  10,000 - $19,999"="$10,000 - $19,999",
+                         "$  20,000 - $29,999"="$20,000 - $29,999"))
+},"2001_shelter_cost_xtab2.Rda",path=here::here("data"))
+
+d_1996 <- read_csv("https://www12.statcan.gc.ca/English/census96/data/tables/File.cfm?S=0&LANG=E&A=R&PID=20364&GID=187300&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0&OFT=CSV",skip = 5,col_types = cols(.default = "c")) |>
+  slice(1) |>
+  pivot_longer(-1,names_to="Income",values_to="Value") |>
+  slice(seq(2,7)) |>
+  select(-1) |>
+  mutate(Value=as.numeric(Value))
+
+d_2016 <- con_2016 |> 
+  filter(`GEO_CODE (POR)`=="01",
+         `Shelter-cost-to-income ratio` %in% sc_cats,
+         #`Household total income groups`=="Total - Total income of household",
+         `Household total income groups` %in% income_cats,
+         `Household type including census family structure`=="Total - Household type including census family structure",
+         `Shelter cost`=="Total - Shelter cost") |>
+  collect_and_normalize_xtab() |>
+  select(Tenure=`Tenure including presence of mortgage payments and subsidized housing`,
+         Income=`Household total income groups`,SCI=`Shelter-cost-to-income ratio`,Value) |>
+  filter(Tenure %in% c("Not subsidized housing","Subsidized housing"))
+
+d_2021 <- con_2021 |>
+  filter(GeoUID=="11124",
+         `Statistics (3C)`=="Number of private households",
+         `Shelter-cost-to-income ratio (9)` %in% sc_cats,
+         `Household total income groups (14)` %in% income_cats,
+         `Tenure including presence of mortgage payments and subsidized housing (7)`%in% c("Not subsidized housing", "Subsidized housing"),
+         `Household type including census family structure (16)`=="Total - Household type including census family structure",
+         `Shelter cost (12)` == "Total - Shelter cost") |>
+  collect_and_normalize() |>
+  select(Income=`Household total income groups (14)`,
+         SCI=`Shelter-cost-to-income ratio (9)`,
+         Tenure=`Tenure including presence of mortgage payments and subsidized housing (7)`,
+         Value=VALUE) 
+
+all_income_data <- bind_rows(
+  d_2021 |> mutate(Year="2021"),
+  d_2016 |> mutate(Year="2016"),
+  d_2011 |> mutate(Year="2011"),
+  d_2006 |> mutate(Year="2006"),
+  d_2001 |> mutate(Year="2001"),
+  d_1996 |> mutate(Year="1996")
+)
+
+plot_data <- bind_rows(d_2011 |> mutate(Year="2011"),
+          d_2016 |> mutate(Year="2016"),
+          d_2021 |> mutate(Year="2021")) |>
+  pivot_wider(names_from = SCI,values_from = Value) |>
+  mutate(`100% or more`=`50% or more`-`50% to less than 100%`) |>
+  pivot_longer(sc_cats2,names_to="SCI",values_to = "Value") |>
+  mutate(SCI=factor(SCI,levels=sc_cats2)) |>
+  mutate(Income=factor(Income,levels=income_cats))
+
+income_diff <- plot_data |> 
+  filter(Tenure=="Not subsidized housing") |>
+  group_by(name=Year) |> 
+  summarise(value=sum(Value)) |>
+  pivot_wider() |>
+  mutate(`2011-2016`=`2016`-`2011`,
+         `2016-2021`=`2021`-`2016`) 
+
+income_diff_2011_2016=income_diff$`2011-2016`
+income_diff_2016_2021=income_diff$`2016-2021`
+
+```
+
+
+## Affordability
+The stated motivation for this statistic is to understand "naturally occurring affordable housing", and the $750 shelter cost threshold was chosen because this level is "affordable to households earning less than $30,000 per year." This relies on the standard affordability criterion of spending no more than 30% of total income on shelter costs. The change in the number of households paying less than $750 on rent and utilities is one side of the affordability equation, the change in the humber of households earning less than $30k is the other. We could reasonably improve housing affordability either by working to keep rents low or by providing better income supports to people. So far we've only looked at rents, so let's take a peek at households below $30,000 in income. In 2016 there were `r scales::comma(-income_diff_2011_2016,accuracy=100)` fewer households in this income band than in 2011 living in non-subsidized housing. And by 2021 there were another `r scales::comma(-income_diff_2016_2021,accuracy=100)` fewer households in that income range.
+
+Again, if we look at all renter households, including those in subsidized housing, we can extend that timeframe back to 1996 (again dropping households with zero income in 2006 or earlier) and tally up how many households had income below $30k in the year preceding each census year.
+
+```{r}
+all_income_data |>
+  group_by(Year) |>
+  summarise(Value=sum(Value),.groups="drop") |>
+  ggplot(aes(x=factor(Year),y=Value)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Tenant households reporting income below $30k in Canada (subsidized and market rental)",
+       subtitle="(only households with income greater than zero in 2006 and earlier)",
+       x=NULL,y="Number of households",
+       caption="StatCan Census 1996 through 2021\nTables 93F0030XDB96022, 97F0021XCB2001011, 97-554-XCB2006053, 98-10-0253, 98-400-X2016228, 99-014-X2011031")
+```
+
+The bump between 1996 and 2001 likely reflects simple household growth through a time period when $30,000 was still a decent income, but it could also result in part from a methods change in how households and incomes were counted. Regardless, since 2001 there's been a strong decline in tenant households reporting less than $30,000 in income. It doesn't fully match the more steady decline in rents less than $750, and may also be complicated by recent pandemic-related income supports, which together with methods changes make income harder to track than rents, but we can see real change. In other words, the decline in households paying low rents (<$750) roughly tracked the decline in households with low incomes (<$30,000). Nevertheless, there remain more of the latter than the former, suggesting real rent burdens.
+
+Rather than examining changing rents and incomes in isolation, another approach is to look directly at rent burdens, i.e. what proportion of income is going toward rent for households with income below $30,000. Here we'll only look at those in non-subsidized housing. We'll also keep in mind that there's an important lag between reporting of incomes (mostly drawn from tax records for the year prior to the Census) and rents (estimated as contemporaneous with the Census). As a result, some situations where it looks like people are paying a very high proportion of their incomes on rent may arise simply because they just graduated or moved to Canada and started a new job (with income not yet recorded) at the same time as they moved into a new place (where we get their new rent). We'll come back to this point. But for now, keeping this caveat in mind, let's take a look at the data!
+
+
+```{r}
+plot_data |>
+  #filter(SCI %in% c("30% to less than 50%","50% to less than 100%","100% or more")) |>
+  ggplot(aes(x=SCI,y=Value,fill=Year)) +
+  geom_bar(stat="identity",position="dodge") +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values=sanzo::trios$c157) +
+  labs(title="Households with income below $30,000 in non-subsidized rental housing",
+       y="Number of households",
+       x="Shelter cost to income ratio",
+       caption="StatCan Census 2021, 2016, 2011 NHS, Tables 98-10-0253, 98-400-X2016228, 99-014-X2011031") 
+```
+
+Overall, the most common situation for low-income households without subsidies is to be paying 30%-50% of incomes on rent. This doesn't leave a lot of room for other expenses. On the bright side, we can see the decline in unsubsidized households with incomes below $30k, and we can also see that the low-income households remaining in 2021 are less and less likely to be paying more than half their income in rent, continuing a pattern of decline observable since 2011. So from that perspective, that's an improvement. But we shouldn't overstate it. Overall, looked at distributionally, little has changed concerning the rent burden for those households making under $30,000. 
+
+
+```{r}
+plot_data |>
+  filter(Tenure=="Not subsidized housing") |>
+  #filter(SCI %in% c("30% to less than 50%","50% to less than 100%","100% or more")) |>
+  ggplot(aes(x=Year,y=Value,fill=fct_rev(SCI))) +
+  geom_bar(stat="identity",position="fill") +
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_manual(values=MetBrewer::met.brewer("Egypt",5)) +
+  labs(title="Households with income below $30,000 in non-subsidized rental housing",
+       y="Number of households",
+       fill="Shelter cost to income ratio",
+       x="Year",
+       caption="StatCan Census 2021, 2016, 2011 NHS, Tables 98-10-0253, 98-400-X2016228, 99-014-X2011031") 
+```
+
+The relative lack of movement in this metric fits pretty well with the observable decline in both the number of households paying less than $750 in rent and the number of households making less than $30,000 in annual income. We'd like to see more improvement, but it's not clear that things are getting noticeably worse.
+
+## The Geography of Cheap Rent
+Let's take a look at the geography of cheap rent. Where are the tenant households with shelter cost below $750, and where are we seeing the most losses of these kinds of rental contracts? We can pull this data from the cross tabulation we have used above. To reduce clutter we will break out the 20 biggest Metro Areas (CMAs) in Canada, and lump everything else together.
+
+```{r}
+d_2021 <- con_2021 |>
+  filter(`Household type including census family structure (16)`=="Total - Household type including census family structure",
+                  `Statistics (3C)`=="Number of private households",
+         `Shelter-cost-to-income ratio (9)`=="Total - Shelter-cost-to-income ratio",
+         `Household total income groups (14)`=="Total - Total income of household",
+         `Tenure including presence of mortgage payments and subsidized housing (7)`=="Not subsidized housing",
+         `Shelter cost (12)` %in% c("Less than $500","$500 to $749")) |>
+  select(GeoUID,Name=GEO,Value=VALUE) |>
+  collect() |>
+  #select(`Shelter cost`=`Shelter cost (12)`,Tenure=`Tenure including presence of mortgage payments and subsidized housing (7)`,Value=VALUE) |>
+  group_by(GeoUID,Name) |>
+  summarize(Value=sum(Value),.groups="drop")
+
+d_2016 <- con_2016 |>
+  filter(`Household type including census family structure`=="Total - Household type including census family structure",
+         `Shelter-cost-to-income ratio`=="Total - Shelter-cost-to-income ratio",
+         `Household total income groups`=="Total - Total income of household",
+         `Shelter cost` %in% c("Less than $500","$500 to $749")) |>
+  collect_and_normalize_xtab() |>
+  select(GeoUID=`GEO_CODE (POR)`,`Shelter cost`,Tenure=`Tenure including presence of mortgage payments and subsidized housing`,Value) |>
+  filter(Tenure %in% c("Not subsidized housing")) |>
+  group_by(GeoUID) |>
+  summarize(Value=sum(Value),.groups="drop")
+
+d_2011 <- simpleCache({
+  con_2011 <- get_sqlite_xtab("99-014-X2011031","https://www12.statcan.gc.ca/nhs-enm/2011/dp-pd/dt-td/OpenDataDownload.cfm?PID=106661", format="python_xml")
+  
+  d_2011 <- con_2011 |>
+    filter(`B13_HHtype ID`=="1",
+           `B13_HhIncGroups ID`=="1",
+           `B13_ShelterCostIncRatio_Groups ID`=="1",
+           B13_ShelterCost_Groups %in% c("Less than $400","$400 to $599","$600 to $799"),
+           B13_TenurPresMortgSubsidy %in% c("Not subsidized housing"))  |>
+    collect_and_normalize_xtab(disconnect=TRUE) |>
+    select(GeoUID,`Shelter cost`=B13_ShelterCost_Groups,Value) |>
+    mutate(value=ifelse(`Shelter cost`=="$600 to $799",Value*0.75,Value)) |>
+    group_by(GeoUID)  |>
+    summarize(Value=sum(value),.groups="drop")
+},"2011_shelter_cost_xtab3.Rda",path=here::here("data")) |>
+  mutate(full_id = GeoUID) |>
+  mutate(GeoUID=ifelse(nchar(GeoUID)==5,substr(GeoUID,3,5),GeoUID))
+
+
+common_cmas <- intersect(d_2021$GeoUID,d_2016$GeoUID) |> intersect(d_2011$GeoUID)
+common_cmas <- common_cmas[nchar(common_cmas)==3] |> unique()
+
+canada_data <- bind_rows(
+  d_2021 |> mutate(Year=2021),
+  d_2016 |> mutate(Year=2016),
+  d_2011 |> mutate(Year=2011)
+) |> 
+  filter(GeoUID %in% c("01","11124")) |> 
+  select(Year,Total=Value)
+  
+
+main_cmas <- list_census_regions("CA21") |>
+  filter(level=="CMA") |>
+  slice_max(pop,n=20) |>
+  mutate(GeoUID=substr(region,nchar(region)-2,nchar(region))) |>
+  arrange(-pop) |>
+  select(GeoUID,Name=name) %>%
+  mutate(Name=factor(Name,levels=.$Name))
+
+plot_data <- bind_rows(
+  d_2021 |> mutate(Year=2021),
+  d_2016 |> mutate(Year=2016),
+  d_2011 |> mutate(Year=2011)
+) |>
+  filter(GeoUID %in% common_cmas) |>
+  select(GeoUID,Year,Value) |>
+  filter(GeoUID %in% main_cmas$GeoUID) |>
+  left_join(main_cmas,by="GeoUID")
+
+
+rest_data <- plot_data |>
+  group_by(Year) |>
+  summarise(Value=sum(Value),.groups="drop") |>
+  left_join(canada_data,by="Year") |>
+  mutate(Value=Total-Value,
+         Name=factor("Rest of Canada")) |>
+  select(-Total)
+
+plot_data |>
+  bind_rows(rest_data) |>
+  ggplot(aes(y=fct_rev(Name),x=Value)) +
+  geom_segment(data=~pivot_wider(.,names_from = Year,values_from = Value),
+               aes(x=`2011`,xend=`2016`,yend=Name)) +
+  geom_segment(data=~pivot_wider(.,names_from = Year,values_from = Value),
+               aes(x=`2016`,xend=`2021`,yend=Name)) +
+    geom_point(aes(colour=factor(Year))) +
+  scale_x_continuous(labels=scales::comma) +
+  theme(legend.position = "bottom") +
+  guides(colour=guide_legend(reverse = TRUE)) +
+  labs(title="Renter households with shelter cost below $750 in non-subsidized housing",
+       x="Number of househods",y=NULL,
+       colour=NULL,
+       caption="StatCan Census 2021, 2016, 2011 NHS, Tables 98-10-0253, 98-400-X2016228, 99-014-X2011031") +
+  scale_color_manual(values=sanzo::trios$c157) 
+```
+
+We see that cheap rent is most common outside of Metropolitan Canada (as represented by the top 20 CMAs), though Montréal also still retains a lot of tenant households paying less than $750 in rent. Correspondingly, Montréal and more rural parts of Canada are also where we've seen the biggest recent declines in low-rent households. Strange, then, that the focus on [reporting](https://www.theglobeandmail.com/real-estate/vancouver/article-even-as-housing-plans-progress-truly-affordable-housing-is-being-lost/) about these losses often shifts to Vancouver or Toronto, where there are very few such rental contracts remaining. This speaks to a broader problem with the potential for any headline number for Canada to mislead insofar as it combines data from very different housing markets across the country.
+
+We can look at this more directly by showing the loss of renter households with shelter cost less that $750 in each region and inter-census period.
+
+```{r}
+plot_data |>
+  bind_rows(rest_data) |>
+  group_by(Name) |>
+  mutate(loss=Value-lag(Value,order_by = Year),
+         Period=paste0(lag(Year,order_by = Year),"-",Year)) |>
+  filter(Year!="2011") |>
+  ggplot(aes(y=fct_rev(Name),x=loss,fill=Period)) +
+  geom_bar(stat="identity",position = "dodge") +
+  scale_x_continuous(labels=scales::comma) +
+  theme(legend.position = "bottom") +
+  guides(colour=guide_legend(reverse = TRUE)) +
+  labs(title="Change in renter households with shelter cost below $750 in non-subsidized housing",
+       x="Number of househods",y=NULL,
+       fill=NULL,
+       caption="StatCan Census 2021, 2016, 2011 NHS, Tables 98-10-0253, 98-400-X2016228, 99-014-X2011031") +
+  scale_fill_manual(values=sanzo::duos$c070) 
+```
+
+
+This again highlights that most of the losses were in Montréal and regions outside of the main metro areas. The number of households with shelter cost below $750 in Calgary and Edmonton increasing 2016-2021 shows that this isn't necessarily a one-way street. Units renting below $750 at any given point in time aren't separate from the rest of the housing market, and their asking rents can go up or down depending upon what's going on elsewhere in the market.
+
+## Further exploration into Low Rent
+
+Let's dig a little deeper, drawing upon public use micro file (PUMF) data. Unfortunately this hasn't been released yet for the 2021 Census, so we'll only be able to look at 2011 and 2016 data, coming from the long-form NHS and Census samples. For 2016, these samples come in both individual and hierarchical form (including complete households), and we'll include both here for reference. Using PUMF data adds uncertainty due to lower sample size, but adds much greater flexibility. First let's look at a simple distribution of what rents those paying less than $750 a month are paying for each sample. 
+
+
+```{r}
+pumf_2016_h_path <- getOption("census_2016_pumf_h.sav")
+pumf_2016_path <- getOption("census_2016_pumf_i.sav")
+pumf_2011_path <- file.path(getOption("canpumf.cache_path"),"CA_2011_individual.csv")
+
+pumf_2011 <- read_csv(pumf_2011_path,col_types=cols(.default="c")) %>%
+  setNames(toupper(names(.)))
+
+pumf_2016 <- foreign::read.spss(pumf_2016_path) %>%
+  as_tibble() %>%
+  set_names(names(.) %>% toupper)
+
+pumf_2016_h <- foreign::read.spss(pumf_2016_h_path) %>%
+  as_tibble() %>%
+  set_names(names(.) %>% toupper)
+
+```
+
+
+```{r}
+p16_h<-pumf_2016_h %>% 
+  filter(SHELCO<=700,TENUR=="Rented or Band housing",PRIHM=="Person is primary household maintainer") %>% 
+  group_by(SUBSIDY,SHELCO,PR,CMA) #%>%
+  #summarize(across(matches("WEIGHT|WT\\d+"),sum),.groups="drop") 
+  
+cma_uids <- list_census_regions("CA11") |>
+  filter(level=="CMA") |>
+  mutate(short_uid = substr(region,nchar(region)-2,nchar(region)))
+
+p11<-pumf_2011 %>% 
+  mutate(across(matches("WEIGHT|WT\\d+|GROSRT"),as.numeric)) %>%
+  filter(GROSRT<=700,TENUR=="2",PRIHM=="1") %>% 
+  group_by(SUBSIDY=SUBSIDY_REC_CHASS,SHELCO=GROSRT,CMA,PR) %>%
+  #summarize(across(matches("WEIGHT|WT\\d+"),sum),.groups="drop") |>
+  mutate(SUBSIDY=factor(setNames(levels(p16_h$SUBSIDY),c("0", "1", "8"))[SUBSIDY],
+                        levels=levels(p16_h$SUBSIDY))) |>
+  left_join(cma_uids |> select(CMA=short_uid,Name=name),by="CMA") |>
+  mutate(CMA=Name)
+
+
+p16<-pumf_2016 %>% 
+  filter(SHELCO<=700,TENUR=="Rented or Band housing",PRIHM=="Person is primary maintainer") %>% 
+  group_by(SUBSIDY,SHELCO,CMA,PR) #%>%
+  #summarize(across(matches("WEIGHT|WT\\d+"),sum),.groups="drop")
+
+p16 <- p16 |>
+  mutate(SUBSIDY=fct_recode(SUBSIDY,!!!setNames(levels(p16$SUBSIDY),levels(p16_h$SUBSIDY))))
+
+
+plot_data <- bind_rows(
+  p11 |> 
+    select(SUBSIDY,SHELCO,CMA,PR,AGEGRP,MOB1,matches("WEIGHT|WT\\d+")) |>
+    mutate(Year="2011 (individuals)"),
+  p16 |> 
+    select(SUBSIDY,SHELCO,CMA,PR,AGEGRP,MOB1,matches("WT\\d+")) |> 
+    mutate(Year="2016 (individuals)"),
+  p16_h |> 
+    select(SUBSIDY,SHELCO,CMA,PR,AGEGRP,MOB1,matches("WT\\d+")) |> 
+    mutate(Year="2016 (hierarchical)")
+) |>
+  pivot_longer(matches("WEIGHT|WT\\d+")) |>
+  filter(!is.na(value)) |>
+  mutate(CMA=recode(CMA, "Montr�al"="Montréal"))
+
+medians <- plot_data |> 
+  group_by(Year,SUBSIDY) |> 
+  summarize(value=median(value),.groups="drop") |>
+  pivot_wider(names_from = Year,values_from = value) |>
+  mutate(loss=`2011 (individuals)`-`2016 (individuals)`,
+         loss2=`2011 (individuals)`-`2016 (hierarchical)`)
+
+plot_data |>
+  filter(SUBSIDY=="Not a subsidized dwelling") |>
+  group_by(Year,SHELCO,name) |>
+  summarise(value=sum(value)) |>
+  ggplot(aes(x=as.character(SHELCO),y=value,fill=Year)) +
+  geom_boxplot() +
+  #ggbrace::geom_brace(x=c("No, not a subsidized dwelling"),y=c(929553,1433923),inherit.data=FALSE) +
+  #scale_fill_manual(values=sanzo::duos$c071) +
+  scale_y_continuous(labels=scales::comma) +
+  #geom_boxplot(aes(y=WEIGHT),colour="black") +
+  labs(title="Households renting for $750 or less (including utilities) in non-subsidized housing in Canada",
+       x="Rent (rounded)",y="Number of households",
+       caption="StatCan Census 2011, 2016 PUMF (individuals/hierarchical)")
+```
+
+
+We can see that most rents are (perhaps not surprisingly) at the upper end of the distribution, with $700 a month being the most common. This suggests that there's nothing intrinsically separating market housing renting under $750 from the rest of the housing market. There's nothing "natural" about its affordability except that its on the low end of the overall distribution of rents. As the overall distribution shifts rightward, its affordable tail at the left end gets smaller and smaller. 
+
+Other noticeable issues include the difference in results when using the individuals vs the hierarchical PUMF data, with only minimal overlap in the confidence intervals. This is a good reminder of the inherent difficulties when working with PUMF data. Another interesting observation is that renters renting below $300 have increased 2011-2016. These are likely non-arms length rentals, which we've yet to discuss another issue complicating analysis. [Not all of these "market rentals" actually represent market processes.](https://doodles.mountainmath.ca/blog/2021/08/13/commodity-and-keeping-it-in-the-family/)
+
+Let's use our flexibility to break down tenancies with rents below $750 by age of primary household maintainer.
+
+
+```{r}
+plot_data |>
+  filter(SUBSIDY=="Not a subsidized dwelling") |>
+  filter(grepl("2016 \\(ind",Year)) |>
+  group_by(Year,name,AGEGRP) |>
+  summarise(value=sum(value)) |>
+  ggplot(aes(y=AGEGRP,x=value)) +
+  geom_boxplot(fill="gold") +
+  #ggbrace::geom_brace(x=c("No, not a subsidized dwelling"),y=c(929553,1433923),inherit.data=FALSE) +
+  #scale_fill_manual(values=sanzo::duos$c071) +
+  scale_x_continuous(labels=scales::comma) +
+  #geom_boxplot(aes(y=WEIGHT),colour="black") +
+  labs(title="Households renting for $750 or less (including utilities) in non-subsidized housing in Canada",
+       y="Age of primary household maintainer",x="Number of households",
+       caption="StatCan Census 2016 PUMF (individuals)")
+```
+
+
+The zigzag (or double hump) pattern here is fascinating, with concentrations in both the early Millennial (born 1986-1991) and late Boomer (born 1956-1966). This may reflect simple demographics (these were larger cohorts than the intervening Gen Xers), but may also be picking up on other patterns, with variation in both quality and geographic distribution of low rent tenancies by age (keeping in mind that most of these renters are in more rural parts of Canada and bigger metros in Quebec). We'll circle back to look at these patterns in a moment, but first let's take a look at what was renting for less than $750 in 2016 by number of bedrooms.
+
+
+```{r}
+pumf_2016 %>% 
+  filter(SHELCO<750) |>
+  filter(TENUR=="Rented or Band housing",PRIHM=="Person is primary maintainer") |>
+  filter(SUBSIDY=="No, not a subsidized dwelling") |>
+  pivot_longer(matches("WEIGHT|WT\\d+")) |>  
+  group_by(name,BEDRM) |>
+  summarise(value=sum(value)) |>
+  ggplot(aes(y=BEDRM,x=value)) +
+  geom_boxplot(fill="gold") +
+  #facet_wrap(~SCI_d,scales="free_x") +
+  #ggbrace::geom_brace(x=c("No, not a subsidized dwelling"),y=c(929553,1433923),inherit.data=FALSE) +
+  #scale_fill_manual(values=sanzo::duos$c071) +
+  scale_x_continuous(labels=scales::comma) +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values=sanzo::duos$c033) +
+  #geom_boxplot(aes(y=WEIGHT),colour="black") +
+  labs(title="Households renting for $750 or less (including utilities) in non-subsidized housing in Canada",
+       y="Number of bedrooms",x="Number of households",fill=NULL,
+       caption="StatCan Census 2016 PUMF (individuals)")
+```
+
+No surprise, mostly 1BR and 2BR dwellings. We can also look at the type of dwelling households paying less than $750 in rent tend to live in.
+
+
+```{r}
+pumf_2016_h %>% 
+  filter(SHELCO<=700,
+         TENUR=="Rented or Band housing",PRIHM=="Person is primary household maintainer") |>
+  filter(SUBSIDY=="Not a subsidized dwelling") |>
+  pivot_longer(matches("WEIGHT|WT\\d+")) |>  
+  filter(CONDO !="Not available",
+         DTYPE !="Not available") |>
+  mutate(DW=case_when(DTYPE=="Single-detached house" ~ "Single-detached",
+                      DTYPE=="Apartment" & CONDO=="Condominium" ~ "Condo apartment",
+                      DTYPE=="Apartment" & CONDO!="Condominium" ~ "Non-condo apartment\n(includes secondary suites)",
+                      DTYPE=="Other dwelling" ~ "Other",
+                      TRUE ~ "Should not get here")) |>
+  group_by(name,DW) |>
+  summarise(value=sum(value)) |>
+  ggplot(aes(y=DW,x=value)) +
+  geom_boxplot(fill="gold") +
+  #ggbrace::geom_brace(x=c("No, not a subsidized dwelling"),y=c(929553,1433923),inherit.data=FALSE) +
+  #scale_fill_manual(values=sanzo::duos$c071) +
+  scale_x_continuous(labels=scales::comma) +
+  #geom_boxplot(aes(y=WEIGHT),colour="black") +
+  labs(title="Households renting for $750 or less (including utilities) in non-subsidized housing in Canada",
+       y=NULL,x="Number of households",
+       caption="StatCan Census 2016 PUMF (hierarchical)")
+```
+
+
+The vast majority of low rent situations seem to involve non-condo apartments, representing both purpose-built rental buildings and secondary suites in homes. Once again, it's worth keeping in mind that these are mostly showing up in Quebec and more rural parts of Canada.
+
+Checking by period of construction of the building we see that most of these households live in buildings constructed between 1946 and 1980 or 1990.
+
+
+```{r}
+pumf_2016_h %>% 
+  filter(SHELCO<=700,
+         TENUR=="Rented or Band housing",PRIHM=="Person is primary household maintainer") |>
+  filter(SUBSIDY=="Not a subsidized dwelling") |>
+  pivot_longer(matches("WEIGHT|WT\\d+")) |>  
+  group_by(name,BUILT) |>
+  summarise(value=sum(value)) |>
+  ggplot(aes(y=BUILT,x=value)) +
+  geom_boxplot(fill="gold") +
+  #ggbrace::geom_brace(x=c("No, not a subsidized dwelling"),y=c(929553,1433923),inherit.data=FALSE) +
+  #scale_fill_manual(values=sanzo::duos$c071) +
+  scale_x_continuous(labels=scales::comma) +
+  #geom_boxplot(aes(y=WEIGHT),colour="black") +
+  labs(title="Households renting for $750 or less (including utilities) in non-subsidized housing in Canada",
+       y="Period of construction",x="Number of households",
+       caption="StatCan Census 2016 PUMF (hierarchical)")
+```
+
+Most low rent situations involve older buildings. But this age distribution also generally fits the age-distribution of our purpose-built rental stock in Canada, largely constructed during a mid-Twentieth Century build-out prior to the rise of the condominium (where we see far fewer being rented out at below $750). Aging stock is also more likely to be in poor condition, drawing a clear connection between rents and quality of housing. A fair amount of preventive maintenance is needed to keep old buildings habitable, and the more they fall into disrepair, the cheaper their rents tend to go relative to surrounding alternatives. There's nothing "natural" about keeping older housing inhabitable.
+
+## Time Lag Bias in Shelter Cost to Income Ratios
+
+Let's exploit the flexibility of our microdata to return to our exploration of those on the other side of the low rent affordability issue: households with incomes below $30k. As we noted before, some of the particularly high ratios, where it seems like tenants are paying extraordinary portions of their incomes on rents, may be accounted for by time lags between reporting incomes and rents. This can especially be an issue for recent immigrants and new graduates who might have landed both a good job and new apartment prior to the census, but lack income records from the year prior to the census. We can help account for this by pulling out recent movers (those moving in the last year). What do their shelter cost to income ratios look like if we actually separate non-movers from recent movers? 
+
+
+```{r}
+pumf_2016 %>% 
+  filter(HHINC %in% c("Under $2,000", "$2,000 to $4,999", "$5,000 to $6,999", "$7,000 to $9,999", "$10,000 to $11,999",
+                      "$12,000 to $14,999", "$15,000 to $16,999","$17,000 to $19,999", "$20,000 to $24,999", "$25,000 to $29,999")) |>
+  mutate(income=case_when(HHINC=="Under $2,000" ~ 1000,
+                          HHINC=="$2,000 to $4,999" ~ 3500,
+                          HHINC=="$5,000 to $6,999" ~ 6000,
+                          HHINC=="$7,000 to $9,999" ~ 8500,
+                          HHINC=="$10,000 to $11,999" ~ 11000,
+                          HHINC=="$12,000 to $14,999" ~ 13000,
+                          HHINC=="$15,000 to $16,999" ~ 16000,
+                          HHINC=="$17,000 to $19,999" ~ 18000,
+                          HHINC=="$20,000 to $24,999" ~ 22500,
+                          HHINC=="$25,000 to $29,999" ~ 27500,
+                          TRUE ~ NA_real_)) |>
+  filter(TENUR=="Rented or Band housing",PRIHM=="Person is primary maintainer") |>
+  filter(SUBSIDY=="No, not a subsidized dwelling") |>
+  mutate(SCI=SHELCO/income*12) |>
+  pivot_longer(matches("WEIGHT|WT\\d+")) |>  
+  mutate(SCI_d=pretty_cut(SCI,breaks=c(-Inf,0.15,0.3,0.5,0.75,1,Inf),
+                          format=scales::percent)) |>
+  mutate(moved=ifelse(MOB1!="Non-movers","Moved in past year","Did not move in past year")) |>
+  group_by(name,SCI_d,moved) |>
+  summarise(value=sum(value)) |>
+  ggplot(aes(y=SCI_d,x=value,fill=moved)) +
+  geom_boxplot() +
+  #facet_wrap(~SCI_d,scales="free_x") +
+  #ggbrace::geom_brace(x=c("No, not a subsidized dwelling"),y=c(929553,1433923),inherit.data=FALSE) +
+  #scale_fill_manual(values=sanzo::duos$c071) +
+  scale_x_continuous(labels=scales::comma) +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values=sanzo::duos$c033) +
+  #geom_boxplot(aes(y=WEIGHT),colour="black") +
+  labs(title="Renter households with income less than $30k in non-subsidized housing in Canada",
+       y="Shelter cost to income ratio",x="Number of households",fill=NULL,
+       caption="StatCan Census 2016 PUMF (individuals)")
+```
+
+We can see that when we separate them out, non-movers in the past year with low household incomes (<$30,000) reported for the year prior are mostly concentrated in the range of those paying between 30% to 50% of their income on rent. By contrast, the highest category for movers with low incomes is those paying 100% or more of their income on rent. This likely reflects the lag effect, where movers current incomes (at least within Canada) are likely much higher when they fill out Census forms about their rents, than in the year prior, when the Census attempts to assign their income. 
+
+Computing the ratio of households that moved in the past year for each shelter cost to income band makes this relationship even more clear. The time lag between reported incomes and reported rents likely produces a real upward bias in shelter cost to income ratios. We can partly account for this bias by separating out mobility, but it's imperfect, and analysts drawing upon this metric - including for the construction of [Core Housing Needs measures](https://www.cmhc-schl.gc.ca/en/professionals/housing-markets-data-and-research/housing-research/core-housing-need)! - should really keep this bias in mind. 
+
+
+```{r}
+pumf_2016 %>% 
+  filter(HHINC %in% c("Under $2,000", "$2,000 to $4,999", "$5,000 to $6,999", "$7,000 to $9,999", "$10,000 to $11,999",
+                      "$12,000 to $14,999", "$15,000 to $16,999","$17,000 to $19,999", "$20,000 to $24,999", "$25,000 to $29,999")) |>
+  mutate(income=case_when(HHINC=="Under $2,000" ~ 1000,
+                          HHINC=="$2,000 to $4,999" ~ 3500,
+                          HHINC=="$5,000 to $6,999" ~ 6000,
+                          HHINC=="$7,000 to $9,999" ~ 8500,
+                          HHINC=="$10,000 to $11,999" ~ 11000,
+                          HHINC=="$12,000 to $14,999" ~ 13000,
+                          HHINC=="$15,000 to $16,999" ~ 16000,
+                          HHINC=="$17,000 to $19,999" ~ 18000,
+                          HHINC=="$20,000 to $24,999" ~ 22500,
+                          HHINC=="$25,000 to $29,999" ~ 27500,
+                          TRUE ~ NA_real_)) |>
+  filter(TENUR=="Rented or Band housing",PRIHM=="Person is primary maintainer") |>
+  filter(SUBSIDY=="No, not a subsidized dwelling") |>
+  mutate(SCI=SHELCO/income*12) |>
+  pivot_longer(matches("WEIGHT|WT\\d+")) |>  
+  mutate(SCI_d=pretty_cut(SCI,breaks=c(-Inf,0.15,0.3,0.5,0.75,1,Inf),
+                          format=scales::percent)) |>
+  mutate(moved=ifelse(MOB1!="Non-movers","Moved in past year","Did not move in past year")) |>
+  group_by(name,SCI_d,moved) |>
+  summarise(value=sum(value),.groups="drop") |>
+  pivot_wider(names_from=moved,values_from = value) |>
+  mutate(ratio=`Moved in past year`/(`Moved in past year`+`Did not move in past year`)) |>
+  ggplot(aes(y=SCI_d,x=ratio)) +
+  geom_boxplot(fill="gold") +
+  #facet_wrap(~SCI_d,scales="free_x") +
+  #ggbrace::geom_brace(x=c("No, not a subsidized dwelling"),y=c(929553,1433923),inherit.data=FALSE) +
+  #scale_fill_manual(values=sanzo::duos$c071) +
+  scale_x_continuous(labels=scales::percent) +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values=sanzo::duos$c033) +
+  #geom_boxplot(aes(y=WEIGHT),colour="black") +
+  labs(title="Renter households with income less than $30k in non-subsidized housing in Canada",
+       y="Shelter cost to income ratio",x="Share of households that moved in the previous year",fill=NULL,
+       caption="StatCan Census 2016 PUMF (individuals)")
+```
+
+
+## Rents in the Primary Rental Market
+```{r}
+get_rent_quartiles <- function(year,refresh=FALSE) {
+  simpleCache({
+    if (year<2018) {
+      url <- paste0("https://assets.cmhc-schl.gc.ca/sf/project/cmhc/pubsandreports/excel/rms-7-urban-rent-quartiles-by-bedroom-type-",year,"-10.xlsx")
+    } else if (year == "2018") {
+      url <- "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/urban-rental-market-survey-data/2018/urban-rental-market-survey-data-rent-quartiles-2018-10-en.xlsx"
+    } else if (year == "2019") {
+      url <- "https://assets.cmhc-schl.gc.ca/sites/cmhc/data-research/data-tables/urban-rental-market-survey-data/2019/urban-rental-market-survey-data-rent-quartiles-2019.xlsx"
+    } else if (year == "2020") {
+      url <- "https://assets.cmhc-schl.gc.ca/sites/cmhc/professional/housing-markets-data-and-research/housing-data-tables/rental-market/urban-rental-market-survey-data-rent-quartiles/urban-rental-market-survey-data-rent-percentile-2020.xlsx"
+    } else {
+      url <- paste0("https://assets.cmhc-schl.gc.ca/sites/cmhc/professional/housing-markets-data-and-research/housing-data-tables/rental-market/urban-rental-market-survey-data-rent-quartiles/urban-rental-market-survey-data-rent-quartiles-",year,".xlsx")
+    }
+    
+    
+    tmp<-tempfile()
+    download.file(url,tmp,mode = "wb")
+    #readxl::excel_sheets(tmp)
+    d<-readxl::read_xlsx(tmp,skip=4)
+    
+    n<-names(d) |> gsub(" \r\n.+$","",x=_)
+    qs <- which(grepl("^\\.\\.\\.",n))
+    n[qs]=paste0(n[qs-1]," Quality")
+    n[qs-1] <- paste0(n[qs-1]," Value")
+    names(d) <- n
+    
+    cutoff <- which(is.na(d$Province))
+    d <- d |> slice(1:(cutoff[1]-1))
+    d |>
+      mutate(Year=year) |>
+      mutate(across(1:5,function(d) gsub(" */.+$","",d))) |>
+      pivot_longer(matches("1st|2nd|3rd"),names_pattern = "(.+) (.+)",names_to=c("Quartile",".value"))
+  },paste0("rent_quartiles_oct_",year,".Rds"),refresh=refresh)
+}
+
+rent_quartile_data <- seq(2006,2021) |>
+  lapply(get_rent_quartiles) |> 
+  bind_rows() |>
+  mutate(Value=as.numeric(gsub("\\$|,","",Value)))
+```
+
+Let's draw in one more source of data to keep triangulating our exploration of low rents. In particular, let's look at the primary rental market. This gets surveyed annually by CMHC through their [Rental Market Survey (RMS)](https://www.cmhc-schl.gc.ca/en/professionals/housing-markets-data-and-research/housing-data/data-tables/rental-market/rental-market-report-data-tables) and looking at rent bands by quartile gives some indication how this market has changed. Deeper access to CMHC data could answer the question how rent has changed in individual buildings, and how many of these have gotten torn down or received deep renovations. But publicly available data can give a broad overview.
+
+```{r}
+plot_data <- rent_quartile_data |> 
+  mutate(`Census Subdivision`=recode(`Census Subdivision`,"Vancouver (C)"="Vancouver (CY)"),
+         Province=recode(Province,"Canada\r\n(10,000+)"="Canada (10,000+)")) |>
+  #filter(Centre=="Vancouver") |>
+  filter(`Census Subdivision` %in% c("Total"),
+         `Dwelling Type`=="Total",
+         `Bedroom Type`=="Total") |>
+  mutate(Value=na_if(Value,"--")) |>
+  mutate(Value=as.numeric(gsub("\\$|,","",Value))) |>
+  group_by(Province,Centre) |>
+  mutate(qp=sum(Quality=="a")) |>
+  filter(Centre=="Total", Province %in% c("Canada (10,000+)"))
+plot_data |>
+  ggplot(aes(x=Year,y=Value,colour=Quartile,shape=Quality)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~`Province`) +
+  scale_x_continuous(breaks=seq(1991,2021,5)) +
+  scale_y_continuous(labels=scales::dollar,breaks=seq(500,3000,250)) +
+  scale_shape_discrete(labels=cmhc::cmhc_quality_labels) +
+  scale_colour_manual(values=sanzo::trios$c157,
+                      labels=c("1st"="25","2nd"="50","3rd"="75")) +
+  guides(colour=guide_legend(reverse = TRUE)) +
+  labs(title="Purpose-built rental rent distribution in Canada's centres",
+       y="Monthly rent",
+       x=NULL,
+       colour="Percentile",
+       caption="CMHC Rms rent quartiles") +
+  geom_hline(yintercept = 750) +
+  geom_vline(xintercept = seq(2011,2021,5),linetype="dashed")
+```
+
+Our broadest overview of the primary rental market shows that the percentile bands of rent levels have continuously increased between 2006 and 2021. If we assume that the rents are evenly distributed between these 25th and 50th percentile we can estimate what share of the rental stock rented below $750 in 2011 and 2016, and folding in data on the total stock of purpose built rental housing we can estimate the loss of such units.
+
+```{r}
+universe <- get_cmhc("Rms","Rental Universe","Bedroom Type","Historical Time Periods",geo_uid = "01") 
+
+clip_01 <- function(x){
+  pmax(x,0) |> pmin(1)
+}
+
+estimate_below_750 <- function(quartiles) {
+  quartiles |>
+    pivot_wider(names_from=Quartile,values_from = Value) |>
+    mutate(alpha=clip_01((750-`1st`)/(`2nd`-`1st`)),
+           beta=clip_01((750-`2nd`)/(`3rd`-`2nd`)),
+           gamma=clip_01(1-(`1st`-750)/(`2nd`-`1st`)),
+           delta=clip_01((750-`3rd`)/(`3rd`-`2nd`))) |>
+    mutate(percentile=0.25*(alpha+beta+gamma+delta))
+}
+
+estimate <- plot_data |>
+  ungroup() |>
+  estimate_below_750() |>
+  left_join(universe |> filter(`Bedroom Type`=="Total") |>
+              mutate(Year=strftime(Date,"%Y") |> as.integer()) |>
+              select(Year,Universe=Value), by="Year") |>
+  mutate(e=percentile*Universe)
+
+rms_estimate <- estimate |> 
+  select(name=Year,value=e) |>
+  pivot_wider() |>
+  mutate(loss=`2016`-`2011`) 
+
+rms_2011 <- rms_estimate$`2011`
+```
+
+This method gives a rough estimate of `r scales::comma(-rms_estimate$loss,accuracy=100)` fewer primary market rental units in 2016 renting below $750 compared to 2011. This is based on rent, which may include some utilities, but generally not all of them, so it's a slightly different estimate than what we used above.
+
+In the purpose-built market the RMS estimated a total of around `r scales::comma(rms_2011)` units renting below $750 in 2011, compared to the census estimate of `r scales::comma(base_2011)` households with shelter cost below $750 in 2011. As we noted those two aren't directly comparable because the RMS rent does not include all utilities, but also because the RMS coverage has gaps outside of census metropolitan areas. But it's probably fair to say that somewhere between half to maybe 60% of all households with shelter cost below $750 were renting in the primary market. Adding to that that some of the households with shelter cost below $750 were in non-arms length rentals, understanding what happened in the primary market can probably provide good context.
+
+As noted above, housing markets are decidedly regional, so it might be useful to see how this pans out across different metropolitan areas.
+
+```{r}
+plot_data <- rent_quartile_data |> 
+  mutate(`Census Subdivision`=recode(`Census Subdivision`,"Vancouver (C)"="Vancouver (CY)"),
+         Province=recode(Province,"Canada\r\n(10,000+)"="Canada (10,000+)")) |>
+  #filter(Centre=="Vancouver") |>
+  filter(`Census Subdivision` %in% c("Total"),
+         `Dwelling Type`=="Total",
+         `Bedroom Type`=="Total") |>
+  mutate(Value=na_if(Value,"--")) |>
+  mutate(Value=as.numeric(gsub("\\$|,","",Value))) |>
+  group_by(Province,Centre) |>
+  mutate(qp=sum(Quality=="a")) |>
+  filter(Centre %in% c("Vancouver","Toronto","Calgary","Halifax","Winnipeg","Ottawa","Victoria","Edmonton","Montréal")) 
+plot_data |>
+  ggplot(aes(x=Year,y=Value,colour=Quartile,shape=Quality)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~`Centre`) +
+  scale_x_continuous(breaks=seq(1991,2021,5)) +
+  scale_y_continuous(labels=scales::dollar,breaks=seq(500,3000,250)) +
+  scale_shape_discrete(labels=cmhc::cmhc_quality_labels) +
+  scale_colour_manual(values=sanzo::trios$c157,
+                      labels=c("1st"="25","2nd"="50","3rd"="75")) +
+  guides(colour=guide_legend(reverse = TRUE)) +
+  labs(title="Purpose-built rental rent distribution in select metro areas",
+       y="Monthly rent",
+       x=NULL,
+       colour="Percentile",
+       caption="CMHC Rms rent quartiles") +
+  geom_hline(yintercept = 750) +
+  geom_vline(xintercept = seq(2011,2021,5),linetype="dashed")
+```
+
+Matching our census-based analysis, the RMS data shows that Montréal has a high share of purpose-built rental units renting below $750 both in 2011 and 2016, whereas e.g. Toronto doesn't. We can also see that in Winnipeg and Halifax about half of the units were renting below $750 in 2011, dropping to 25% in 2016 and likely very few left by 2021, whereas in Montréal about 75% of units were renting below $750 in 2011, with still a little over 50% renting below that cutoff in 2016 and over a quarter in 2021.
+
+But how should one interpret this? That's where things get tricky. RMS data alone does not answer why there are fewer units below this rent cutoff over the years. Or across metro areas. There are many different processes at play, from the location and state of repair/quality of rental units to the bedroom mix and size of units, and overall market conditions with scarcity disrupting filtering processes. But there's no "natural" cut-off between apartments renting below $750 and the rest of the rental market. Instead, we can see that different price points in the distribution of rental contracts tend to move up and down together. In other words, we don't see strong segmentation of the rental market, and instead see evidence of upward and downward filtering at work. So where there's high demand, halting the addition of new apartments will place increased price pressure on old apartments, shifting their rents further upward.
+
+Analyzing this in more detail unfortunately goes beyond the scope of this post, but we do want to quickly highlight how bedroom mix and change in overall purpose-built rental units vary across metro areas.
+
+```{r}
+regions <- list_census_regions("CA21") |> 
+  filter(level=="CMA",pop>250000) |> 
+  filter(region!="505") |>
+  filter(grepl("Toronto|Vancouver|Montr|Calga|Edmon|Winni|Halifax|Qué|Victoria",name)) |>
+  mutate(Name=gsub(" \\(.+\\)","",name)) |>
+  arrange(-pop) |>
+  mutate(Name=factor(Name,levels=.data$Name))
+
+metro_universe <- regions |> 
+  group_by(Name) |>
+  group_map(~get_cmhc(survey = "Rms", series = "Rental Universe", dimension = "Bedroom Type", breakdown = "Historical Time Periods", geo_uid = .x$region)) |>
+  bind_rows() |>
+  left_join(regions |> select(GeoUID=region,Name),by="GeoUID")
+ 
+metro_universe |>
+  filter(`Bedroom Type`!="Total") |>
+  mutate(Year=strftime(Date,"%Y") |> as.integer()) |>
+  filter(Year>=2006) |>
+  ggplot(aes(x=Year,y=Value,fill=`Bedroom Type`)) +
+  geom_bar(stat="identity") +
+  facet_wrap(~Name,scales="free_y") + 
+  scale_x_continuous(breaks=seq(1991,2021,5)) +
+  scale_y_continuous(labels=scales::comma) +
+  scale_fill_manual(values = MetBrewer::met.brewer("Egypt",4)) +
+  labs(title="Primary rental market in Canadian metro areas by bedroom type",
+       x=NULL,y="Number of units",
+       fill="Bedroom type",
+       caption="CMHC Rms")
+             
+```
+
+Montreal and Québec have a relatively high share of of 2 and 3 bedroom units, which makes their high share of units renting below $750 even more impressive. They also have a high share of overall purpose-built rental units in their CMAs, and they have been adding on that over the years. Toronto and Vancouver, on the other hand, have been relatively flat in their overall stock of purpose-built rental units due to a mixture of modest additions and some loss due to conversion and demolitions.
+
+To round this off we can narrow down to look specifically at the rent distribution of 2-bedroom purpose-built rental units across metro regions.
+
+```{r}
+plot_data <- rent_quartile_data |> 
+  mutate(`Census Subdivision`=recode(`Census Subdivision`,"Vancouver (C)"="Vancouver (CY)"),
+         Province=recode(Province,"Canada\r\n(10,000+)"="Canada (10,000+)")) |>
+  #filter(Centre=="Vancouver") |>
+  filter(`Census Subdivision` %in% c("Total"),
+         `Dwelling Type`=="Total",
+         `Bedroom Type`=="2 Bedroom") |>
+  mutate(Value=na_if(Value,"--")) |>
+  mutate(Value=as.numeric(gsub("\\$|,","",Value))) |>
+  group_by(Province,Centre) |>
+  mutate(qp=sum(Quality=="a")) |>
+  filter(Centre %in% c("Vancouver","Toronto","Calgary","Halifax","Winnipeg","Ottawa","Victoria","Edmonton","Montréal")) 
+plot_data |>
+  ggplot(aes(x=Year,y=Value,colour=Quartile,shape=Quality)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~`Centre`) +
+  scale_x_continuous(breaks=seq(1991,2021,5)) +
+  scale_y_continuous(labels=scales::dollar,breaks=seq(500,3000,250)) +
+  scale_shape_discrete(labels=cmhc::cmhc_quality_labels) +
+  scale_colour_manual(values=sanzo::trios$c157,
+                      labels=c("1st"="25","2nd"="50","3rd"="75")) +
+  guides(colour=guide_legend(reverse = TRUE)) +
+  labs(title="Purpose-built 2-bedroom rent distribution in select metro areas",
+       y="Monthly rent",
+       x=NULL,
+       colour="Percentile",
+       caption="CMHC Rms rent quartiles") +
+  geom_hline(yintercept = 750) +
+  geom_vline(xintercept = seq(2011,2021,5),linetype="dashed")
+```
+
+Only Montréal has a good share of their 2-bedroom purpose-built rental units renting below $750, with a little over 25% of them still renting below that cutoff in 2021. In Toronto and Vancouver 2-bedroom apartments renting below $750 have been exceedingly rare since at least 2006.
+
+```{r eval=FALSE, include=FALSE}
+plot_data <- rent_quartile_data |> 
+  mutate(`Census Subdivision`=recode(`Census Subdivision`,"Vancouver (C)"="Vancouver (CY)"),
+         Province=recode(Province,"Canada\r\n(10,000+)"="Canada (10,000+)")) |>
+  #filter(Centre=="Vancouver") |>
+  filter(#`Census Subdivision` != c("Total"),
+         `Dwelling Type`=="Total",
+         `Bedroom Type`=="Total") |>
+  mutate(Value=na_if(Value,"--")) |>
+  mutate(Value=as.numeric(gsub("\\$|,","",Value))) |>
+  group_by(Province,Centre,`Census Subdivision`) |>
+  mutate(qp=sum(Quality=="a")) |>
+  mutate(Name=gsub(" \\(.+\\)","",`Census Subdivision`)) |>
+  filter(Name %in% c("Vancouver","Toronto","Calgary","Halifax","Winnipeg","Ottawa","Victoria","Edmonton","Montréal")) 
+plot_data |>
+  ggplot(aes(x=Year,y=Value,colour=Quartile,shape=Quality)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~Name) +
+  scale_y_continuous(labels=scales::dollar) +
+  scale_shape_discrete(labels=cmhc::cmhc_quality_labels) +
+  scale_colour_manual(values=sanzo::trios$c157,
+                      labels=c("1st"="25","2nd"="50","3rd"="75")) +
+  guides(colour=guide_legend(reverse = TRUE)) +
+  labs(title="Purpose-built rental rent distribution in select municipalities",
+       y="Monthly rent",
+       x=NULL,
+       colour="Percentile",
+       caption="CMHC Rms rent quartiles") +
+  geom_hline(yintercept = 750) +
+  geom_vline(xintercept = c(2011,2016),linetype="dashed")
+```
+
+
+## Takeaway
+What happens in the cheaper portions of the housing market is really important, demonstrating where the greatest risk of homelessness lies, and where the greatest need for non-market housing can be found. The headline number of 322,000 "lost units" renting below $750 calls useful attention to this portion of the housing market, but unfortunately it's often misleading on multiple levels. To review just a few of the ways it can mislead:
+
+* The statistic is mostly about changes in contracts between tenants and landlords, specifying rents below $750, and is not generally otherwise tied to units of housing
+* The statistic refers to shelter cost of households, rather than referring directly to rents.
+* The $750 figure is nominal dollars, not adjusted for inflation or for growth in incomes. 
+* Without consideration of incomes, the stat says little about change in affordability.
+* Interpretations frequently advanced to explain the "loss" don't hold up, there is no indication that this losses in rental contracts below $750 are driven by REITs or by demolitions of old rental buildings. 
+
+The much more immediate interpretation is that scarcity is driving up rents, leading to older units filtering up. This leads to the opposite implications of common NIMBY talking points that old housing is "naturally" affordable. It's only affordable if enough new housing is built to soak up demand that would otherwise draw up the lower portions of the housing market into higher overall rents.
+
+Additionally, using nominal rents is not very useful. We could adjust for inflation to (crudely) account for increased costs to build and operate rental buildings. Or adjust for income growth to account for people's ability to pay. Instead of focusing on rent or shelter costs we should probably focus on affordability, as measured by shelter cost to income ratios. When looking at the impacts of "financialization" and/or REITs on the rental market we need to do better to support our arguments with data. (We will discuss this more in a separate post.)
+
+Non of this negates the dire need we have for more housing. The need to dramatically expand our non-market housing options was already clear in 2011, and it is still urgently needed in 2021. Acquiring old purpose-built rental housing is a fine stop-gap strategy to assist in stabilizing rents for current tenants, but by itself the strategy does little to add badly needed housing stock and often comes with outsized maintenance costs and accessibility concerns. We can and should build a lot more new non-market housing. We also need a dramatic expansion of our market housing, especially in high-demand areas, to slow or even reverse the growth in rents and prices beyond the increases in construction costs. Housing abundance, distributed both within and outside of market processes, probably offers our best shot at finding more cheap rent.
+
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-09-27-where-did-all-the-cheap-rents-go/index.Rmarkdown).
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>

@@ -204,7 +204,7 @@ What's interesting is that the decrease in unoccupied dwellings, and associated 
 
 We also have an [interactive Canada-wide map on CensusMapper showing these components of population change in each region down to the census tract level](https://censusmapper.ca/maps/3056).
 
-As usual, the code for this post, including the code to scrape the data out of the PDFs, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-02-15-ndeadbeat-neighbourhoods/index.Rmarkdown) for anyone to reproduce or adapt.
+As usual, the code for this post, including the code to scrape the data out of the PDFs, is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-02-15-deadbeat-neighbourhoods/index.Rmarkdown) for anyone to reproduce or adapt.
 
 
 ```{r neighbourhood-pop-change-ha, eval=FALSE, include=FALSE}
