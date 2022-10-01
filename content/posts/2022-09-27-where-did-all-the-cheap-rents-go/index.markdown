@@ -1,7 +1,8 @@
 ---
 title: Where did all the cheap rents go?
+authors:
   - Jens von Bergmann
-  - Nathan Lauster
+  - Nathan Lauster 
 date: '2022-09-27'
 slug: where-did-all-the-cheap-rents-go
 categories:
@@ -210,13 +211,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-10-01 06:52:12 PDT"
+## [1] "2022-10-01 11:44:19 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [42ee200] 2022-09-28: cheap rents post live
+## Head:     [63c0f3b] 2022-10-01: fix authors
 ```
 
 ```
