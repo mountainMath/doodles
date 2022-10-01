@@ -1,6 +1,7 @@
 ---
 title: Where did all the cheap rents go?
-author: Jens von Bergmann
+  - Jens von Bergmann
+  - Nathan Lauster
 date: '2022-09-27'
 slug: where-did-all-the-cheap-rents-go
 categories:
@@ -209,13 +210,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-09-27 19:54:05 PDT"
+## [1] "2022-10-01 06:52:12 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [374c7aa] 2022-09-28: cheap rents post
+## Head:     [42ee200] 2022-09-28: cheap rents post live
 ```
 
 ```
@@ -246,24 +247,23 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ##  [1] lubridate_1.8.0     assertthat_0.2.1    digest_0.6.29      
 ##  [4] utf8_1.2.2          R6_2.5.1            cellranger_1.1.0   
 ##  [7] backports_1.4.1     reprex_2.0.1        evaluate_0.15      
-## [10] highr_0.9           httr_1.4.4          blogdown_1.10      
-## [13] pillar_1.8.1        rlang_1.0.5         googlesheets4_1.0.0
-## [16] readxl_1.4.0        rstudioapi_0.14     jquerylib_0.1.4    
-## [19] sanzo_0.1.0         rmarkdown_2.14      labeling_0.4.2     
-## [22] googledrive_2.0.0   munsell_0.5.0       broom_1.0.0        
-## [25] compiler_4.2.1      modelr_0.1.8        xfun_0.33          
-## [28] pkgconfig_2.0.3     htmltools_0.5.3     tidyselect_1.1.2   
-## [31] bookdown_0.27       codetools_0.2-18    fansi_1.0.3        
-## [34] crayon_1.5.1        tzdb_0.3.0          dbplyr_2.2.1       
-## [37] withr_2.5.0         grid_4.2.1          jsonlite_1.8.0     
-## [40] gtable_0.3.1        lifecycle_1.0.2     DBI_1.1.3          
-## [43] git2r_0.30.1        magrittr_2.0.3      scales_1.2.1       
-## [46] cli_3.4.0           stringi_1.7.8       cachem_1.0.6       
-## [49] farver_2.1.1        fs_1.5.2            xml2_1.3.3         
-## [52] bslib_0.4.0         ellipsis_0.3.2      generics_0.1.3     
-## [55] vctrs_0.4.1         tools_4.2.1         glue_1.6.2         
-## [58] hms_1.1.2           fastmap_1.1.0       yaml_2.3.5         
-## [61] colorspace_2.0-3    gargle_1.2.0        rvest_1.0.3        
-## [64] knitr_1.39          haven_2.5.0         sass_0.4.2
+## [10] httr_1.4.4          blogdown_1.10       pillar_1.8.1       
+## [13] rlang_1.0.5         googlesheets4_1.0.0 readxl_1.4.0       
+## [16] rstudioapi_0.14     jquerylib_0.1.4     rmarkdown_2.14     
+## [19] googledrive_2.0.0   munsell_0.5.0       broom_1.0.0        
+## [22] compiler_4.2.1      modelr_0.1.8        xfun_0.33          
+## [25] pkgconfig_2.0.3     htmltools_0.5.3     tidyselect_1.1.2   
+## [28] bookdown_0.27       fansi_1.0.3         crayon_1.5.1       
+## [31] tzdb_0.3.0          dbplyr_2.2.1        withr_2.5.0        
+## [34] grid_4.2.1          jsonlite_1.8.0      gtable_0.3.1       
+## [37] lifecycle_1.0.2     DBI_1.1.3           git2r_0.30.1       
+## [40] magrittr_2.0.3      scales_1.2.1        cli_3.4.0          
+## [43] stringi_1.7.8       cachem_1.0.6        fs_1.5.2           
+## [46] xml2_1.3.3          bslib_0.4.0         ellipsis_0.3.2     
+## [49] generics_0.1.3      vctrs_0.4.1         tools_4.2.1        
+## [52] glue_1.6.2          hms_1.1.2           fastmap_1.1.0      
+## [55] yaml_2.3.5          colorspace_2.0-3    gargle_1.2.0       
+## [58] rvest_1.0.3         knitr_1.39          haven_2.5.0        
+## [61] sass_0.4.2
 ```
 </details>
