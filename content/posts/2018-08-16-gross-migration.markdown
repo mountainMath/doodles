@@ -49,7 +49,5 @@ Lots of interesting things can be learned by diving further into this kind of da
 ### Update (elder ferry)
 I can't believe I missed the "elder ferry" effect in Victoria. Here is Nathan to add in this interesting observation. 
 
-{{< tweet 1030333323174764546>}}
-
 It'a worh pointing out that the net domestic in-migration of older people is inter-provincial, so people from outside of British Columbia moving to Victoria.
 

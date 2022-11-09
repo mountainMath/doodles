@@ -6,7 +6,7 @@ preserveTaxonomyNames = true
 paginate = 5
 disqusShortname = "doodlesmountainmathca"
 googleAnalytics = "UA-54516567-1"
-
+ignoreErrors = ["error-remote-getjson"]
 
 [params]
     # Sets the meta tag description, usually reserved for the main page
