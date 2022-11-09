@@ -121,6 +121,7 @@ googleAnalytics = "UA-54516567-1"
     facebook        = ""
     facebook_admin  = ""
     twitter_domain  = ""
+    mastodon        = "econtwitter.net/@vb_jens"
     twitter         = "vb_jens"
     email           = "jens@mountainmath.ca"
 
