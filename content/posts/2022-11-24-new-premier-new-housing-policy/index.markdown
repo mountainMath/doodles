@@ -12,7 +12,7 @@ categories:
   - zoning
   - rental
 tags: []
-description: 'Checking in on household suppression in Canada using 2021 data.'
+description: 'Breaking down the housing policy announcements.'
 featured: ''
 images: ["https://doodles.mountainmath.ca/blog/2022/11/24/new-premier-new-housing-policy/index_files/figure-html/rental-exemptions-1.png"]
 featuredalt: ""
@@ -125,65 +125,61 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2022-11-24 09:50:54 PST"
+## [1] "2022-12-17 10:53:41 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [2a56282] 2022-11-09: still check if links are valid
+## Head:     [281f4e5] 2022-11-24: new-premier-new-housing-policy post
 ```
 
 ```
 ## R version 4.2.2 (2022-10-31)
 ## Platform: aarch64-apple-darwin20 (64-bit)
-## Running under: macOS Ventura 13.0.1
+## Running under: macOS Ventura 13.1
 ## 
 ## Matrix products: default
 ## BLAS:   /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/lib/libRblas.0.dylib
 ## LAPACK: /Library/Frameworks/R.framework/Versions/4.2-arm64/Resources/lib/libRlapack.dylib
 ## 
 ## locale:
-## [1] en_CA.UTF-8/en_CA.UTF-8/en_CA.UTF-8/C/en_CA.UTF-8/en_CA.UTF-8
+## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 ## 
 ## attached base packages:
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
 ##  [1] cmhc_0.2.4                mountainmathHelpers_0.1.4
-##  [3] cancensus_0.5.4           cansim_0.3.13            
+##  [3] cancensus_0.5.5           cansim_0.3.14            
 ##  [5] forcats_0.5.1             stringr_1.4.1            
 ##  [7] dplyr_1.0.10              purrr_0.3.5              
-##  [9] readr_2.1.3               tidyr_1.2.0              
+##  [9] readr_2.1.3               tidyr_1.2.1              
 ## [11] tibble_3.1.8              ggplot2_3.4.0            
 ## [13] tidyverse_1.3.2          
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] httr_1.4.4          sass_0.4.2          bit64_4.0.5        
-##  [4] vroom_1.6.0         jsonlite_1.8.3      modelr_0.1.8       
-##  [7] bslib_0.4.0         assertthat_0.2.1    highr_0.9          
-## [10] blob_1.2.3          googlesheets4_1.0.0 cellranger_1.1.0   
-## [13] yaml_2.3.6          sanzo_0.1.0         pillar_1.8.1       
-## [16] RSQLite_2.2.15      backports_1.4.1     glue_1.6.2         
-## [19] digest_0.6.30       rvest_1.0.3         colorspace_2.0-3   
-## [22] htmltools_0.5.3     pkgconfig_2.0.3     broom_1.0.0        
-## [25] haven_2.5.0         bookdown_0.27       scales_1.2.1       
-## [28] tzdb_0.3.0          git2r_0.30.1        googledrive_2.0.0  
-## [31] farver_2.1.1        generics_0.1.3      ellipsis_0.3.2     
-## [34] cachem_1.0.6        withr_2.5.0         cli_3.4.1          
-## [37] magrittr_2.0.3      crayon_1.5.2        readxl_1.4.0       
-## [40] memoise_2.0.1       evaluate_0.18       fs_1.5.2           
-## [43] fansi_1.0.3         xml2_1.3.3          blogdown_1.10      
-## [46] tools_4.2.2         hms_1.1.2           gargle_1.2.0       
-## [49] lifecycle_1.0.3     munsell_0.5.0       reprex_2.0.1       
-## [52] compiler_4.2.2      jquerylib_0.1.4     rlang_1.0.6        
-## [55] grid_4.2.2          rstudioapi_0.14     labeling_0.4.2     
-## [58] rmarkdown_2.14      codetools_0.2-18    gtable_0.3.1       
-## [61] DBI_1.1.3           curl_4.3.3          R6_2.5.1           
-## [64] lubridate_1.8.0     knitr_1.40          fastmap_1.1.0      
-## [67] bit_4.0.4           utf8_1.2.2          stringi_1.7.8      
-## [70] parallel_4.2.2      Rcpp_1.0.9          vctrs_0.5.0        
-## [73] dbplyr_2.2.1        tidyselect_1.1.2    xfun_0.34
+##  [1] lubridate_1.8.0     assertthat_0.2.1    digest_0.6.30      
+##  [4] utf8_1.2.2          R6_2.5.1            cellranger_1.1.0   
+##  [7] backports_1.4.1     reprex_2.0.1        evaluate_0.18      
+## [10] httr_1.4.4          blogdown_1.10       pillar_1.8.1       
+## [13] rlang_1.0.6         googlesheets4_1.0.0 readxl_1.4.0       
+## [16] rstudioapi_0.14     jquerylib_0.1.4     rmarkdown_2.14     
+## [19] googledrive_2.0.0   munsell_0.5.0       broom_1.0.0        
+## [22] compiler_4.2.2      modelr_0.1.8        xfun_0.34          
+## [25] pkgconfig_2.0.3     htmltools_0.5.3     tidyselect_1.2.0   
+## [28] bookdown_0.27       fansi_1.0.3         crayon_1.5.2       
+## [31] tzdb_0.3.0          dbplyr_2.2.1        withr_2.5.0        
+## [34] grid_4.2.2          jsonlite_1.8.4      gtable_0.3.1       
+## [37] lifecycle_1.0.3     DBI_1.1.3           git2r_0.30.1       
+## [40] magrittr_2.0.3      scales_1.2.1        cli_3.4.1          
+## [43] stringi_1.7.8       cachem_1.0.6        fs_1.5.2           
+## [46] xml2_1.3.3          bslib_0.4.0         ellipsis_0.3.2     
+## [49] generics_0.1.3      vctrs_0.5.1         tools_4.2.2        
+## [52] glue_1.6.2          hms_1.1.2           fastmap_1.1.0      
+## [55] yaml_2.3.6          colorspace_2.0-3    gargle_1.2.0       
+## [58] rvest_1.0.3         knitr_1.40          haven_2.5.0        
+## [61] sass_0.4.2
 ```
 </details>
 
