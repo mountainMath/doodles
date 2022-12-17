@@ -1,0 +1,511 @@
+---
+title: Analyzing Ballot Composition in Vancouver
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
+date: '2022-12-17'
+slug: analyzing-ballot-composition-in-vancouver
+categories:
+  - geeky
+  - Vancouver
+tags: []
+description: 'Breaking down the individual ballot data for the 2022 Vancouver municipal election.'
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2022/12/17/analyzing-ballot-composition-in-vancouver/index_files/figure-html/cluster-graph-1.png"]
+featuredalt: ""
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2022/12/17/analyzing-ballot-composition-in-vancouver/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 150,
+	fig.width = 8,
+	fig.height = 6,
+	cache = TRUE,
+	cache.lazy = FALSE
+)
+
+library(tidyverse)
+library(VancouvR)
+```
+
+
+```{r}
+ballot_path <- file.path(tempdir(),"vancouver_ballots.csv")
+
+download_if_needed <- function(url,path,refresh=FALSE){
+  if (refresh || !file.exists(path)) download.file(url,path,mode="wb")
+  path
+}
+
+parse_ballot_markings <- function(ballot_path){
+  h<-read_csv(ballot_path,n_max=3,col_names = FALSE,col_types=cols(.default="c"))
+  h[3,is.na(h[3,]) |> as.vector()] <- ""
+  h<- h |>
+    summarise_all(\(d)na.omit(d) |> paste0(collapse = " - ")) |>
+    as.character()
+  
+  read_csv(ballot_path,skip=3,col_names=h,col_types=cols(.default="c")) |>
+    mutate(Ballot=row_number()) |>
+    pivot_longer(matches("^(.+) - (.+) - (.*)$"),
+                 names_pattern = "^(.+) - (.+) - (.*)$",
+                 names_to=c("Election","Name","Party"),
+                            values_to="Vote") |>
+    mutate(Party=na_if(Party,"")) |>
+    mutate(Vote=as.integer(Vote))
+}
+
+ballot_data <- VancouvR::get_cov_data("anonymous-ballot-marking") |>
+  filter(grepl("2022",election)) |>
+  pull(link_to_csv_file) |>
+  download_if_needed(ballot_path) |>
+  parse_ballot_markings() 
+```
+
+```{r}
+council_votes<-ballot_data |>
+  filter(BallotType=="Ballot 1 - Type 1") |>
+  filter(Election=="COUNCILLOR (Vote For=10)") |>
+  select(Ballot,Name,Party,Vote) |>
+  mutate(Party=coalesce(Party,"Independent"))
+
+mayor_votes<-ballot_data |>
+  filter(BallotType=="Ballot 1 - Type 1") |>
+  filter(Election=="MAYOR (Vote For=1)") |>
+  select(Ballot,Election,Name,Party,Vote) |>
+  mutate(Party=coalesce(Party,"Independent"))
+
+candidate_votes <- council_votes |>
+  group_by(Name,Party) |>
+  summarise(Votes=sum(Vote),.groups="drop") |>
+  arrange(-Votes) |>
+  mutate(Party=factor(Party,levels=unique(Party))) |>
+  arrange(Party,-Votes) 
+
+
+top_council_candidates <- candidate_votes |>
+  arrange(-Votes) |>
+  head(30)
+
+
+name_party_order <- candidate_votes |>
+  arrange(Party,-Votes) |>
+  pull(Name)
+
+party_colours <- c(
+  "ABC Vancouver"="#E81F76",
+  "GREEN"="#80C342",
+  "OneCity"="#4DBFA6",
+  "Forward with Kennedy Stewart"="#FCA143",
+  "COPE"="#D50032",
+  "NPA"="#7228D8",
+  "TEAM"="#5feb52",
+  "Vision Vancouver"="#003399",
+  "VOTE Socialist"="grey",
+  "Progress Vancouver"="#34cceb",
+  "Affordable Housing Coalition"="lightgrey",
+  "Independent"="darkgrey" 
+)
+
+council_votes <- council_votes |> 
+  mutate(Name=factor(Name,levels=name_party_order))
+
+number_of_ballots <- council_votes |> pull(Ballot) |> unique() |> length()
+```
+
+So we recently had an election in the City of Vancouver. Citizens elected a new mayor, ten council members, park board and school board, giving a majority to the centre-right leaning new [ABC (A Better City)](https://abcvancouver.ca/) Party candidates for each ([full results](https://results.vancouver.ca/results.html?utm_campaign=election-results&utm_medium=Vanity&utm_source=election-results_Vanity#redirect) posted by the City). There are a variety of narratives out there about how it all went down. Here we're interested in examining a couple of them in further detail using the recently released individual ballot data (all ballots remain anonymous, of course). Of note, the mayoral vote is straight-forward, each voter got to vote for one mayoral candidate. The council votes are more interesting. There voters could choose up to 10 candidates. For this post we will focus on council votes, but we'll return to examining how they relate to mayoral votes.
+
+In terms of relevant narratives about the election, two stand out as worth examining with ballot data: the election came down to organizing and/or the election came down to positioning. 
+
+First, let's talk organizing. Here we can start with it's relative absence in binding together the diverse parties occupying the centre-left. Left-leaning parties, including Forward Vancouver, OneCity, COPE, and the Greens, arguably competed at least as much with each other as they did with the centre-right. No single party has dominated since the collapse of the centre-left Vision party in 2018. That collapse, though largely driven by internal dynamics, was hastened by the Vancouver District Labour Council (VDLC) eschewing Vision in favour of attempting to organize a slate from the other three centre-left parties. In effect the VDLC brokered the number of candidates from each party they would support, and most parties kept to the bargain. The slate was somewhat successful in 2018, electing three Greens, one OneCity, and one COPE councillor together with the VDLC's chosen independent mayoral candidate. The VDLC attempted the trick again this year, but only OneCity limited themselves to the number of candidates chosen for them, and new parties entered the field altogether running entirely too many candidates. 
+
+Meanwhile, the historical centre-right party, the Non-Partisan Association (NPA), also seemed on the verge of collapse after 2018. And collapse it did, after a takeover by far-right party activists drove out four out of its five sitting councillors. One started a new party (TEAM), largely devoted to opposing development and SkyTrain expansion, and ran as its mayoral candidate. The other three joined up with the NPA's former mayoral candidate, who very narrowly lost in 2018, to start an entirely new party, staking a strong claim - with a lot of money behind it - to a generally pro-development and socially liberal centre-right. So there's a rough re-cap. But just how did this give ABC an organizational advantage?
+
+First off, ABC faced no constraints placed upon the size of their slate. So they were able to run with seven candidates: enough to hold a majority on council, without so many that votes were likely to be diluted. Arguably, seven candidates was the perfect size for "[vote plumping](https://www.langleyadvancetimes.com/opinion/editorial-to-plump-or-not-to-plump-your-vote/#" within a council of ten. True party supporters could vote for all of their candidates and no one else's, avoiding lending support to any other parties and correspondingly boosting the weight of their favoured party. Not coincidentally, this was also the number of candidates Vision generally ran with during the height of its power. 
+
+Did voters really follow this strategy? To start out we take a look at the distribution of the number of votes cast on council ballots.
+
+```{r ballot-vote-count, fig.height=4, fig.width=6}
+vote_count_data <- council_votes |> 
+  group_by(Ballot) |> 
+  summarise(Votes=sum(Vote)) |> 
+  count(Votes) |>
+  mutate(Share=n/number_of_ballots)
+
+vote_count_data |>
+  ggplot(aes(x=as.factor(Votes),y=n)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="City of Vancouver council ballots",
+       y="Number of ballots",x="Number of votes for council cast on ballot",
+       caption="MountainMath | Data: Vancouver Open Data")
+```
+
+As one would expect, the most popular choice was to vote for 10 candidates, but just over half of the voters voted for fewer than 10 candidates. What's curious is that the second most popular option was people voting for 7 candidates. 
+
+Interesting! Let's follow-up by checking how many ballots were straight-party tickets with nobody else on the ballot? So these are ballots with fewer than the maximum of 10 votes where some votes were intentionally wasted, "plumping" up the relative power of the votes that remained.
+
+```{r slate-pure, fig.height=4, fig.width=6}
+slate_size <- candidate_votes |>
+  count(Party,name="Party size")
+
+
+party_ballot_summary <- council_votes |>
+  filter(Party!="Independent") |>
+  group_by(Ballot,Party) |>
+  summarise(`Party votes`=sum(Vote),.groups="drop") |>
+  left_join(slate_size,by="Party") |>
+  group_by(Ballot) |>
+  mutate(`Total votes`=sum(`Party votes`)) 
+
+
+party_ballot_summary |>
+  filter(`Party votes`==`Party size`) |>
+  filter(`Party votes`==`Total votes`) |>
+  group_by(Party) |>
+  summarise(Ballots=n()) |>
+  ggplot(aes(y=fct_rev(Party),x=Ballots)) +
+  scale_x_continuous(labels=scales::comma) +
+  geom_bar(stat="identity",fill="steelblue") +
+  labs(title="Vancouver council election 2022",
+       subtitle="Ballots with clean party slate votes and no other candidates",
+       y=NULL,
+       x="Number of Ballots",
+       caption="MountainMath | Data: Vancouver Open Data")
+```
+
+We see that in particular ABC voters made use of this strategy, relating back to the top where we saw a high number of people casting exactly seven votes. The majority of these were pure ABC slate ballots. TEAM voters, looking at a similarly sized slate, also made use of this strategy, there just weren't nearly enough of them to matter. TEAM's poor showing emphasizes a lesson worth teaching over and over again: despite what we see at public hearings on rezoning applications, anti-housing politics might be well-organized, but they really aren't very popular.
+
+Now let's shift our analysis slightly. Let's look at ballots where a full party slate got voted in, but also contains some other votes. These are full party-line ballots, but not plumped by strategic avoidance of voting for anyone outside the party.
+
+```{r slate-mixed, fig.height=4, fig.width=6}
+party_ballot_summary |>
+  filter(`Party votes`==`Party size`) |>
+  group_by(Party) |>
+  summarise(Ballots=n()) |>
+  ggplot(aes(y=fct_rev(Party),x=Ballots)) +
+  scale_x_continuous(labels=scales::comma) +
+  geom_bar(stat="identity",fill="steelblue") +
+  labs(title="Vancouver council election 2022",
+       subtitle="Ballots with full party slate votes plus possible other candidates",
+       y=NULL,
+       x="Number of Ballots",
+       caption="MountainMath | Data: Vancouver Open Data")
+```
+
+```{r}
+onecity_forward_slate <- council_votes |> 
+  filter(Party %in% c("OneCity","Forward with Kennedy Stewart")) |> 
+  group_by(Ballot) |> 
+  summarize(Votes=sum(Vote)) |> 
+  filter(Votes==10) |>
+  nrow()
+abc_votes <- party_ballot_summary |>
+  filter(`Party votes`==`Party size`) |>
+  group_by(Party) |>
+  summarise(Ballots=n()) |>
+  filter(Party=="ABC Vancouver") |>
+  pull(Ballots)
+lowest_votes <- candidate_votes |> 
+  mutate(share=Votes/number_of_ballots) |>
+  slice(10) |> 
+  pull(share)
+```
+
+ABC still shows strongly with `r scales::percent(abc_votes/number_of_ballots)` of voters voting for all seven ABC council candidates. Given that the lowest vote share of all elected councillors was lower at `r scales::percent(lowest_votes)`, just these party slate ballots were enough to guarantee all seven ABC got elected. But we also see some of the smaller Left of Centre parties emerging. In particular, OneCity partisans really, really liked all four of the OneCity candidates. They just also voted for a bunch of other candidates to fill out their rosters, perhaps inadvertently reducing the overall effect of their support. (Vote Socialist also had a strong showing, but they only had a single candidate running for Council).
+
+Of note, this graph also counts some ballots twice. For example it is possible to vote the entire Forward and OneCity slates on a single ballot, voting for all six Forward and all four OneCity candidates. This is one way to add up a full slate. Looking at the ballots, `r scales::comma(onecity_forward_slate)` people did exactly this, demonstrating some affinity between these parties. 
+
+Let's look at some other ways to demonstrate affinities. Now we're shifting from sheer organizational advantages as determinants of election outcomes to thinking more about how issues and positioning might've tied different parties together or left them competing with one another.
+
+## Correlation and voting blocks
+A simple way to try and understand voting patterns on council votes is to look at how votes for different candidates on each ballot correlated.
+```{r}
+pretty_cor_plot <- function(votes) {
+cm <- votes |>
+  cor()
+
+
+plot_data <- cm |> 
+  as.data.frame() %>%
+  mutate(x=rownames(.)) |>
+  as_tibble() |>
+  pivot_longer(-x,names_to="y") |>
+  mutate(across(c(x,y),\(d)factor(d,levels=name_party_order)))
+
+ggplot(plot_data,aes(x=x,y=fct_rev(y),size=abs(value))) +
+  geom_point(shape=20,aes(colour=value),
+             data=~filter(.,x!=y)) +
+  geom_point(shape=20,fill="darkgrey",
+             data=~filter(.,x==y)) +
+  scale_size_continuous(trans="sqrt",guide = 'none') +
+  theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1)) +
+  theme(panel.grid.major = element_blank()) +
+  #geom_point(data=tibble(x=c(0,20)+0.5,y=c(0,20)+0.5),aes(x=x,y=y),size=0,colour=NA,fill=NA) +
+  geom_vline(xintercept = seq(0,30)+0.5,linewidth=0.25) +
+  geom_hline(yintercept = seq(0,30)+0.5,linewidth=0.25) +
+  scale_colour_gradientn(colours=RColorBrewer::brewer.pal(9,"RdBu"),limits=c(-1,1)) +
+  coord_fixed() +
+  labs(title="City of Vancouver council election 2022",
+       x=NULL,y=NULL,colour="Corr",
+       caption="MountainMath | Data: Vancouver Open Data")
+}
+```
+
+```{r council-coorelations, fig.height=7, fig.width=8}
+council_votes |>
+  select(Ballot,name=Name,value=Vote) |>
+  pivot_wider() |>
+  select_at(top_council_candidates$Name) |>
+  pretty_cor_plot()
+```
+
+
+To keep things manageable we weaned down the list of `r scales::comma(nrow(candidate_votes))` council candidates to the top 30 vote-getters, ordered by party and number of votes the candidates got. In the correlation plot we can immediately identify major parties, visible as blocks with high cross-correlation around the diagonal. Parties really work as organizers for voters in Vancouver's at-large council elections (as opposed to the ward systems common across other big Canadian cities).
+
+The first block, picking up ABC support, shows the strongest cross-correlation with fairly strong negative correlation with all other candidates except the lone NPA candidate that made the top 30 (and remember that ABC split off from the increasing dysfunction of the NPA). This indicates high party discipline for ABC voters, despite some residual brand loyalty to the NPA, and possibly some bleed over for the noted police affiliations of both parties.
+
+The next four party blocks cover the GREENs, OneCity, Forward, and COPE, with weakly positive or neutral correlations to each other. The strongest connections can be found between OneCity and Forward, OneCity and COPE (OneCity first [split from COPE](https://www.vancouverisawesome.com/courier-archive/news/lone-candidate-hopes-for-onecity-direction-2977588) in the 2014 election), and GREEN and COPE, suggesting some lingering divisions over the notable [urbanism axis](https://homefreesociology.com/2018/10/22/urbanism-axis-imby-allies/) in left-wing Vancouver politics. 
+
+The next block is the single remaining incumbent NPA candidate, and the only one to make it into the top 30, showing weak but positive correlations with ABC.
+
+Last in our top 30 candidates comes the TEAM block, who attempted to split off from the NPA by gathering all its NIMBY-est voters together with a who's who of Vancouver's assorted [Neighbourhood Defenders](https://www.cambridge.org/core/books/neighborhood-defenders/0677F4F75667B490CBC7A98396DD527A). They exhibit neutral or weak anticorrelation with everyone else.
+
+
+## Clusters
+Taking a slightly different tack to tracking how voters related parties to one another, we can run a cluster analysis on the individual ballot data. To keep things manageable we are only showing the results for the top 30 candidates. Given the ballot data, 5 clusters seems like a good choice that captures most of the variation in votes.
+
+
+```{r cluster-graph, fig.height=10, fig.width=8}
+d<- council_votes |>
+  select(Ballot,name=Name,value=Vote) |>
+  pivot_wider() |>
+  select(-Ballot) 
+
+set.seed(123)
+fit<-kmeans(d,5)
+
+# dd <- dist(d |> sample_n(size=10000))
+# 
+# fit.h <- hclust(dd)
+
+cluster_data <- fit$center |> as_tibble() |>
+  mutate(Cluster=row_number()) |>
+  pivot_longer(-Cluster)
+
+cluster_sizes <- fit$cluster |>
+  as_tibble() |>
+  rename(Cluster=value) |> 
+  count(Cluster)
+
+cluster_text <- cluster_data |> 
+  group_by(Cluster) |>
+  filter(value>0.25) |>
+  arrange(-value) |>
+  left_join(cluster_sizes,by="Cluster") |>
+  summarize(name=paste0("Cluster ",Cluster," (",scales::comma(n),
+                        " ballots)",": ",paste0(name,collapse = ", ")),
+            .groups="drop") |>
+  pull(name) |>
+  unique() |>
+  paste0(collapse="\n") 
+
+
+cluster_labels <- setNames(paste0(scales::comma(cluster_sizes$n)," ballots"),
+                           as.character(cluster_sizes$Cluster))
+
+fit$center |> 
+  as_tibble() |>
+  select_at(top_council_candidates$Name) |>
+  mutate(Cluster=row_number()) |>
+  pivot_longer(-Cluster,names_to = "Name") |>
+  left_join(top_council_candidates,by="Name") |>
+  mutate(Name=factor(Name,levels=name_party_order)) |>
+  mutate(CL=cluster_labels[as.character(Cluster)]) |>
+  left_join(cluster_sizes,by="Cluster") %>%
+  mutate(CL=factor(CL,levels=select(.,CL,n) |> unique() |> arrange(-n) |> pull(CL))) |>
+ggplot(aes(x=value,y=fct_rev(Name),fill=Party)) +
+  geom_bar(stat="identity") +
+  facet_wrap(~CL) +
+  scale_x_continuous(labels=scales::percent) +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values=party_colours) +
+  labs(title="Cluster analysis on top 30 council candidates by ballot",
+       y=NULL,
+       x="Frequency",
+       caption="MountainMath | Data: Vancouver Open Data")
+```
+
+The results give a way to sumamrize voting behaviour. The first cluster, ordered by number of ballots in that cluster, is the ABC cluster. We see very high voting discipline, with some additional votes for Melissa De Genova, suggesting that there was a strong voter movement from the NPA. 
+
+The second cluster is quite scattered in their voting, demonstrating little in the way of party discipline. Many of these votes might simply reflect incumbency, with the strong showing by Forward Vancouver (a new party) gauging support for the mayor. But while Forward received the highest frequency of votes in this cluster, it's definitely not JUST or even PRIMARILY a "Forward" cluster. Indeed, other clusters have higher frequency of votes for Forward candidates, but in those Forward appears to be a second or third choice, rather than the first. While Forward arguably ran with the right number of candidates (six), the data demonstrate the difficulty of organizing a party at the last possible minute. We see little evidence of anything approaching Forward party discipline, and the party ultimately failed to get any councillors elected (though they came very close to getting Dulcy Anderson over the line!) 
+
+The third cluster stands out as the most strongly left-of-centre cluster, and it's clearly led by the party discipline of OneCity. But with only four candidates, OneCity voters spread their remaining six votes out across a real mix of Forward, COPE, and the GREENs. It wasn't quite enough to see most OneCity's new candidates elected, though they returned their incumbent, Christine Boyle, in part on the strength of her support in the next cluser, led by the GREENs. 
+
+The fourth candidate is the GREEN cluster. What can you say? The GREENs still have a viable party, but their supporters (and to some extent their councillors) remain all over the map. They liked Jean Swanson's populist antics on council, but it wasn't enough to return her to chambers, and the same went for the Forward slate, which had relatively broad low-level support from GREEN voters, but not enough. By contrast, GREEN voters also liked Christine Boyle from OneCity well enough for her to comfortably return. And GREEN voters also voted in a striking number of ABC councillors, and even a few TEAMsters. As a result, it's still not quite clear what GREEN voters want, unless you count the vaguely positive connotations of colour branding.
+
+The last cluster is the TEAM cluster, with high voting discipline and a little bit of pull on ABC and GREEN candidates. But TEAM had a very weak showing in the other clusters. As a result, even a strong showing in the cluster with the lowest number of ballots was nowhere near enough to get candidates elected. Running against new housing and SkyTrain expansion is just not popular. Who knew? ([Who](https://vancouver.ca/news-calendar/majority-favours-more-housing-options-and-increased-density-across-vancouver.aspx) [indeed](https://dailyhive.com/vancouver/metro-vancouver-skytrain-expansion-survey)?)
+
+```{r}
+vdlc_grep_string <- "Anderson|Bonamis|Boyle|Carr|Cromwell|Fry|Norris|Singh, Al|Swanson|Wiebe"
+
+vdlc_candidates <- candidate_votes |>
+  filter(grepl(vdlc_grep_string,Name,ignore.case = TRUE))
+
+vdlc_ballots <- council_votes |>
+  filter(Name %in% vdlc_candidates$Name) |>
+  group_by(Ballot) |> 
+  summarise(Votes=sum(Vote)) |>
+  count(Votes) |>
+  arrange(-Votes) |>
+  mutate(nn=cumsum(n))
+
+vdlc_slate_ballots <- vdlc_ballots |> filter(Votes==10) |> pull(n)
+```
+
+Let's return to the influence of the VDLC. How did the [Vancouver District Labout Council election endorsements](https://vdlc.ca/vdlc-endorses-municipal-candidates/) matter? They endorsed 10 candidates in 2022, three of whom got elected. Only `r scales::comma(vdlc_slate_ballots)` voters chose the full VDLC slate on their ballots. But let's take a broader look at their impact on voters. What share of voters voted for any number of VDLC endorsed candidates? 
+
+```{r vdlc-ballot-share, fig.height=4, fig.width=6}
+lowest_abc_votes <- candidate_votes |> filter(Party=="ABC Vancouver") |> pull(Votes) |> min()
+
+vdlc_ballots |> 
+  filter(Votes!=0) |>
+  ggplot(aes(x=(factor(Votes)),y=nn/number_of_ballots)) +
+  geom_bar(stat="identity",fill="firebrick") +
+  scale_y_continuous(labels=scales::percent) +
+  #geom_hline(yintercept = lowest_abc_votes/number_of_ballots) +
+  labs(title="Share of ballots with votes for VDLC candidates",
+       x="Minimum number of VDLC candidates voted for on ballot",
+       y="Share of ballots",
+       caption="MountainMath | Data: Vancouver Open Data")
+```
+
+While a little over half of all voters voted for at least one VDLC candidate, the minimum number of votes VDLC candidates got on each ballot drops off fast as we approach the full slate. We can visualize voter discipline by looking just at the correlation plot of VDLC candidates.
+
+
+```{r vdlc_correlations}
+council_votes |>
+  filter(Name %in% vdlc_candidates$Name) |>
+  select(Ballot,name=Name,value=Vote) |>
+  pivot_wider() |>
+  select(-Ballot) |>
+  pretty_cor_plot() +
+  labs(subtitle = "VDLC candidates")
+```
+
+As can be expected this shows that party affiliation had much stronger cohesion than VDLC, but what's concerning is how little cross-correlation there is between VDLC candidates across party lines. The strongest correlation is between OneCity and Forward candidates, but as we observed before, this correlation was not restricted to VDLC candidates and it is difficult to argue that VDLC strengthened it much. Jean Swanson stands out as having positive correlations to everyone else, with the weakest correlation to Forward candidates.
+
+
+## Mayoral pull
+One question we haven't addressed yet is what kind of pull, if any, mayoral candidates had on the council ticket. First, let's add up the mayoral votes corresponding to each council candidate's support.
+
+```{r council_by_mayoral_vote, fig.height=7, fig.width=8}
+mv <- mayor_votes |>
+  filter(Vote==1) |>
+  mutate(Name=ifelse(Party=="Independent",Party,Name)) |>
+  complete(Ballot=mayor_votes$Ballot,fill=list(Name="No mayoral vote",Party="No mayoral vote",Vote=1)) |>
+  rename(Mayor=Name,MayoralParty=Party) |>
+  select(-Vote)
+mayor_results <- mv |>
+  group_by(Mayor,MayoralParty) |>
+  summarize(Votes=n(),.groups="drop") |>
+  arrange(-Votes) 
+
+mayor_colours <- setNames(as.character(party_colours[mayor_results$MayoralParty]),mayor_results$Mayor)
+mayor_colours["No mayoral vote"]="black"
+
+
+council_votes |>
+  left_join(mv,by="Ballot") |>
+  mutate(Mayor=factor(Mayor,levels=c(mayor_results$Mayor))) |>
+  group_by(Name,Mayor) |> 
+  summarise(Votes=sum(Vote),.groups="drop") |>
+  group_by(Name) |>
+  mutate(VotesT=sum(Votes)) |>
+  filter(Name %in% top_council_candidates$Name) |>
+  ggplot(aes(y=reorder(Name,VotesT),x=Votes,fill=fct_rev(Mayor))) + 
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=mayor_colours) +
+  scale_x_continuous(labels=scales::comma) +
+  guides(fill=guide_legend(reverse = TRUE)) +
+  labs(title="Vancouver election 2022 top 30 candidates by mayoral vote",
+       fill="Mayoral vote",y=NULL,x="Number of ballots",
+       caption="MountainMath | Data: Vancouver Open Data")
+```
+
+Once again we see how ABC really stuck together, with the vast majority of ABC council support accompanied by votes for new ABC mayor, Ken Sim, at the top of the ticket. Interestingly people voting for the NPA candidate Melissa de Genova also mostly voted for Ken Sim instead of the hapless NPA mayoral candidate, Fred Harding.
+
+A similar but weaker pattern holds with Forward and TEAM candidates. When voters chose council candidates of one party, they also tended to choose the mayoral candidate of that party if one was available. Yet this was only narrowly the case for TEAM, with Colleen Hardwick often less popular than her council candidates. Interestingly, Stewart was the mayoral choice for nearly as many OneCity council voters as he was for those voting for his Forward Vancouver candidates. But GREEN party council voters wandered quite a bit more in terms of their preferred mayoral candidates.
+
+Let's reverse this figure and look at the spread of council votes by mayoral ballot.
+
+```{r council_by_mayoral_vote2, fig.height=4, fig.width=7}
+council_votes |>
+  left_join(mv,by="Ballot") |>
+  mutate(Mayor=factor(Mayor,levels=c(mayor_results$Mayor))) |>
+  mutate(Party=factor(Party, levels=levels(candidate_votes$Party))) |>
+  group_by(Party,Mayor) |> 
+  summarise(Votes=sum(Vote),.groups="drop") |>
+  group_by(Mayor) |>
+  mutate(VotesT=sum(Votes)) |>
+  ggplot(aes(y=reorder(Mayor,VotesT),x=Votes,fill=fct_rev(Party))) + 
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=party_colours) +
+  scale_x_continuous(labels=scales::comma) +
+  guides(fill=guide_legend(reverse = TRUE)) +
+  labs(title="Vancouver election 2022 council votes party and mayoral vote",
+       fill="Mayoral vote",y=NULL,x="Number of council votes",
+       caption="MountainMath | Data: Vancouver Open Data")
+```
+
+Once again, here we see that Ken Sim had a strong pull on the council ballot, with voters for Ken Sim overwhelmingly voting for ABC candidates, and often only ABC candidates. By contrast, Kennedy Stewart support was built up from supporters of a diverse array of left-of-centre parties, but especially Forward, OneCity, and COPE, with the GREENs most likely to spread their love around. 
+
+Finally, let's take a look at how mayors did at carrying along their slates. While Ken Sim ran with a slate of seven, Kennedy Stewart eventually pulled together a slate of six for Forward Vancouver, and TEAM (Hardwick) and Progress (Marissen) ran at the same size. How many candidates from mayoral party slates got left off the ballot when voters chose a mayor? Let's take a look.
+
+```{r council_by_mayoral_vote3, fig.height=4, fig.width=7}
+council_votes |>
+  left_join(mv,by="Ballot") |>
+  mutate(Mayor=factor(Mayor,levels=c(mayor_results$Mayor))) |>
+  mutate(Party=factor(Party, levels=levels(candidate_votes$Party))) |>
+  filter(Party==MayoralParty,Party!="Independent") |>
+  group_by(Ballot,Party,Mayor) |> 
+  summarise(Votes=sum(Vote),.groups="drop") |>
+  count(Mayor,Votes) |>
+  group_by(Mayor) |>
+  mutate(MaxVotes=max(Votes)) |>
+  mutate(left_out=MaxVotes-Votes) |>
+  ggplot(aes(y=fct_rev(Mayor),x=n,fill=fct_rev(as.factor(left_out)))) + 
+  geom_bar(stat="identity",position="fill") +
+  #scale_fill_manual(values=party_colours) +
+  scale_fill_viridis_d(option="turbo",direction = -1) +
+  scale_x_continuous(labels=scales::percent) +
+  guides(fill=guide_legend(reverse = TRUE)) +
+  labs(title="Vancouver election 2022 council votes party and mayoral vote",
+       fill="Number of\nparty candidates\nnot voted for",y=NULL,x="Share of ballots for each mayoral pick",
+       caption="MountainMath | Data: Vancouver Open Data")
+```
+
+Again, we see that almost half of the people voting for Ken Sim for mayor also voted for the full slate of ABC party candidates. In this case, we further evidence of disciplined party voters. Colleen Hardwick's voters look similarly disciplined, though it's worth noting once again that she frequently underperformed her council candidates. Kennedy Stewart performed worst by this metric of party discipline, but he also had the most hastily assembled set of council candidates. On the flip side, urbanist Mark Marissen had the highest share of ballots that picked him for mayor but voted for absolutely none of his party candidates.
+
+
+
+## Takeaways
+
+Narratives will continue to spin concerning the outcome of the 2022 election in Vancouver and we can't put them all to rest. But a few clear takeaways emerge from our examination of the ballots. 
+
+1) ABC had the most disciplined voters lined up for the most organized roster of candidates. 
+2) voters on the Centre-Left remained mostly undisciplined with no clear central organizing roster
+3) OneCity voters and roster appeared the most disciplined & organized within the centre-left
+4) GREEN voters still look kind of flaky
+5) TEAM voters were relatively disciplined, but they're just not very popular
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2022-12-17-analyzing-ballot-composition-in-vancouver/index.Rmarkdown) for anyone to reproduce or adapt.
+
+
