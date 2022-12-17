@@ -163,7 +163,8 @@ party_ballot_summary <- council_votes |>
   summarise(`Party votes`=sum(Vote),.groups="drop") |>
   left_join(slate_size,by="Party") |>
   group_by(Ballot) |>
-  mutate(`Total votes`=sum(`Party votes`)) 
+  mutate(`Total votes`=sum(`Party votes`)) |>
+  mutate(Party=factor(Party,levels=levels(candidate_votes$Party)))
 
 
 party_ballot_summary |>
@@ -178,7 +179,7 @@ party_ballot_summary |>
        subtitle="Ballots with clean party slate votes and no other candidates",
        y=NULL,
        x="Number of Ballots",
-       caption="MountainMath | Data: Vancouver Open Data")
+       caption="MountainMath | Data: Vancouver Open Data") 
 ```
 
 We see that in particular ABC voters made use of this strategy, relating back to the top where we saw a high number of people casting exactly seven votes. The majority of these were pure ABC slate ballots. TEAM voters, looking at a similarly sized slate, also made use of this strategy, there just weren't nearly enough of them to matter. TEAM's poor showing emphasizes a lesson worth teaching over and over again: despite what we see at public hearings on rezoning applications, anti-housing politics might be well-organized, but they really aren't very popular.
@@ -186,7 +187,7 @@ We see that in particular ABC voters made use of this strategy, relating back to
 Now let's shift our analysis slightly. Let's look at ballots where a full party slate got voted in, but also contains some other votes. These are full party-line ballots, but not plumped by strategic avoidance of voting for anyone outside the party.
 
 ```{r slate-mixed, fig.height=4, fig.width=6}
-party_ballot_summary |>
+party_ballot_summary |> 
   filter(`Party votes`==`Party size`) |>
   group_by(Party) |>
   summarise(Ballots=n()) |>
@@ -197,7 +198,7 @@ party_ballot_summary |>
        subtitle="Ballots with full party slate votes plus possible other candidates",
        y=NULL,
        x="Number of Ballots",
-       caption="MountainMath | Data: Vancouver Open Data")
+       caption="MountainMath | Data: Vancouver Open Data") 
 ```
 
 ```{r}
