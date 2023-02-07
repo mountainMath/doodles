@@ -21,7 +21,7 @@ linktitle: ''
 type: "post"
 ---
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2023/02/06/a-brief-history-of-vancouver-planning-development-regimes/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2023/02/07/a-brief-history-of-vancouver-planning-development-regimes/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 
@@ -215,13 +215,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2023-02-06 18:26:56 PST"
+## [1] "2023-02-06 19:39:44 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [ca489cf] 2022-12-17: party ballot order
+## Head:     [a2613a4] 2023-02-07: zoning history images
 ```
 
 ```
