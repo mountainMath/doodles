@@ -362,7 +362,7 @@ This does not mean that ownership of housing is not important; it is. But the mo
 
 Lastly the meaning of ownership relative to renting is also complex and contingent. Aside from turning renters into owners, shifts in rental tenancy legislation can reset terms, providing access to the security many renters seek in ownership. In our mind a practical takeaway from the fact that many Canadians rent is that we should strengthen tenant rights, especially in the secondary market [where most of the evictions happen](https://www150.statcan.gc.ca/n1/pub/11-627-m/11-627-m2022046-eng.htm). 
 
-As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2023-102-20-investing-in-definitions-and-framing/index.Rmarkdown) for anyone to reproduce or adapt.
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2023-02-20-investing-in-definitions-and-framing/index.Rmarkdown) for anyone to reproduce or adapt.
 
 <details><summary>Reproducibility receipt</summary>
 ```{r cache=FALSE}

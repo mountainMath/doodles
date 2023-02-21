@@ -143,18 +143,18 @@ This does not mean that ownership of housing is not important; it is. But the mo
 
 Lastly the meaning of ownership relative to renting is also complex and contingent. Aside from turning renters into owners, shifts in rental tenancy legislation can reset terms, providing access to the security many renters seek in ownership. In our mind a practical takeaway from the fact that many Canadians rent is that we should strengthen tenant rights, especially in the secondary market [where most of the evictions happen](https://www150.statcan.gc.ca/n1/pub/11-627-m/11-627-m2022046-eng.htm). 
 
-As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2023-102-20-investing-in-definitions-and-framing/index.Rmarkdown) for anyone to reproduce or adapt.
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2023-02-20-investing-in-definitions-and-framing/index.Rmarkdown) for anyone to reproduce or adapt.
 
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2023-02-20 20:09:40 PST"
+## [1] "2023-02-20 20:14:16 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [9a681a2] 2023-02-07: fix typo in zoning
+## Head:     [df7e737] 2023-02-21: chsp investor post
 ```
 
 ```
@@ -179,45 +179,38 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## [13] tidyverse_1.3.2   
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] httr_1.4.4                sass_0.4.5               
-##  [3] bit64_4.0.5               vroom_1.6.1              
-##  [5] jsonlite_1.8.4            modelr_0.1.10            
-##  [7] bslib_0.4.2               assertthat_0.2.1         
-##  [9] highr_0.10                blob_1.2.3               
-## [11] googlesheets4_1.0.1       cellranger_1.1.0         
-## [13] sanzo_0.1.0               yaml_2.3.7               
-## [15] pillar_1.8.1              RSQLite_2.2.20           
-## [17] backports_1.4.1           glue_1.6.2               
-## [19] digest_0.6.31             rvest_1.0.3              
-## [21] colorspace_2.1-0          htmltools_0.5.4          
-## [23] pkgconfig_2.0.3           broom_1.0.3              
-## [25] haven_2.5.1               bookdown_0.32            
-## [27] scales_1.2.1              tzdb_0.3.0               
-## [29] git2r_0.31.0              timechange_0.2.0         
-## [31] googledrive_2.0.0         farver_2.1.1             
-## [33] generics_0.1.3            ellipsis_0.3.2           
-## [35] cachem_1.0.6              withr_2.5.0              
-## [37] MetBrewer_0.2.0           cli_3.6.0                
-## [39] magrittr_2.0.3            crayon_1.5.2             
-## [41] readxl_1.4.1              memoise_2.0.1            
-## [43] evaluate_0.20             fs_1.6.0                 
-## [45] fansi_1.0.4               xml2_1.3.3               
-## [47] blogdown_1.16             tools_4.2.2              
-## [49] hms_1.1.2                 gargle_1.3.0             
-## [51] lifecycle_1.0.3           munsell_0.5.0            
-## [53] reprex_2.0.2              compiler_4.2.2           
-## [55] jquerylib_0.1.4           rlang_1.0.6              
-## [57] grid_4.2.2                rstudioapi_0.14          
-## [59] labeling_0.4.2            rmarkdown_2.20           
-## [61] codetools_0.2-19          gtable_0.3.1             
-## [63] DBI_1.1.3                 curl_5.0.0               
-## [65] R6_2.5.1                  lubridate_1.9.1          
-## [67] knitr_1.42                fastmap_1.1.0            
-## [69] bit_4.0.5                 utf8_1.2.3               
-## [71] mountainmathHelpers_0.1.4 stringi_1.7.12           
-## [73] parallel_4.2.2            Rcpp_1.0.10              
-## [75] vctrs_0.5.2               dbplyr_2.3.0             
-## [77] tidyselect_1.2.0          xfun_0.37
+##  [1] lubridate_1.9.1           assertthat_0.2.1         
+##  [3] digest_0.6.31             utf8_1.2.3               
+##  [5] R6_2.5.1                  cellranger_1.1.0         
+##  [7] backports_1.4.1           reprex_2.0.2             
+##  [9] evaluate_0.20             httr_1.4.4               
+## [11] blogdown_1.16             pillar_1.8.1             
+## [13] rlang_1.0.6               googlesheets4_1.0.1      
+## [15] readxl_1.4.1              rstudioapi_0.14          
+## [17] jquerylib_0.1.4           rmarkdown_2.20           
+## [19] googledrive_2.0.0         munsell_0.5.0            
+## [21] broom_1.0.3               compiler_4.2.2           
+## [23] modelr_0.1.10             xfun_0.37                
+## [25] pkgconfig_2.0.3           htmltools_0.5.4          
+## [27] tidyselect_1.2.0          bookdown_0.32            
+## [29] fansi_1.0.4               crayon_1.5.2             
+## [31] tzdb_0.3.0                dbplyr_2.3.0             
+## [33] withr_2.5.0               grid_4.2.2               
+## [35] jsonlite_1.8.4            gtable_0.3.1             
+## [37] lifecycle_1.0.3           DBI_1.1.3                
+## [39] git2r_0.31.0              magrittr_2.0.3           
+## [41] scales_1.2.1              cli_3.6.0                
+## [43] stringi_1.7.12            cachem_1.0.6             
+## [45] fs_1.6.0                  xml2_1.3.3               
+## [47] bslib_0.4.2               ellipsis_0.3.2           
+## [49] generics_0.1.3            vctrs_0.5.2              
+## [51] tools_4.2.2               mountainmathHelpers_0.1.4
+## [53] glue_1.6.2                hms_1.1.2                
+## [55] fastmap_1.1.0             yaml_2.3.7               
+## [57] timechange_0.2.0          colorspace_2.1-0         
+## [59] gargle_1.3.0              rvest_1.0.3              
+## [61] knitr_1.42                haven_2.5.1              
+## [63] sass_0.4.5
 ```
 </details>
 
