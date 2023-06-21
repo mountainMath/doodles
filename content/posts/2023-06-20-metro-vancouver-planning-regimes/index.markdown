@@ -12,7 +12,7 @@ categories:
 tags: []
 description: 'Taking a look at Metro Vancouver planning around housing and population growth.'
 featured: ''
-images: ["https://doodles.mountainmath.ca/blog/2023/06/20/metro-vancouver-planning-regimes/index_files/figure-html/chsp-cmhc-census-comparison-1.png"]
+images: ["https://doodles.mountainmath.ca/blog/2023/06/20/metro-vancouver-planning-regimes/index_files/figure-html/metro_van_pop_growth-1.png"]
 featuredalt: ""
 featuredpath: ""
 linktitle: ''
@@ -249,13 +249,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2023-06-20 22:25:18 PDT"
+## [1] "2023-06-20 22:27:09 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [59e009e] 2023-02-21: fix link to github and key image
+## Head:     [f90ed0d] 2023-06-21: metro regimes post
 ```
 
 ```
@@ -286,31 +286,19 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## [13] ggplot2_3.4.2             tidyverse_2.0.0          
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] gtable_0.3.3        xfun_0.39           bslib_0.4.2        
-##  [4] rJava_1.0-6         tzdb_0.3.0          vctrs_0.6.2        
-##  [7] tools_4.3.0         generics_0.1.3      curl_5.0.0         
-## [10] parallel_4.3.0      RSQLite_2.3.1       fansi_1.0.4        
-## [13] highr_0.10          blob_1.2.4          pkgconfig_2.0.3    
-## [16] RColorBrewer_1.1-3  dbplyr_2.3.2        webshot_0.5.4      
-## [19] lifecycle_1.0.3     git2r_0.32.0        farver_2.1.1       
-## [22] compiler_4.3.0      munsell_0.5.0       codetools_0.2-19   
-## [25] tabulizer_0.2.3     htmltools_0.5.5     sass_0.4.5         
-## [28] yaml_2.3.7          pillar_1.9.0        crayon_1.5.2       
-## [31] jquerylib_0.1.4     cachem_1.0.8        tidyselect_1.2.0   
-## [34] rvest_1.0.3         digest_0.6.31       stringi_1.7.12     
-## [37] bookdown_0.34       labeling_0.4.2      rprojroot_2.0.3    
-## [40] fastmap_1.1.1       grid_4.3.0          here_1.0.1         
-## [43] colorspace_2.1-0    cli_3.6.1           magrittr_2.0.3     
-## [46] utf8_1.2.3          withr_2.5.0         tabulizerjars_1.0.1
-## [49] scales_1.2.1        bit64_4.0.5         timechange_0.2.0   
-## [52] rmarkdown_2.21      httr_1.4.5          bit_4.0.5          
-## [55] blogdown_1.18       png_0.1-8           sanzo_0.1.0        
-## [58] hms_1.1.3           memoise_2.0.1       evaluate_0.20      
-## [61] knitr_1.42          viridisLite_0.4.2   rlang_1.1.1        
-## [64] glue_1.6.2          DBI_1.1.3           selectr_0.4-2      
-## [67] xml2_1.3.4          svglite_2.1.1       rstudioapi_0.14    
-## [70] vroom_1.6.3         jsonlite_1.8.4      R6_2.5.1           
-## [73] systemfonts_1.0.4
+##  [1] sass_0.4.5        utf8_1.2.3        generics_0.1.3    xml2_1.3.4       
+##  [5] blogdown_1.18     stringi_1.7.12    hms_1.1.3         digest_0.6.31    
+##  [9] magrittr_2.0.3    timechange_0.2.0  evaluate_0.20     grid_4.3.0       
+## [13] bookdown_0.34     fastmap_1.1.1     jsonlite_1.8.4    httr_1.4.5       
+## [17] rvest_1.0.3       fansi_1.0.4       viridisLite_0.4.2 scales_1.2.1     
+## [21] jquerylib_0.1.4   cli_3.6.1         rlang_1.1.1       munsell_0.5.0    
+## [25] withr_2.5.0       cachem_1.0.8      yaml_2.3.7        tools_4.3.0      
+## [29] tzdb_0.3.0        colorspace_2.1-0  webshot_0.5.4     vctrs_0.6.2      
+## [33] R6_2.5.1          git2r_0.32.0      lifecycle_1.0.3   pkgconfig_2.0.3  
+## [37] pillar_1.9.0      bslib_0.4.2       gtable_0.3.3      glue_1.6.2       
+## [41] systemfonts_1.0.4 xfun_0.39         tidyselect_1.2.0  rstudioapi_0.14  
+## [45] knitr_1.42        htmltools_0.5.5   svglite_2.1.1     rmarkdown_2.21   
+## [49] compiler_4.3.0
 ```
 </details>
 
