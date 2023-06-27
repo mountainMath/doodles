@@ -19,7 +19,7 @@ linktitle: ''
 type: "post"
 ---
 
-<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2023/06/28/housing-targets/" target="_blank">HomeFreeSociology</a>)</i></p>
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2023/06/27/housing-targets/" target="_blank">HomeFreeSociology</a>)</i></p>
 
 
 
@@ -124,13 +124,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2023-06-27 16:28:42 PDT"
+## [1] "2023-06-27 16:38:11 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [7fa9ffa] 2023-06-21: key image fix
+## Head:     [913fc81] 2023-06-27: targets post
 ```
 
 ```
