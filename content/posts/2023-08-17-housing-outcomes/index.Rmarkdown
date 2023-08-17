@@ -1,0 +1,1341 @@
+---
+title: Housing Outcomes
+authors: 
+  - Jens von Bergmann
+  - Nathan Lauster
+date: '2023-08-17'
+slug: housing-outcomes
+categories:
+  - affordability
+  - cansim
+  - cmhc
+  - cancensus
+  - Vancouver
+  - Toronto
+tags: []
+description: 'Existing households are partially outcomes of our housing pressures, and basing analysis soley on households introduces collider bias. Which is substantial in tight housing markets and this misspecification can lead to misguided analysis and faulty policy recommendations.'
+featured: ''
+images: ["https://doodles.mountainmath.ca/blog/2023/08/17/housing-outcomes/index_files/figure-html/hmr_age_group-1.png"]
+featuredalt: "Age-specific household maintainer rates in Montreal, Toronto and Vancouver over time."
+featuredpath: ""
+linktitle: ''
+type: "post"
+---
+
+<p style="text-align:center;"><i>(Joint with Nathan Lauster and cross-posted at <a href="https://homefreesociology.com/2023/08/17/housing-outcomes/" target="_blank">HomeFreeSociology</a>)</i></p>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 150,
+	fig.width = 8,
+	fig.height = 6,
+	cache = TRUE
+)
+
+library(tidyverse)
+library(cancensus)
+library(cansim)
+library(cmhc)
+library(statcanXtabs)
+```
+
+Almost everyone agrees that we have a housing crisis in Canada, and that it has gotten progressively worse over recent history. But there is a problem. The metrics most commonly used don't reflect that.
+
+## TL;DR
+Most commonly used metrics use **existing households as the base of analysis**, but households are a consequence of housing pressures. This kind of **misspecification** is a form of **collider or selection bias** that, especially in tight housing markets, **misleads researchers toward faulty conclusions and policy recommendations**. It blinds researchers to the struggles of people who are unhappy about their current household living arrangement, like young adults struggling to move out of their parent's place or out of a bad roommate setup, as well as people who have left their desired region and moved away, or failed to move in, because of the lack of housing options.
+
+This post explains the problem with analysis based solely on households in more detail, and explains why this will lead to incorrect diagnoses of our housing problems and misguided policy recommendations.
+
+
+```{r}
+
+get_chn_data <- function(geo_uid) {
+  tenures <- c("Total",   "Renters", "Owners" )
+  data <- tenures |>
+    lapply(function(t)
+      core_housing_historical <- get_cmhc(
+        survey = "Core Housing Need", 
+        series = "Housing Standards", 
+        dimension = "% of Households in Core Housing Need", 
+        breakdown = "Historical Time Periods", 
+        geo_uid = geo_uid,filter=list(Tenure=t)) |>
+        mutate(Tenure=t)
+    ) |>
+    bind_rows() |>
+    mutate(Tenure=factor(Tenure,levels=c("Total",   "Renters", "Owners" )))
+    
+  
+  data |>
+    mutate(Value=Value/100) |>
+    filter(`% of Households in Core Housing Need`=="Total") |>
+    mutate(Year=strftime(Date,"%Y")) |>
+    select(Tenure,Year,Value) |>
+    mutate(GeoUID=geo_uid)
+}
+
+get_chn_data_2021 <- function(geo_uids) {
+  data_2021 <- get_cansim_sqlite("98-10-0247") |>
+    filter(GeoUID %in% geo_uids,
+           `Shelter-cost-to-income ratio (9)`=="Total - Shelter-cost-to-income ratio",
+           `Dwelling condition (4)`=="Total - Dwelling condition",
+           `Housing suitability (3)`=="Total - Housing suitability",
+           `Statistics (3C)`=="Number of private households",
+           `Core housing need (5)` %in% c("In core need","Not in core need"),
+           `Tenure including presence of mortgage payments and subsidized housing (8)` %in%
+             c("Total - Tenure including presence of mortgage payments and subsidized housing",
+               "Owner","Renter")) |>
+    collect_and_normalize(disconnect = TRUE) |>
+    select(GeoUID,Tenure=`Tenure including presence of mortgage payments and subsidized housing (8)`,
+           CHN=`Core housing need (5)`,Value=VALUE) |>
+    mutate(Tenure=fct_recode(Tenure,
+                             "Total"="Total - Tenure including presence of mortgage payments and subsidized housing",
+                             "Owners"="Owner","Renters"="Renter")) |>
+    group_by(GeoUID,Tenure) |>
+    mutate(Value=Value/sum(Value)) |>
+    filter(CHN=="In core need") |>
+    mutate(Year="2021") |>
+    ungroup() |>
+    select(GeoUID,Tenure,Year,Value)
+}
+
+get_chn_data_2021_metro <- function(geo_uids) {
+  data_2021 <- get_cansim_sqlite("98-10-0248") |>
+    filter(GeoUID %in% geo_uids,
+           `Shelter-cost-to-income ratio (9)`=="Total - Shelter-cost-to-income ratio",
+           `Household type including census family structure (16)`=="Total - Household type including census family structure",
+           `Dwelling condition (4)`=="Total - Dwelling condition",
+           `Housing suitability (3)`=="Total - Housing suitability",
+           `Statistics (3C)`=="Number of private households",
+           `Core housing need (5)` %in% c("In core need","Not in core need"),
+           `Tenure including presence of mortgage payments and subsidized housing (7)` %in%
+             c("Total - Tenure including presence of mortgage payments and subsidized housing",
+               "Owner","Renter")) |>
+    collect_and_normalize(disconnect = TRUE) |>
+    select(GeoUID,Tenure=`Tenure including presence of mortgage payments and subsidized housing (7)`,
+           CHN=`Core housing need (5)`,Value=VALUE) |>
+    mutate(Tenure=fct_recode(Tenure,
+                             "Total"="Total - Tenure including presence of mortgage payments and subsidized housing",
+                             "Owners"="Owner","Renters"="Renter")) |>
+    group_by(GeoUID,Tenure) |>
+    mutate(Value=Value/sum(Value)) |>
+    filter(CHN=="In core need") |>
+    mutate(Year="2021") |>
+    ungroup() |>
+    select(GeoUID,Tenure,Year,Value)
+}
+
+```
+
+## Core Housing Need
+The most-cited metric in the context of problems in the housing market in Canada is [Core Housing Need](https://www23.statcan.gc.ca/imdb/p3Var.pl?Function=DEC&Id=1230313). But looking at the share of households in core housing need for the 2006 through 2021 censuses one would be hard-pressed to conclude that Core Housing Need got worse.
+
+```{r chn_canada_time}
+regions <- tibble(Name="Canada",region=c("01","11124"))
+
+
+plot_data <- lapply("01",get_chn_data) |>
+  bind_rows(get_chn_data_2021("11124")) |>
+  left_join(regions |> select(GeoUID=region,Name),by="GeoUID")
+
+
+ggplot(plot_data,aes(x=Year,y=Value,fill=Tenure)) +
+  scale_fill_manual(values=sanzo::trios$c157) +
+  facet_wrap(~Name) +
+  geom_bar(stat="identity",position = "dodge") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Households in core housing need in Canada",
+       x=NULL,y="Share of households",
+       caption="StatCan Census 2006, 2011 NHS, 2016, 2021 Table 98-10-0247")
+```
+
+2021 was a weird year, of course, and the CERB payments from 2020 likely lifted a lot of people out of Core Housing Need, so we should not focus too much on that drop. But even before the pandemic it seems difficult to argue that Core Housing Need got worse, despite almost everyone agreeing that housing outcomes deteriorated during that time period.
+
+But housing is a local problem, maybe things get washed out when looking at the national level? Turning our lens to local levels doesn't really change much. Looking at Census Metropolitan Areas we still don't see a clear trend indicating rising levels of housing need. More often we see the opposite.
+
+```{r chn_cma_time}
+
+regions <- list_census_regions("CA21") |>
+  filter(level=="CMA" & name %in% c("Vancouver","Toronto","Calgary","Montréal")) |>
+  mutate(Name=gsub(" \\(.+","",name)) |>
+  mutate(short=substr(region,nchar(region)-2,nchar(region)))
+
+
+plot_data <- lapply(regions$region,get_chn_data) |>
+  bind_rows(get_chn_data_2021_metro(regions$short)) |>
+  left_join(regions |> select(GeoUID=region,Name),by="GeoUID") |>
+  left_join(regions |> select(GeoUID=short,Name2=Name),by="GeoUID") |>
+  mutate(Name=coalesce(Name,Name2))
+
+
+ggplot(plot_data,aes(x=Year,y=Value,fill=Tenure)) +
+  scale_fill_manual(values=sanzo::trios$c157) +
+  facet_wrap(~Name) +
+  geom_bar(stat="identity",position = "dodge") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Households in core housing need in Canadian Metro Areas",
+       x=NULL,y="Share of households",
+       caption="StatCan Census 2006, 2011 NHS, 2016, 2021 Table 98-10-0247")
+```
+
+Metro Toronto and Vancouver stand out as higher than other metros, as we might expect, but it doesn't look like things are getting worse. Maybe the problem is not with the whole metro areas but with the central cities. But again, it's hard to make out a negative trend. Just looking at Core Housing Need, a naive observer might assume that conditions are pretty stable, with need on the decline in many places. Housing crisis? What housing crisis?
+
+```{r chn_city_time}
+
+regions <- list_census_regions("CA21") |>
+  filter(level=="CSD" & name %in% c("Vancouver","Toronto","Calgary","Montréal")) |>
+  mutate(Name=paste0(name," (",municipal_status,")"))
+
+geo_uids <- regions$region
+
+plot_data <- lapply(geo_uids,get_chn_data) |>
+  bind_rows(get_chn_data_2021(geo_uids)) |>
+  left_join(regions |> select(GeoUID=region,Name),by="GeoUID")
+
+
+ggplot(plot_data,aes(x=Year,y=Value,fill=Tenure)) +
+  scale_fill_manual(values=sanzo::trios$c157) +
+  facet_wrap(~Name) +
+  geom_bar(stat="identity",position = "dodge") +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Households in core housing need in Canadian cities",
+       x=NULL,y="Share of households",
+       caption="StatCan Census 2006, 2011 NHS, 2016, 2021 Table 98-10-0247")
+```
+
+
+
+Does that mean that things actually aren't getting worse? Are we just imagining the housing crisis? No. We are looking at the wrong metrics.
+
+Core Housing Need has long had issues as a metric, as careful analysts have repeatedly pointed out [over the](https://pubmed.ncbi.nlm.nih.gov/20096621/) [years](https://maytree.com/publications/modernizing-core-housing-need/). In short, it attempts to establish a housing standard for all of Canada, [matching existing households to need](https://www.cmhc-schl.gc.ca/professionals/housing-markets-data-and-research/housing-research/core-housing-need) on the basis of suitably roomy (matched to National Occupancy Standards), adequately maintained (good repair), and affordable (shelter costs no more than 30% of income) housing, or affordable alternatives that might meet their needs nearby. To list a few criticisms of the measure:
+
+a) affordable alternatives aren't actually assessed for availability 
+b) location of housing impacts transportation costs 
+c) a 30% shelter cost to income cutoff lacks solid justification 
+d) the metric excludes many households (e.g. students, income lower than shelter cost)
+e) shelter costs are inconsistently assessed 
+f) incomes are temporally mismatched (from previous year) relative to shelter costs (current) 
+g) adequacy of maintenance (based on self-reported repair) misses important elements
+h) suitable roominess (based on Canadian National Occupancy Standards) lacks solid justification 
+i) existing households might not be preferable arrangements 
+j) existing households miss in- and out- migration/mobility responses
+
+In short, there is a lot more to housing outcomes than what is currently captured in Core Housing Need.
+
+# Housing outcomes
+If our current Core Housing Need is inadequate for capturing housing outcomes, then how can it be fixed? Some of the points we listed above have been addressed by others and by ourselves in previous posts. Points a) through h), in particular, could plausibly be addressed by refining the input metrics for Core Housing Need. Points i) and j) are fundamentally different in that they question the base unit of all measurements that go into Core Housing Need: Existing Households.
+
+To understand this better, we start by looking at how people experience housing pressures. From the perspective of individuals navigating a constrained housing market we want to highlight five distinct housing outcomes:
+
+1. (**unaffordability**) People pay more money to access the housing they need than they can afford, living beyond their means or sacrificing other important expenses.
+2. (**unsuitability**) People squish into housing without enough room for their household, sacrificing privacy within the household.
+3. (**inadequacy**) People live in housing that's inadequately maintained or in bad repair.
+4. (**suppressed households**) People fail to achieve their desired household composition, living with more or different people than they would like to.
+5. (**housing-induced migration**) People move to a different region, either farther away from their jobs, friends, and places of leisure within the same metro area or to an entirely different part of the country.
+
+Only the first three channels are captured in some way by the Core Housing Need metric (or the related [Housing Hardship](https://www.cmhc-schl.gc.ca/blog/2020-housing-observer/new-affordability-metric-assesses-household-ability-afford-basic-goods) metric) as based on existing households.
+
+## Existing households are the wrong unit of measurement
+In most of Canadian data and theorizing, a *household* [is defined as an *occupied dwelling unit*](https://www12.statcan.gc.ca/census-recensement/2021/ref/dict/az/definition-eng.cfm?ID=households-menage007), although *household* is often also used as a shorthand for only [*private households*](https://www12.statcan.gc.ca/census-recensement/2021/ref/dict/az/definition-eng.cfm?ID=households-menage014). Households are the outcome of how people distribute over dwellings. 
+
+**Basing analysis entirely on existing households is selecting on a consequence of the outcome, it introduces selection or collider bias**. This bias is substantial, [the degree to which housing pressures impact household formation are large and growing](https://doodles.mountainmath.ca/blog/2022/10/03/still-short-suppressed-households-in-2021/), and an **existing household-based analysis is blind to suppressed household formation, as well as to the effects of housing on migration**.
+
+To better understand collider bias in this context consider [Model 18 in this excellent monograph on good and bad controls](https://journals.sagepub.com/doi/epub/10.1177/00491241221099552). Alternatively one can interpret selecting on households that have formed as [survivorship bias](https://en.wikipedia.org/wiki/Survivorship_bias) that ignores households that would have formed if housing pressures were different. This also highlights why it is necessary to choose counter-factual scenarios of different housing pressures. For market housing these counter-factual scenarios should be chosen to be realistically achievable, by for example [comparing with regions with different housing policies but similiar economic and demographic environments](https://doodles.mountainmath.ca/blog/2022/05/06/estimating-suppressed-household-formation/), or by [estimating how much housing the market would produce if municipal regulations preventing housing were removed](https://doodles.mountainmath.ca/blog/2023/06/27/housing-targets/). Non-market housing counter-factual scenarios should similarly work toward being achievable in order to be taken seriously, and, when interpreted from a rights based approach, set in relation to housing outcomes achievable in market housing.
+
+On a personal level, housing pressures are experienced through unaffordability when people or families can't afford housing that fits their needs, be it proximity to jobs and amenities, or size and number of bedrooms. **But their inability to afford said housing generally won't show up in Core Housing Need because in most cases they don't actually move into the housing they can't afford.** The same principle generally applies to waitlisting for non-market housing.
+
+That's all quite abstract, let's unpack this a little. 
+
+```{r}
+main_cmas <- c("825","835","462","505","535","933")
+
+hh_data <- get_cansim_sqlite("98-10-0231") |>
+  filter(GEO=="Canada",
+         #`Age of primary household maintainer (15)`=="Total - Age of primary household maintainer",
+         `Condominium status (3)`=="Total - Condominium status",
+         `Structural type of dwelling (10)`=="Total - Structural type of dwelling",
+         `Statistics (3C)`=="Number of private households",
+         `Tenure (4)`=="Total - Tenure") |>
+  collect_and_normalize(disconnect = TRUE) |>
+  select(GeoUID,Name=GEO,HHType=`Household type including census family structure (16)`,
+         Age=`Age of primary household maintainer (15)`,Value=VALUE) %>%
+  left_join(filter(.,HHType=="Total - Household type including census family structure") |> 
+              select(GeoUID,Name,Age,Total=Value),
+            by=c("GeoUID","Name","Age")) |>
+  mutate(Share=Value/Total)
+
+hh_summary <- hh_data |> filter(Age=="Total - Age of primary household maintainer")
+
+household_recodes <- c(
+  "Without children (One couple census family without other persons in the household)"="One couple census family without other persons in the household without children",
+  "With children (One couple census family without other persons in the household)"="One couple census family without other persons in the household with children",
+  "One-census-family household without additional persons: one-parent family"="Lone parent census family without additional persons",
+  "Without children (One couple census family with other persons in the household)"="One couple census family with other persons in the household without children",
+  "With children (One couple census family with other persons in the household)"="One couple census family with other persons in the household with children",
+  "One-census-family household with additional persons: one-parent family"="Lone parent census family with additional persons",
+  "Multiple-census-family household"="Multiple-census-family household",
+  "Non-census-family household: one-person household"="One-person household",
+  "Non-census-family household: two-or-more-person non-census-family household"="Two-or-more-person non-census-family household"
+)
+
+key_household_colors = setNames(c("Simple","Simple","Simple","Complex","Complex","Complex","Complex","Simple","Complex"),household_recodes)
+trad_colors= RColorBrewer::brewer.pal(5,"Blues")[2:5]
+complex_colors= RColorBrewer::brewer.pal(6,"Reds")[2:6]
+key_household_color_values = setNames(c(trad_colors[1:3],complex_colors[1:4],trad_colors[4],complex_colors[5]),household_recodes)
+
+```
+
+Take a roommate household made up of four roommates, where two people have coupled up. The couple would like to move out into their own place, but they can't find a place within their budget that's reasonably close to their jobs. So they stay in their roommate situation. They may be delaying their plans to have kids until they find a better housing situation that they feel secure about, and maybe has an extra bedroom to accommodate their future child. They are not in core housing need because the combined household income of all four roommates easily covers rent and utilities, but they do feel like their housing needs aren't being met and it's forcing them to adjust life plans. This kind of household would be classified as a *one-census family household with additional persons*, and across Canada there are around `r scales::comma(filter(hh_summary,HHType=="One-census-family households with additional persons")$Value,accuracy=1000)` of these, `r scales::comma(filter(hh_summary,HHType %in% c("With children (One couple census family with other persons in the household)","One-census-family household with additional persons: one-parent family"))$Value |> sum(),accuracy=1000)` of which have children present.
+
+To take a different example, the [CBC recently ran a piece](https://www.cbc.ca/news/canada/divorce-housing-challenges-canada-1.6926859) on how former couples wishing to separate or divorce increasingly find themselves forced to either continue living together or move in with friends and relatives. This clearly relates to the rising difficulty of finding housing. But the Core Housing Need measure sees no problem with these situations, at least as long as there's a spare bedroom satisfying the National Occupancy Standard criteria for uncoupled adults. The issues are further compounded when children are involved in split households, insofar as the need for roominess grows, and in joint custody cases, may even double. But unsurprisingly, the Core Housing Need metric also ignores custody questions (kids are only supposed to show up once as part of a Census household).
+
+We take this opportunity to update our overview graph [from a previous post](https://doodles.mountainmath.ca/blog/2017/12/01/what-s-a-household/) on households by household type and census family structure using 2021 data.
+
+```{r hh_type_2021}
+# regions <- list_census_regions("2021") |> filter(level=="CMA")
+
+
+hh_data_cma <- get_cansim_sqlite("98-10-0231") |>
+  filter(GeoUID %in% main_cmas,
+         #`Age of primary household maintainer (15)`=="Total - Age of primary household maintainer",
+         `Condominium status (3)`=="Total - Condominium status",
+         `Structural type of dwelling (10)`=="Total - Structural type of dwelling",
+         `Statistics (3C)`=="Number of private households",
+         `Tenure (4)`=="Total - Tenure") |>
+  collect_and_normalize(disconnect = TRUE) |>
+  select(GeoUID,Name=GEO,HHType=`Household type including census family structure (16)`,
+         Age=`Age of primary household maintainer (15)`,Value=VALUE) |>
+  mutate(Name=gsub(" \\(.+","",Name)) %>%
+  left_join(filter(.,HHType=="Total - Household type including census family structure") |> 
+              select(GeoUID,Name,Age,Total=Value),
+            by=c("GeoUID","Name","Age")) |>
+  mutate(Share=Value/Total)
+
+
+hh_data_cma %>%
+  filter(HHType %in% names(household_recodes)) |>
+  mutate(HHType=factor(recode(HHType,!!!household_recodes),levels=household_recodes)) |>
+  filter(Age!="Total - Age of primary household maintainer") |>
+  ggplot(aes(y=Age,x=Share,fill=fct_rev(HHType)))+
+  scale_fill_manual(values=key_household_color_values,
+                    labels=\(x)str_wrap(x,width=45)) +
+  geom_bar(stat="identity") +
+  facet_wrap(~Name) +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Household type by age of primary household maintainer in Canadian metro areas",
+       fill="Household type",
+       y=NULL,
+       x="Share of households",
+       caption="StatCan Census 2021, Table 98-10-0231")
+```
+
+This highlights some of the complexities of households, and how they don't necessarily map onto family units. In particular we notice how Montréal has comparatively few complex households.
+
+
+## Minimum Household Units
+If households aren't the right unit of analysis, then what is? We have [discussed and compared different conceptualizations of what constitutes a basic unit in the past](https://doodles.mountainmath.ca/blog/2021/11/28/first-peek-at-population-and-household-data-during-covid-caveats/), including the OECD definition of a household that StatCan uses within their National Accounts framework, as well as one looking at census (or economic) families and unattached individuals that we already highlighted in our [post on households](https://doodles.mountainmath.ca/blog/2017/12/01/what-s-a-household/). But even non-divorcing census families might feel the need to split up, for example if they contain adult children living with parents who might want to move out but can't find suitable housing.
+
+[Ermisch and Overton introduced the concept of Minimal Household Units (MHU)](https://www.tandfonline.com/doi/pdf/10.1080/0032472031000141266) to better understand household formation. The idea is to define elemental building blocks of households, which may combined to form "complex" households. They start with single adults, parent-child, and couple relationships where we typically assume people want to live together, leaving four basic building blocks for households as:
+
+1. Adult individuals
+2. Lone parents with dependent children
+3. Childless married (or common law) couples
+4. Married (or common law) couples with dependent children
+
+This leaves out some complexities (e.g [Living Apart Together setups](https://www150.statcan.gc.ca/n1/en/pub/75-006-x/2013001/article/11771-eng.pdf) where couples want to remain couples, but live separately), but is simple and works well for the purpose of analyzing household formation and affordability in the context of housing. The assumption is basically that household complexity beyond MHU is likely influenced (though not completely determined) by housing scarcity, revealing a portion of people living together who might prefer to live apart.
+
+
+Looking up at our graphs on household composition by age we note that the blue households approximate minimum household units, with the exception that some of them have adult children living at home. To better understand this we focus on 25 to 34 year olds and examine what share of them live in MHUs vs complex households, and how this has changed through time and across geographies.
+
+
+```{r mhu_type}
+hla_data <- get_cansim_sqlite("98-10-0134") |>
+  filter(GeoUID %in% main_cmas,
+         `Gender (3a)`=="Total - Gender",
+         `Age group (11)`%in% c("25 to 34 years","35 to 44 years"),
+         `Census family status and household living arrangements (11)` %in% c("Married spouses and common-law partners",
+                                                                              "Parents in one-parent families",
+                                                                              "Children in census families",
+                                                                              "Persons living with other relatives",
+                                                                              "Persons living with non-relatives only",
+                                                                              "Persons living alone"),
+         !(`Household type of person (10)` %in% c("Total - Household type of person","Total - In a one-census-family household without additional persons"))) |>
+  collect_and_normalize(disconnect = TRUE) |>
+  select(GeoUID,Name=GEO,Year=`Census year (3)`,
+         Age=`Age group (11)`,
+         CFStatus=`Census family status and household living arrangements (11)`,
+         HHType=`Household type of person (10)`,
+         Value=VALUE)
+
+hla_recodes <- c(
+  "Childless couple"="In a one-census-family household without additional persons: in a couple family without children",
+  "Couple with children"="In a one-census-family household without additional persons: in a couple family with children",
+  "Lone parent"="In a one-census-family household without additional persons: in a one-parent family",
+  "Adult individual"="In a one-person household"
+)
+
+hla_data |>
+  mutate(Name=gsub(" \\(.+","",Name)) |>
+  mutate(Share=Value/sum(Value),.by=c(GeoUID,Name,Year,Age)) |>
+  filter(grepl("without additional|one-person",HHType),
+         CFStatus!="Children in census families") |>
+  mutate(HHType=fct_recode(HHType,!!!hla_recodes)) |>
+  ggplot(aes(x=fct_rev(Year),y=Share,fill=HHType)) +
+  geom_bar(stat="identity") +
+  facet_grid(Age~Name) +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_manual(values=MetBrewer::met.brewer("Egypt",4)) +
+  #guides(fill=guide_legend(ncol=2)) +
+  labs(title="People living in Minimum Household Units (MHU) by Type",
+        y="Share of people in age group",
+        fill="MHU",
+        x=NULL,
+        caption="StatCan Table 98-10-0134")
+```
+
+We notice overall declining trends in the total proportion of 25 to 34 year olds in MHUs, and substantially lower shares in Toronto and Vancouver compared to the other large CMAs. Vancouver has higher shares of childless couples than Toronto, but lower shares of couples with children. By contrast, Montréal has the highest proportion of 25 to 34 year olds living within MHUs, driven largely by more people living alone and part of couples with children (though the latter is still on the decline). In the 35 to 44 year old age groups we still notice slightly declining trends in some CMAs, and again lower levels in Toronto and Vancouver. Once more, Montréal has the highest proportion of 35 to 44 year olds living in MHU.
+
+If young adults aren't living in MHUs, how do they live? Here are the living arrangements of the remaining young adults.
+
+
+```{r non_mhu_type}
+hla_data2 <- get_cansim_sqlite("98-10-0134") |>
+  filter(GeoUID %in% main_cmas,
+         `Gender (3a)`=="Total - Gender",
+         `Age group (11)`%in% c("25 to 34 years","35 to 44 years"),
+         `Census family status and household living arrangements (11)` %in% c("Married spouses and common-law partners",
+                                                                              "Parents in one-parent families",
+                                                                              "Children in census families",
+                                                                              "Persons living with other relatives",
+                                                                              "Persons living with non-relatives only",
+                                                                              "Persons living alone"),
+         !(`Household type of person (10)` %in% c("Total - Household type of person","Total - In a one-census-family household without additional persons"))) |>
+  collect_and_normalize(disconnect = TRUE) |>
+  select(GeoUID,Name=GEO,Year=`Census year (3)`,
+         Age=`Age group (11)`,
+         CFStatus=`Census family status and household living arrangements (11)`,
+         HHType=`Household type of person (10)`,
+         Value=VALUE)
+
+hla_recodes2 <- c(
+  "Multigenerational household"="In a multigenerational household",
+  "Multiple-census-family household"="In a multiple-census-family household",
+  "Roommate household"="In a two-or-more-person non-census-family household",
+  "Census-family with additional persons"="In a one-census-family household with additional persons",
+  "Child in couple family"="In a one-census-family household without additional persons: in a couple family with children",
+  "Child in lone parent family"="In a one-census-family household without additional persons: in a one-parent family",
+  "Adult individual"="In a one-person household"
+)
+
+hla_data2 |>
+  mutate(Name=gsub(" \\(.+","",Name)) |>
+  mutate(Share=Value/sum(Value),.by=c(GeoUID,Name,Year,Age)) |>
+  filter(!grepl("without additional|one-person",HHType) |
+         CFStatus=="Children in census families") |>
+  mutate(HHType=fct_recode(HHType,!!!hla_recodes2)) |>
+  #filter(grepl("Multigen",HHType)) |>
+  filter(Share>0) |>
+  mutate(HHType=droplevels(HHType)) |>
+  ggplot(aes(x=fct_rev(Year),y=Share,fill=HHType)) +
+  geom_bar(stat="identity") +
+  facet_grid(Age~Name) +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels=scales::percent) +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(title="People not living in Minimum Household Units",
+        y="Share ofpeople in age group",
+        fill="Non-MHU",
+        x=NULL,
+        caption="StatCan Table 98-10-0134")
+```
+
+There's no single category dominating trends or differences. The proportion of young adults living as roommates went down in Calgary, but up in Vancouver and Toronto. The proportion living in complicated family arrangements also generally rose. Compared to other metros, Toronto and Vancouver have higher shares in all categories, except people living in census families with additional persons and roommate households. The high share of people living with their parents stands out in these two metros, but also a higher share of multi-generational households. Of note, the share in multi-generational households has been declining for 25 to 34 year olds over this time period for Vancouver and Toronto, and it declined 2016-2021 for the 35 to 44 year old group, while most other categories increased. In particular, the increases in young adults in non-MHUs in Toronto and Vancouver cannot be attributed to multi-generational living arrangements.
+
+
+```{r}
+
+main_cma_names <- list_census_regions("2021") |>
+  filter(level %in% c("C","CMA")) |>
+  mutate(short_id = substr(region,nchar(region)-2,nchar(region))) |>
+  filter(short_id %in% main_cmas|level=="C")
+
+children_family_data <- get_cansim_sqlite("98-10-0137") |>
+  filter(GeoUID %in% c(main_cmas,"11124"),
+         `Gender (3a)`=="Total - Gender",
+         `Census family status and household living arrangements (11)` %in% 
+           c("Total - Census family status and household living arrangements",
+             "Common-law partners"   ,"Married spouses","Parents in one-parent families",
+             "Persons living alone")) |>
+  collect_and_normalize(disconnect = TRUE) |>
+  mutate(CFLA=fct_recode(`Census family status and household living arrangements (11)`,"Total"="Total - Census family status and household living arrangements")) |>
+  select(GeoUID,Name=GEO,CFLA,Year=`Census year (3)`,Parent=`Presence of parent in household (3)`,Age=`Age group (4)`,Value=VALUE) %>%
+  left_join((.) |> filter(CFLA=="Total") |> select(GeoUID,Year,Age,Parent,Total=Value),by=c("GeoUID","Year","Parent","Age")) |>
+  mutate(Name=gsub(" \\(.+","",Name)) |>
+  mutate(Share=Value/Total) |>
+  filter(CFLA!="Total") |>
+  mutate(Name=factor(Name,levels=main_cma_names$name))
+```
+
+Unfortunately we don't have this data at finer age groups; that would require a custom tabulation. But at the expense of not being able to distinguish couple MHUs with or without children, we can use a different table to take a quick look at how overall MHU shares progress through age cohorts over time and across geographies. Housing stress can lead to couples feeling [without enough room](https://journals.library.ualberta.ca/csp/index.php/csp/article/view/16051) or [otherwise unprepared for children](https://www.tandfonline.com/doi/abs/10.1080/02673031003711485), so it's unfortunate we lose an indicator of children for couples. On the bright side, the data allow us to make different interesting distinctions between married and common-law couples and add in the 20 to 24 year old age group.
+
+```{r children_family_mhu}
+children_family_data |>
+  filter(grepl("Total",Parent)) |>
+  filter(!grepl("Total",Age)) |>
+  #filter(Name!="Canada") |>
+  ggplot(aes(x=Share,fill=CFLA,y=Year)) + 
+  geom_bar(stat="identity") +
+  facet_grid(Age~Name) +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values=sanzo::quads$c332) +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Living arrangements of young adults in Canadian metro areas",
+       subtitle = "Young adults in minimal household units",
+       x="Share of adults in age bracket",y=NULL,fill=NULL,
+       caption="StatCan Census 2021, table 98-10-0137")
+```
+
+Stepping up through age groups we see progressively higher shares of young adults living in MHU, as one would expect. However, within each age group the shares of young adults in MHUs has decreased over time, and there is large variation across metro areas. These trends aren't all due to housing pressures, they get confounded by young adults spending more time in school and possibly by shifts in preferences, including by culture, but it seems far-fetched to attribute most of the variation across time and metro areas to this. Indeed, one of the most notable cultural differences appears in the distinction between common-law partnerships, which are far more common within Montréal (and across Quebec), and marriage, which has been more common elsewhere. The difference between common-law and marriage doesn't matter for purposes of assigning people into MHU, but the relative decline of marriage is in keeping with Canada's entry into the Second Demographic Transition, and given the [connections between marriage with home ownership](https://www.tandfonline.com/doi/abs/10.1080/02673030600917826), it's striking that married couples are the category most strongly driving the decline in MHU for young adults everywhere.
+
+Overall across Canada `r scales::percent(filter(children_family_data,Name=="Canada",grepl("Total",Age),grepl("Total",Parent),Year=="2021")$Share |> sum())` of adults aged 20 to 34 lived in MHUs in 2021, down from `r scales::percent(filter(children_family_data,Name=="Canada",grepl("Total",Age),grepl("Total",Parent),Year=="2016")$Share |> sum())` in 2016 and `r scales::percent(filter(children_family_data,Name=="Canada",grepl("Total",Age),grepl("Total",Parent),Year=="2011")$Share |> sum())` in 2011. In contrast with Core Housing Need, here's a clearer indicator of conditions getting worse over Canada's recent history. How did those outside of MHUs live? What was the makeup of their complex households?
+
+
+```{r children_family_non_mhu}
+children_family_data2 <- get_cansim_sqlite("98-10-0137") |>
+  filter(GeoUID %in% c(main_cmas,"11124"),
+         `Gender (3a)`=="Total - Gender",
+         `Census family status and household living arrangements (11)` %in% c("Total - Census family status and household living arrangements","Children in census families","Persons living with other relatives","Persons living with non-relatives only")) |>
+  collect_and_normalize(disconnect = TRUE) |>
+  mutate(CFLA=fct_recode(`Census family status and household living arrangements (11)`,"Total"="Total - Census family status and household living arrangements")) |>
+  select(GeoUID,Name=GEO,CFLA,Year=`Census year (3)`,Parent=`Presence of parent in household (3)`,Age=`Age group (4)`,Value=VALUE) %>%
+  left_join((.) |> filter(CFLA=="Total") |> select(GeoUID,Year,Age,Parent,Total=Value),by=c("GeoUID","Year","Parent","Age")) |>
+  mutate(Name=gsub(" \\(.+","",Name)) |>
+  mutate(Name=factor(Name,levels=main_cma_names$name)) |>
+  mutate(Share=Value/Total) |>
+  filter(CFLA!="Total")
+
+children_family_data2 |>
+  filter(grepl("Total",Parent)) |>
+  filter(!grepl("Total",Age)) |>
+  #filter(Name!="Canada") |>
+  ggplot(aes(x=Share,fill=CFLA,y=Year)) + 
+  geom_bar(stat="identity") +
+  facet_grid(Age~Name) +
+  theme(legend.position = "bottom") +
+  scale_fill_brewer(palette = "Dark2") +
+  #scale_fill_manual(values=sanzo::duos$c071) +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Living arrangements of young adults in Canadian metro areas",
+       subtitle="Young adults in complex household units",
+       x="Share of adults in age bracket",y=NULL,fill=NULL,
+       caption="StatCan Census 2021, table 98-10-0137")
+```
+
+We see a striking rise in young adults outside of MHUs, especially those living with their parents or other family members. Toronto and Vancouver also stand out in this regard. There are several factors playing into temporal and regional patterns, but housing pressures are likely the most important driver. Yet metrics based on existing households, like Core Housing Need, will systematically overlook this kind of evidence of housing pressure.
+
+## Household maintainer rates
+Another way to think about this kind of housing pressure is to look at age-specific household maintainer rates, and how these differ across geographies and time. We have [looked at this previously](https://doodles.mountainmath.ca/blog/2022/10/03/still-short-suppressed-households-in-2021/) and documented how Montréal, Toronto, and Vancouver used to have fairly similar household maintainer rates in the 70s. But while Montréal's rates have remained relatively stable, Vancouver and Toronto have seen significant drops in household maintainer rates, especially among younger adults, as illustrated in the following graph.
+
+```{r}
+get_pumf_cma_timeline <- function(){
+  
+  pumf_base_path <- file.path(getOption("canpumf.cache_path"))
+  #dir(pumf_base_path)
+  
+  age_labels <- c(
+    "1"=  "0 to 4 years",
+    "2" = "5 to 6 years",
+    "3"=  "7 to 9 years",
+    "4"=  "10 to 11 years",
+    "5"=  "12 to 14 years",
+    "6"=  "15 to 17 years",
+    "7"=  "18 to 19 years",
+    "8"=  "20 to 24 years",
+    "9"=  "25 to 29 years",
+    "10"=  "30 to 34 years",
+    "11"=  "35 to 39 years",
+    "12"=  "40 to 44 years",
+    "13"=  "45 to 49 years",
+    "14"=  "50 to 54 years",
+    "15"=  "55 to 59 years",
+    "16"=  "60 to 64 years",
+    "17"=  "65 to 69 years",
+    "18"= "70 to 74 years",
+    "19"=  "75 to 79 years",
+    "20"=  "80 to 84 years",
+    "21"=  "85 years and over"
+  )
+  
+  
+  pumf_data <- dir(pumf_base_path,"individual.csv") %>%
+    lapply(function(n){
+      year=str_extract(n,"\\d{4}")
+      #print(year)
+      d<-read_csv(file.path(pumf_base_path,n),col_types=cols(.default = "c")) %>%
+        mutate(Year=year)
+      if ("cmap" %in% names(d)) d <- d %>% rename(cma=cmap)
+      if ("cmapust" %in% names(d)) d <- d %>% rename(cma=cmapust)
+      if ("cmapumfp" %in% names(d)) d <- d %>% rename(cma=cmapumfp)
+      if ("weightp" %in% names(d)) d <- d %>% rename(weight=weightp)
+      if ("hmainp" %in% names(d)) d <- d %>% rename(hmain=hmainp)
+      if ("prmainp" %in% names(d)) d <- d %>% rename(prmain=prmainp)
+      if ("agep" %in% names(d)) d <- d %>% rename(age=agep)
+      if ("hhldclas" %in% names(d)) d<- d %>% rename(hhclass=hhldclas)
+      if ("hhclassp" %in% names(d)) d<- d %>% rename(hhclass=hhclassp)
+      if ("hhclass" %in% names(d)) d<- d %>% filter(hhclass=='1') # private households only
+      if (!("weight" %in% names(d))) d <- d %>% mutate(weight="1") # early years don't have weights
+      if ("hhldrel" %in% names(d)) d <- d %>% rename(hhdlrel=hhldrel)
+      # set household maintainer flag
+      if ("hhdlrel" %in% names(d)) {
+        d <- d %>% 
+          filter(hhdlrel!=0) %>%
+          mutate(PRIHM=hhdlrel==1)
+      } else if ("prihm" %in% names(d)) {
+        d <- d %>% 
+          filter(prihm!=9) %>%
+          mutate(PRIHM=prihm==1)
+      } else if ("prmain" %in% names(d)) {
+        d <- d %>% 
+          filter(prmain!=9) %>%
+          mutate(PRIHM=prmain==1)
+      } else if ("hmain" %in% names(d)) {
+        d <- d %>% 
+          filter(hmain!=0) %>%
+          mutate(PRIHM=hmain==1)
+      } else {
+        stop(n)
+      }
+      
+      if ("cmacode" %in% names(d)) d<- d %>% 
+        mutate(cma=recode(cmacode,"8"="462","21" = "535")) 
+      
+      if ("age" %in% names(d))  d<- d %>%
+        mutate(age=as.integer(age)) %>%
+        mutate(agegrp=case_when(age <5~1,
+                                age<7~2,
+                                age<10~3,
+                                age<12~4,
+                                age<15~5,
+                                age<18~6,
+                                age<20~7,
+                                age<25~8,
+                                age<30~9,
+                                age<35~10,
+                                age<40~11,
+                                age<45~12,
+                                age<50~13,
+                                age<55~14,
+                                age<60~15,
+                                age<65~16,
+                                age<70~17,
+                                age<75~18,
+                                age<80~19,
+                                age<85~20,
+                                age<90~21,
+                                TRUE ~ 98) %>% as.character)
+      
+      d %>% select(cma,agegrp,Year,PRIHM,weight) %>%
+        mutate(weight=as.numeric(weight))
+    }) %>%
+    bind_rows()
+  
+  pumf_2016 <- foreign::read.spss(getOption("census_2016_pumf_i.sav")) %>%
+    as_tibble()
+  
+  pumf_2016_d <- pumf_2016 %>% mutate(PRIHM=(PRIHM=="Person is primary maintainer")) %>%
+    select(CMA,PRIHM,AGEGRP,weight=WEIGHT) %>%
+    mutate(agegrp=as.integer(AGEGRP) %>% as.character) %>%
+    mutate(Year="2016")
+  
+  cma_codes <- c(
+    "462" ="Montreal",
+    "535"=  "Toronto",
+    "933"="Vancouver"  
+  )
+  
+  pd <- pumf_data %>% 
+    filter(cma %in% names(cma_codes)) %>%
+    mutate(CMA=recode(cma,!!!cma_codes)) %>%
+    bind_rows(pumf_2016_d) %>%
+    mutate(CMA=recode(CMA,"Montreal"="Montréal")) %>%
+    filter(CMA %in% c("Vancouver","Toronto","Montreal","Montréal")) %>%
+    filter(as.integer(agegrp)>=5,as.integer(agegrp)<22) %>%
+    mutate(Age=recode(agegrp,!!!age_labels)) %>%
+    group_by(CMA,Age,PRIHM,Year) %>%
+    summarize(across("weight",sum),.groups="drop") %>%
+    group_by(CMA,Age,Year) %>%
+    mutate(share=weight/sum(weight))
+}
+
+
+pumf_cma_timeline <- mountainmathHelpers::simpleCache(get_pumf_cma_timeline(),
+                                                      "pumf_cma_timeline.Rda",
+                                                      path=here::here("data"),
+                                                      refresh = FALSE)
+
+collect_and_close <- function(data){
+  d<-collect(data)
+  DBI::dbDisconnect(data$src$con)
+  d
+}
+
+maintainers_2021 <- get_cansim_sqlite("98-10-0231") |>
+  filter(`Structural type of dwelling (10)`=="Total - Structural type of dwelling",
+         `Condominium status (3)`=="Total - Condominium status",
+         `Household type including census family structure (16)`=="Total - Household type including census family structure",
+         `Statistics (3C)`=="Number of private households") |>
+  select(GeoUID,Age=`Age of primary household maintainer (15)`,Tenure=`Tenure (4)`,Value=VALUE) |>
+  collect_and_close()
+
+ages <- maintainers_2021 |> filter(!grepl("Total - ",Age)) |> pull(Age) |> unique()
+
+all_2021 <- get_cansim_sqlite("98-10-0042") |>
+  filter(`Gender (3)`=="Total - Gender",
+         `Structural type of dwelling (9)`=="Total - Structural type of dwelling") |>
+  select(GeoUID,Name=GEO,Age=`Age (20)`,Value=VALUE) |>
+  collect_and_close() |>
+  mutate(Year="2021") 
+
+maintainers_2016 <- get_sqlite_xtab("98-400-X2016226","https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=110568&OFT=CSV") |>
+  filter(`Structural type of dwelling`=="Total - Structural type of dwelling",
+         `Household type including census family structure`=="Total - Household type including census family structure",
+         `Condominium status`=="Total - Condominium status") |>
+  collect_and_normalize_xtab(disconnect = TRUE) |>
+  select(GeoUID=`GEO_CODE (POR)`,Age=`Age of primary household maintainer`,Tenure,Value)
+
+
+all_2016 <- get_sqlite_xtab("98-400-X2016028","https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=109647&OFT=CSV") |>
+  filter(`Family characteristics of adults`=="Total - Family characteristics of adults (restricted to persons aged 15 and over)",
+         Sex=="Total - Sex",
+         `Census year`=="2016") |>
+  collect_and_normalize_xtab(disconnect = TRUE) |>
+  select(GeoUID=`GEO_CODE (POR)`,Name=GEO_NAME,Age,Year=`Census year`,Value)
+
+main_cma_info <- list_census_regions("CA21") |> 
+  filter(level %in% c("CMA","C")) |>
+  arrange(-pop) |>
+  mutate(GeoUID=substr(region,nchar(region)-2,nchar(region)),
+         Name=gsub(" \\(.+$","",name)) |>
+  mutate(short_cma=substr(GeoUID,3,5)) |>
+  mutate(GeoUID=recode(GeoUID,"01"="11124"))
+
+all_base <- bind_rows(all_2021,all_2016) |> 
+  filter(Age %in% unique(all_2016$Age)) |>
+  mutate(GeoUID=recode(GeoUID,"01"="11124")) |>
+  mutate(Age=recode(Age,"75 to 79 years"="75 to 84 years", "80 to 84 years"="75 to 84 years")) |>
+  group_by(GeoUID,Age,Year) |>
+  summarise(Total=sum(Value),.groups="drop") #|>
+  #left_join(all_2021 |> select(GeoUID,Name) |> unique(),by="GeoUID")
+
+tenure_types <- c("Total - Tenure","Owner","Renter")
+
+data <- bind_rows(maintainers_2021 |> mutate(Year="2021"),
+                  maintainers_2016 |> mutate(Year="2016")) |>
+  mutate(GeoUID=recode(GeoUID,"01"="11124")) |>
+  rename(Maintainers=Value) |>
+  filter(Tenure %in% tenure_types) |>
+  left_join(all_base, by=c("GeoUID","Age","Year")) |>
+  filter(!grepl("^Total - ",Age)) |>
+  mutate(rate=Maintainers/Total) |>
+  left_join(main_cma_info |> select(GeoUID,Name=name)|>   mutate(GeoUID=recode(GeoUID,"01"="11124")),by="GeoUID") 
+  
+
+base_shares <- data |>
+  filter(GeoUID=="11124",
+         Tenure=="Total - Tenure",
+         Year=="2021") |>
+  mutate(Share=Total/sum(Total)) |>
+  select(Age,Share)
+```
+
+```{r}
+generation_data <- pumf_cma_timeline %>% 
+  filter(Age!="12 to 14 years") %>%
+  mutate(Age=recode(Age, "15 to 17 years"="15 to 19 years", "18 to 19 years"="15 to 19 years",
+                    "75 to 79 years"="75 to 84 years",    "80 to 84 years"="75 to 84 years")) %>%
+  group_by(CMA,Age,PRIHM,Year) %>%
+  summarize(weight=sum(weight),.groups="drop") %>%
+  group_by(CMA,Age,Year) %>%
+  mutate(share=weight/sum(weight)) %>%
+  ungroup() %>%
+  filter(PRIHM) %>%
+  select(-PRIHM) |>
+  bind_rows(data |> filter(Year=="2021",Name %in% c("Vancouver","Montréal","Toronto"), Tenure=="Total - Tenure") |> 
+              select(CMA=Name,Year,Age,share=rate)) |>
+  mutate(a=as.integer(gsub(" .+$","",Age))) %>% 
+  mutate(Age=factor(Age,levels=filter(.,Year==max(Year),CMA==first(CMA)) %>% arrange(a) %>% pull(Age))) %>%
+  mutate(birth=as.integer(Year)-a) %>%
+  mutate(Generation=cut(birth,
+                        breaks=c(-Inf,1900,1927,1945,1964,1980,1996,Inf)-2,
+                        labels=c("Lost","Great","Silent","Boomer","GenX","Millennial","GenZ"))) %>%
+  mutate(Generation=fct_rev(Generation)) %>%
+  mutate(Year=factor(Year,levels=seq(1971,2021,5))) %>%
+  mutate(Cohort=as.character(birth) %>% factor)
+```
+
+
+```{r hmr_age_group}
+generation_data %>%
+  #filter(Year!="1971") %>%
+  left_join((.) |> filter(Year=="1976") |> summarize(base_share=mean(share),.by=Age),by="Age") |>
+  filter(a<70,a>=20) |>
+  #filter(Year %in% c("1981","2016")) %>%
+  #mutate(Year=fct_rev(Year)) |>
+  mutate(`Birth cohort`=paste0(birth,"-",birth+4)) |>
+  filter(Year %in% c(1976,2021)) |>
+  ggplot(aes(x=Age,y=share,colour=CMA,group=CMA)) + 
+  geom_line() +
+  MetBrewer::scale_colour_met_d("Austria") +
+  #scale_color_viridis_d(option = "turbo") +
+  theme(axis.text.x = element_text(angle=60,hjust=1),
+        legend.position = "bottom") +
+  facet_wrap(~Year) +
+  guides(colour=guide_legend(nrow = 1)) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Household maintainer rates by age group",
+       x=NULL,y="Household maintainer rate",
+       pattern="Year",colour=NULL,
+       caption="StatCan Census 1971 PUMF (individuals), Census 2021 Tables 98-10-0042, 98-10-0231")
+```
+
+This remains a static picture, providing cross-sections of the overall state of the population in the given years. We can make this more dynamic by following fixed birth cohorts over time to see how their household maintainer rates change as they age. Comparing across birth cohorts gives us a better sense of generational change in household maintainer rates. Of note, we don't have full data over the 50 years covered in this graph, so some of the trajectories are only partial.
+
+```{r hmr_birth_cohort}
+generation_data %>%
+  #filter(Year!="1971") %>%
+  left_join((.) |> filter(Year=="1976") |> summarize(base_share=mean(share),.by=Age),by="Age") |>
+  filter(a<70,a>=20) |>
+  #filter(Year %in% c("1981","2016")) %>%
+  #mutate(Year=fct_rev(Year)) |>
+  mutate(`Birth cohort`=paste0(birth,"-",birth+4)) |>
+  filter(birth>=1931) |>
+  ggplot(aes(x=Age,y=share,colour=`Birth cohort`,group=`Birth cohort`)) + 
+  geom_line() +
+  #MetBrewer::scale_colour_met_d("Austria") +
+  scale_color_viridis_d(option = "turbo") +
+  facet_wrap(~CMA) +
+  theme(axis.text.x = element_text(angle=60,hjust=1),
+        legend.position = "bottom") +
+  guides(colour=guide_legend(nrow = 2)) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Household maintainer rates by birth cohort (year born)",
+       x=NULL,y="Household maintainer rate",
+       pattern="Year",
+       caption="StatCan Census 1971 to 2016 PUMF (individuals), Census 2021 Tables 98-10-0042, 98-10-0231")
+```
+
+In Montréal successive birth cohorts trace out similar trajectories, eclipsing the 1931 through 1945 cohorts but then not changing much starting with the 1946-1950 birth cohort. But in Toronto and Vancouver younger cohorts are experiencing significantly lower household formation rates compared to previous generations that persist as people age into their 40s.
+
+Another way to slice the data is to look at how many years households in Toronto and Vancouver lag relative to Montréal's 1956-1960 birth cohort, selecting an age cohort fully covered in our window of observation.
+
+```{r hmr_cohort_year_lag}
+
+reference_distribution <- generation_data |>
+  filter(Cohort==1956) |>
+  summarize(base_share=mean(share),.by=c(a)) |>
+  complete(a=seq(15,55),fill=list(base_share=NA)) |>
+  arrange(a) |>
+  filter(a %in% seq(15,55)) |>
+  mutate(base_share=zoo::na.approx(base_share))
+
+reference_distribution <- generation_data |> filter(Cohort==1956,CMA=="Montréal") |>
+  mutate(base_share=share)
+
+min_share <- min(reference_distribution$base_share)
+max_share <- max(reference_distribution$base_share)
+
+inverse = function (f, lower = -100 , upper = 100) {
+   function (y) uniroot((function (x) f(x) - y), lower = lower, upper = upper)[1]$root
+}
+
+inverse_reference=inverse(approxfun(reference_distribution$a,reference_distribution$base_share),
+                                 lower=min(reference_distribution$a),upper=max(reference_distribution$a))
+
+apply_inverse <- function(y){
+  ifelse(y<=min_share|y>max_share,NA,inverse_reference(y))
+}
+
+generation_data %>%
+  #filter(Year!="1971") %>%
+  left_join((.) |> filter(Year=="1976") |> summarize(base_share=mean(share),.by=Age),by="Age") |>
+  filter(a<=55,a>=20) |>
+  #filter(Year %in% c("1981","2016")) %>%
+  #mutate(Year=fct_rev(Year)) |>
+  mutate(`Birth cohort`=paste0(birth,"-",birth+4)) |>
+  filter(birth>=1946) |>
+  mutate(ref_a=lapply(share,apply_inverse) |> unlist()) |>
+  ggplot(aes(x=Age,y=ref_a-a,colour=`Birth cohort`,group=`Birth cohort`)) + 
+  geom_line() +
+  #MetBrewer::scale_colour_met_d("Austria") +
+  scale_color_viridis_d(option = "turbo") +
+  facet_wrap(~CMA) +
+  theme(axis.text.x = element_text(angle=60,hjust=1),
+        legend.position = "bottom") +
+  guides(colour=guide_legend(nrow = 2)) +
+  scale_y_continuous(labels=scales::comma) +
+  labs(title="Household formation lag relative to 1956 Montréal birth cohort",
+       x=NULL,y="Lag in years",
+       caption="StatCan Census 1971 to 2016 PUMF (individuals), Census 2021 Tables 98-10-0042, 98-10-0231")
+```
+
+Here we see how Toronto and Vancouver are lagging behind their Montréal peers when it comes to forming and maintaining a household, with millennial and GenX households lagging by over 10 years by the time they reach 40. In other words, Millennials and GenX household formation rates by the time they reach 40 in Vancouver and Toronto are about equivalent to what their peers in Montréal reached in their late 20s. 
+
+We have interpreted this as [suppressed household formation](https://doodles.mountainmath.ca/blog/2022/10/03/still-short-suppressed-households-in-2021/) and a partial measure of housing shortfall. While we believe that this interpretation is generally correct, a potential alternative interpretation is that this trend [may be explained by different cultural preferences, which we've also attempted to quantify](https://doodles.mountainmath.ca/blog/2022/05/06/estimating-suppressed-household-formation/), and further work on this would be useful. Nonetheless, we believe that estimates of suppressed households offer a useful metric to assess housing shortages.
+
+
+## Household tightness
+Specifying the role that housing plays in our suppressed household measure is hard to pin down. But we can look at related metrics of housing outcomes to see if there's more evidence of squeeze. Maybe it's not there. People could be sharing more often because there's lots of room to do so. Imagine we have a large reservoir of big houses, and people choose to form more complex households as the average household size of MHUs has been declining over time due to dropping fertility rates, people coupling up later, and people living longer.
+
+Ideally we would want to look at data on how people distribute over floor space, but we simply don't have reliable floor space data in Canada. The [Canadian Housing Statistics Program](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=4610005301) has some information on living area, but only for select types of housing and only for recent years and not (yet) covering all of Canada. The [Survey of Household Energy Use](https://www.statcan.gc.ca/en/statistical-programs/instrument/3881_Q2_V8) has some data on "heated living area" going back to the 1990s, with some aggregate estimates [made available by NRCAN](https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/menus/sheu/2019/tables.cfm), but it is not clear how these estimates are derived and how reliable they are. 
+
+Another way to understand how cramped or roomy living situations are is to look at the number of rooms available by household size. The census keeps track of the [number of rooms in a dwelling unit](https://www12.statcan.gc.ca/census-recensement/2021/ref/dict/az/Definition-eng.cfm?ID=dwelling-logements012) as well as household size, giving us long timelines to work with. This still poses some challenges insofar as people's preferences for how to slice up homes have changed too, with for example people sometimes tearing down interior walls, e.g. between dining room and living room, when remodelling. This results in fewer rooms, but the home is still as "roomy" as before. Some of that can be controlled for by comparing across different regions in Canada. 
+
+Yet another complication is that real incomes have grown over time, and housing demand increases strongly with income, with [most estimates pegging the demand elasticity of income to be greater than 1](https://www.jstor.org/stable/j.ctv13gvj30). This means that we should expect to see an increase in *roominess* over time as incomes grow.
+
+Understanding these complications, let's take a look at the distribution of number of rooms by household size, and how this varies across census years and metro areas.
+
+```{r rooms_timeline, fig.height=6}
+get_rooms_data <- function(main_cmas){
+
+  get_geo_table <- function(year,level="CSD"){
+    year=as.character(year)
+    path <- file.path(tempdir(),paste0("census_geo_table_",year,"_",level,".Rda"))
+    if (!file.exists(path)) {
+      if (level=="CSD") {
+        url_geo_table <-list(`1981`="https://www12.statcan.gc.ca/English/census81/data/tables/Geo-index-eng.cfm?TABID=5&LANG=E&APATH=3&DETAIL=1&DIM=0&FL=A&FREE=1&GC=0&GID=1375808&GK=0&GRP=1&PID=113751&PRID=0&PTYPE=113743&S=0&SHOWALL=No&SUB=0&Temporal=1986&THEME=134&VID=0&VNAMEE=&VNAMEF=&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0",
+                             `1986` = "https://www12.statcan.gc.ca/English/census86/data/tables/Geo-index-eng.cfm?TABID=5&LANG=E&APATH=3&DETAIL=1&DIM=0&FL=A&FREE=1&GC=0&GID=1362262&GK=0&GRP=1&PID=113685&PRID=0&PTYPE=113679&S=0&SHOWALL=No&SUB=0&Temporal=1986&THEME=133&VID=0&VNAMEE=&VNAMEF=&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0",
+                             `1991` = "https://www12.statcan.gc.ca/English/census91/data/profiles/Geo-index-eng.cfm?TABID=5&LANG=E&APATH=3&DETAIL=1&DIM=0&FL=A&FREE=1&GC=0&GID=3478&GK=0&GRP=1&PID=30&PRID=0&PTYPE=3&S=0&SHOWALL=No&SUB=0&Temporal=1991&THEME=113&VID=0&VNAMEE=&VNAMEF=&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0")
+      } else if (level=="CMA") {
+        url_geo_table <-list(`1981`="https://www12.statcan.gc.ca/English/census81/data/tables/Geo-index-eng.cfm?TABID=5&LANG=E&APATH=3&DETAIL=1&DIM=0&FL=A&FREE=1&GC=0&GID=0&GK=0&GRP=1&PID=113749&PRID=0&PTYPE=113743&S=0&SHOWALL=No&SUB=0&Temporal=1986&THEME=134&VID=0&VNAMEE=&VNAMEF=&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0",
+                             `1986` = "https://www12.statcan.gc.ca/English/census86/data/tables/Geo-index-eng.cfm?TABID=5&LANG=E&APATH=3&DETAIL=1&DIM=0&FL=A&FREE=1&GC=0&GID=0&GK=0&GRP=1&PID=113686&PRID=0&PTYPE=113679&S=0&SHOWALL=No&SUB=0&Temporal=1986&THEME=133&VID=0&VNAMEE=&VNAMEF=&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0",
+                             `1991` = "https://www12.statcan.gc.ca/English/census91/data/profiles/Geo-index-eng.cfm?TABID=5&LANG=E&APATH=3&DETAIL=1&DIM=0&FL=A&FREE=1&GC=0&GID=0&GK=0&GRP=1&PID=234&PRID=0&PTYPE=3&S=0&SHOWALL=No&SUB=0&Temporal=1991&THEME=113&VID=0&VNAMEE=&VNAMEF=&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0",
+                             `1996`="https://www12.statcan.gc.ca/English/census96/data/tables/Geo-index-eng.cfm?TABID=5&LANG=E&APATH=3&DETAIL=1&DIM=0&FL=A&FREE=1&GC=0&GID=198719&GK=0&GRP=1&PID=33046&PRID=0&PTYPE=89103&S=0&SHOWALL=No&SUB=0&Temporal=2006&THEME=16&VID=0&VNAMEE=&VNAMEF=&D1=0&D2=0&D3=0&D4=0&D5=0&D6=0")
+      }
+      
+      url <- url_geo_table[[year]]
+      ls <- rvest::read_html(url) |>
+        rvest::html_element("body div#wb-main div#wb-main-container div#wb-main-column div.span-8 ol") |>
+        rvest::html_elements("li a")
+      
+      t<-ls |> purrr::map_df(function(l){
+        list(id=rvest::html_attr(l,"id"), 
+             title=rvest::html_attr(l,"title"),
+             name=rvest::html_text(l),
+             href=rvest::html_attr(l,"href"))
+      })
+      if (grepl("\\(SCA\\d+\\)",t$title[1])) {
+        t <- t |>
+          filter(!grepl(" - \\d+",title)) |>
+          mutate(GeoUID=gsub("\\(SCA","(",title)) |>
+          mutate(GeoUID=str_extract(GeoUID,"\\(\\d+.*\\d*\\)") |> gsub("\\(|\\)","",x=_)) |>
+          mutate(GeoUID=ifelse(nchar(GeoUID)==5,paste0(substr(GeoUID,4,5),substr(GeoUID,1,3)),GeoUID)) |>
+          mutate(GeoUID=gsub("^00","",GeoUID))
+      } else {
+        t <- t |>
+          mutate(GeoUID=str_extract(title,"\\(\\d+.*\\d*\\)") |> gsub("\\(|\\)","",x=_))
+      }
+      saveRDS(t,path)
+    } else {
+      t<-readRDS(path)
+    }
+    t
+  }  
+  
+  long_ids <- list_census_regions("2021") |>
+    filter(level=="CMA") |>
+    mutate(short_id=substr(region,nchar(region)-2,nchar(region))) |>
+    filter(short_id %in% main_cmas) |>
+    pull(region)
+  
+  if (505 %in% main_cmas) {
+    long_ids <- c(long_ids,"35505","24505")
+  }
+
+  
+  get_rooms_1996 <- function(cma,tenure) {
+    gid <- get_geo_table("1996","CMA") |>
+      filter(GeoUID==cma) |>
+      pull(id) |>
+      gsub(".+G","",x=_)
+    tenure_lookup <- c("Total - Tenure"="0",
+                       "Owner"="1",
+                       "Renter"="2")
+    url <- paste0("https://www12.statcan.gc.ca/English/census96/data/tables/File.cfm?S=0&LANG=E&A=R&PID=33046",
+                  "&GID=",gid,"&D1=",tenure_lookup[tenure],"&D2=0&D3=0&D4=0&D5=0&D6=0&OFT=CSV")
+    tmp <- tempfile()
+    download.file(url,tmp)
+    d<-suppressWarnings(read_csv(tmp,skip=3,col_types = cols(.default = "c"),locale = locale(encoding = "Windows-1252")))
+    end_index <- which(d$`Household Size (8)`=="Note")
+    name <- read_lines(tmp,n_max = 1,skip=1,locale = locale(encoding = "Windows-1252")) |>
+      gsub(".+ = ","",x=_) |>
+      gsub(" \\[.+","",x=_) |>
+      gsub('"',"",x=_)
+      
+    d |> slice(1:(end_index-1)) |>
+      rename(`Household size`=`Household Size (8)`) |>
+      pivot_longer(-`Household size`,names_to="Rooms",values_to = "Value") |>
+      filter(!grepl("\\.\\.\\.",Rooms)) |>
+      mutate(GeoUID=cma,Tenure=tenure,Name=name) |>
+      mutate(Value=na_if(Value,"N")) |>
+      mutate(Value=as.numeric(Value, na = c("x","N", "F", "...", "..", NA))) |>
+      filter(!(Rooms %in% c("1 to 3 rooms","4 or 5 rooms","6 or 7 rooms","8 or 9 rooms")))
+  }
+  
+  tenures <- c("Total - Tenure","Owner","Renter")
+  rooms_1996 <- map_df(main_cmas,\(cma)map_df(tenures,\(tenure)get_rooms_1996(cma,tenure))) |>
+    mutate(Year="1996")
+
+  rooms_2001 <- get_sqlite_xtab("95F0323X2001004",
+                                 url="https://www12.statcan.gc.ca/English/census01/products/standard/themes/OpenDataDownload.cfm?PID=59172",
+                                 format = "python_xml") |>
+  filter(GeoUID %in% long_ids) |>
+  collect_and_normalize_xtab(disconnect = TRUE) |>
+  select(GeoUID,Name,`Household size`=NUnits,Rooms,Year,Value) |>
+    mutate(Tenure="Total - Tenure")
+
+
+  rooms_2006 <- get_sqlite_xtab("97-554-XCB2006015",
+                                 url="https://www12.statcan.gc.ca/census-recensement/2006/dp-pd/tbt/OpenDataDownload.cfm?PID=89048",
+                                 format = "python_xml") |>
+  filter(GeoUID %in% long_ids) |>
+  collect_and_normalize_xtab(disconnect = TRUE) |>
+  select(GeoUID,Name,`Household size`=NUnits,Rooms,Year,Value) |>
+    mutate(Tenure="Total - Tenure")
+
+
+  
+rooms_2011 <- get_sqlite_xtab("99-014-X2011027",
+                                 url="https://www12.statcan.gc.ca/nhs-enm/2011/dp-pd/dt-td/OpenDataDownload.cfm?PID=106635",
+                                 format = "python_xml") |>
+  filter(GeoUID %in% long_ids,
+         BedRm=="Total - Number of bedrooms",
+         B13_PersonsPerRoom_Groups=="Total - Number of persons per room",
+         B13_HHtype=="Total - Household type",
+         NOS=="Total - Housing suitability") |>
+  collect_and_normalize_xtab(disconnect = TRUE) |>
+  select(GeoUID,Name,`Household size`=NUnits,Rooms,Tenure=Tenur,Year,Value) 
+
+
+
+rooms_2016 <- get_sqlite_xtab("98-400-X2016223",
+                                 url="https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/CompDataDownload.cfm?LANG=E&PID=110566&OFT=CSV") |>
+  filter(`GEO_CODE (POR)` %in% main_cmas,
+         `Number of bedrooms`=="Total - Number of bedrooms",
+         `Number of persons per room`=="Total - Number of persons per room",
+         `Household type including census family structure`=="Total - Household type including census family structure",
+         `Housing suitability`=="Total - Housing suitability") |>
+  collect_and_normalize_xtab(disconnect = TRUE) |>
+  select(GeoUID=`GEO_CODE (POR)`,Name=GEO_NAME,`Household size`,Rooms=`Number of rooms`,Tenure,Value) 
+
+rooms_2021 <- get_cansim_sqlite("98-10-0235") |>
+  filter(GeoUID %in% main_cmas,
+         `Number of bedrooms (6)`=="Total - Number of bedrooms",
+         `Number of persons per room (5)`=="Total - Number of persons per room",
+         #`Household type including census family structure (16)`=="Total - Household type including census family structure",
+         `Housing suitability (6)`=="Total - Housing suitability",
+         `Statistics (3C)`=="Number of private households") |>
+  collect_and_normalize(disconnect = TRUE) |>
+  select(GeoUID,Name=GEO,`Household size`=`Household size (8)`,Rooms=`Number of rooms (12)`,Tenure=`Tenure (4)`,Value=VALUE) |>
+  select(-Name) |>
+  left_join(rooms_2016 |> select(GeoUID,Name) |> unique(),by="GeoUID")
+
+
+bind_rows(rooms_1996, # |> select(-Name) |> left_join(rooms_2016 |> select(GeoUID,Name) |> unique(),by="GeoUID"),
+          rooms_2001,
+          rooms_2006,
+          rooms_2011,
+          rooms_2016 |> mutate(Year="2016"),
+          rooms_2021 |> mutate(Year="2021")) |>
+  filter(grepl("^\\d+ ",`Household size`),!grepl("Total|Average",Rooms)) |>
+  mutate(hhs=str_extract(`Household size`,"^\\d+") |> unlist() |> as.integer(),
+         rms=str_extract(Rooms,"^\\d+") |> unlist() |> as.integer()) 
+}
+
+census_regions <- list_census_regions("2021") |>
+  filter(level %in% c("C","CMA")) |>
+  mutate(short_id=substr(region,nchar(region)-2,nchar(region))) |>
+  filter(short_id %in% c("01",main_cmas))
+
+uour <- c("2006","2021") |>
+  map_df(\(y)get_census(y,regions=as_census_region_list(census_regions)) |> mutate(Year=y)) |>
+  mutate(uour=1-Households/Dwellings)
+
+uour_change <- uour |> 
+  select(Name=`Region Name`,name=Year,value=uour) |> 
+  mutate(Name=gsub(" \\(.+","",Name)) |> 
+  pivot_wider() |>
+  mutate(change=`2021`-`2006`)
+
+mountainmathHelpers::simpleCache(get_rooms_data(main_cmas),
+            paste0("room_tightness_",paste(main_cmas,collapse = "_"),".Rda"),
+            path=here::here("data"),refresh = FALSE) |>
+  mutate(Name=gsub("Hull","Gatineau",Name)) |>
+  mutate(Rooms=recode(Rooms,"1 room"="1 to 2 rooms","2 rooms"="1 to 2 rooms","10 or more rooms"="10+ rooms")) |>
+  mutate(Rooms=factor(Rooms,levels=c("1 to 2 rooms",paste0(seq(2,9)," rooms"),"10+ rooms"))) |>
+  summarize(Value=sum(Value),.by=c(GeoUID,Name,Tenure,Rooms,`Household size`,Year)) |>
+  mutate(Tenure=recode(Tenure,"Total - Housing tenure"="Total - Tenure")) |>
+  mutate(`Household size`=recode(`Household size`,"5 or more persons"="5+ persons",
+                                 "5 persons"="5+ persons","6 or more persons"="5+ persons")) |>
+  filter(Tenure %in% c("Total - Tenure","Owner","Renter")) |>
+  filter(Tenure=="Total - Tenure") |>
+  ggplot(aes(y=Year,x=Value,fill=Rooms)) +
+  geom_bar(stat="identity",position="fill") +
+  facet_grid(Name~`Household size`) +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Households tightness, number of rooms by household size",
+       y=NULL,x="Share",
+       fill="Number of rooms",
+       caption="StatCan Tables 95F0204XDB96002, 95F0323X2001004, 97-554-XCB2006015, 99-014-X2011027, 98-400-X2016223, 98-10-0235")
+```
+
+A lot of data is captured here, and overall this suggests that 2006 was peak "roominess" across Canada, having generally near the maximum number of rooms for a given household size and metro area. Roominess was growing in the period before 2006, and it has been declining since. The decline in roominess is unexpected, given rising real incomes over this time period. This could reflect trends in hardship not well captured by Core Housing Need, but possibly also an increasingly urban population, making trades of room for centrality. At the same time, even this measure may understate the extent of rising hardship. After all, we're still only counting children in joint custody situations once, and there has been no decline in single parent households or joint custody arrangements accompanying the decline in household roominess. Moreover, the share of homes in Canada not occupied by usual residents was stable (actually declining slightly) over the 2006-2021 time period, indicating that secondary residences or vacation homes are unlikely to have offset this decline in roominess.
+
+The peak in 2006 is also interesting for many reasons, not least of which because of what happened between 2006 and 2011. 2008-2009's Great Recession and Financial Crisis saw a dramatic drop in the construction of housing. This carried over from the USA into Canada even though our housing prices didn't drop as much and [we had nowhere near similar foreclosure rates](https://www.cmhc-schl.gc.ca/professionals/housing-markets-data-and-research/housing-data/data-tables/mortgage-and-debt/canadian-us-mortgage-arrears-foreclosure-rates-archived). If, as [Kevin Erdmann makes the case](https://www.mercatus.org/research/policy-briefs/housing-was-undersupplied-during-great-housing-bubble), rising construction rates up to the 2008-2009 crisis were actually justified in the USA, then the case is potentially even stronger for Canada. And we can see the effects of the pullback in building since 2006 on the decreasing roominess of housing relative to household size.
+
+```{r completions}
+tbats_trend <- function(value,frequency,date) {
+  year <-date |> strftime("%Y") |> as.integer() |> min()
+  ts <- ts(value,frequency=frequency,start=year)
+  fit <- forecast::tbats(ts)
+  components <- forecast::tbats.components(fit)
+  out <- components |>
+    as.data.frame() %>%
+    #mutate(date=rownames(.)) |>
+    as_tibble()
+  
+  result <- out$level
+  if (!is.null(fit$lambda))
+    result <- forecast::InvBoxCox(result,fit$lambda)
+  result
+}
+
+completions <- get_cansim("34-10-0135") 
+population_estimates <- get_cansim("17-10-0009")
+
+completions |>
+  filter(GEO=="Canada") |>
+  filter(`Housing estimates` %in% c("Housing completions","Housing starts")) |>
+  filter(`Type of unit`=="Total units" ) |>
+  filter(`Seasonal adjustment` == "Unadjusted") |>
+  left_join(population_estimates |>select(GEO,Date,Population=val_norm),by=c("GEO","Date")) |>
+  mutate(rate=val_norm/Population*1000) |>
+  mutate(Trend=tbats_trend(rate,4,Date),.by=`Housing estimates`) |>
+  mutate(Trend2=tbats_trend(val_norm,4,Date),.by=`Housing estimates`) |>
+  filter(Date>=as.Date("1996-04-01")) |>
+  ggplot(aes(x=Date,y=Trend2,colour=`Housing estimates`)) +
+  geom_line() +
+  expand_limits(y=0) +
+  scale_y_continuous(labels=scales::comma) +
+  theme(legend.position = "bottom") +
+  scale_colour_manual(values=sanzo::duos$c070) +
+  labs(title="Housing starts and completions in Canada",
+       y="Quarterly number of units, seasonally adjusted",
+       x=NULL, colour=NULL,
+       caption="StatCan Tables 34-10-0135, 17-10-0009")
+```
+
+Raw starts and completions should be interpreted with caution, and do not account for demolitions or changes in CMHC estimation methods. But we can clearly see here the dramatic drop-off in starts after the Financial Crisis, followed by a decline in completions. We can only wonder where Canada would be now in terms of housing had the Crisis not spread North from the USA. 
+
+Of course, in addition to historical variation, we've also got variation in roominess by region. We can take a closer look at how this compares across metro areas in 2021, and add in variations by tenure.
+
+```{r rooms_tenure}
+mountainmathHelpers::simpleCache(get_rooms_data(main_cmas),
+            paste0("room_tightness_",paste(main_cmas,collapse = "_"),".Rda"),
+            path=here::here("data")) |>
+  mutate(Name=gsub("Hull","Gatineau",Name)) |>
+  mutate(Rooms=recode(Rooms,"1 room"="1 to 2 rooms","2 rooms"="1 to 2 rooms","10 or more rooms"="10+ rooms")) |>
+  mutate(Rooms=factor(Rooms,levels=c("1 to 2 rooms",paste0(seq(2,9)," rooms"),"10+ rooms"))) |>
+  summarize(Value=sum(Value),.by=c(GeoUID,Name,Tenure,Rooms,`Household size`,Year)) |>
+  mutate(Tenure=recode(Tenure,"Total - Housing tenure"="Total - Tenure")) |>
+  mutate(`Household size`=recode(`Household size`,"5 or more persons"="5+ persons")) |>
+  filter(Tenure %in% c("Total - Tenure","Owner","Renter")) |>
+  mutate(Tenure=factor(Tenure, levels=c("Total - Tenure","Owner","Renter"))) |>
+  filter(Year=="2021") |>
+  ggplot(aes(y=Name,x=Value,fill=as.factor(Rooms))) +
+  geom_bar(stat="identity",position="fill") +
+  facet_grid(Tenure~`Household size`) +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Households tightness in 2021, number of rooms by household size and tenure",
+       y=NULL,x="Share",
+       fill="Number of rooms",
+       caption="StatCan Table 98-10-0235")
+```
+
+Here we see that renter households tend to have significantly less room than owner households, aligning with [our previous observation that renter households tend to be larger given a fixed number of bedrooms](https://doodles.mountainmath.ca/blog/2019/04/20/a-bedroom-is-a-bedroom/). Owner households tend to be richer, and richer people consume more housing.
+
+However, this basic fact does not hold when comparing across metro areas. On average people in Vancouver and Toronto have higher incomes and higher wealth than their counterparts in Montreal, but lower levels of roominess. It's tricky to argue that people in Vancouver and Toronto simply prefer to have fewer rooms than people in other urbanized parts of Canada. This is very likely yet another sign of a housing shortage and people economizing in response to rising prices.
+
+Interestingly, the Core Housing Need metric does incorporate a measure of roominess (suitability, as determined by whether a given household can be understood as fitting into bedrooms according to National Occupancy Standards), but the crudeness of the metric, in conjunction with the alternative affordable housing rule and the taking of existing households as given, all means it doesn't pick up the decline in household roominess since 2006 or variations in roominess by metro area. 
+
+## Migration impacts
+We've seen how relying upon existing households for metrics of housing need creates problems insofar as existing residents of a place may wish to distribute themselves differently. But what about non-residents? What about those forced out or never able to arrive? 
+
+*Leaving Vancouver* letters seem to have moved from novelty to [well worn cliche](https://thetyee.ca/Opinion/2017/10/30/I-Left-Vancouver/) and now to the point where people just move away without the fanfare. Housing always featured prominently in the *Leaving Vancouver* letters, but motivations are complex and the effects of housing on migration are difficult to identify. For this post we will have to be satisfied with some weak evidence showing that shifts in migration over time are consistent with the idea that housing pressures impact migration paths, but we don't present enough evidence to claim that housing pressures are the cause of that shift.
+
+We conceptualize housing pressures to impact migration most at the local and regional level, and less so at inter-provincial and international levels. This is consistent with ["reason for move" data](https://homefreesociology.com/2019/11/24/why-do-people-move-new-data-mysteries-and-fundamental-rights/), where housing reasons for move dominate more local levels, but recede as a deciding factor as move distance increases. So here we focus on intra-provincial migration. Are we seeing less net in-migration to Metro Vancouver from other parts of the province than we used to see in the past?
+
+
+```{r}
+d5.1 <- get_cansim_sqlite("17-10-0141",auto_refresh = TRUE) %>%
+  filter(GEO=="Vancouver (CMA), British Columbia") %>%
+  collect_and_normalize(default_month = 1,disconnect = TRUE) 
+d5.2 <- get_cansim_sqlite("17-10-0141",auto_refresh = TRUE) %>%
+  filter(`Geography of destination`=="Vancouver (CMA), British Columbia") %>%
+  collect_and_normalize(default_month = 1,disconnect = TRUE) 
+
+d6.1 <- get_cansim_sqlite("17-10-0087",auto_refresh = TRUE) %>%
+  filter(GEO=="Vancouver, British Columbia") %>%
+  collect_and_normalize(default_month = 1,disconnect = TRUE)
+d6.2 <- get_cansim_sqlite("17-10-0087",auto_refresh = TRUE) %>%
+  filter(`Geography of destination`=="Vancouver, British Columbia") %>%
+  collect_and_normalize(default_month = 1,disconnect = TRUE)
+
+net_migration <- get_cansim_sqlite("17-10-0136",auto_refresh = TRUE) %>%
+  filter(Sex=="Both sexes",
+         `Components of population growth`=="Net intraprovincial migration") %>%
+  collect_and_normalize(disconnect = TRUE) %>%
+  select(REF_DATE,Date,GeoUID,GEO,`Age group`,value=val_norm)
+
+
+migration_data <- get_cansim_sqlite("17-10-0004",auto_refresh = TRUE) %>% filter(GeoUID=="59933") %>%
+  filter(`Migration movement`!="Net-migration") %>%
+  collect_and_normalize(default_month = 1,disconnect = TRUE) %>%
+  bind_rows(d6.1 %>% mutate(`Migration movement`="Out-migration")) %>%
+  bind_rows(d6.2 %>% mutate(`Migration movement`="In-migration") %>%
+              mutate(`Geography of destination`=GEO,
+                     GEO="Vancouver, British Columbia")) %>%
+  bind_rows(d5.1 %>% mutate(`Migration movement`="Out-migration")) %>%
+  bind_rows(d5.2 %>% mutate(`Migration movement`="In-migration") %>%
+              mutate(`Geography of destination`=GEO,
+                     GEO="Vancouver (CMA), British Columbia")) %>%
+  #filter(`Migration movement` !="Net-migration") %>%
+  mutate(value=case_when(`Migration movement`=="Out-migration" ~ -val_norm, TRUE ~ val_norm)) %>%
+  mutate(Province=gsub("^.+, ","",`Geography of destination`)) %>%
+  filter(!grepl("/",Province)) %>%
+  mutate(Province=recode(Province,"Northwest Territoires"="Northwest Territories")) %>%
+  group_by(Date,Province,`Migration movement`) %>%
+  summarise(value=sum(value),.groups="drop") %>%
+   bind_rows((.) %>%
+              group_by(Date,Province) %>% summarize(value=sum(value),
+                                                    .groups="drop") %>%
+              mutate(`Migration movement`="Net migration")) %>%
+  mutate(Period=paste0(as.integer(strftime(Date,"%Y"))-1," - ",strftime(Date,"%Y"))) 
+```
+
+```{r yvr_intraprovincial}
+migration_data %>% 
+  filter(Province=="British Columbia") %>%
+  bind_rows(net_migration |> 
+              mutate(`Migration movement`="Net migration", Period=gsub("/"," - ",REF_DATE)) |>
+              filter(!(Period %in% migration_data$Period),`Age group`=="All ages",GeoUID=="933")) |>
+ggplot(aes(x=Period,y=value,fill=`Migration movement`)) +
+  geom_bar(stat="identity",data = ~filter(.,`Migration movement`!="Net migration")) +
+  geom_point(data=~filter(.,`Migration movement`=="Net migration"),aes(shape=`Migration movement`),fill=NA) +
+  scale_y_continuous(labels=scales::comma) +
+  theme_bw() +
+  scale_shape_manual(values = c("Net migration"=3),name=NULL) +
+  scale_fill_manual(values=sanzo::duos$c085) +
+  geom_smooth(method="lm",formula=y~x,aes(group=`Migration movement`),
+              data = ~filter(.,`Migration movement`!="Net migration"),se=FALSE,colour="black",fill=NA) +
+  geom_smooth(method="lm",formula=y~x,aes(group=`Migration movement`),
+              data = ~filter(.,`Migration movement`=="Net migration"),se=FALSE,colour="black",fill=NA,linetype="dashed") +
+  theme(axis.text.x = element_text(angle=60,hjust=1),
+        legend.position = "bottom") +
+  labs(title="Metro Vancouver intraprovincial migration",
+       subtitle="Annual values and linear fit",
+       x=NULL,y=NULL,
+       caption="StatCan Tables 17-10-0141, 17-10-0087, 17-10-0004")
+```
+
+This shows a declining trend in intra-provincial in-migration, and net-migration, and an increasing trend in out-migration between 1999 and 2021, the last year for which we have gross migration data. To better understand these shifts we can look at the difference in age-specific intra-provincial net migration rates at the beginning and the end of our time frame.
+
+
+```{r yvr_net_intraprovincial_age}
+library(ggtext)
+
+age_labels <- c(setNames(paste0(seq(0,90,5)," years"),paste0(seq(0,90,5)," years")),"90 years and older"="90+ years")
+net_migration %>%
+  filter(GeoUID=="933") %>%
+  filter(grepl("^\\d+ years$|^-1 year|^1 year|90 years and older",`Age group`)) %>%
+  group_by(GEO,`Age group`) %>%
+  arrange(Date) %>%
+  #mutate(mean=zoo::rollmean(value,k=3,fill=NA)) %>%
+  #filter(!is.na(mean)) %>%
+  #summarise(start=first(mean,order_by = Date),end=last(mean,order_by = Date),.groups="drop") %>%
+  summarise(start=first(value,order_by = Date),end=last(value,order_by = Date),.groups="drop") %>%
+  ggplot(aes(x=`Age group`)) +
+  geom_point(aes(y=start),colour="steelblue",size=2) +
+  geom_point(aes(y=end),colour="brown",size=2) +
+  geom_segment(aes(y=start,yend=end,xend=`Age group`)) +
+  facet_wrap(~GEO) +
+  scale_x_discrete(breaks=names(age_labels),
+                   labels=age_labels) +
+  theme(plot.title  = element_markdown(lineheight = 1.2),
+        axis.text.x = element_text(angle=90,hjust=1,vjust = 0.5)) +
+  labs(y="Annual net intraprovincial migration flows",x=NULL,
+       #subtitle = "Mean <i style='color:steelblue;'>2001/2004</i> vs mean <i style='color:brown;'>2019/2022</i> net migration flows",
+       title = paste0("<i style='color:steelblue;'>",min(net_migration$REF_DATE),"</i> vs <i style='color:brown;'>",max(net_migration$REF_DATE),"</i> net intraprovincial migration flows"),
+       caption="StatCan Table 17-10-0136")
+
+```
+
+Intra-provincial migration rates have dropped for almost all age groups, but not by the same amount. The drop in net migration rates is most pronounced for young children, neutral for ages starting university ([hello UBC](https://pair.cms.ok.ubc.ca/wp-content/uploads/sites/145/2023/03/UBC-Annual-Enrolment-Report-2022-23.pdf)!), and quickly dropping off again for young adults thereafter. Around age 40, the drop-off from 2001/2002 rates reduces, before again dropping below the baseline trend. We might imagine this as reflecting the decline in housing accessibility for young adults, matching a corresponding decline in perceptions of achievable opportunity in Metro Vancouver. By 40, selection effects may have kicked in, with only those who have achieved decent housing outcomes or adjusted to alternatives remaining. This suggests how causal forces within the relationship may flip after age 40, with older home owners increasingly moving out over recent history as a way of cashing in on selling their homes. After the age of 55 the net migration rates once again converge toward the 2001/2002 levels.
+
+The narrative we offer tying intra-provincial migration patterns to housing affordability seems plausible, but requires more research. Moreover, it's worth keeping in mind that 2021/2022 was still a year where people were responding to the upheavals of the pandemic. Given possible pandemic impacts on migration patterns, we repeat this with 2018/2019 as the final year, which shows very similar patterns, showing that especially young adults are increasingly leaving the region on net, with the exception of people around the age they start university and people around 40 years old.
+
+
+```{r yvr_net_intraprovincial_age_pre_covid}
+pd <- net_migration %>%
+  filter(GeoUID=="933") %>%
+  filter(grepl("^\\d+ years$|^-1 year|^1 year|90 years and older",`Age group`)) |>
+  filter(REF_DATE<="2018/2019")
+
+pd %>%
+  group_by(GEO,`Age group`) %>%
+  arrange(Date) %>%
+  #mutate(mean=zoo::rollmean(value,k=3,fill=NA)) %>%
+  #filter(!is.na(mean)) %>%
+  #summarise(start=first(mean,order_by = Date),end=last(mean,order_by = Date),.groups="drop") %>%
+  summarise(start=first(value,order_by = Date),end=last(value,order_by = Date),.groups="drop") %>%
+  ggplot(aes(x=`Age group`)) +
+  geom_point(aes(y=start),colour="steelblue",size=2) +
+  geom_point(aes(y=end),colour="brown",size=2) +
+  geom_segment(aes(y=start,yend=end,xend=`Age group`)) +
+  facet_wrap(~GEO) +
+  scale_x_discrete(breaks=names(age_labels),
+                   labels=age_labels) +
+  theme(plot.title  = element_markdown(lineheight = 1.2),
+        axis.text.x = element_text(angle=90,hjust=1,vjust = 0.5)) +
+  labs(y="Annual net intraprovincial migration flows",x=NULL,
+       #subtitle = "Mean <i style='color:steelblue;'>2001/2004</i> vs mean <i style='color:brown;'>2019/2022</i> net migration flows",
+       title = paste0("<i style='color:steelblue;'>",min(pd$REF_DATE),"</i> vs <i style='color:brown;'>",max(pd$REF_DATE),"</i> net intraprovincial migration flows"),
+       caption="StatCan Table 17-10-0136")
+```
+
+These patterns are consistent with the notion that people are leaving the region due to housing pressures, where they leave the region in the ages where family formation happens or they can't find adequate housing for their growing family. But the link remains weakly established, and it's not yet tested enough to make clear causal claims. We believe this is a useful area for future research.
+
+## The upshot
+Existing households within a region are an outcome of housing pressures, and selecting on existing households as the unit for analysis introduces collider bias. We believe this bias is substantial.
+
+Much of Canadian housing discussions focuses on affordability as experienced by existing households. This is understandable because affordability is the main channel through which individuals experience housing pressures. But focusing on existing households as the base metric here can be very misleading. In particular, tracing shelter-cost-to-income ratios over time for the households that manage to form within a region shows little to no worsening in housing affordability. At best, it blinds researchers to a large part of how housing pressures manifest themselves. At worst, it leads to grotesque misdiagnoses arguing that Canada has a sufficient supply of housing (e.g. ["because Canada puts more people in each home, it requires fewer homes per capita"](https://mailchi.mp/chec-ccrl/build-baby-build-wont-solve-the-housing-crisis?e=4d3dff1ab8)).
+
+Housing is a central part of everyone's lives, and Canada's housing struggles are having increasingly severe impacts on the lives of Canadians. Housing analysis, especially when meant to inform policy, needs to do better at understanding the metrics it uses, how to use them, and the limits of their usefulness.
+
+
+As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2023-08-17-housing-outcomes/index.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
+
+<details><summary>Reproducibility receipt</summary>
+```{r cache=FALSE}
+## datetime
+Sys.time()
+
+## repository
+git2r::repository()
+
+## Session info
+sessionInfo()
+```
+</details>
