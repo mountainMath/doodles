@@ -45,10 +45,10 @@ library(statcanXtabs)
 Almost everyone agrees that we have a housing crisis in Canada, and that it has gotten progressively worse over recent history. But there is a problem. The metrics most commonly used don't reflect that.
 
 ## TL;DR
+
 Most commonly used metrics use **existing households as the base of analysis**, but households are a consequence of housing pressures. This kind of **misspecification** is a form of **collider or selection bias** that, especially in tight housing markets, **misleads researchers toward faulty conclusions and policy recommendations**. It blinds researchers to the struggles of people who are unhappy about their current household living arrangement, like young adults struggling to move out of their parent's place or out of a bad roommate setup, as well as people who have left their desired region and moved away, or failed to move in, because of the lack of housing options.
 
 This post explains the problem with analysis based solely on households in more detail, and explains why this will lead to incorrect diagnoses of our housing problems and misguided policy recommendations.
-
 
 ```{r}
 
@@ -130,6 +130,7 @@ get_chn_data_2021_metro <- function(geo_uids) {
 ```
 
 ## Core Housing Need
+
 The most-cited metric in the context of problems in the housing market in Canada is [Core Housing Need](https://www23.statcan.gc.ca/imdb/p3Var.pl?Function=DEC&Id=1230313). But looking at the share of households in core housing need for the 2006 through 2021 censuses one would be hard-pressed to conclude that Core Housing Need got worse.
 
 ```{r chn_canada_time}
@@ -205,40 +206,55 @@ ggplot(plot_data,aes(x=Year,y=Value,fill=Tenure)) +
        caption="StatCan Census 2006, 2011 NHS, 2016, 2021 Table 98-10-0247")
 ```
 
-
-
 Does that mean that things actually aren't getting worse? Are we just imagining the housing crisis? No. We are looking at the wrong metrics.
 
 Core Housing Need has long had issues as a metric, as careful analysts have repeatedly pointed out [over the](https://pubmed.ncbi.nlm.nih.gov/20096621/) [years](https://maytree.com/publications/modernizing-core-housing-need/). In short, it attempts to establish a housing standard for all of Canada, [matching existing households to need](https://www.cmhc-schl.gc.ca/professionals/housing-markets-data-and-research/housing-research/core-housing-need) on the basis of suitably roomy (matched to National Occupancy Standards), adequately maintained (good repair), and affordable (shelter costs no more than 30% of income) housing, or affordable alternatives that might meet their needs nearby. To list a few criticisms of the measure:
 
-a) affordable alternatives aren't actually assessed for availability 
-b) location of housing impacts transportation costs 
-c) a 30% shelter cost to income cutoff lacks solid justification 
-d) the metric excludes many households (e.g. students, income lower than shelter cost)
-e) shelter costs are inconsistently assessed 
-f) incomes are temporally mismatched (from previous year) relative to shelter costs (current) 
-g) adequacy of maintenance (based on self-reported repair) misses important elements
-h) suitable roominess (based on Canadian National Occupancy Standards) lacks solid justification 
-i) existing households might not be preferable arrangements 
-j) existing households miss in- and out- migration/mobility responses
+<style>
+ol.alpha {
+  counter-reset: list;
+}
+ol.alpha > li {
+  list-style: none;
+}
+ol.alpha > li:before {
+  content: counter(list, lower-alpha) ") ";
+  counter-increment: list;
+}
+</style>
+
+<ol class="alpha">
+  <li>affordable alternatives aren't actually assessed for availability</li>
+  <li>location of housing impacts transportation costs</li>
+  <li>a 30% shelter cost to income cutoff lacks solid justification</li>
+  <li>the metric excludes many households (e.g. students, income lower than shelter cost)</li>
+  <li>shelter costs are inconsistently assessed</li>
+  <li>incomes are temporally mismatched (from previous year) relative to shelter costs (current)</li>
+  <li>adequacy of maintenance (based on self-reported repair) misses important elements</li>
+  <li>suitable roominess (based on Canadian National Occupancy Standards) lacks solid justification</li>
+  <li>existing households might not be preferable arrangements</li>
+  <li>existing households miss in- and out- migration/mobility responses</li>
+</ol>
 
 In short, there is a lot more to housing outcomes than what is currently captured in Core Housing Need.
 
 # Housing outcomes
+
 If our current Core Housing Need is inadequate for capturing housing outcomes, then how can it be fixed? Some of the points we listed above have been addressed by others and by ourselves in previous posts. Points a) through h), in particular, could plausibly be addressed by refining the input metrics for Core Housing Need. Points i) and j) are fundamentally different in that they question the base unit of all measurements that go into Core Housing Need: Existing Households.
 
 To understand this better, we start by looking at how people experience housing pressures. From the perspective of individuals navigating a constrained housing market we want to highlight five distinct housing outcomes:
 
-1. (**unaffordability**) People pay more money to access the housing they need than they can afford, living beyond their means or sacrificing other important expenses.
-2. (**unsuitability**) People squish into housing without enough room for their household, sacrificing privacy within the household.
-3. (**inadequacy**) People live in housing that's inadequately maintained or in bad repair.
-4. (**suppressed households**) People fail to achieve their desired household composition, living with more or different people than they would like to.
-5. (**housing-induced migration**) People move to a different region, either farther away from their jobs, friends, and places of leisure within the same metro area or to an entirely different part of the country.
+1.  (**unaffordability**) People pay more money to access the housing they need than they can afford, living beyond their means or sacrificing other important expenses.
+2.  (**unsuitability**) People squish into housing without enough room for their household, sacrificing privacy within the household.
+3.  (**inadequacy**) People live in housing that's inadequately maintained or in bad repair.
+4.  (**suppressed households**) People fail to achieve their desired household composition, living with more or different people than they would like to.
+5.  (**housing-induced migration**) People move to a different region, either farther away from their jobs, friends, and places of leisure within the same metro area or to an entirely different part of the country.
 
 Only the first three channels are captured in some way by the Core Housing Need metric (or the related [Housing Hardship](https://www.cmhc-schl.gc.ca/blog/2020-housing-observer/new-affordability-metric-assesses-household-ability-afford-basic-goods) metric) as based on existing households.
 
 ## Existing households are the wrong unit of measurement
-In most of Canadian data and theorizing, a *household* [is defined as an *occupied dwelling unit*](https://www12.statcan.gc.ca/census-recensement/2021/ref/dict/az/definition-eng.cfm?ID=households-menage007), although *household* is often also used as a shorthand for only [*private households*](https://www12.statcan.gc.ca/census-recensement/2021/ref/dict/az/definition-eng.cfm?ID=households-menage014). Households are the outcome of how people distribute over dwellings. 
+
+In most of Canadian data and theorizing, a *household* [is defined as an *occupied dwelling unit*](https://www12.statcan.gc.ca/census-recensement/2021/ref/dict/az/definition-eng.cfm?ID=households-menage007), although *household* is often also used as a shorthand for only [*private households*](https://www12.statcan.gc.ca/census-recensement/2021/ref/dict/az/definition-eng.cfm?ID=households-menage014). Households are the outcome of how people distribute over dwellings.
 
 **Basing analysis entirely on existing households is selecting on a consequence of the outcome, it introduces selection or collider bias**. This bias is substantial, [the degree to which housing pressures impact household formation are large and growing](https://doodles.mountainmath.ca/blog/2022/10/03/still-short-suppressed-households-in-2021/), and an **existing household-based analysis is blind to suppressed household formation, as well as to the effects of housing on migration**.
 
@@ -246,7 +262,7 @@ To better understand collider bias in this context consider [Model 18 in this ex
 
 On a personal level, housing pressures are experienced through unaffordability when people or families can't afford housing that fits their needs, be it proximity to jobs and amenities, or size and number of bedrooms. **But their inability to afford said housing generally won't show up in Core Housing Need because in most cases they don't actually move into the housing they can't afford.** The same principle generally applies to waitlisting for non-market housing.
 
-That's all quite abstract, let's unpack this a little. 
+That's all quite abstract, let's unpack this a little.
 
 ```{r}
 main_cmas <- c("825","835","462","505","535","933")
@@ -333,22 +349,20 @@ hh_data_cma %>%
 
 This highlights some of the complexities of households, and how they don't necessarily map onto family units. In particular we notice how Montréal has comparatively few complex households.
 
-
 ## Minimum Household Units
+
 If households aren't the right unit of analysis, then what is? We have [discussed and compared different conceptualizations of what constitutes a basic unit in the past](https://doodles.mountainmath.ca/blog/2021/11/28/first-peek-at-population-and-household-data-during-covid-caveats/), including the OECD definition of a household that StatCan uses within their National Accounts framework, as well as one looking at census (or economic) families and unattached individuals that we already highlighted in our [post on households](https://doodles.mountainmath.ca/blog/2017/12/01/what-s-a-household/). But even non-divorcing census families might feel the need to split up, for example if they contain adult children living with parents who might want to move out but can't find suitable housing.
 
 [Ermisch and Overton introduced the concept of Minimal Household Units (MHU)](https://www.tandfonline.com/doi/pdf/10.1080/0032472031000141266) to better understand household formation. The idea is to define elemental building blocks of households, which may combined to form "complex" households. They start with single adults, parent-child, and couple relationships where we typically assume people want to live together, leaving four basic building blocks for households as:
 
-1. Adult individuals
-2. Lone parents with dependent children
-3. Childless married (or common law) couples
-4. Married (or common law) couples with dependent children
+1.  Adult individuals
+2.  Lone parents with dependent children
+3.  Childless married (or common law) couples
+4.  Married (or common law) couples with dependent children
 
 This leaves out some complexities (e.g [Living Apart Together setups](https://www150.statcan.gc.ca/n1/en/pub/75-006-x/2013001/article/11771-eng.pdf) where couples want to remain couples, but live separately), but is simple and works well for the purpose of analyzing household formation and affordability in the context of housing. The assumption is basically that household complexity beyond MHU is likely influenced (though not completely determined) by housing scarcity, revealing a portion of people living together who might prefer to live apart.
 
-
 Looking up at our graphs on household composition by age we note that the blue households approximate minimum household units, with the exception that some of them have adult children living at home. To better understand this we focus on 25 to 34 year olds and examine what share of them live in MHUs vs complex households, and how this has changed through time and across geographies.
-
 
 ```{r mhu_type}
 hla_data <- get_cansim_sqlite("98-10-0134") |>
@@ -399,7 +413,6 @@ hla_data |>
 We notice overall declining trends in the total proportion of 25 to 34 year olds in MHUs, and substantially lower shares in Toronto and Vancouver compared to the other large CMAs. Vancouver has higher shares of childless couples than Toronto, but lower shares of couples with children. By contrast, Montréal has the highest proportion of 25 to 34 year olds living within MHUs, driven largely by more people living alone and part of couples with children (though the latter is still on the decline). In the 35 to 44 year old age groups we still notice slightly declining trends in some CMAs, and again lower levels in Toronto and Vancouver. Once more, Montréal has the highest proportion of 35 to 44 year olds living in MHU.
 
 If young adults aren't living in MHUs, how do they live? Here are the living arrangements of the remaining young adults.
-
 
 ```{r non_mhu_type}
 hla_data2 <- get_cansim_sqlite("98-10-0134") |>
@@ -454,7 +467,6 @@ hla_data2 |>
 
 There's no single category dominating trends or differences. The proportion of young adults living as roommates went down in Calgary, but up in Vancouver and Toronto. The proportion living in complicated family arrangements also generally rose. Compared to other metros, Toronto and Vancouver have higher shares in all categories, except people living in census families with additional persons and roommate households. The high share of people living with their parents stands out in these two metros, but also a higher share of multi-generational households. Of note, the share in multi-generational households has been declining for 25 to 34 year olds over this time period for Vancouver and Toronto, and it declined 2016-2021 for the 35 to 44 year old group, while most other categories increased. In particular, the increases in young adults in non-MHUs in Toronto and Vancouver cannot be attributed to multi-generational living arrangements.
 
-
 ```{r}
 
 main_cma_names <- list_census_regions("2021") |>
@@ -502,7 +514,6 @@ Stepping up through age groups we see progressively higher shares of young adult
 
 Overall across Canada `r scales::percent(filter(children_family_data,Name=="Canada",grepl("Total",Age),grepl("Total",Parent),Year=="2021")$Share |> sum())` of adults aged 20 to 34 lived in MHUs in 2021, down from `r scales::percent(filter(children_family_data,Name=="Canada",grepl("Total",Age),grepl("Total",Parent),Year=="2016")$Share |> sum())` in 2016 and `r scales::percent(filter(children_family_data,Name=="Canada",grepl("Total",Age),grepl("Total",Parent),Year=="2011")$Share |> sum())` in 2011. In contrast with Core Housing Need, here's a clearer indicator of conditions getting worse over Canada's recent history. How did those outside of MHUs live? What was the makeup of their complex households?
 
-
 ```{r children_family_non_mhu}
 children_family_data2 <- get_cansim_sqlite("98-10-0137") |>
   filter(GeoUID %in% c(main_cmas,"11124"),
@@ -537,6 +548,7 @@ children_family_data2 |>
 We see a striking rise in young adults outside of MHUs, especially those living with their parents or other family members. Toronto and Vancouver also stand out in this regard. There are several factors playing into temporal and regional patterns, but housing pressures are likely the most important driver. Yet metrics based on existing households, like Core Housing Need, will systematically overlook this kind of evidence of housing pressure.
 
 ## Household maintainer rates
+
 Another way to think about this kind of housing pressure is to look at age-specific household maintainer rates, and how these differ across geographies and time. We have [looked at this previously](https://doodles.mountainmath.ca/blog/2022/10/03/still-short-suppressed-households-in-2021/) and documented how Montréal, Toronto, and Vancouver used to have fairly similar household maintainer rates in the 70s. But while Montréal's rates have remained relatively stable, Vancouver and Toronto have seen significant drops in household maintainer rates, especially among younger adults, as illustrated in the following graph.
 
 ```{r}
@@ -776,7 +788,6 @@ generation_data <- pumf_cma_timeline %>%
   mutate(Cohort=as.character(birth) %>% factor)
 ```
 
-
 ```{r hmr_age_group}
 generation_data %>%
   #filter(Year!="1971") %>%
@@ -881,17 +892,17 @@ generation_data %>%
        caption="StatCan Census 1971 to 2016 PUMF (individuals), Census 2021 Tables 98-10-0042, 98-10-0231")
 ```
 
-Here we see how Toronto and Vancouver are lagging behind their Montréal peers when it comes to forming and maintaining a household, with millennial and GenX households lagging by over 10 years by the time they reach 40. In other words, Millennials and GenX household formation rates by the time they reach 40 in Vancouver and Toronto are about equivalent to what their peers in Montréal reached in their late 20s. 
+Here we see how Toronto and Vancouver are lagging behind their Montréal peers when it comes to forming and maintaining a household, with millennial and GenX households lagging by over 10 years by the time they reach 40. In other words, Millennials and GenX household formation rates by the time they reach 40 in Vancouver and Toronto are about equivalent to what their peers in Montréal reached in their late 20s.
 
 We have interpreted this as [suppressed household formation](https://doodles.mountainmath.ca/blog/2022/10/03/still-short-suppressed-households-in-2021/) and a partial measure of housing shortfall. While we believe that this interpretation is generally correct, a potential alternative interpretation is that this trend [may be explained by different cultural preferences, which we've also attempted to quantify](https://doodles.mountainmath.ca/blog/2022/05/06/estimating-suppressed-household-formation/), and further work on this would be useful. Nonetheless, we believe that estimates of suppressed households offer a useful metric to assess housing shortages.
 
-
 ## Household tightness
+
 Specifying the role that housing plays in our suppressed household measure is hard to pin down. But we can look at related metrics of housing outcomes to see if there's more evidence of squeeze. Maybe it's not there. People could be sharing more often because there's lots of room to do so. Imagine we have a large reservoir of big houses, and people choose to form more complex households as the average household size of MHUs has been declining over time due to dropping fertility rates, people coupling up later, and people living longer.
 
-Ideally we would want to look at data on how people distribute over floor space, but we simply don't have reliable floor space data in Canada. The [Canadian Housing Statistics Program](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=4610005301) has some information on living area, but only for select types of housing and only for recent years and not (yet) covering all of Canada. The [Survey of Household Energy Use](https://www.statcan.gc.ca/en/statistical-programs/instrument/3881_Q2_V8) has some data on "heated living area" going back to the 1990s, with some aggregate estimates [made available by NRCAN](https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/menus/sheu/2019/tables.cfm), but it is not clear how these estimates are derived and how reliable they are. 
+Ideally we would want to look at data on how people distribute over floor space, but we simply don't have reliable floor space data in Canada. The [Canadian Housing Statistics Program](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=4610005301) has some information on living area, but only for select types of housing and only for recent years and not (yet) covering all of Canada. The [Survey of Household Energy Use](https://www.statcan.gc.ca/en/statistical-programs/instrument/3881_Q2_V8) has some data on "heated living area" going back to the 1990s, with some aggregate estimates [made available by NRCAN](https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/menus/sheu/2019/tables.cfm), but it is not clear how these estimates are derived and how reliable they are.
 
-Another way to understand how cramped or roomy living situations are is to look at the number of rooms available by household size. The census keeps track of the [number of rooms in a dwelling unit](https://www12.statcan.gc.ca/census-recensement/2021/ref/dict/az/Definition-eng.cfm?ID=dwelling-logements012) as well as household size, giving us long timelines to work with. This still poses some challenges insofar as people's preferences for how to slice up homes have changed too, with for example people sometimes tearing down interior walls, e.g. between dining room and living room, when remodelling. This results in fewer rooms, but the home is still as "roomy" as before. Some of that can be controlled for by comparing across different regions in Canada. 
+Another way to understand how cramped or roomy living situations are is to look at the number of rooms available by household size. The census keeps track of the [number of rooms in a dwelling unit](https://www12.statcan.gc.ca/census-recensement/2021/ref/dict/az/Definition-eng.cfm?ID=dwelling-logements012) as well as household size, giving us long timelines to work with. This still poses some challenges insofar as people's preferences for how to slice up homes have changed too, with for example people sometimes tearing down interior walls, e.g. between dining room and living room, when remodelling. This results in fewer rooms, but the home is still as "roomy" as before. Some of that can be controlled for by comparing across different regions in Canada.
 
 Yet another complication is that real incomes have grown over time, and housing demand increases strongly with income, with [most estimates pegging the demand elasticity of income to be greater than 1](https://www.jstor.org/stable/j.ctv13gvj30). This means that we should expect to see an increase in *roominess* over time as incomes grow.
 
@@ -1137,7 +1148,7 @@ completions |>
        caption="StatCan Tables 34-10-0135, 17-10-0009")
 ```
 
-Raw starts and completions should be interpreted with caution, and do not account for demolitions or changes in CMHC estimation methods. But we can clearly see here the dramatic drop-off in starts after the Financial Crisis, followed by a decline in completions. We can only wonder where Canada would be now in terms of housing had the Crisis not spread North from the USA. 
+Raw starts and completions should be interpreted with caution, and do not account for demolitions or changes in CMHC estimation methods. But we can clearly see here the dramatic drop-off in starts after the Financial Crisis, followed by a decline in completions. We can only wonder where Canada would be now in terms of housing had the Crisis not spread North from the USA.
 
 Of course, in addition to historical variation, we've also got variation in roominess by region. We can take a closer look at how this compares across metro areas in 2021, and add in variations by tenure.
 
@@ -1168,15 +1179,15 @@ Here we see that renter households tend to have significantly less room than own
 
 However, this basic fact does not hold when comparing across metro areas. On average people in Vancouver and Toronto have higher incomes and higher wealth than their counterparts in Montreal, but lower levels of roominess. It's tricky to argue that people in Vancouver and Toronto simply prefer to have fewer rooms than people in other urbanized parts of Canada. This is very likely yet another sign of a housing shortage and people economizing in response to rising prices.
 
-Interestingly, the Core Housing Need metric does incorporate a measure of roominess (suitability, as determined by whether a given household can be understood as fitting into bedrooms according to National Occupancy Standards), but the crudeness of the metric, in conjunction with the alternative affordable housing rule and the taking of existing households as given, all means it doesn't pick up the decline in household roominess since 2006 or variations in roominess by metro area. 
+Interestingly, the Core Housing Need metric does incorporate a measure of roominess (suitability, as determined by whether a given household can be understood as fitting into bedrooms according to National Occupancy Standards), but the crudeness of the metric, in conjunction with the alternative affordable housing rule and the taking of existing households as given, all means it doesn't pick up the decline in household roominess since 2006 or variations in roominess by metro area.
 
 ## Migration impacts
-We've seen how relying upon existing households for metrics of housing need creates problems insofar as existing residents of a place may wish to distribute themselves differently. But what about non-residents? What about those forced out or never able to arrive? 
+
+We've seen how relying upon existing households for metrics of housing need creates problems insofar as existing residents of a place may wish to distribute themselves differently. But what about non-residents? What about those forced out or never able to arrive?
 
 *Leaving Vancouver* letters seem to have moved from novelty to [well worn cliche](https://thetyee.ca/Opinion/2017/10/30/I-Left-Vancouver/) and now to the point where people just move away without the fanfare. Housing always featured prominently in the *Leaving Vancouver* letters, but motivations are complex and the effects of housing on migration are difficult to identify. For this post we will have to be satisfied with some weak evidence showing that shifts in migration over time are consistent with the idea that housing pressures impact migration paths, but we don't present enough evidence to claim that housing pressures are the cause of that shift.
 
 We conceptualize housing pressures to impact migration most at the local and regional level, and less so at inter-provincial and international levels. This is consistent with ["reason for move" data](https://homefreesociology.com/2019/11/24/why-do-people-move-new-data-mysteries-and-fundamental-rights/), where housing reasons for move dominate more local levels, but recede as a deciding factor as move distance increases. So here we focus on intra-provincial migration. Are we seeing less net in-migration to Metro Vancouver from other parts of the province than we used to see in the past?
-
 
 ```{r}
 d5.1 <- get_cansim_sqlite("17-10-0141",auto_refresh = TRUE) %>%
@@ -1252,7 +1263,6 @@ ggplot(aes(x=Period,y=value,fill=`Migration movement`)) +
 
 This shows a declining trend in intra-provincial in-migration, and net-migration, and an increasing trend in out-migration between 1999 and 2021, the last year for which we have gross migration data. To better understand these shifts we can look at the difference in age-specific intra-provincial net migration rates at the beginning and the end of our time frame.
 
-
 ```{r yvr_net_intraprovincial_age}
 library(ggtext)
 
@@ -1286,7 +1296,6 @@ Intra-provincial migration rates have dropped for almost all age groups, but not
 
 The narrative we offer tying intra-provincial migration patterns to housing affordability seems plausible, but requires more research. Moreover, it's worth keeping in mind that 2021/2022 was still a year where people were responding to the upheavals of the pandemic. Given possible pandemic impacts on migration patterns, we repeat this with 2018/2019 as the final year, which shows very similar patterns, showing that especially young adults are increasingly leaving the region on net, with the exception of people around the age they start university and people around 40 years old.
 
-
 ```{r yvr_net_intraprovincial_age_pre_covid}
 pd <- net_migration %>%
   filter(GeoUID=="933") %>%
@@ -1318,12 +1327,12 @@ pd %>%
 These patterns are consistent with the notion that people are leaving the region due to housing pressures, where they leave the region in the ages where family formation happens or they can't find adequate housing for their growing family. But the link remains weakly established, and it's not yet tested enough to make clear causal claims. We believe this is a useful area for future research.
 
 ## The upshot
+
 Existing households within a region are an outcome of housing pressures, and selecting on existing households as the unit for analysis introduces collider bias. We believe this bias is substantial.
 
 Much of Canadian housing discussions focuses on affordability as experienced by existing households. This is understandable because affordability is the main channel through which individuals experience housing pressures. But focusing on existing households as the base metric here can be very misleading. In particular, tracing shelter-cost-to-income ratios over time for the households that manage to form within a region shows little to no worsening in housing affordability. At best, it blinds researchers to a large part of how housing pressures manifest themselves. At worst, it leads to grotesque misdiagnoses arguing that Canada has a sufficient supply of housing (e.g. ["because Canada puts more people in each home, it requires fewer homes per capita"](https://mailchi.mp/chec-ccrl/build-baby-build-wont-solve-the-housing-crisis?e=4d3dff1ab8)).
 
 Housing is a central part of everyone's lives, and Canada's housing struggles are having increasingly severe impacts on the lives of Canadians. Housing analysis, especially when meant to inform policy, needs to do better at understanding the metrics it uses, how to use them, and the limits of their usefulness.
-
 
 As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2023-08-17-housing-outcomes/index.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
 
