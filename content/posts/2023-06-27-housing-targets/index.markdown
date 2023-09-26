@@ -121,25 +121,49 @@ In short: Housing is good, actually. Our targets should reinforce that point, ma
 
 As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2023-06-27-housing-targets/index.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
 
+
+## Update (additional scenario on effective cost assumtions)
+One caveat on our analysis above is that we added in a sizable land component to the marginal cost of housing. This may not be necessary, in a market where the amount of housing is not constrained by municipal regulation (maybe where municipalities even encourage more housing!) a developer could build up until the marginal (social) cost of production, including profit, equals the the price the housing sells for. The additional "land component" of 20% was added rather ad-hoc, with the implicit understanding that when we are far away from equilibrium developers would not just build one more floor but many, and the effective marginal cost of adding these floors is higher than the marginal cost of adding just one floor. This could also capture costs associated with externalities of increasing population density, which also increases the cost of providing services that may not be captured at the current level of DCC/DCLs (assuming for simplicity those are set properly to cover only the current incremental cost of new construction). Lastly this accounts for risk, where developers may opt to build below the economically optimal height to avoid running the risk of not being able to recover all their costs if it turns out that prices are lower than anticipated at the time of completion. 
+
+The 20% estimate is probably at the high end of the range of what could reasonably be expected here. To complement our previous estimates we re-run the analysis where we assume supply can be effectively added at 10% above current marginal cost of supply. 
+
+Under this scenario, we start out with a wedge that is ~10% larger.
+
+<img src="{{< blogdown/postref >}}index_files/figure-html/excess-price2-1.png" width="1200" />
+
+This in turn gives significantly higher estimates of current shortfall.
+
+<img src="{{< blogdown/postref >}}index_files/figure-html/housing-shortfall2-1.png" width="1200" />
+
+When spacing this out over 10 years this leads to again significantly higher 10 year targets, with higher baselines but also higher correction to the projection housing demand.
+
+<img src="{{< blogdown/postref >}}index_files/figure-html/housing-targets2-1.png" width="1200" />
+
+Assuming supply can be effectively added at the current marginal cost would locate more than half of BC's current dwelling shortfall in Metro Vancouver, and accordingly finds a higher dwelling shortfall especially in the more expensive cities within Metro Vancouver. This is probably a more realistic estimate of targets to return the market to a condition where the total amount of housing is not overly constrained by municipal restrictions limiting new housing construction.
+
+
+
+
+
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2023-06-27 16:38:11 PDT"
+## [1] "2023-09-25 22:27:04 PDT"
 ```
 
 ```
 ## Local:    master /Users/jens/Documents/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [913fc81] 2023-06-27: targets post
+## Head:     [7ca427c] 2023-08-18: list formatting in outcomes post
 ```
 
 ```
 ## R version 4.3.0 (2023-04-21)
 ## Platform: aarch64-apple-darwin20 (64-bit)
-## Running under: macOS Ventura 13.4.1
+## Running under: macOS Ventura 13.6
 ## 
 ## Matrix products: default
-## BLAS:   /Library/Frameworks/R.framework/Versions/4.3-arm64/Resources/lib/libRblas.0.dylib 
+## BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib 
 ## LAPACK: /Library/Frameworks/R.framework/Versions/4.3-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.11.0
 ## 
 ## locale:
@@ -164,13 +188,14 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ##  [5] stringi_1.7.12   hms_1.1.3        digest_0.6.31    magrittr_2.0.3  
 ##  [9] timechange_0.2.0 evaluate_0.20    grid_4.3.0       bookdown_0.34   
 ## [13] fastmap_1.1.1    jsonlite_1.8.4   fansi_1.0.4      scales_1.2.1    
-## [17] jquerylib_0.1.4  cli_3.6.1        rlang_1.1.1      munsell_0.5.0   
-## [21] withr_2.5.0      cachem_1.0.8     yaml_2.3.7       tools_4.3.0     
-## [25] tzdb_0.3.0       colorspace_2.1-0 vctrs_0.6.2      R6_2.5.1        
-## [29] git2r_0.32.0     lifecycle_1.0.3  pkgconfig_2.0.3  pillar_1.9.0    
-## [33] bslib_0.4.2      gtable_0.3.3     glue_1.6.2       xfun_0.39       
-## [37] tidyselect_1.2.0 rstudioapi_0.14  knitr_1.42       htmltools_0.5.5 
-## [41] rmarkdown_2.21   compiler_4.3.0
+## [17] codetools_0.2-19 jquerylib_0.1.4  cli_3.6.1        rlang_1.1.1     
+## [21] munsell_0.5.0    sanzo_0.1.0      withr_2.5.0      cachem_1.0.8    
+## [25] yaml_2.3.7       tools_4.3.0      tzdb_0.3.0       colorspace_2.1-0
+## [29] vctrs_0.6.2      R6_2.5.1         git2r_0.32.0     lifecycle_1.0.3 
+## [33] pkgconfig_2.0.3  pillar_1.9.0     bslib_0.4.2      gtable_0.3.3    
+## [37] glue_1.6.2       highr_0.10       xfun_0.39        tidyselect_1.2.0
+## [41] rstudioapi_0.14  knitr_1.42       farver_2.1.1     htmltools_0.5.5 
+## [45] labeling_0.4.2   rmarkdown_2.23   compiler_4.3.0
 ```
 </details>
 

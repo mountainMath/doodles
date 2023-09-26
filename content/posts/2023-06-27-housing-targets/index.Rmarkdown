@@ -226,6 +226,90 @@ In short: Housing is good, actually. Our targets should reinforce that point, ma
 
 As usual, the code for this post is [available on GitHub](https://github.com/mountainMath/doodles/blob/master/content/posts/2023-06-27-housing-targets/index.Rmarkdown) for anyone to reproduce or adapt for their own purposes.
 
+
+## Update (additional scenario on effective cost assumtions)
+One caveat on our analysis above is that we added in a sizable land component to the marginal cost of housing. This may not be necessary, in a market where the amount of housing is not constrained by municipal regulation (maybe where municipalities even encourage more housing!) a developer could build up until the marginal (social) cost of production, including profit, equals the the price the housing sells for. The additional "land component" of 20% was added rather ad-hoc, with the implicit understanding that when we are far away from equilibrium developers would not just build one more floor but many, and the effective marginal cost of adding these floors is higher than the marginal cost of adding just one floor. This could also capture costs associated with externalities of increasing population density, which also increases the cost of providing services that may not be captured at the current level of DCC/DCLs (assuming for simplicity those are set properly to cover only the current incremental cost of new construction). Lastly this accounts for risk, where developers may opt to build below the economically optimal height to avoid running the risk of not being able to recover all their costs if it turns out that prices are lower than anticipated at the time of completion. 
+
+The 20% estimate is probably at the high end of the range of what could reasonably be expected here. To complement our previous estimates we re-run the analysis where we assume supply can be effectively added at 10% above current marginal cost of supply. 
+
+Under this scenario, we start out with a wedge that is ~10% larger.
+
+```{r excess-price2}
+wedge2 <- tibble(Region=c("Metro Vancouver","Vancouver", "Richmond", "Burnaby", "Surrey", "North Vancouver","West Vancouver"),
+                `Excess price`=c(1.77,1.89,1.71,1.45,1.20,1.77,4)/1.1-1) %>%
+  mutate(Region=factor(Region,levels=pull(.,Region)))
+
+ggplot(wedge2, aes(y=fct_rev(Region),x=`Excess price`)) +
+  geom_bar(stat="identity",fill="steelblue") +
+  scale_x_continuous(labels=scales::percent) +
+  labs(title="Excess cost of apartments in Metro Vancouver and select constituent municipalities",
+       subtitle="(assuming supply can be effectively be added at 10% above current marginal cost)",
+       y=NULL,
+       caption="Data: CMCH Report: Supply Constraints Increased Prices of Apartment Condominiums in Canadian Cities")
+```
+
+This in turn gives significantly higher estimates of current shortfall.
+
+```{r housing-shortfall2}
+shortfall_data2 <- wedge2 |>
+  left_join(stock,by=c("Region"="Name")) |>
+  mutate(Region=factor(Region,levels=levels(wedge$Region))) |>
+  mutate(Shortfall=`Excess price`*0.5*Dwellings) |>
+  mutate(sp=Shortfall/Dwellings)
+
+ggplot(shortfall_data2,aes(y=fct_rev(Region),x=`Excess price`*0.5*Dwellings)) +
+  geom_bar(stat="identity",fill="firebrick") +
+  geom_errorbarh(aes(xmin=`Excess price`*0.3*Dwellings,xmax=`Excess price`*0.7*Dwellings)) +
+  scale_x_continuous(labels=\(x)scales::comma(x,scale=10^-3,suffix="k"),breaks=seq(0,1000000,50000)) +
+  labs(title="Housing shortfall across Metro Vancouver and select contingent municipalities",
+       subtitle="(assuming supply can be effectively be added at 10% above current marginal cost)",
+       y=NULL,
+       x="2018 housing shortfall, number of units",
+       caption="Data: CMCH Report: Supply Constraints Increased Prices of Apartment Condominiums in Canadian Cities")
+```
+
+When spacing this out over 10 years this leads to again significantly higher 10 year targets, with higher baselines but also higher correction to the projection housing demand.
+
+```{r housing-targets2}
+hh_projections2 <- metro_projections |>
+  filter(Metric=="DWELLING UNITS") |>
+  filter(Area %in% c("Metro Vancouver Total","City of Vancouver","City of Surrey","City of North Vancouver","District of North Vancouver","City of Richmond","District of West Vancouver")) |>
+  mutate(Region=gsub(".+ of | Total","",Area)) |>
+  summarize(Value=sum(Value),.by=c(Region,Year)) |>
+  pivot_wider(names_from=Year,values_from=Value) |>
+  mutate(hh_growth=`2030`-`2020`) |>
+  mutate(dw_growth=1.05 * hh_growth) |>
+  left_join(shortfall_data2,by="Region") |>
+  mutate(Region=factor(Region,levels=levels(wedge2$Region))) |>
+  mutate(`Demand growth`=dw_growth*(1+sp)) |>
+  mutate(Target=Shortfall+`Demand growth`) |>
+  mutate(`Metro Van projected growth`=hh_growth,
+         `Households to dwellings`=`Demand growth`*0.05,
+         `Shortfall adjusted to growth`=`Demand growth`-`Metro Van projected growth`-`Households to dwellings`) 
+
+hh_projections2 |>
+  rename(`Current shortfall`=Shortfall) |>
+  pivot_longer(c(`Shortfall adjusted to growth`,`Metro Van projected growth`,`Current shortfall`,`Households to dwellings`)) |>
+  mutate(name=factor(name,levels=c("Current shortfall","Metro Van projected growth","Shortfall adjusted to growth","Households to dwellings"))) |>
+ggplot(aes(y=fct_rev(Region),x=value,fill=fct_rev(name))) +
+  geom_bar(stat="identity") +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values=c(sanzo::quads$c341[1:3],"firebrick")) +
+  #scale_fill_manual(values=c("Current shortfall"="firebrick","Metro Van projected growth"="darkgreen","Misspecified growth"="steelblue")) +
+  guides(fill=guide_legend(reverse = TRUE)) +
+  scale_x_continuous(labels=\(x)scales::comma(x,scale=10^-3,suffix="k"),breaks=seq(0,1000000,50000)) +
+  labs(title="Housing targets for Metro Vancouver and select constituent municipalities",
+       subtitle="(assuming supply can be effectively be added at 10% above current marginal cost)",
+       fill=NULL,
+       y=NULL,x="Number of dwelling units over 10 years")
+```
+
+Assuming supply can be effectively added at the current marginal cost would locate more than half of BC's current dwelling shortfall in Metro Vancouver, and accordingly finds a higher dwelling shortfall especially in the more expensive cities within Metro Vancouver. This is probably a more realistic estimate of targets to return the market to a condition where the total amount of housing is not overly constrained by municipal restrictions limiting new housing construction.
+
+
+
+
+
 <details><summary>Reproducibility receipt</summary>
 ```{r cache=FALSE}
 ## datetime
