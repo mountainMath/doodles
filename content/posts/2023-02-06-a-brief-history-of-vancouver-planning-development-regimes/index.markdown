@@ -12,7 +12,7 @@ categories:
   - zoning
   - rental
 tags: []
-description: 'Tracking how Vancouver regulations for development have changed over time, illsutrated with two examples.'
+description: 'Tracking how Vancouver regulations for development have changed over time, illustrated with two examples.'
 featured: ''
 images: ["https://doodles.mountainmath.ca/images/alma_broadway_3d.png"]
 featuredalt: ""
