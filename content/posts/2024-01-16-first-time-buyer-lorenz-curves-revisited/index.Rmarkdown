@@ -12,7 +12,7 @@ categories:
   - Toronto
   - PUMF
 tags: []
-description: 'Taking another look at first time buyer affordability.'
+description: 'Taking another look at first time buyer affordability: updating with 2021 data, accounting for property taxes, and introducing a discretized version of the measure.'
 featured: ''
 images: ["https://doodles.mountainmath.ca/blog/2024/01/16/first-time-buyer-lorenz-curves-revisited/index_files/figure-html/ftb-discrete-1.png"]
 featuredalt: ""

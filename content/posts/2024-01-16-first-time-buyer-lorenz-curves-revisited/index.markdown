@@ -12,7 +12,7 @@ categories:
   - Toronto
   - PUMF
 tags: []
-description: 'Taking another look at first time buyer affordability.'
+description: 'Taking another look at first time buyer affordability: updating with 2021 data, accounting for property taxes, and introducing a discretized version of the measure.'
 featured: ''
 images: ["https://doodles.mountainmath.ca/blog/2024/01/16/first-time-buyer-lorenz-curves-revisited/index_files/figure-html/ftb-discrete-1.png"]
 featuredalt: ""
@@ -128,13 +128,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2024-01-16 15:38:29 PST"
+## [1] "2024-01-16 15:50:03 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [27114c5] 2024-01-16: first time buyers revisted
+## Head:     [5a75ff1] 2024-01-16: show property tax effect graph
 ```
 
 ```
@@ -162,34 +162,29 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## [13] tidyverse_2.0.0
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] gtable_0.3.4              xfun_0.41                
-##  [3] bslib_0.6.1               lattice_0.21-9           
-##  [5] tzdb_0.4.0                vctrs_0.6.5              
-##  [7] tools_4.3.2               bitops_1.0-7             
-##  [9] generics_0.1.3            fansi_1.0.6              
-## [11] highr_0.10                pkgconfig_2.0.3          
-## [13] Matrix_1.6-1.1            lifecycle_1.0.4          
-## [15] compiler_4.3.2            farver_2.1.1             
-## [17] git2r_0.33.0              munsell_0.5.0            
-## [19] mountainmathHelpers_0.1.4 codetools_0.2-19         
-## [21] htmltools_0.5.7           sass_0.4.8               
-## [23] RCurl_1.98-1.13           yaml_2.3.7               
-## [25] pillar_1.9.0              jquerylib_0.1.4          
-## [27] cachem_1.0.8              nlme_3.1-163             
-## [29] tidyselect_1.2.0          digest_0.6.33            
-## [31] stringi_1.8.3             reshape2_1.4.4           
-## [33] bookdown_0.37             splines_4.3.2            
-## [35] fastmap_1.1.1             grid_4.3.2               
-## [37] colorspace_2.1-0          cli_3.6.2                
-## [39] magrittr_2.0.3            utf8_1.2.4               
-## [41] withr_2.5.2               scales_1.3.0             
-## [43] timechange_0.2.0          rmarkdown_2.25           
-## [45] blogdown_1.18             sanzo_0.1.0              
-## [47] hms_1.1.3                 evaluate_0.23            
-## [49] knitr_1.45                mgcv_1.9-0               
-## [51] rlang_1.1.2               Rcpp_1.0.11              
-## [53] glue_1.6.2                rstudioapi_0.15.0        
-## [55] jsonlite_1.8.8            R6_2.5.1                 
-## [57] plyr_1.8.9
+##  [1] sass_0.4.8                utf8_1.2.4               
+##  [3] generics_0.1.3            bitops_1.0-7             
+##  [5] blogdown_1.18             stringi_1.8.3            
+##  [7] hms_1.1.3                 digest_0.6.33            
+##  [9] magrittr_2.0.3            timechange_0.2.0         
+## [11] evaluate_0.23             grid_4.3.2               
+## [13] bookdown_0.37             fastmap_1.1.1            
+## [15] plyr_1.8.9                jsonlite_1.8.8           
+## [17] fansi_1.0.6               scales_1.3.0             
+## [19] jquerylib_0.1.4           cli_3.6.2                
+## [21] rlang_1.1.2               munsell_0.5.0            
+## [23] withr_2.5.2               cachem_1.0.8             
+## [25] yaml_2.3.7                tools_4.3.2              
+## [27] reshape2_1.4.4            tzdb_0.4.0               
+## [29] colorspace_2.1-0          vctrs_0.6.5              
+## [31] R6_2.5.1                  git2r_0.33.0             
+## [33] lifecycle_1.0.4           pkgconfig_2.0.3          
+## [35] pillar_1.9.0              bslib_0.6.1              
+## [37] gtable_0.3.4              Rcpp_1.0.11              
+## [39] glue_1.6.2                xfun_0.41                
+## [41] tidyselect_1.2.0          rstudioapi_0.15.0        
+## [43] knitr_1.45                htmltools_0.5.7          
+## [45] rmarkdown_2.25            mountainmathHelpers_0.1.4
+## [47] compiler_4.3.2            RCurl_1.98-1.13
 ```
 </details>
