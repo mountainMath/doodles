@@ -74,7 +74,7 @@ This view might be overly optimistic, our affordability metric does not include 
 
 Adjusting our affordability metric to include property taxes, for this exercise taken from an [Altus report](https://www.saskatoon.ca/sites/default/files/documents/asset-financial-management/finance-supply/Altus_Group_Canadian_Property_Tax_Benchmark_Report_2022%20%284%29.pdf), shows this effect on affordability quite clearly.
 
-
+<img src="{{< blogdown/postref >}}index_files/figure-html/prop-tax-effect-1.png" width="768" />
 
 In Vancouver, with it's relatively low property tax rate, this does not make much of a difference, whereas in other metro areas the difference is substantial.
 
@@ -128,13 +128,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2024-01-16 13:25:46 PST"
+## [1] "2024-01-16 15:38:29 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [a3ac323] 2024-01-10: spelling
+## Head:     [27114c5] 2024-01-16: first time buyers revisted
 ```
 
 ```
@@ -163,40 +163,33 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] gtable_0.3.4              xfun_0.41                
-##  [3] bslib_0.6.1               ggrepel_0.9.4            
-##  [5] lattice_0.21-9            tzdb_0.4.0               
-##  [7] vctrs_0.6.5               tools_4.3.2              
-##  [9] bitops_1.0-7              generics_0.1.3           
-## [11] curl_5.2.0                parallel_4.3.2           
-## [13] fansi_1.0.6               highr_0.10               
-## [15] pkgconfig_2.0.3           Matrix_1.6-1.1           
-## [17] cansim_0.3.16             lifecycle_1.0.4          
-## [19] git2r_0.33.0              farver_2.1.1             
-## [21] compiler_4.3.2            munsell_0.5.0            
-## [23] codetools_0.2-19          mountainmathHelpers_0.1.4
-## [25] htmltools_0.5.7           sass_0.4.8               
-## [27] gsignal_0.3-5             RCurl_1.98-1.13          
-## [29] yaml_2.3.7                pracma_2.4.4             
-## [31] pillar_1.9.0              crayon_1.5.2             
-## [33] jquerylib_0.1.4           cachem_1.0.8             
-## [35] nlme_3.1-163              tidyselect_1.2.0         
-## [37] rvest_1.0.3               digest_0.6.33            
-## [39] stringi_1.8.3             reshape2_1.4.4           
-## [41] bookdown_0.37             labeling_0.4.3           
-## [43] ggthemes_5.0.0            splines_4.3.2            
-## [45] fastmap_1.1.1             grid_4.3.2               
-## [47] colorspace_2.1-0          cli_3.6.2                
-## [49] magrittr_2.0.3            utf8_1.2.4               
-## [51] withr_2.5.2               scales_1.3.0             
-## [53] bit64_4.0.5               timechange_0.2.0         
-## [55] rmarkdown_2.25            httr_1.4.7               
-## [57] bit_4.0.5                 blogdown_1.18            
-## [59] hms_1.1.3                 evaluate_0.23            
-## [61] knitr_1.45                mgcv_1.9-0               
-## [63] rlang_1.1.2               Rcpp_1.0.11              
-## [65] glue_1.6.2                xml2_1.3.6               
-## [67] rstudioapi_0.15.0         vroom_1.6.5              
-## [69] jsonlite_1.8.8            MetBrewer_0.2.0          
-## [71] R6_2.5.1                  plyr_1.8.9
+##  [3] bslib_0.6.1               lattice_0.21-9           
+##  [5] tzdb_0.4.0                vctrs_0.6.5              
+##  [7] tools_4.3.2               bitops_1.0-7             
+##  [9] generics_0.1.3            fansi_1.0.6              
+## [11] highr_0.10                pkgconfig_2.0.3          
+## [13] Matrix_1.6-1.1            lifecycle_1.0.4          
+## [15] compiler_4.3.2            farver_2.1.1             
+## [17] git2r_0.33.0              munsell_0.5.0            
+## [19] mountainmathHelpers_0.1.4 codetools_0.2-19         
+## [21] htmltools_0.5.7           sass_0.4.8               
+## [23] RCurl_1.98-1.13           yaml_2.3.7               
+## [25] pillar_1.9.0              jquerylib_0.1.4          
+## [27] cachem_1.0.8              nlme_3.1-163             
+## [29] tidyselect_1.2.0          digest_0.6.33            
+## [31] stringi_1.8.3             reshape2_1.4.4           
+## [33] bookdown_0.37             splines_4.3.2            
+## [35] fastmap_1.1.1             grid_4.3.2               
+## [37] colorspace_2.1-0          cli_3.6.2                
+## [39] magrittr_2.0.3            utf8_1.2.4               
+## [41] withr_2.5.2               scales_1.3.0             
+## [43] timechange_0.2.0          rmarkdown_2.25           
+## [45] blogdown_1.18             sanzo_0.1.0              
+## [47] hms_1.1.3                 evaluate_0.23            
+## [49] knitr_1.45                mgcv_1.9-0               
+## [51] rlang_1.1.2               Rcpp_1.0.11              
+## [53] glue_1.6.2                rstudioapi_0.15.0        
+## [55] jsonlite_1.8.8            R6_2.5.1                 
+## [57] plyr_1.8.9
 ```
 </details>

@@ -408,7 +408,7 @@ This view might be overly optimistic, our affordability metric does not include 
 
 Adjusting our affordability metric to include property taxes, for this exercise taken from an [Altus report](https://www.saskatoon.ca/sites/default/files/documents/asset-financial-management/finance-supply/Altus_Group_Canadian_Property_Tax_Benchmark_Report_2022%20%284%29.pdf), shows this effect on affordability quite clearly.
 
-```{r eval=FALSE, fig.height=8.5}
+```{r prop-tax-effect, fig.height=8.5}
 adj_ef_lorenz_data %>%
   filter(CMA %in% large_cmas) %>%
   mutate(CMA=factor(CMA,large_cmas)) %>%
