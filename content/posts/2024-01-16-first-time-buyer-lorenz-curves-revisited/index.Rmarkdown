@@ -456,38 +456,38 @@ perfect_affordability <- as_tibble(seq(0,1,0.001)) %>%
   transmute(percentile=value) %>%
   mutate(`Can afford price percentile`= case_when(percentile==0 ~ 0,
                                                   TRUE ~ 1), 
-         Type="Perfect affordability (GINI = -1)")
+         Type="Perfect affordability\n(GINI = -1, skew = 0)")
 
 proportional_affordability <- as_tibble(seq(0,1,0.001)) %>%
   transmute(percentile=value) %>%
   mutate(`Can afford price percentile`= percentile,
-         Type="Perfect proportional affordability (GINI = 0)")
+         Type="Perfect proportional affordability\n(GINI = 0, skew = 0)")
 
 perfect_unaffordability <- as_tibble(seq(0,1,0.001)) %>%
   transmute(percentile=value) %>%
   mutate(`Can afford price percentile`= case_when(percentile==1 ~ 1,
                                                   TRUE ~ 0), 
-         Type="Perfect unaffordability (GINI = 1)")
+         Type="Perfect unaffordability\n(GINI = 1, skew = 0)")
 
 zero_GINI <- as_tibble(seq(0,1,0.001)) %>%
   transmute(percentile=value) %>%
   mutate(`Can afford price percentile`= percentile-0.15*sin(percentile*2*pi), 
-         Type="Proportional affordability (GINI = 0)")
+         Type="Proportional affordability\n(GINI = 0, skew = 0)")
 
 
 unequal_0 <- as_tibble(seq(0,1,0.001)) %>%
   transmute(percentile=value) %>%
   mutate(`Can afford price percentile`= percentile-0.15*sin(percentile*2*pi), 
-         Type="High-income skew (GINI = 0)")
+         Type="High-income skew\n(GINI = 0, skew = 0.15)")
 
 unaffordable <- as_tibble(seq(0,1,0.001)) %>%
   transmute(percentile=value) %>%
   mutate(`Can afford price percentile`= percentile-pi/10*sin(percentile*pi), 
-         Type="High unaffordability (GINI = 0.2)")
+         Type="High unaffordability\n(GINI = 0.2, skew = 0)")
 affordable <- as_tibble(seq(0,1,0.001)) %>%
   transmute(percentile=value) %>%
   mutate(`Can afford price percentile`= percentile+pi/10*sin(percentile*pi), 
-         Type="High affordability (GINI = -0.2)")
+         Type="High affordability\n(GINI = -0.2, skew = 0)")
 
 
 example <- rbind(#perfect_affordability, 

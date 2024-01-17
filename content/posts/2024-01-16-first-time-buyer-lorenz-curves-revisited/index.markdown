@@ -128,13 +128,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2024-01-16 15:50:03 PST"
+## [1] "2024-01-16 16:22:54 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [5a75ff1] 2024-01-16: show property tax effect graph
+## Head:     [6c45c0a] 2024-01-16: update description metadata
 ```
 
 ```
@@ -171,20 +171,22 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## [13] bookdown_0.37             fastmap_1.1.1            
 ## [15] plyr_1.8.9                jsonlite_1.8.8           
 ## [17] fansi_1.0.6               scales_1.3.0             
-## [19] jquerylib_0.1.4           cli_3.6.2                
-## [21] rlang_1.1.2               munsell_0.5.0            
-## [23] withr_2.5.2               cachem_1.0.8             
-## [25] yaml_2.3.7                tools_4.3.2              
-## [27] reshape2_1.4.4            tzdb_0.4.0               
-## [29] colorspace_2.1-0          vctrs_0.6.5              
-## [31] R6_2.5.1                  git2r_0.33.0             
-## [33] lifecycle_1.0.4           pkgconfig_2.0.3          
-## [35] pillar_1.9.0              bslib_0.6.1              
-## [37] gtable_0.3.4              Rcpp_1.0.11              
-## [39] glue_1.6.2                xfun_0.41                
-## [41] tidyselect_1.2.0          rstudioapi_0.15.0        
-## [43] knitr_1.45                htmltools_0.5.7          
-## [45] rmarkdown_2.25            mountainmathHelpers_0.1.4
-## [47] compiler_4.3.2            RCurl_1.98-1.13
+## [19] codetools_0.2-19          jquerylib_0.1.4          
+## [21] cli_3.6.2                 rlang_1.1.2              
+## [23] munsell_0.5.0             withr_2.5.2              
+## [25] cachem_1.0.8              yaml_2.3.7               
+## [27] tools_4.3.2               reshape2_1.4.4           
+## [29] tzdb_0.4.0                colorspace_2.1-0         
+## [31] vctrs_0.6.5               R6_2.5.1                 
+## [33] git2r_0.33.0              lifecycle_1.0.4          
+## [35] pkgconfig_2.0.3           MetBrewer_0.2.0          
+## [37] pillar_1.9.0              bslib_0.6.1              
+## [39] gtable_0.3.4              Rcpp_1.0.11              
+## [41] glue_1.6.2                highr_0.10               
+## [43] xfun_0.41                 tidyselect_1.2.0         
+## [45] rstudioapi_0.15.0         knitr_1.45               
+## [47] farver_2.1.1              htmltools_0.5.7          
+## [49] rmarkdown_2.25            mountainmathHelpers_0.1.4
+## [51] compiler_4.3.2            RCurl_1.98-1.13
 ```
 </details>
