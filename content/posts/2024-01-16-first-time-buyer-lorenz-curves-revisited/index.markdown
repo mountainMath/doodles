@@ -30,11 +30,11 @@ Three years ago we [wrote a post on First Time Buyer Lorenz Curves](https://dood
 
 **In this post we want to update this with 2021 data that has now become available, consider the effect of property taxes on affordability that we previously neglected, and introduce a new discretized version of this measure that condenses the information into two parameters, making is easier to digest and compare across different housing markets and allows the tracing of change over time.**
 
-Different families have different housing needs, to simplify this we decided to base our affordability measure on adjusted after-tax family income deciles, which is a person-based measure that assigns each person the after tax family income divided by the square root of the number of members in the family unit. This is a standard Statistics Canada concept, based on the idea that when family members share a household and other expenses there are synergies that make the family unit more efficient than the sum of its parts, with efficiency factor roughly given by the square root of the size of the family unit. In short, a couple making a \$100k and and person living alone making \$71k have similar standards of living ($\frac{100}{\sqrt{2}}$ \~ `\(\frac{71}{\sqrt{1}}\)`). 
+Different families have different housing needs, to simplify this we decided to base our affordability measure on adjusted after-tax family income deciles, which is a person-based measure that assigns each person the after tax family income divided by the square root of the number of members in the family unit. This is a standard Statistics Canada concept, based on the idea that when family members share a household and other expenses there are synergies that make the family unit more efficient than the sum of its parts, with efficiency factor roughly given by the square root of the size of the family unit. In short, a couple making a \$100k and and person living alone making \$71k have similar standards of living `\(\left(\frac{100}{\sqrt{2}} \approx \frac{71}{\sqrt{1}}\right)\)`. 
 
 An added advantage is this gives us a person-based measure, so instead of assessing the affordability of family units, where e.g. a single person gets compared to a family of four, we are comparing people and how they are effected by affordability. This is particulary important due to the composition of family types across metropolitan areas not being the same.
 
-On the housing side, we showed we can similarly divide home prices by the square root of the number of bedrooms to get a stable measure of home prices that is comparable across different home sizes, as measured by number of bedrooms. Like the family example above, a \$900k 5 bedroom house is considered to "cost" the same as a \$400k 1 bedroom appartment ($\frac{900}{\sqrt{5}}$ \~ `\(\frac{400}{\sqrt{1}}\)`). A potentially better measure for scaling would likely be square footage, but that is not available in the census.
+On the housing side, we showed we can similarly divide home prices by the square root of the number of bedrooms to get a stable measure of home prices that is comparable across different home sizes, as measured by number of bedrooms. Like the family example above, a \$900k 5 bedroom house is considered to "cost" the same as a \$400k 1 bedroom appartment `\(\left(\frac{900}{\sqrt{5}} \approx \frac{400}{\sqrt{1}}\right)\)`. A potentially better measure for scaling would likely be square footage, but that is not available in the census.
 
 The *adjusted GINI curve* is then a visual representation of affordability of persons in first-time buyer family units. We believe this measure is useful to give an indication of how accessible ownership is in different housing markets. In particular this [avoides the pitfalls of using household-based measures](https://doodles.mountainmath.ca/blog/2023/08/17/housing-outcomes/) that are plaguing much of our housing discussions. Family units are the right kind of decision making units when it comes to buying (or renting) housing, so it's family income that matters.
 
@@ -128,13 +128,13 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 <details><summary>Reproducibility receipt</summary>
 
 ```
-## [1] "2024-01-16 16:22:54 PST"
+## [1] "2024-01-17 10:05:59 PST"
 ```
 
 ```
 ## Local:    master /Users/jens/R/mountaindoodles
 ## Remote:   master @ origin (https://github.com/mountainMath/doodles.git)
-## Head:     [6c45c0a] 2024-01-16: update description metadata
+## Head:     [3036abb] 2024-01-17: clarify legend in synthetic affordability graph to explicitly include skew
 ```
 
 ```
@@ -171,22 +171,20 @@ As usual, the code for this post is [available on GitHub](https://github.com/mou
 ## [13] bookdown_0.37             fastmap_1.1.1            
 ## [15] plyr_1.8.9                jsonlite_1.8.8           
 ## [17] fansi_1.0.6               scales_1.3.0             
-## [19] codetools_0.2-19          jquerylib_0.1.4          
-## [21] cli_3.6.2                 rlang_1.1.2              
-## [23] munsell_0.5.0             withr_2.5.2              
-## [25] cachem_1.0.8              yaml_2.3.7               
-## [27] tools_4.3.2               reshape2_1.4.4           
-## [29] tzdb_0.4.0                colorspace_2.1-0         
-## [31] vctrs_0.6.5               R6_2.5.1                 
-## [33] git2r_0.33.0              lifecycle_1.0.4          
-## [35] pkgconfig_2.0.3           MetBrewer_0.2.0          
-## [37] pillar_1.9.0              bslib_0.6.1              
-## [39] gtable_0.3.4              Rcpp_1.0.11              
-## [41] glue_1.6.2                highr_0.10               
-## [43] xfun_0.41                 tidyselect_1.2.0         
-## [45] rstudioapi_0.15.0         knitr_1.45               
-## [47] farver_2.1.1              htmltools_0.5.7          
-## [49] rmarkdown_2.25            mountainmathHelpers_0.1.4
-## [51] compiler_4.3.2            RCurl_1.98-1.13
+## [19] jquerylib_0.1.4           cli_3.6.2                
+## [21] rlang_1.1.2               munsell_0.5.0            
+## [23] withr_2.5.2               cachem_1.0.8             
+## [25] yaml_2.3.7                tools_4.3.2              
+## [27] reshape2_1.4.4            tzdb_0.4.0               
+## [29] colorspace_2.1-0          vctrs_0.6.5              
+## [31] R6_2.5.1                  git2r_0.33.0             
+## [33] lifecycle_1.0.4           pkgconfig_2.0.3          
+## [35] pillar_1.9.0              bslib_0.6.1              
+## [37] gtable_0.3.4              Rcpp_1.0.11              
+## [39] glue_1.6.2                xfun_0.41                
+## [41] tidyselect_1.2.0          rstudioapi_0.15.0        
+## [43] knitr_1.45                htmltools_0.5.7          
+## [45] rmarkdown_2.25            mountainmathHelpers_0.1.4
+## [47] compiler_4.3.2            RCurl_1.98-1.13
 ```
 </details>
