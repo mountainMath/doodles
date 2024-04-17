@@ -8,7 +8,7 @@ categories:
   - tongfen
   - cancensus
 tags: []
-escription: "Population change in Vancouver's neighbourhoods 2016-2021. A first look."
+description: "Population change in Vancouver's neighbourhoods 2016-2021. A first look."
 featured: ''
 images: ["https://doodles.mountainmath.ca/blog/2022/02/15/deadbeat-neighbourhoods/index_files/figure-html/neighbourhood-pop-change-1.png"]
 featuredalt: ""

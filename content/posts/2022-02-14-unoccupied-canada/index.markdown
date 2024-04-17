@@ -118,7 +118,7 @@ Blocks enable us to pinpoint how the higher level geography numbers were derived
 ### Main and 2nd
 The building at the southwest corner of Main and 2nd was newly constructed around census day. The census counted 233 dwelling units on this block with no other apparent housing on it, with 178 dwelling units not occupied by usual residents. It's likely the case that residents simply hadn't yet moved in to this building that completed quite near to Census day. The effect here is similar to what we witnessed for newly constructed areas in 2016 [where an outcry was raised over vacancies picked up by the census data release](https://doodles.mountainmath.ca/blog/2017/04/03/joyce-collingwood/).
 
-![](images/main_2nd.png)
+![](/images/main_2nd.png)
 
 
 
@@ -128,7 +128,7 @@ While we know the building is new, we can also perform a quick check with CMHC c
 ### Yukon and 5th
 There are 38 dwelling units with nobody living in them at the block with the [Yukon Shelter](https://www.linkvan.ca/facilities/269) and no other apparent housing units. The shelter [states that it is for people in "emergency and transitional situations"](https://www.linkvan.ca/facilities/269), which is why people living there would not be classified as usual residents. This is an example where all these units are very likely lived in as shelter or transitional housing units, just not by people classified as usual residents. 
 
-![](images/yukon_shelter.png)
+![](/images/yukon_shelter.png)
 
 
 ## The bigger picture

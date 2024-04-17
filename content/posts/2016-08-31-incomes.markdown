@@ -44,15 +44,15 @@ For those that don't really care, I made a
 </style>
 
 <div class='income-generator'>
-    <div class='income-choices'>
-        <div class="geo"></div>
-        <div class="med_av"></div>
-        <div class="tax"></div>
-        <div class="hh"></div>
-        <div> income is </div>
-        <div class="income"></div>
-    </div>
-    <a class="btn btn-default" style="background:orange;">Click to Generate Random Income Numbers</a>
+<div class='income-choices'>
+<div class="geo"></div>
+<div class="med_av"></div>
+<div class="tax"></div>
+<div class="hh"></div>
+<div> income is </div>
+<div class="income"></div>
+</div>
+<a class="btn btn-default" style="background:orange;">Click to Generate Random Income Numbers</a>
 </div>
 The income numbers don't fit the story? No problem, just play again until you get something you like!
 

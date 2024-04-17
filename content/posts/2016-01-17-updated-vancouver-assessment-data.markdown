@@ -9,7 +9,7 @@ slug: updated-vancouver-assessment-data
 tags: []
 description: "VanRE Madness Continues"
 featured: 'relative_land.jpg'
-images: ["https://doodles.mountainmath.ca/images/relative_land.png"]
+images: ["https://doodles.mountainmath.ca/images/relative_land.jpg"]
 featuredalt: ""
 featuredpath: "/images"
 linktitle: ''

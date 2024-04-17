@@ -10,7 +10,7 @@ categories:
   - CANSIM
   - Vancouver
 tags: []
-escription: "Taking a look at UBCM's misguided report."
+description: "Taking a look at UBCM's misguided report."
 featured: ''
 images: ["https://doodles.mountainmath.ca/images/spiderman1.jpeg"]
 featuredalt: ""

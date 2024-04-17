@@ -73,12 +73,12 @@ is just the missing link in the above visualizations. A simple way to visualize 
 relation to one another. Thought I would throw that in real quick.
 
 <div>
- <div id="radviz" class="radviz"></div>
-  <div class="radviz-list-container">
-    <div class="muni"></div>
-    <div class="list"></div>
-  </div>
-  <div style="clear:both;"></div>
+<div id="radviz" class="radviz"></div>
+<div class="radviz-list-container">
+<div class="muni"></div>
+<div class="list"></div>
+</div>
+<div style="clear:both;"></div>
 </div>
 
 <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
